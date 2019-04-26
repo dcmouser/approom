@@ -1,0 +1,15 @@
+{
+  "name": "approom",
+  "version": "1.0.0",
+  "description": "Server backend to facilitate multi-user communication and synchronization using a room metaphor",
+  "main": "watcher.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "jesse reichler / mouser (mouser@donationcoder.com)",
+  "license": "UNLICENSED",
+  "repository": "dcmouser/approom",
+  "dependencies": {
+    "mocha": "^6.1.4"
+  }
+}
