@@ -4,12 +4,30 @@
   "description": "Server backend to facilitate multi-user communication and synchronization using a room metaphor",
   "main": "watcher.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha",
+    "mongod": "C:\\Programs\\MongoDB\\Server\\4.0\\bin\\mongod.exe -f C:\\Programs\\MongoDB\\Server\\4.0\\bin\\mongod.cfg",
+    "help": "node approom.js --help",
+    "runserver": "node approom.js server",
+    "dbsetup": "node approom.js dbsetup",
+    "configtest": "cross-env fun=cli node approom.js server",
+    "configtest2": "cross-env config=debug,dev node approom.js server"
   },
   "author": "jesse reichler / mouser (mouser@donationcoder.com)",
   "license": "UNLICENSED",
   "repository": "dcmouser/approom",
-  "dependencies": {
+  "devDependencies": {
+    "cross-env": "^5.2.0",
     "mocha": "^6.1.4"
+  },
+  "dependencies": {
+    "acl": "^0.4.11",
+    "commander": "^2.20.0",
+    "express": "^4.16.4",
+    "mongodb": "^3.2.3",
+    "mongoose": "^5.5.4",
+    "morgan": "^1.9.1",
+    "nconf": "^0.10.0",
+    "redis": "^2.8.0",
+    "winston": "^3.2.1"
   }
 }

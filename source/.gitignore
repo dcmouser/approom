@@ -1,6 +1,4 @@
-# unwanted files
-*.bak
-
+*secret*
 # Logs
 logs
 *.log
