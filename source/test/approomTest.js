@@ -4,13 +4,34 @@
 'use strict';
 
 
-// modules
+// misc modules
 const assert = require('assert');
-//
-const AppRoomServer = require('../models/server');
+
+// our modules
+const arserver = require('../models/server');
 const UserModel = require('../models/user');
+
 // helpers
 const jrhelpers = require('../helpers/jrhelpers');
+const jrlog = require('../helpers/jrlog');
+const jrconfig = require("../helpers/jrconfig");
+
+
+
+
+//---------------------------------------------------------------------------
+// this should be done by even the unit test runners
+
+// setup initial config stuff
+arserver.setupConfigAndLoggingEnvironment();
+
+// configure server instance
+arserver.configFromJrConfig(jrconfig);
+//---------------------------------------------------------------------------
+
+
+
+
 
 // describe tests to mocha
 
@@ -24,10 +45,9 @@ describe('server', function () {
 	this.timeout(10000);
 
 	// connect to db at start, and tear down at end
-	var arserver = AppRoomServer.getSingleton();
 	before(async function() {
 		// connect server and db
-		await arserver.dbSetup();
+		await arserver.createAndConnectToDatabase();
 	});
 	after(async function() {
 		// disconnect server
@@ -35,19 +55,16 @@ describe('server', function () {
 	});
 
 
-
-	it('Server test #1', done => {
+	// sample test #1
+	it('Sample server test #1', done => {
 		assert(true == true);
-		//console.log('Starting up server.');
-		//arserver.runServer();
 		done();
 	});
 
+	// sample test #2
 	// note that an async test doesn't call done() at the end
-	it('Server async test #2', async() => {
+	it('Sample server test #2 (async)', async() => {
 		assert(true == true);
-		//console.log('Starting up server.');
-		//await arserver.runServer();
 	});
 
 });
@@ -55,17 +72,16 @@ describe('server', function () {
 
 
 
-// user model test
+// user model tests
 describe('user', function () {
 
 	// we need to change timeout for this test
 	this.timeout(10000);
 
 	// connect to db at start, and tear down at end
-	var arserver = AppRoomServer.getSingleton();
 	before(async function() {
 		// connect server and db
-		await arserver.dbSetup();
+		await arserver.createAndConnectToDatabase();
 	});
 	after(async function() {
 		// disconnect server
@@ -74,20 +90,14 @@ describe('user', function () {
 
 
 
-	it('User test #1', done => {
-		assert(true == true);
-		done();
-	});
-
-
 	it('Checking admin password is still set to default', async() => {
 		// get admin user
-		var doc = await UserModel.mongooseModel.findOne().where('username','admin').exec();
-		assert(doc != undefined, 'user with "admin" username not found');
+		var user = await UserModel.findOneByUsername("admin");
+		assert(user != undefined, 'user with "admin" username not found');
 
 		// test password see if its default
 		var plaintextPassword = UserModel.getPasswordAdminPlaintextDefault();
-		var bretv = doc.testPassword(plaintextPassword);
+		var bretv = await user.testPassword(plaintextPassword);
 		assert(bretv, 'admin user password is not set to default value');
 	});
 

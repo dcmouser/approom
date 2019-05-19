@@ -4,13 +4,14 @@
   "description": "Server backend to facilitate multi-user communication and synchronization using a room metaphor",
   "main": "watcher.js",
   "scripts": {
-    "test": "mocha",
+    "test": "cls && mocha",
+    "testuser": "cls && mocha --grep user",
     "mongod": "C:\\Programs\\MongoDB\\Server\\4.0\\bin\\mongod.exe -f C:\\Programs\\MongoDB\\Server\\4.0\\bin\\mongod.cfg",
-    "help": "node approom.js --help",
-    "runserver": "node approom.js server",
-    "dbsetup": "node approom.js dbsetup",
-    "configtest": "cross-env fun=cli node approom.js server",
-    "configtest2": "cross-env config=debug,dev node approom.js server"
+    "help": "cls && node approom.js --help",
+    "runserver": "cls && node approom.js runserver",
+    "dbsetup": "cls && node approom.js dbsetup",
+    "UNUSED_configtest": "cross-env fun=cli node approom.js server",
+    "UNUSED_configtest2": "cross-env config=debug,dev node approom.js server"
   },
   "author": "jesse reichler / mouser (mouser@donationcoder.com)",
   "license": "UNLICENSED",
@@ -21,12 +22,22 @@
   },
   "dependencies": {
     "acl": "^0.4.11",
+    "bcrypt": "^3.0.6",
+    "body-parser": "^1.19.0",
     "commander": "^2.20.0",
+    "connect-mongo": "^2.0.3",
+    "cookie-parser": "^1.4.4",
     "express": "^4.16.4",
+    "express-session": "^1.16.1",
+    "hbs": "^4.0.4",
+    "http-errors": "^1.7.2",
     "mongodb": "^3.2.3",
     "mongoose": "^5.5.4",
     "morgan": "^1.9.1",
     "nconf": "^0.10.0",
+    "passport": "^0.4.0",
+    "passport-facebook": "^3.0.0",
+    "passport-local": "^1.0.0",
     "redis": "^2.8.0",
     "winston": "^3.2.1"
   }

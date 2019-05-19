@@ -4,8 +4,8 @@
 //  Server backend to facilitate multi-user communication and synchronization using a room metaphor
 //  commandline main app
 
-
 "use strict";
+
 
 
 //---------------------------------------------------------------------------
@@ -13,56 +13,45 @@
 const pkg = require("./package.json");
 
 // code files
-const AppRoomServer = require("./models/server");
+const arserver = require("./models/server");
 
 // modules
-const JrConfig = require("./helpers/jrconfig");
-const jrhelpers = require("./helpers/jrhelpers");
 const path = require("path");
-//---------------------------------------------------------------------------
 
+// our helper modules
+const jrconfig = require("./helpers/jrconfig");
+const jrhelpers = require("./helpers/jrhelpers");
+const jrlog = require("./helpers/jrlog");
 
-
-//---------------------------------------------------------------------------
-// create a singleton server instance
-var arserver = AppRoomServer.getSingleton();
-//---------------------------------------------------------------------------
-
-
-//---------------------------------------------------------------------------
-// jrconfig / nconf parsing of commandline/env/config file options
 //
-// default values if not specified by commandline/env/config files
-const defaultOptions = {};
-// these are forced and override anything specified on commandline or in config files
-const overrideOptions = {};
-// envList is an array of strings to grab and merge from environment; use [""] for none, or set empty array for all
-const envList = [""];
-//
-// create jrconfig
-var jrconfig = new JrConfig(__dirname, defaultOptions, overrideOptions, envList);
-//
+const arGlobals = require("./approomglobals");
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+//---------------------------------------------------------------------------
 // create custom yargs object for commandline options and commands
-var yargsObj = createYargsObj(jrconfig);
-// add it to jrconfig
-jrconfig.setYargs(yargsObj);
-//
-// config files to process (earlier dominates later)
-jrconfig.addConfigFile("default", false);
+// you might have multiple cli apps, each with their own createYargsObj
+// NOTE: you MUST do this before calling jrconfig.parse or setupConfigAndLoggingEnvironment, etc.
+jrconfig.setYargs(createYargsObj());
+//---------------------------------------------------------------------------
 
-// now parse commandline/config/env/ etc.
-if (!jrconfig.parse()) {
-	// errors processing commandline, exit;
-	console.error("Error processing commandline/file/env options.");
-	if (yargsObj!==undefined) {
-		yargsObj.showHelp()
-	}
-	process.exit(1);
-}
 
-//
-// now do what commandline says to do
-processJrConfig(jrconfig);
+
+
+//---------------------------------------------------------------------------
+// this should be done by even the unit test runners
+arserver.setupConfigAndLoggingEnvironment();
+
+// configure server instance (jrconfig should be parsed first)
+arserver.configFromJrConfig(jrconfig);
 //---------------------------------------------------------------------------
 
 
@@ -71,19 +60,30 @@ processJrConfig(jrconfig);
 
 
 
+
+
+
+// Everything below here is app cli specific
+
+
+
+//---------------------------------------------------------------------------
+// now do what commandline says to do
+processJrConfigAndCommandline(jrconfig);
+//---------------------------------------------------------------------------
 
 
 
 //---------------------------------------------------------------------------
 // commandline process
-function processJrConfig(jrconfig) {
+function processJrConfigAndCommandline(jrconfig) {
 	if (jrconfig.get("debug")) {
 		// testing
 		var nconfobj = jrconfig.getNconf();
 		var dataobj = nconfobj.get();
-		//	jrhelpers.consoleLogObj(dataobj, "dataobj");
-		jrhelpers.consoleLogObj(jrconfig.get("debug"), "jrconfig.debug");
-		//	jrhelpers.consoleLogObj(jrconfig.getYargs(), "yargs");
+		jrlog.logObj(dataobj, "dataobj");
+		jrlog.logObj(jrconfig.get("debug"), "jrconfig.debug");
+		//	jrlog.logObj(jrconfig.getYargs(), "yargs");
 	}
 
 	// run commandline callbacks (show help if none found)
@@ -102,10 +102,12 @@ function processJrConfig(jrconfig) {
 
 
 //---------------------------------------------------------------------------
-function createYargsObj(jrconfig) {
+// commandline options for this program
+
+function createYargsObj() {
 	var yargs = require("yargs");
-	yargs.version("1.0.0");
-	yargs.epilog("copyright 2019 mouser@donationcoder.com");
+	yargs.version(arGlobals.programVersion);
+	yargs.epilog("copyright " + arGlobals.programDate + " by " + arGlobals.programAuthor);
 	yargs.strict();
 	yargs.options({
 		"config": {
@@ -116,13 +118,13 @@ function createYargsObj(jrconfig) {
 	yargs.command({
 		command: "dbsetup",
 		desc: "Setup the approoom database",
-		handler: (argv) => {jrconfig.queueYargsCommand("dbsetup", argv, (cmd, jrconfig)=> { commandDbSetup(jrconfig);} );}
+		handler: (argv) => {jrconfig.queueYargsCommand("dbsetup", argv, (cmd)=> { commandDbSetup();} );}
 	});
 	//
 	yargs.command({
 		command: "runserver",
 		desc: "Run the approoom server",
-		handler: (argv) => {jrconfig.queueYargsCommand("runserver",argv, (cmd, jrconfig)=> { commandRunServer(jrconfig);} );}
+		handler: (argv) => {jrconfig.queueYargsCommand("runserver",argv, (cmd)=> { commandRunServer();} );}
 	});
 	return yargs;
 }
@@ -143,18 +145,19 @@ function createYargsObj(jrconfig) {
 //---------------------------------------------------------------------------
 // functions callable from commandline
 
-
-async function commandRunServer(jrconfig) {
-	// just do dummy work
-	const bretv = await arserver.runServer();
+async function commandRunServer() {
+	// first setup db stuff
+	var bretv = await arserver.createAndConnectToDatabase();
+	// now launch server
+	bretv = await arserver.runServer();
 	return bretv;
 }
 
 
-async function commandDbSetup(jrconfig) {
+async function commandDbSetup() {
 	// setup initial database and acl stuff
-	const bretv = await arserver.dbSetup();
-	console.log("Finished dbsetup.");
+	const bretv = await arserver.createAndConnectToDatabase();
+	jrlog.debug("Finished dbsetup.");
 	arserver.closeDown();
 	return bretv;
 }

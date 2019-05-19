@@ -10,6 +10,7 @@
 
 "use strict";
 
+
 // modules
 // nconf allows us to parse environment vars, config files, and commandline args via yargs
 var nconf = require("nconf");
@@ -17,38 +18,92 @@ const path = require("path");
 const fs = require("fs");
 //
 const jrhelpers = require("./jrhelpers");
+const jrlog = require("./jrlog");
 
 
-// config class
+//---------------------------------------------------------------------------
+// constants
+const envListDefault = ['NODE_ENV'];
+const configFileDefault = "default";
+//---------------------------------------------------------------------------
+
+
+
+
+
+
 class JrConfig {
 
+
 	//---------------------------------------------------------------------------
-	constructor(configDirPath, defaultOptions, overrideOptions, envList) {
-		// configDirPath can be base path where there is a config subdir, or the full path to the configdir; filenames specified via config option will be looked for in this dir
-		// defaultOptions is an object loaded into values which are overridden by others from commandline, files, env, etc.
-		// overrideOptions is a setting oject whose contents will override anything else read in any other stting
+	// global singleton request
+	static getSingleton(...args) {
+		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
+		if (this.globalSingleton === undefined) {
+			this.globalSingleton = new JrConfig(...args);
+		}
+		return this.globalSingleton;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	constructor() {
 		// envList is an array of strings of environmental variables whose values will be merged in
 
-		// fixups - auto add config subdir if caller passed in base dir
-		var configDirPathPlus  = path.join(configDirPath, "config");
-		//console.log("Checking for "+configDirPathPlus+" and using "+configDirPath);
-		if (fs.existsSync(configDirPathPlus)) {
-			configDirPath = configDirPathPlus;
-		}
-		// remember stuff
-		this.configDirPath = configDirPath;
-		this.defaultOptions = defaultOptions;
-		this.overrideOptions = overrideOptions;
-		this.envList = envList;
+		// defaults 
+		this.configDirPath = undefined
+		this.defaultOptions = {};
+		this.overrideOptions = {};
+
 		// init
+		this.didParse = false;
 		this.fileCount = 0;
 		this.queuedCommands = [];
 		this.configFiles = [];
+	}
+	//----------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	setConfigDir(configDirPath) {
+		// configDirPath can be base path where there is a config subdir, or the full path to the configdir; filenames specified via config option will be looked for in this dir
+		// fixups - auto add config subdir if caller passed in base dir
+		var configDirPathPlus  = path.join(configDirPath, "config");
+		if (fs.existsSync(configDirPathPlus)) {
+			configDirPath = configDirPathPlus;
+		}
+		this.configDirPath = configDirPath;
+
+		// now that we have the config fir, we can se the default a default configfile to process before others
+		if (configFileDefault !== undefined) {
+			this.addConfigFile(configFileDefault, false);
+		}
+
+		return this;
+	}
+
+	setDefaultOptions(defaultOptions) {
+		// defaultOptions is an object loaded into values which are overridden by others from commandline, files, env, etc.
+		this.defaultOptions = defaultOptions;
+		return this;
+	}
+
+	setOverrideOptions(overrideOptions) {
+		// overrideOptions is a setting oject whose contents will override anything else read in any other stting
+		this.overrideOptions = overrideOptions;
+		return this;
+	}
+
+	setEnvList(envList) {
+		this.envList = jrhelpers.mergeArraysDedupe(envList, envListDefault);
+		return this;
 	}
 
 	setYargs(yargsObj) {
 		// called after creation, so that yargsObj can point to us
 		this.yargsObj = yargsObj;
+		return this;
 	}
 
 	addConfigFile(filepath, flagErrorOnFileNotExist) {
@@ -68,11 +123,24 @@ class JrConfig {
 	//---------------------------------------------------------------------------
 
 
+
+
 	//---------------------------------------------------------------------------
+	parseIfNotYetParsed() {
+		if (!this.didParse) {
+			return this.parse();
+		}
+		return true;
+	}
+
+
 	parse() {
 		// process env, argv, files, etc.
 		// return True on success, or False on error
 		var bretv = true;
+
+		// set flag saying we have parsed
+		this.didParse = true;
 
 		// now merge in options -- EARLIER dominates LATER (except for defaults)
 
@@ -124,7 +192,7 @@ class JrConfig {
 		var configFileStrs = configFileStr.split(",");
 		configFileStrs.forEach(configFilePath => {
 			// try to load it
-			//console.log("LOADING CONFIG FILE: "+configFilePath);
+			//jrlog.log("LOADING CONFIG FILE: "+configFilePath);
 			this.nconfMergeConfigFile(configFilePath, true);
 		});
 
@@ -169,8 +237,8 @@ class JrConfig {
 	queueYargsCommand(commandName, argv, callback) {
 		// internally called during yargs processing when it finds a command to run
 		if (false) {
-			console.log("jrconfig Queing command " + commandName);
-			jrhelpers.consoleLogObj(argv,"command argv");
+			jrlog.log("jrconfig Queing command " + commandName);
+			jrlog.logObj(argv,"command argv");
 		}
 		// store the queued command
 		this.queuedCommands.push( {
@@ -198,6 +266,14 @@ class JrConfig {
 		// just pass along to nconf
 		return nconf.get(...args)
 	}
+
+	getDefault(arg, defaultVal) {
+		var val = nconf.get(arg);
+		if (val === undefined) {
+			return defaultVal;
+		}
+		return val;
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -218,15 +294,15 @@ class JrConfig {
 			if (this.yargsObj !== undefined) {
 				this.yargsObj.showHelp();
 			} else {
-				console.error("Error: No command specified to run on commandline.")
+				jrlog.error("Error: No command specified to run on commandline.")
 			}
 			return;
 		}
 		this.queuedCommands.forEach(cmdEntry => {
 			if (cmdEntry.callback!==undefined) {
-				cmdEntry.callback(cmdEntry.command, this, cmdEntry.argv);
+				cmdEntry.callback(cmdEntry.command, cmdEntry.argv);
 			} else {
-				console.log("Warning: No callback to run for command "+cmdEntry.cmd);
+				jrlog.log("Warning: No callback to run for command "+cmdEntry.cmd);
 			}
 		});
 	}
@@ -262,5 +338,5 @@ class JrConfig {
 }
 
 
-// export the class as the sole export
-module.exports = JrConfig;
+// export A SINGLETON INSTANCE of the class as the sole export
+module.exports = JrConfig.getSingleton();
