@@ -17,11 +17,16 @@ const router = express.Router();
 
 router.get("/", function(req, res, next) {
 	const auth = req.isAuthenticated();
-	jrlog.cdebugObj(req.session, "REQUESTED SESSION");
-	jrlog.cdebugObj(req.user, "REQUESTED USER");
+	if (auth) {
+		jrlog.cdebugObj(req.session, "REQUESTED SESSION");
+		jrlog.cdebugObj(req.user, "REQUESTED USER");
+	}
+
+	var userInfo = (req.session.passport!=undefined) ? JSON.stringify(req.session.passport.user) : 'not logged in';
+
 	res.render("profile", {
  		auth: auth,
- 		userInfo: JSON.stringify(req.session.passport.user),
+ 		userInfo: userInfo,
 	});
 });
 

@@ -48,6 +48,8 @@ class UserModel extends ModelBaseMongoose {
 			passwordDate: {type: Date},
 			loginDate: {type: Date},
 			authenticationDate: {type: Date},
+			// do we need to save this?
+			//loginId : {type: String},
 		}, {collection: this.getCollectionName()});
 		return this.schema;
 	};
@@ -96,6 +98,7 @@ class UserModel extends ModelBaseMongoose {
 		var passwordObjParsed = JSON.parse(this.passwordObj);
 		jrlog.cdebugObj(passwordObjParsed, "passwordObjParsed");
 		var bretv = await jrcrypto.testPassword(passwordPlaintext, passwordObjParsed);
+		//jrlog.debugObj(bretv,"PASS COMPARISON BRETV");
 		return bretv;
 	}
 
@@ -124,7 +127,7 @@ class UserModel extends ModelBaseMongoose {
 
 
 
-
+	//---------------------------------------------------------------------------
 	// lookup user by their username
 	static async findOneByUsername(username) {
 		// find a user by their username and return the matching model
@@ -138,12 +141,19 @@ class UserModel extends ModelBaseMongoose {
 	}
 
 	// lookup user by their id
-	static async findOneById(id) {
+	static async findOneById(id, flag_updateLoginDate) {
 		// return null if not found
 		if (jrhelpers.isEmpty(id)) {
 			return null;
 		}
-		var user = await this.mongooseModel.findOne({_id: id}).exec();
+		//
+		var user;
+		if (flag_updateLoginDate) {
+			user = await this.mongooseModel.findOneAndUpdate({_id: id}, {$set:{loginDate:new Date}}).exec();
+		} else {
+			user = await this.mongooseModel.findOne({_id: id}).exec();
+		}
+		//
 		return user;
 	}
 
@@ -240,23 +250,26 @@ class UserModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	getMinimalPassportProfile() {
 		// return identifier for passport to track to know what user is logged in
-		const profile = {
-			provider: "local",
+		var profile = {
+			// any time we are getting passport profile from a USER, it is local
+			provider: this.id ? "localUser" : "localLogin",
 			id: this.id,
 			username: this.username,
+			loginId: this.loginId,
 		};
+
 		return profile;
 	}
 
 
 
 	// create a unique user based on bridged login info
-	static async createUniqueUserFromBridgedLogin(bridgedLoginObj) {
+	static async createUniqueUserFromBridgedLogin(bridgedLoginObj, flag_updateLoginDate) {
 		// this could be tricky because we may have collisions in our desired username, email, etc.
 		var userObj = {
-			username: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.userName, null),
-			realname: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.realName, null),
-			email: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.email, null),
+			username: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.extraData.userName, null),
+			realname: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.extraData.realName, null),
+			email: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.extraData.email, null),
 			passwordHashed: null,
 			passwordDate: null,
 		};
@@ -264,6 +277,10 @@ class UserModel extends ModelBaseMongoose {
 		await this.uniqueifyUserObj(userObj, bridgedLoginObj.provider_name+"_"+bridgedLoginObj.provider_id );
 		// now create model (this will also add default properties to it)
 		var user = UserModel.createModel(userObj);
+		// set login date to now?
+		if (flag_updateLoginDate) {
+			user.loginDate = new Date;
+		}
 		// and save it
 		var userdoc = await user.save();
 		//
@@ -317,6 +334,29 @@ class UserModel extends ModelBaseMongoose {
 		return jrcrypto.genRandomString(SUFFIXLEN);
 	}
 	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	static async createUserFromObj(userObj) {
+		// create a new user account
+			var passwordObjForFieldSaving = this.getPasswordObjForFieldSaving(userObj.passwordHashedObj);
+			// create generic new object
+			var userObjFull = {
+				username: userObj.username,
+				email: userObj.email,
+				// merge in passwordObjForFieldSaving data
+				...passwordObjForFieldSaving,
+
+			};
+			// now create model (this will also add default properties to it)
+			var user = UserModel.createModel(userObjFull);
+			// and save it
+			var userdoc = await user.save();
+			//
+			jrlog.cdebugObj(userdoc,"new user");
+			return userdoc;
+	}
 
 
 }

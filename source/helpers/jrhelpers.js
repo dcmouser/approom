@@ -48,14 +48,35 @@ function getNonEmptyPropertyOrDefault(val, defaultval) {
 function isEmpty(val) {
 	return (val == undefined || val==null || val=="");
 }
+
+
+function firstNonEmptyValue(...args) {
+    for (arg of args) {
+    	if (!isEmpty(arg)) {
+    		return arg;
+    	}
+    // return last
+    return args[args.length-1];
+    }
+}
 //---------------------------------------------------------------------------
 
+
+
+//---------------------------------------------------------------------------
+function DateNowPlusMinutes(expirationMinutes) {
+	var expirationDate = new Date;
+	expirationDate.setMinutes( expirationDate.getMinutes() + expirationMinutes );
+	return expirationDate;
+}
+//---------------------------------------------------------------------------
 
 
 
 
 //---------------------------------------------------------------------------
 module.exports = {
-	mergeArraysDedupe, getNonEmptyPropertyOrDefault, isEmpty
+	mergeArraysDedupe, getNonEmptyPropertyOrDefault, isEmpty, firstNonEmptyValue,
+	DateNowPlusMinutes
 	}
 //---------------------------------------------------------------------------

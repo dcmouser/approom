@@ -70,7 +70,7 @@ class JrLog {
 	cdebug(...args) {if (this.getDebugEnable()) return this.debug(...args); else return null;}
 	debug(...args) {return this.debugfunc(...args);}
 	// helper that simplifies sending a formatted string ("%s:%d", str, val)
-	cdebugf(str,...args) {if (this.getDebugEnable()) return this.debugf(...args); else return null;}
+	cdebugf(str,...args) {if (this.getDebugEnable()) return this.debugf(str, ...args); else return null;}
 	debugf(str,...args) {return this.debugfunc(util.format(str,...args));}
 	//
 	cdebugObj(obj,msg) {if (this.getDebugEnable()) return this.debugObj(obj,msg); else return null;}

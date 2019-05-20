@@ -56,9 +56,10 @@ arserver.configFromJrConfig(jrconfig);
 
 
 
-
-
-
+//jrlog.debugObj(arserver, "ARSERVER1");
+//console.log(arserver);
+//var verifyUrl = arserver.calcAbsoluteSiteUrlPreferHttps("verify/email");
+//console.log(verifyUrl);
 
 
 

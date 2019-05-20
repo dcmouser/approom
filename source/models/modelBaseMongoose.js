@@ -79,7 +79,7 @@ class ModelBaseMongoose {
 		var obj = {
 			version: this.getVersion(),
 			creationDate: new Date,
-			modificationDate: new Date,
+			modificationDate: null,
 			enabled: 1,
 			...inobj
 		};

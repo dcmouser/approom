@@ -64,15 +64,15 @@ router.post("/", async function (req, res) {
 		// hash password for storage
 		if (!jrhelpers.isEmpty(req.body.password)) {
 			// hash their password
-			passwordHashed = UserModel.hashPassword(req.body.password);
+			passwordHashed = await UserModel.hashPasswordToObj(req.body.password);
 		}
 	}
 
 	// any errors, re-render form with errors
 	if (errorCount > 0) {
-		console.log(errors);
-		console.log(req.body.username);
-		console.log(req.body.email);
+		//console.log(errors);
+		//console.log(req.body.username);
+		//console.log(req.body.email);
 		res.render("register", {reqbody: req.body, errors: errors});
 		return;
 	}
@@ -88,10 +88,10 @@ router.post("/", async function (req, res) {
 	}
 
 	// create the email verification and mail it; we pass userId and loginId as null, so this is an email verification NOT associated with an existing user
-	var verification = await VerificationModel.createVerificationEmail(req.body.email, null, null, extraData);
-	console.log(verification);
+	var flag_send = true;
+	var verification = await VerificationModel.createVerificationNewAccountEmail(req.body.email, null, null, extraData);
 	//
-	message = "Please check for the confirmation email that has been sent to "+req.body.email;
+	message = "Please check for the verification email that has been sent to "+req.body.email;
 	res.render("message", {message: message});
 });
 

@@ -30,6 +30,9 @@ const passportFacebook = require("passport-facebook");
 const path = require("path");
 const fs = require("fs");
 
+// mail
+const nodemailer = require("nodemailer");
+
 // our helper modules
 const jrhelpers = require("../helpers/jrhelpers");
 const jrlog = require("../helpers/jrlog");
@@ -48,7 +51,9 @@ const UserModel = require("./user");
 const LoginModel = require("./login");
 const LogModel = require("./log");
 const OptionModel = require("./option");
-const VerificationModel = require("./verification");
+// ATTN: circular reference problem? so we require this only when we need it below
+//const VerificationModel = require("./verification");
+// may have to do this with other models that also bring in require("server")
 
 
 
@@ -59,17 +64,25 @@ class AppRoomServer {
 	static getVersion() { return 1; }
 
 
+	calcTest1() { return "test1";}
+	static calcTest2() { return "test2";}
+
+
 	// global singleton request
 	static getSingleton(...args) {
 		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
 		if (this.globalSingleton === undefined) {
 			this.globalSingleton = new AppRoomServer(...args);
+			//console.log("making new server");
 		}
+		//console.log("RETURNING SERVER");
+		//console.log(this.globalSingleton);
 		return this.globalSingleton;
 	}
 
 
 	constructor() {
+		this.valtest = 1;
 	}
 
 
@@ -329,7 +342,10 @@ class AppRoomServer {
 		// logout
 		this.setupRoute("/logout","logout");
 
-		// generic test message
+		// verifications
+		this.setupRoute("/verify","verify");
+
+		// generic display message route for testing
 		this.setupRoute("/message","message");
 
 		// profile
@@ -428,15 +444,15 @@ class AppRoomServer {
 				// this is the function called when user tries to login
 				// so we check their username and password and return either FALSE or the user
 				// first, find the user via their password
-				jrlog.debugf("In passport local strategy test with username=%s and password=%s", username, password);
+				//jrlog.debugf("In passport local strategy test with username=%s and password=%s", username, password);
 				var user = await UserModel.findOneByUsername(username);
-				if (user===null) {
+				if (user==null) {
 					// not found
 					return done(null, false);
 				}
 				// ok we found the user, now check their password
-				var bretv = user.testPassword(password);
-				if (!bretv) {
+				var bretv = await user.testPassword(password);
+				if (bretv!==true) {
 					// password doesn't match
 					return done(null, false);
 				}
@@ -474,14 +490,16 @@ class AppRoomServer {
 				var bridgedLoginObj = {
 					provider: profile.provider,
 					provider_userid: profile.id,
-					realName: profile.displayName,
-					data: null,
+					extraData: {
+						realName: profile.displayName
+					},
 				};
 				// created bridged 
 				var user = await LoginModel.processBridgedLoginGetOrCreateUser(bridgedLoginObj);
 				// if user could not be created, it's an error
 				// otherwise log in the user
 				const userProfile = user.getMinimalPassportProfile();
+
 				return done(null, userProfile);
 			}
 		));
@@ -522,6 +540,7 @@ class AppRoomServer {
 
 		return url;
 	}
+
 	//---------------------------------------------------------------------------
 
 
@@ -532,8 +551,47 @@ class AppRoomServer {
 
 
 
+	//---------------------------------------------------------------------------
+	async setupMailer() {
+		// setup the mailer system
+		// see https://nodemailer.com/about/
+		// see https://medium.com/@SeanChenU/send-mail-using-node-js-with-nodemailer-in-2-mins-c3f3e23f4a1
+		this.mailTransport = nodemailer.createTransport({
+ 			host: jrconfig.get("mailer:HOST"),
+ 			port: jrconfig.get("mailer:PORT"),
+ 			secure: jrconfig.get("mailer:SECURE"),
+ 			auth: {
+				user: jrconfig.get("mailer:USERNAME"),
+				pass: jrconfig.get("mailer:PASSWORD"),
+				}
+			});
+
+		jrlog.cdebugf("Setting up mail transport through %s.",jrconfig.get("mailer:HOST"));
+
+		// verify it?
+		if (jrconfig.get("DEBUG")) {
+			await this.mailTransport.verify();
+		}
+	}
 
 
+
+	getMailTransport() {
+		// return previously created transport
+		return this.mailTransport;
+	}
+
+
+	async sendMail(mailobj) {
+		// add from field
+		if (mailobj.from==undefined) {
+			mailobj.from = jrconfig.get("mailer:FROM");
+		}
+
+		var result = await this.mailTransport.sendMail(mailobj);
+		return result;
+	}
+	//---------------------------------------------------------------------------
 
 
 
@@ -606,6 +664,9 @@ class AppRoomServer {
 		this.setupExpressRoutes();
 		this.setupExpressErrorHandlers();
 
+		// other stuff
+		await this.setupMailer();
+
 		// now make the express servers (http AND/OR https)
 		this.createExpressServersAndListen();
 
@@ -619,6 +680,9 @@ class AppRoomServer {
 	async createAndConnectToDatabase() {
 		// setup database stuff (create and connect to models -- callable whether db is already created or not)
 		var bretv = false;
+
+		// try moving this here
+		const VerificationModel = require("./verification");
 
 		try {
 			// connect to db
