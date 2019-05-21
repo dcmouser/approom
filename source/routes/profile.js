@@ -24,7 +24,7 @@ router.get("/", function(req, res, next) {
 
 	var userInfo = (req.session.passport!=undefined) ? JSON.stringify(req.session.passport.user) : 'not logged in';
 
-	res.render("profile", {
+	res.render("user/profile", {
  		auth: auth,
  		userInfo: userInfo,
 	});

@@ -23,7 +23,7 @@ const router = express.Router();
 
 
 router.get("/", function(req, res, next) {
-	res.render("register", {});
+	res.render("account/register", {});
 });
 
 
@@ -73,7 +73,7 @@ router.post("/", async function (req, res) {
 		//console.log(errors);
 		//console.log(req.body.username);
 		//console.log(req.body.email);
-		res.render("register", {reqbody: req.body, errors: errors});
+		res.render("account/register", {reqbody: req.body, errors: errors});
 		return;
 	}
 

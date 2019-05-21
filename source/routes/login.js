@@ -30,7 +30,7 @@ const router = express.Router();
 //---------------------------------------------------------------------------
 // simple login, present form
 router.get("/", function(req, res, next) {
-	res.render("login", {});
+	res.render("account/login", {});
 });
 
 
@@ -72,7 +72,7 @@ router.get("/twitter", passport.authenticate("facebook"));
 
 // twiter auth callback
 router.get("/twitter/auth", function(req, res, next) {
-	res.render("login_twitter", {message:"auth call"});
+	res.render("account/login_twitter", {message:"auth call"});
 });
 //---------------------------------------------------------------------------
 
@@ -81,7 +81,7 @@ router.get("/twitter/auth", function(req, res, next) {
 //---------------------------------------------------------------------------
 // simple login via email
 router.get("/email", function(req, res, next) {
-	res.render("login_email", {});
+	res.render("account/login_email", {});
 });
 
 
@@ -107,7 +107,7 @@ router.post("/email", async function(req, res, next) {
 		}
 	}
 
-	res.render("login_email", {message: message});
+	res.render("account/login_email", {message: message});
 });
 
 //---------------------------------------------------------------------------

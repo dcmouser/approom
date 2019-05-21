@@ -1,6 +1,6 @@
 # config files with secrets
-config/
-logs/
+config/*private*
+logs/*
 
 *secret*
 # Logs
