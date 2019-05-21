@@ -24,7 +24,8 @@ const jrlog = require("./jrlog");
 //---------------------------------------------------------------------------
 // constants
 const envListDefault = ['NODE_ENV'];
-const configFileDefault = "default";
+// default files we always look for -- note that earlier dominates later in this list
+const configFilesDefault = ["defaultPrivate","default"];
 //---------------------------------------------------------------------------
 
 
@@ -76,9 +77,9 @@ class JrConfig {
 		this.configDirPath = configDirPath;
 
 		// now that we have the config fir, we can se the default a default configfile to process before others
-		if (configFileDefault !== undefined) {
-			this.addConfigFile(configFileDefault, false);
-		}
+		configFilesDefault.forEach((filepath)=> {
+			this.addConfigFile(filepath, false);
+		});
 
 		return this;
 	}
