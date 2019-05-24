@@ -51,6 +51,9 @@ function isEmpty(val) {
 
 
 function firstNonEmptyValue(...args) {
+	if (args == undefined || args.length == 0) {
+		return undefined;
+	}
     for (arg of args) {
     	if (!isEmpty(arg)) {
     		return arg;
@@ -73,10 +76,24 @@ function DateNowPlusMinutes(expirationMinutes) {
 
 
 
+//---------------------------------------------------------------------------
+function stringArrayToNiceString(arr) {
+	if (arr === undefined || arr.length==0) {
+		return "";
+	}
+	return arr.toString();
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
 
 //---------------------------------------------------------------------------
 module.exports = {
 	mergeArraysDedupe, getNonEmptyPropertyOrDefault, isEmpty, firstNonEmptyValue,
-	DateNowPlusMinutes
+	DateNowPlusMinutes,
+	stringArrayToNiceString
 	}
 //---------------------------------------------------------------------------

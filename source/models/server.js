@@ -39,6 +39,7 @@ const jrhelpers = require("../helpers/jrhelpers");
 const jrlog = require("../helpers/jrlog");
 const jrconfig = require("../helpers/jrconfig");
 const JrResult = require("../helpers/jrresult");
+const jrhandlebars = require("../helpers/jrhandlebars");
 
 // approomserver globals
 const arGlobals = require("../approomglobals");
@@ -265,6 +266,15 @@ class AppRoomServer {
 	}
 
 
+	setupExpressCustomMiddleware() {
+		// setup any custom middleware
+		// auto inject into render any saves session jrResult
+		this.expressApp.use(JrResult.expressMiddlewareInjectSessionResult());
+	}
+
+
+
+
 
 	createExpressServersAndListen() {
 		// create server
@@ -348,9 +358,6 @@ class AppRoomServer {
 
 		// verifications
 		this.setupRoute("/verify","verify");
-
-		// generic display message route for testing
-		this.setupRoute("/message","message");
 
 		// profile
 		this.setupRoute("/profile","profile");
@@ -566,57 +573,13 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	setupViewTemplateExtras() {
 		// handlebar stuff
-
-		// partials
-		this.setupViewTemplateExtrasPreloadHandlebarPartials(this.getBaseSubDir("views/partials"));
-
-		// helpers
-		// see https://github.com/wycats/handlebars.js/issues/249
 		const hbs = require("hbs");
-		//
-		hbs.registerHelper('jrPluralize', function(number, singular, plural) {
-			if (number === 1)
-				return singular;
-			else
-				return (typeof plural === 'string' ? plural : singular + 's');
-		});
-		//
-		hbs.registerHelper('jrPluralizeCount', function(number, singular, plural) {
-			if (number === undefined) {
-				number = 0;
-			} else if (Array.isArray(number) ) {
-				number = number.length;
-			}
-			//
-			var numberStr = number.toString();
-			if (number === 1)
-				return numberStr + " " + singular;
-			else
-				return (typeof plural === 'string' ? numberStr + " " + plural : numberStr + " " + singular + 's');
-		});
-	}
 
+		// create general purpose handlebar helper functions we can call
+		jrhandlebars.setupJrHandlebarHelpers(hbs);
 
-	setupViewTemplateExtrasPreloadHandlebarPartials(partialsDir) {
-		// walk a directory for all files with extensions hbs and register them as partials for handlebars
-		// see https://gist.github.com/benw/3824204
-		// see http://stackoverflow.com/questions/8059914/express-js-hbs-module-register-partials-from-hbs-file
-
-		const hbs = require("hbs");
-		const fs = require("fs");
-
-		var filenames = fs.readdirSync(partialsDir);
-
-		filenames.forEach(function (filename) {
-  			var matches = /^([^.]+).hbs$/.exec(filename);
-  			if (!matches) {
-    			return;
-  			}
-			var name = matches[1];
-			var template = fs.readFileSync(partialsDir + "/" + filename, "utf8");
-			//jrlog.debugf("Adding template %s contents %s",name, template);
-			hbs.registerPartial(name, template);
-			});
+		// parse and make available partials from files
+		jrhandlebars.loadPartialFiles(hbs, this.getBaseSubDir("views/partials"));
 	}
 	//---------------------------------------------------------------------------
 
@@ -661,7 +624,19 @@ class AppRoomServer {
 		}
 
 		var result = await this.mailTransport.sendMail(mailobj);
-		return result;
+		jrlog.cdebugObj(result,"Result from sendMail.");
+		var jrResult = AppRoomServer.makeJrResultFromSendmailRetv(result);
+		return jrResult;
+	}
+
+
+	static makeJrResultFromSendmailRetv(retv) {
+		if (retv.rejected.length==0) {
+			// success!
+			return JrResult.makeNew("SendmailSucccess").pushSuccess("Mail sent to " + jrhelpers.stringArrayToNiceString(retv.accepted) + ".");
+		}
+		// error
+		return JrResult.makeNew("SendmailError").pushError("Failed to send email to " + jrhelpers.stringArrayToNiceString(retv.rejected) + ".");
 	}
 	//---------------------------------------------------------------------------
 
@@ -732,9 +707,11 @@ class AppRoomServer {
 
 		// setup express stuff
 		this.setupExpress();
+		this.setupExpressCustomMiddleware();
 		this.setupExpressPassport();
 		this.setupExpressRoutes();
 		this.setupExpressErrorHandlers();
+
 
 		// view/template stuff
 		this.setupViewTemplateExtras();

@@ -1,5 +1,16 @@
+{{#if jrResult.items.success}}
+<div class="jrResultList jrSuccessList">
+    <ul>
+    {{#each jrResult.items.success}}
+        <li>{{this}}</li>
+    {{/each}}
+    </ul>
+</div>
+{{/if}}
+
+
 {{#if jrResult.items.message}}
-<div class="jrMessageList">
+<div class="jrResultList jrMessageList">
     <ul>
     {{#each jrResult.items.message}}
         <li>{{this}}</li>
@@ -10,8 +21,8 @@
 
 
 {{#if jrResult.items.error}}
-<div class="jrErrorList">
-    <h2>{{jrPluralizeCount jrResult.items.error "Error" "Errors"}}:</h2>
+<div class="jrResultList jrErrorList">
+    <h2>{{jrPluralize jrResult.items.error "Error" "Errors"}}:</h2>
     <ul>
     {{#each jrResult.items.error}}
         <li>{{this}}</li>

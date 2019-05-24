@@ -9,6 +9,8 @@
 // modules
 const express = require("express");
 
+// helpers
+const JrResult = require("../helpers/jrresult");
 
 
 const router = express.Router();
@@ -16,11 +18,10 @@ const router = express.Router();
 router.get("/", function(req, res, next) {
 	// logout the user from passport
 	req.logout();
-	// now render the logout page or redirect
-	res.render("account/logout", {
+	JrResult.makeNew("info").pushSuccess("You have been logged out.").storeInSession(req);
+	return res.redirect("/");
 	});
-	// res.redirect("/");
-});
+
 
 
 

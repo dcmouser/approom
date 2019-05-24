@@ -61,6 +61,7 @@ class VerificationModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	static async createModel(type, key, val, userId, loginId, extraData, expirationMinutes) {
 		// base create
+
 		var verification = super.createModel();
 
 		// store values
@@ -87,16 +88,15 @@ class VerificationModel extends ModelBaseMongoose {
 				// success
 				break;
 			} catch(err) {
-			}
-			// if we are here we got an error
-			// collission, generate a new code
-			if (tryCount == DEF_MaxUniqueCodeCollissions-1) {
-				// we have failed a lot, maybe we can try a cleanup of our old verifications from database
-				await this.pruneOldVerifications(true);
-			} else if (tryCount == DEF_MaxUniqueCodeCollissions) {
-				// we failed
-				verificationdoc = null;
-				break;
+				// if we are here we caught an error above
+				// collission, generate a new code
+				if (tryCount == DEF_MaxUniqueCodeCollissions-1) {
+					// we have failed a lot, maybe we can try a cleanup of our old verifications from database
+					await this.pruneOldVerifications(true);
+				} else if (tryCount == DEF_MaxUniqueCodeCollissions) {
+					// we failed
+					throw(lasterr);
+				}
 			}
 		}
 
@@ -109,9 +109,6 @@ class VerificationModel extends ModelBaseMongoose {
 	static async createVerificationNewAccountEmail(emailAddress, userId, loginId, extraData) {
 		// make the verification item and email the user about it with verification code
 		var verification = await this.createModel("newAccountEmail", "email", emailAddress, userId, loginId, extraData, DEF_ExpirationDurationMinutesNormal);
-		if (verification == null) {
-			return null;
-		}
 		// 
 		var mailobj = {
 			subject: "Email verification code",
@@ -129,9 +126,6 @@ class VerificationModel extends ModelBaseMongoose {
 		// ATTN: unfinished
 		// make the verification item and email and/or call the user with the one time login/verification code
 		var verification = await this.createModel("onetimeLogin", null, null, userId, loginId, extraData, DEF_ExpirationDurationMinutesShort);
-		if (verification == null) {
-			return null;
-		}
 		// 
 		var mailobj = {
 			subject: "Email verification code",
@@ -215,7 +209,6 @@ ATTN: Not implemented yet
 		const arserver = require("./server");
 		var retv = await arserver.sendMail(mailobj);
 		//
-		//jrlog.debugObj(retv,"Result of sendmail");
 		return retv;
 	}
 	//---------------------------------------------------------------------------

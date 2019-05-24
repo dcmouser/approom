@@ -1,25 +1,37 @@
-/* showing a block of errors with UL inside */
+/* showing a block with messages or errors inside */
+.jrResultList {
+  padding: 10px;
+  margin: 0px;
+  color: white;
+  padding-top: 1px;
+  padding-bottom: 1px;
+  margin-top: 0px;
+  margin-bottom: 15px;
+}
+
+
+/* different lists of success, error, neutral messages */
+
 .jrErrorList {
-    padding: 10px;
-    margin: 0px;
-    background-color: #f44336; /* Red */
-    color: white;
-  }
+  background-color: #f44336; /* Red */
+}
 
+.jrSuccessList {
+  background-color: #229e06;
+}
 
-  /* inline errors like when showing error next to a form field */
-  .jrErrorInline {
-    color: red;
-    font-weight: bold;
-    font-style: italic;
-  }
+.jrMessageList {
+    background-color: #0ca0cd;
+}
 
 
 
-  /* showing a similar block of non-error messages */
-  .jrMessageList {
-    padding: 20px;
-    background-color: #2ecd0c;
-    color: black;
-    margin-bottom: 15px;
-  }
+
+/* inline errors like when showing error next to a form field */
+.jrErrorInline {
+  color: red;
+  font-weight: bold;
+  font-style: italic;
+}
+  
+  

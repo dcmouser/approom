@@ -4,16 +4,19 @@
       <div>
         <label>Requested Username:</label>
         <input type="text" name="username" value="{{reqbody.username}}" />
+          <span class="jrErrorInline">{{jrResult.fields.username}}</span>
         <br/>
       </div>
       <div>
         <label>Requested Email:</label>
         <input type="text" name="email" value="{{reqbody.email}}"/>
+          <span class="jrErrorInline">{{jrResult.fields.email}}</span>
       </div>
 
       <div>
         <label>Password:</label>
-        <input type="password" name="password" />
+        <input type="password" name="password" value="{{reqbody.password}} />
+          <span class="jrErrorInline">{{jrResult.fields.password}}</span>
       </div>
 
       <div>

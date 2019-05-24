@@ -1,13 +1,10 @@
-<h1>One-time Login Via-Email Request</h1>
-
-<pre>{{message}}</pre>
+<h1>Verify</h1>
 
     <form action="" method="post">
       <div>
-        <label>Email address:</label>
-        <input type="text" name="email" value="{{reqBody.email}}"/>
-          <span class="jrErrorInline">{{jrResult.fields.email}}</span>
-        <br/>
+        <label>Verification code:</label>
+        <input type="text" name="code" value="{{reqBody.code}}"/>
+          <span class="jrErrorInline">{{jrResult.fields.code}}</span>
       </div>
       <div>
         <input type="submit" value="Submit" />

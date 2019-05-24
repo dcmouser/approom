@@ -10,20 +10,18 @@
 const express = require("express");
 // passport authentication stuff
 const passport = require("passport");
-//
-const arserver = require("../models/server");
-//
-const jrlog = require("../helpers/jrlog");
+
+// helpers
 const JrResult = require("../helpers/jrresult");
-//
+
+// our models
 const UserModel = require("../models/user");
 const VerificationModel = require("../models/verification");
+
 
 // init
 const router = express.Router();
 
-
-// process routes
 
 
 
@@ -33,7 +31,6 @@ router.get("/", function(req, res, next) {
 	// grab pending session errors to display
 	// render page
 	res.render("account/login", {
-		jrResult: JrResult.restoreFromSession(req)
 	});
 });
 
@@ -52,11 +49,12 @@ router.post("/", async function(req, res, next) {
 			// sometimes passport returns error info instead of us, when credentials are missing; this ensures we have error in format we like
 			info = JrResult.passportInfoAsJrResult(info);
 			// test
-			if (false) {
+			if (true) {
 				info.pushBiFieldError("password", "fix password", "In this day and age you really need a longer password");
 				info.pushMessage("Just a message1");
 				info.pushMessage("Another mesage2");
 				info.pushError("Generic error");
+				info.pushSuccess("Congratulations! You did it.");
 			}
 			// failure to login; error info but not an exception
 			// re-render login form with error info
@@ -105,7 +103,8 @@ router.get("/facebook/auth",
 	}),
 
 	function(req, res) {
-    	// Successful authentication, redirect home.
+		// Successful authentication, redirect home.
+		JrResult.makeNew("info").pushSuccess("You have successfully logged in via Facebook.").storeInSession(req);
 		res.redirect("/profile");
   	});
 //---------------------------------------------------------------------------
@@ -140,6 +139,7 @@ router.get("/email", function(req, res, next) {
 // user is posting login via email
 router.post("/email", async function(req, res, next) {
 	var message;
+	var jrResult;
 
 	// get email address provides
 	var emailAddress = req.body.email;
@@ -147,18 +147,29 @@ router.post("/email", async function(req, res, next) {
 	// lookup the user with this email address
 	var user = await UserModel.findOneByEmail(emailAddress);
 	if (user==null) {
-		message = 'Failed to find user with this email address.'
+		// error
+		jrResult = UserModel.makeJrResultErrorNoUserFromField("email", emailAddress);
 	} else {
 		var userId = user.getId();
-		var bretv = await VerificationModel.createVerificationOneTimeLoginTokenEmail(emailAddress, null, null, userId, null, null);
-		if (bretv) {
-			message = 'Check your email for your login token.';
+		jrResult = await VerificationModel.createVerificationOneTimeLoginTokenEmail(emailAddress, null, null, userId, null, null);
+		if (!jrResult.isError()) {
+			// success
+			// we could REPLACE the succces result, or ADD info to it after the part about it sending successfully
+			jrResult.pushSuccess("Check your mail for your link to login.");
+			//jrResult = JrResult.makeNew().pushSuccess("Check your email for your login token.");
+			// if we want we might redirect here -- perhaps to a page where they can type in verification token
+			jrResult.storeInSession(req);
+			return res.redirect('/');
 		} else {
-			message = 'Failed to send login token.';
+			// error, just pass it through
 		}
 	}
 
-	res.render("account/login_email", {message: message});
+	// show the email login form
+	res.render("account/login_email", {
+		jrResult: jrResult,
+		reqBody: req.body,
+	});
 });
 
 //---------------------------------------------------------------------------

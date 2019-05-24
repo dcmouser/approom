@@ -13,6 +13,7 @@ const ModelBaseMongoose = require("./modelBaseMongoose");
 const jrhelpers = require("../helpers/jrhelpers");
 const jrlog = require("../helpers/jrlog");
 const jrcrypto = require("../helpers/jrcrypto");
+const JrResult = require("../helpers/jrresult");
 
 
 // constants
@@ -357,7 +358,19 @@ class UserModel extends ModelBaseMongoose {
 			jrlog.cdebugObj(userdoc,"new user");
 			return userdoc;
 	}
+	//---------------------------------------------------------------------------
 
+
+	//---------------------------------------------------------------------------
+	// error helper
+	static makeJrResultErrorNoUserFromField(key, value) {
+		var jrResult = JrResult.makeNew("UserNotFound");
+		var msgShort = "Email not found.";
+		var msgLong = "No user found with " + key + " matching " + value + ".";
+		jrResult.pushBiFieldError(key,msgShort, msgLong);
+		return jrResult;
+	}
+	//---------------------------------------------------------------------------
 
 }
 

@@ -1,16 +1,17 @@
-// approom
+// index
 // home page route
 // v1.0.0 on 5/1/19 by mouser@donationcoder.com
 //
-
 
 "use strict";
 
 
 // modules
 const express = require("express");
+// helpers
 
 
+// init
 const router = express.Router();
 
 

@@ -8,24 +8,25 @@
 
 // modules
 const express = require("express");
-//
+// helpers
 const jrlog = require("../helpers/jrlog");
 
-
+// init
 const router = express.Router();
+
 
 
 router.get("/", function(req, res, next) {
 	const auth = req.isAuthenticated();
 	if (auth) {
-		jrlog.cdebugObj(req.session, "REQUESTED SESSION");
-		jrlog.cdebugObj(req.user, "REQUESTED USER");
+		jrlog.cdebugObj(req.session, "REQ SESSION");
+		jrlog.cdebugObj(req.user, "REQ USER");
 	}
 
 	var userInfo = (req.session.passport!=undefined) ? JSON.stringify(req.session.passport.user) : 'not logged in';
 
 	res.render("user/profile", {
- 		auth: auth,
+		auth: auth,
  		userInfo: userInfo,
 	});
 });

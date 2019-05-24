@@ -9,15 +9,15 @@
 // modules
 const express = require("express");
 
-// code files
+// models
 const UserModel = require("../models/user");
 const VerificationModel = require("../models/verification");
 
-// our helper modules
+// helpers
 const jrhelpers = require("../helpers/jrhelpers");
+const JrResult = require("../helpers/jrresult");
 
-
-
+// init
 const router = express.Router();
 
 
@@ -35,9 +35,8 @@ router.post("/", async function (req, res) {
 	// if not, we generate a special verification object with their registration info and email it to them, in order to defer creation of user and verify email address
 
 	// ok lets check for errors
-	var errors = {};
-	var errorCount = 0;
 	var retv;
+	var jrResult = JrResult.makeNew();
 
 	// defaults
 	var passwordHashed = "";
@@ -45,22 +44,19 @@ router.post("/", async function (req, res) {
 	// valid email?
 	retv = await UserModel.validateEmail(req.body.email, true, false);
 	if (retv!==true) {
-		errors.email = retv;
-		++errorCount;
+		jrResult.pushFieldError("email", "Improper email address specified.");
 	}
 
 	// valid username? they don't have to specify one, but if they do it must be unique
 	retv = await UserModel.validateUsername(req.body.username, true, true);
 	if (retv!==true) {
-		errors.username = retv;
-		++errorCount;
+		jrResult.pushFieldError("username", "Improper username or username already in use.");
 	}
 
-	// valid password? they don't have to specify one, but if they do it must be unique
+	// valid password? they don't have to specify one, but if they do?
 	retv = await UserModel.validatePassword(req.body.password, true);
 	if (retv!==true) {
-		errors.password = retv;
-		++errorCount;
+		jrResult.pushFieldError("password", "Improper password.");
 	} else {
 		// hash password for storage
 		if (!jrhelpers.isEmpty(req.body.password)) {
@@ -70,16 +66,13 @@ router.post("/", async function (req, res) {
 	}
 
 	// any errors, re-render form with errors
-	if (errorCount > 0) {
-		//console.log(errors);
-		//console.log(req.body.username);
-		//console.log(req.body.email);
+	if (jrResult.isError()) {
 		res.render("account/register", {
-			reqbody: req.body, errors: errors
+			reqbody: req.body,
+			jrResult: jrResult,
 		});
 		return;
 	}
-
 
 	// ok form is good, process it
 	var message;
@@ -91,13 +84,18 @@ router.post("/", async function (req, res) {
 	}
 
 	// create the email verification and mail it; we pass userId and loginId as null, so this is an email verification NOT associated with an existing user
-	var flag_send = true;
-	var verification = await VerificationModel.createVerificationNewAccountEmail(req.body.email, null, null, extraData);
+	var jrResult = await VerificationModel.createVerificationNewAccountEmail(req.body.email, null, null, extraData);
 	//
-	message = "Please check for the verification email that has been sent to "+req.body.email;
-	res.render("message", {
-		message: message
-	});
+	jrResult.pushSuccess("Please check for the verification email.  You will need to verify that you have received it before you can log in.");
+	if (true) {
+		jrResult.storeInSession(req);
+		return res.redirect('/');
+	} else {
+		res.render("account/register", {
+			reqbody: req.body,
+			jrResult: jrResult,
+		});
+	}
 });
 
 

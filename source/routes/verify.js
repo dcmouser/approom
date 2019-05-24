@@ -9,43 +9,72 @@
 // modules
 const express = require("express");
 
-// code files
+// models
 const VerificationModel = require("../models/verification");
-// our helper modules
+
+// helpers
 const jrhelpers = require("../helpers/jrhelpers");
+const JrResult = require("../helpers/jrresult");
 
 
+// init
 const router = express.Router();
 
 
 // verifying a code
 router.get("/code/:code?", async function(req, res, next) {
+	await handleVerifyCode(req.params.code, req, res, next);
+});
 
-	if (jrhelpers.isEmpty(req.params.code)) {
-		res.render("message", {
-			message: "Please specify the code to verify."
-		});
-		return;
-	}
 
-	var retv = await VerificationModel.verifiyCode(req.params.code, {}, req);
-	var success = retv.success;
-	var message = retv.message;
-
-	message = (success ? "SUCCESS." : "FAILED.") + " with code "+req.params.code+": "+message;
-
-	res.render("message", {
-		message: message
-	});
+router.post(/(code\/.*)?/, async function(req, res, next) {
+//router.post(/^.*$/, async function(req, res, next) {
+//router.post("/", async function(req, res, next) {
+	var code = req.body.code;
+	await handleVerifyCode(code, req, res, next);
 });
 
 
 // we don't know what they want to verify?
 router.get("/", function(req, res, next) {
-	res.render("message", {
-		message: "What are you trying to verify?"
+	res.render("account/verify", {
 	});
 });
+
+
+
+
+async function handleVerifyCode(code, req, res, next) {
+	var jrResult = JrResult.makeNew();
+
+	if (jrhelpers.isEmpty(code)) {
+		jrResult.pushError("Please specify the code to verify.");
+	} else {
+		var retv = await VerificationModel.verifiyCode(code, {}, req);
+		var success = retv.success;
+		var message = retv.message;
+		if (success) {
+			jrResult.pushSuccess("With code "+code+": "+message);
+		} else {
+			jrResult.pushError("With code "+code+": "+message);			
+		}
+	}
+
+	if (jrResult.isError()) {
+		// on error, show verify form
+		res.render("account/verify", {
+			jrResult: jrResult,
+			reqBody: req.body,
+		});
+		return;
+	}
+
+	// success -- redirect and show flash message about success
+	jrResult.storeInSession(req);
+	return res.redirect('/');
+}
+
+
 
 
 
