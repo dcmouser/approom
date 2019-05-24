@@ -23,7 +23,8 @@ const router = express.Router();
 
 
 router.get("/", function(req, res, next) {
-	res.render("account/register", {});
+	res.render("account/register", {
+	});
 });
 
 
@@ -73,7 +74,9 @@ router.post("/", async function (req, res) {
 		//console.log(errors);
 		//console.log(req.body.username);
 		//console.log(req.body.email);
-		res.render("account/register", {reqbody: req.body, errors: errors});
+		res.render("account/register", {
+			reqbody: req.body, errors: errors
+		});
 		return;
 	}
 
@@ -92,7 +95,9 @@ router.post("/", async function (req, res) {
 	var verification = await VerificationModel.createVerificationNewAccountEmail(req.body.email, null, null, extraData);
 	//
 	message = "Please check for the verification email that has been sent to "+req.body.email;
-	res.render("message", {message: message});
+	res.render("message", {
+		message: message
+	});
 });
 
 

@@ -1,0 +1,5 @@
+Make a file defaultPrivate.json with your PRIVATE local server settings.
+Values in this file will override those in default.json
+The .gitignore file will not share this private file so you don't share private information.
+
+You can also create additional config .json files here and cause them to be loaded by passing commandline parameters to approom using the --config [FILENAME] options

@@ -17,7 +17,8 @@ router.get("/", function(req, res, next) {
 	// logout the user from passport
 	req.logout();
 	// now render the logout page or redirect
-	res.render("account/logout", {});
+	res.render("account/logout", {
+	});
 	// res.redirect("/");
 });
 

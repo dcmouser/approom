@@ -20,6 +20,7 @@ const morgan = require("morgan");
 const http = require("http");
 const bodyParser = require("body-parser");
 const https = require("https");
+//const connectFlash = require('connect-flash');
 
 // passport authentication stuff
 const passport = require("passport");
@@ -37,6 +38,7 @@ const nodemailer = require("nodemailer");
 const jrhelpers = require("../helpers/jrhelpers");
 const jrlog = require("../helpers/jrlog");
 const jrconfig = require("../helpers/jrconfig");
+const JrResult = require("../helpers/jrresult");
 
 // approomserver globals
 const arGlobals = require("../approomglobals");
@@ -209,6 +211,8 @@ class AppRoomServer {
 			store: sessionStore,
 		}));
 
+		// flash messages (see https://github.com/jaredhanson/connect-flash)
+		// expressApp.use(connectFlash());
 
 		// parse query parameters automatically
 		expressApp.use(express.query());
@@ -434,13 +438,20 @@ class AppRoomServer {
 	}
 
 
+
 	setupPassportStrategyLocal() {
 		// local username and password strategy
 		// see https://www.sitepoint.com/local-authentication-using-passport-node-js/
 		const Strategy = passportLocal.Strategy;
 
+		var strategyOptions = {
+			passReqToCallback: true,
+		};
+
+		// see http://www.passportjs.org/docs/configure/
 		passport.use(new Strategy(
-			async function(username, password, done) {
+			strategyOptions,
+			async function(req, username, password, done) {
 				// this is the function called when user tries to login
 				// so we check their username and password and return either FALSE or the user
 				// first, find the user via their password
@@ -448,13 +459,17 @@ class AppRoomServer {
 				var user = await UserModel.findOneByUsername(username);
 				if (user==null) {
 					// not found
-					return done(null, false);
+					var jrResult = new JrResult("UsernameNotFound");
+					jrResult.pushFieldError("username", "Username not found");
+					return done(null, false, jrResult);
 				}
 				// ok we found the user, now check their password
 				var bretv = await user.testPassword(password);
 				if (bretv!==true) {
 					// password doesn't match
-					return done(null, false);
+					var jrResult = new JrResult("PasswordMismatch");
+					jrResult.pushFieldError("password", "Password does not match");
+					return done(null, false, jrResult);
 				}
 				// password matches!
 				// update last login time
@@ -476,13 +491,15 @@ class AppRoomServer {
 			clientID: jrconfig.get("passport:FACEBOOK_APP_ID"),
 			clientSecret: jrconfig.get("passport:FACEBOOK_APP_SECRET"),
 			callbackURL: this.calcAbsoluteSiteUrlPreferHttps("/login/facebook/auth"),
+			passReqToCallback: true,
 		};
 
 		// debug info
 		jrlog.cdebugObj(strategyOptions,"setupPassportStrategyFacebook options");
 
 		passport.use(new Strategy(
-			strategyOptions, async function(accessToken, refreshToken, profile, done) {
+			strategyOptions,
+			async function(req, accessToken, refreshToken, profile, done) {
 				jrlog.cdebugObj(accessToken,"facebook accessToken");
 				jrlog.cdebugObj(refreshToken,"facebook refreshToken");
 				jrlog.cdebugObj(profile,"facebook profile");
@@ -499,7 +516,7 @@ class AppRoomServer {
 				// if user could not be created, it's an error
 				// otherwise log in the user
 				const userProfile = user.getMinimalPassportProfile();
-
+				// return success
 				return done(null, userProfile);
 			}
 		));
@@ -546,7 +563,62 @@ class AppRoomServer {
 
 
 
+	//---------------------------------------------------------------------------
+	setupViewTemplateExtras() {
+		// handlebar stuff
 
+		// partials
+		this.setupViewTemplateExtrasPreloadHandlebarPartials(this.getBaseSubDir("views/partials"));
+
+		// helpers
+		// see https://github.com/wycats/handlebars.js/issues/249
+		const hbs = require("hbs");
+		//
+		hbs.registerHelper('jrPluralize', function(number, singular, plural) {
+			if (number === 1)
+				return singular;
+			else
+				return (typeof plural === 'string' ? plural : singular + 's');
+		});
+		//
+		hbs.registerHelper('jrPluralizeCount', function(number, singular, plural) {
+			if (number === undefined) {
+				number = 0;
+			} else if (Array.isArray(number) ) {
+				number = number.length;
+			}
+			//
+			var numberStr = number.toString();
+			if (number === 1)
+				return numberStr + " " + singular;
+			else
+				return (typeof plural === 'string' ? numberStr + " " + plural : numberStr + " " + singular + 's');
+		});
+	}
+
+
+	setupViewTemplateExtrasPreloadHandlebarPartials(partialsDir) {
+		// walk a directory for all files with extensions hbs and register them as partials for handlebars
+		// see https://gist.github.com/benw/3824204
+		// see http://stackoverflow.com/questions/8059914/express-js-hbs-module-register-partials-from-hbs-file
+
+		const hbs = require("hbs");
+		const fs = require("fs");
+
+		var filenames = fs.readdirSync(partialsDir);
+
+		filenames.forEach(function (filename) {
+  			var matches = /^([^.]+).hbs$/.exec(filename);
+  			if (!matches) {
+    			return;
+  			}
+			var name = matches[1];
+			var template = fs.readFileSync(partialsDir + "/" + filename, "utf8");
+			//jrlog.debugf("Adding template %s contents %s",name, template);
+			hbs.registerPartial(name, template);
+			});
+	}
+	//---------------------------------------------------------------------------
 
 
 
@@ -663,6 +735,9 @@ class AppRoomServer {
 		this.setupExpressPassport();
 		this.setupExpressRoutes();
 		this.setupExpressErrorHandlers();
+
+		// view/template stuff
+		this.setupViewTemplateExtras();
 
 		// other stuff
 		await this.setupMailer();

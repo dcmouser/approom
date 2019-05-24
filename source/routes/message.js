@@ -22,7 +22,9 @@ const router = express.Router();
 
 // simple login, present form
 router.get("/", function(req, res, next) {
-	res.render("message", {message: "TEST MSG FROM MESSAGE ROUTE"});
+	res.render("message", {
+		message: "TEST MSG FROM MESSAGE ROUTE"
+	});
 });
 
 

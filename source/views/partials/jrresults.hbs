@@ -1,0 +1,21 @@
+{{#if jrResult.items.message}}
+<div class="jrMessageList">
+    <ul>
+    {{#each jrResult.items.message}}
+        <li>{{this}}</li>
+    {{/each}}
+    </ul>
+</div>
+{{/if}}
+
+
+{{#if jrResult.items.error}}
+<div class="jrErrorList">
+    <h2>{{jrPluralizeCount jrResult.items.error "Error" "Errors"}}:</h2>
+    <ul>
+    {{#each jrResult.items.error}}
+        <li>{{this}}</li>
+    {{/each}}
+    </ul>
+</div>
+{{/if}}

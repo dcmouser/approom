@@ -25,7 +25,9 @@ router.get("/", function(req, res, next) {
 	}
 
 	// render view
-	res.render("index", { title: "AppRoom" });
+	res.render("index", {
+		title: "AppRoom" 
+	});
 });
 
 
