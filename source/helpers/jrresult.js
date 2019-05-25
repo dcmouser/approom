@@ -11,6 +11,7 @@
 
 // our helper modules
 const jrhelpers = require("./jrhelpers");
+const jrlog = require("../helpers/jrlog");
 //---------------------------------------------------------------------------
 
 
@@ -25,11 +26,19 @@ class JrResult {
     }
 
 
+    //---------------------------------------------------------------------------
     static makeNew(typestr) {
         // static helper.
         var jrResult = new JrResult(typestr);
         return jrResult;
     }
+
+    static makeSuccess() {
+        var jrResult = new JrResult("success");
+        return jrResult;
+    }
+    //---------------------------------------------------------------------------
+
 
     //---------------------------------------------------------------------------
     // accessors
@@ -99,6 +108,56 @@ class JrResult {
     pushSuccess(msg) {
         this.push("success", msg);
         return this;
+    }
+    //---------------------------------------------------------------------------
+
+
+    //---------------------------------------------------------------------------
+    // merge result into us, adding errors
+    mergeIn(result) {
+        // this is really an awkward function, i wonder if there isn't a better cleaner way to merge objects and arrays
+        // this function is specific to the JrResult class, and not generic
+
+        // for fields, each keyed item should be a string; on the rare occasion we have an entry in both our field and result field with same key, we can append them.
+        if (result.fields !== undefined) {
+            if (this.fields == undefined) {
+                this.fields = Object.assign({}, result.fields);
+            } else {
+                for (var key in result.fields) {
+                    if (this.fields[key] == undefined) {
+                        this.fields[key] = result.fields[key];
+                    } else {
+                        this.fields[key] = this.fields[key] + " " + result.fields[key];
+                    }
+                }
+            }
+            /*
+            this.fields = {
+                ...this.fields,
+                ...result.fields
+            };
+            */
+        }
+
+        if (result.items != undefined) {
+            // but items need to be concatenated
+            if (this.items == undefined) {
+                this.items = Object.assign({}, result.items);
+            } else {
+                for (var key in result.items) {
+                    if (this.items[key] == undefined) {
+                        this.items[key] = Object.assign({}, result.items[key]);
+                    } else {
+                        this.items[key] = (this.items[key]).concat(result.items[key]);
+                    }
+                }
+            }
+        }
+
+        // if our typestr is blank, use result typestr
+        if (this.typestr == undefined || this.typestr == null || this.typestr == "") {
+            this.typestr = result.typestr;
+        }
     }
     //---------------------------------------------------------------------------
 

@@ -35,28 +35,28 @@ router.post("/", async function (req, res) {
 	// if not, we generate a special verification object with their registration info and email it to them, in order to defer creation of user and verify email address
 
 	// ok lets check for errors
-	var retv;
+	var retvResult;
 	var jrResult = JrResult.makeNew();
 
 	// defaults
 	var passwordHashed = "";
 
 	// valid email?
-	retv = await UserModel.validateEmail(req.body.email, true, false);
-	if (retv!==true) {
-		jrResult.pushFieldError("email", "Improper email address specified.");
+	retvResult = await UserModel.validateEmail(req.body.email, true, false);
+	if (retvResult.isError()) {
+		jrResult.mergeIn(retvResult);
 	}
 
 	// valid username? they don't have to specify one, but if they do it must be unique
-	retv = await UserModel.validateUsername(req.body.username, true, true);
-	if (retv!==true) {
-		jrResult.pushFieldError("username", "Improper username or username already in use.");
+	retvResult = await UserModel.validateUsername(req.body.username, true, true);
+	if (retvResult.isError()) {
+		jrResult.mergeIn(retvResult);
 	}
 
 	// valid password? they don't have to specify one, but if they do?
-	retv = await UserModel.validatePassword(req.body.password, true);
-	if (retv!==true) {
-		jrResult.pushFieldError("password", "Improper password.");
+	retvResult = await UserModel.validatePassword(req.body.password, true);
+	if (retvResult.isError()) {
+		jrResult.mergeIn(retvResult);
 	} else {
 		// hash password for storage
 		if (!jrhelpers.isEmpty(req.body.password)) {

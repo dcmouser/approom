@@ -40,6 +40,7 @@
     "passport-facebook": "^3.0.0",
     "passport-local": "^1.0.0",
     "redis": "^2.8.0",
+    "validator": "^11.0.0",
     "winston": "^3.2.1"
   }
 }

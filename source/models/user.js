@@ -6,7 +6,7 @@
 
 "use strict";
 
-// modules
+// models
 const ModelBaseMongoose = require("./modelBaseMongoose");
 
 // our helper modules
@@ -16,8 +16,17 @@ const jrcrypto = require("../helpers/jrcrypto");
 const JrResult = require("../helpers/jrresult");
 
 
+//---------------------------------------------------------------------------
 // constants
 const DEF_passwordAdminPlaintextDefault = "test";
+//
+const DEF_regexUsernamePattern = /^[A-Za-z][A-Za-z0-9_-]{3,16}$/
+const DEF_regexUsernameExplanation = "Must start with a letter (a-z), followed by a string of letters, digits, and the symbols _ and -, minimum length of 3, maximum length of 16 (no spaces)."
+const DEF_regexPasswordPattern = /^.{3,64}$/
+const DEF_regexPasswordExplanation = "Must be a string of letters, numbers, and symbols, with a minimum length of 3, maximum length of 64."
+const DEF_disallowedUsernameList = ["admin*","root","guest","user","moderator*"];
+//---------------------------------------------------------------------------
+
 
 
 
@@ -175,73 +184,130 @@ class UserModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	// validate email
 	static async validateEmail(email, flag_mustBeUnique, flag_canBeBlank) {
-		// return true if valid, or text of error if not
+		// return JrResult with error set if error, or blank one on success
 		// ATTN: unfinished
+
+		// validation helper
+		const validator = require("validator");
 
 		if (jrhelpers.isEmpty(email)) {
 			if (flag_canBeBlank) {
-				return true;
+				return JrResult.makeSuccess();
 			}
-			return "Email cannot be blank";
+			return JrResult.makeNew("EmailInvalid").pushFieldError("email","Email cannot be blank.");
+		}
+
+		// valid syntax?
+		// see https://github.com/chriso/validator.js
+		const isEmailOptions = {};
+		if (!validator.isEmail(email, isEmailOptions)) {
+			return JrResult.makeNew("EmailInvalid").pushFieldError("email","Not a properly formatted email address.");
 		}
 
 		// check if used by someone already
 		if (flag_mustBeUnique) {
 			var user = await this.findOneByEmail(email);
 			if (user!==null) {
-				return "Email already in use";
+				return JrResult.makeNew("EmailInvalid").pushFieldError("email","Email already in use.");
 			}
 		}
 
 		// it's good
-		return true;
+		return JrResult.makeSuccess();
 	}
 
 
-	// validate email
+	// validate username
 	static async validateUsername(username, flag_mustBeUnique, flag_canBeBlank) {
-		// return true if valid, or text of error if not
+		// return JrResult with error set if error, or blank one on success
 		// ATTN: unfinished
+
+		// validation helper
+		const validator = require("validator");
 
 		if (jrhelpers.isEmpty(username)) {
 			if (flag_canBeBlank) {
-				return true;
+				return JrResult.makeSuccess();
 			}
-			return "Username cannot be blank";
+			return JrResult.makeNew("UsernameInvalid").pushFieldError("username","Username cannot be blank.");
+		}
+
+		// valid syntax?
+		// see https://github.com/chriso/validator.js
+		if (!validator.matches(username, DEF_regexUsernamePattern)) {
+			return JrResult.makeNew("UsernameInvalid").pushBiFieldError("username","Not a legal username.", "Not a legal username: "+DEF_regexUsernameExplanation);
+		}
+
+		// check against some blacklisted username
+		var result = this.isDisallowedNewUsername(username);
+		if (result.isError()) {
+			return result;
 		}
 
 		// check if used by someone already
 		if (flag_mustBeUnique) {
 			var user = await this.findOneByUsername(username);
 			if (user!==null) {
-				return "Username already in use";
+				return JrResult.makeNew("UsernameInvalid").pushFieldError("username","Username already in use.");
 			}
 		}
 
 		// it's good
-		return true;
+		return JrResult.makeSuccess();
+	}
+
+	static isDisallowedNewUsername(str) {
+		// return true if the str is not allowed for new users
+		// note that his may include usernames or emails that admins are allowed to set up, just not users
+		var errorStr;
+		for (var word of DEF_disallowedUsernameList) {
+			if (word[word.length-1]=="*") {
+				// match against it or prefix
+				word = word.substring(0,word.length-1);
+				if (str.startsWith(word)) {
+					errorStr = "Cannot start with the reserved word '"+word+"'";
+					break;
+				}
+			}
+			else {
+				if (str == word) {
+					errorStr = "Cannot use the reserved word '"+word+"'";
+					break;					
+				}
+			}
+		}
+		if (errorStr !== undefined) {
+			// error
+			return JrResult.makeNew("UsernameInvalid").pushBiFieldError("username","Invalid username","Invalid username: "+errorStr);
+		}
+		// success
+		return JrResult.makeSuccess();
 	}
 
 
-	// validate email
+	// validate password
 	static async validatePassword(password, flag_canBeBlank) {
-		// return true if valid, or text of error if not
+		// return JrResult with error set if error, or blank one on success
 		// ATTN: unfinished
 
+		// validation helper
+		const validator = require("validator");
+	
 		if (jrhelpers.isEmpty(password)) {
 			if (flag_canBeBlank) {
-				return true;
+				return JrResult.makeSuccess();;
 			}
-			return "Password cannot be blank";
+			return JrResult.makeNew("PasswordInvalid").pushFieldError("password","Password cannot be blank.");
 		}
 
-		// check if used by someone already
-		if (password.length<3) {
-			return "Password is too short";
+		// valid syntax?
+		// see https://github.com/chriso/validator.js
+		if (!validator.matches(password, DEF_regexPasswordPattern)) {
+			return JrResult.makeNew("PasswordInvalid").pushBiFieldError("password","Not a legal password.", "Not a legal password: "+DEF_regexPasswordExplanation);
 		}
 
 		// it's good
-		return true;
+		return JrResult.makeSuccess();
 	}
 	//---------------------------------------------------------------------------
 
