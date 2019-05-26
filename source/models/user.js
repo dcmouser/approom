@@ -18,10 +18,21 @@ const JrResult = require("../helpers/jrresult");
 
 //---------------------------------------------------------------------------
 // constants
+const DEF_defaultUsername = "Usr";
+const DEF_randomUsernameRandomSuffixLength = 4;
+//
 const DEF_passwordAdminPlaintextDefault = "test";
 //
 const DEF_regexUsernamePattern = /^[A-Za-z][A-Za-z0-9_-]{3,16}$/
 const DEF_regexUsernameExplanation = "Must start with a letter (a-z), followed by a string of letters, digits, and the symbols _ and -, minimum length of 3, maximum length of 16 (no spaces)."
+// username legal properties, which we use to help us FIX imported usernames or report errors, etc.
+// these should coincide with the regex check above, but are used to explicitly FIX usernames
+const DEF_usernameMinLength = 3;
+const DEF_usernameMaxLength = 16;
+const DEF_usernameAlwaysLowercase = false;
+const DEF_usernameAllowedStartingCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const DEF_usernameAllowedCharacters = DEF_usernameAllowedStartingCharacters + "0123456789-_";
+//
 const DEF_regexPasswordPattern = /^.{3,64}$/
 const DEF_regexPasswordExplanation = "Must be a string of letters, numbers, and symbols, with a minimum length of 3, maximum length of 64."
 const DEF_disallowedUsernameList = ["admin*","root","guest","user","moderator*"];
@@ -357,50 +368,135 @@ class UserModel extends ModelBaseMongoose {
 
 	static async uniqueifyUserObj(userObj, providerUniqueUserName) {
 		// ensure userObj has a unique username (and any other fields? modifying properties as needed)
-		const MAXTRIES = 100;
-		const DEFAULT_USERNAME = "Usr";
 
 		// first initialize username
 		var username = userObj.username;
 		if (jrhelpers.isEmpty(username)) {
+			// is there a real name for this person
 			username = userObj.realname;
 		}
 		if (jrhelpers.isEmpty(username)) {
+			// maybe providername is something we can use
 			username = providerUniqueUserName;
 		}
 		if (jrhelpers.isEmpty(username)) {
-			username = DEFAULT_USERNAME;
+			// fall back on default username
+			username = DEF_defaultUsername;
 		}
-		// base name we will add random stuff to
+
+		// get a unique version of this
+		// exception will be thrown if we cannot
+		username = await this.fixImportedUsername(username);
+
+		// store it
+		userObj.username = username;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	static async fixImportedUsername(username) {
+		// we may have cases where we are importing a username, or getting one from a bridged login
+		// here we need to ensure it meets our rules
+		const MAXTRIES = 100;
+		var jrResult;
+	
+		// part 1 is getting a syntax conforming username, short enough for us to add random suffix
+		username = await this.fixImportedUsernameSyntaxLength(username);
+
+		// remember name so we can add suffix if we need to in order to make unique
 		var baseUsername = username;
-		// default username always gets random suffix
-		if (username == DEFAULT_USERNAME) {
-			username = baseUsername + "_" + this.randomUsernameSuffix();
+		if (baseUsername.length+1+DEF_randomUsernameRandomSuffixLength > DEF_usernameMaxLength) {
+			baseUsername = baseUsername.substring(0,DEF_usernameMaxLength - (1+DEF_randomUsernameRandomSuffixLength));
 		}
+
+		// part 2 will be to add random suffixes if needed, until we get a unique one
+
 		// ok now loop trying to fix unique username by adding suffixes to uniqueify
 		for (var i = 1; i<MAXTRIES; ++i) {
-			// see if user with username already exists
-			var user = await this.mongooseModel.findOne({username: username}).exec();
-			if (user == null) {
-				// ok no user by this name exists, so we can stop
-				// save unique username found, and return
-				userObj.username = username;
-				return;
+			// 
+			// see if user with username already exists (or if this is base default username we are pretending already exists)
+			jrResult = await this.validateUsername(username, true, false);
+			if (!jrResult.isError()) {
+				// got a good unique username, so return it
+				return username;
 			}
-			// already exists, so randomize and try again
+			// already exists or unacceptable name, so randomize suffic and try again
 			username = baseUsername + "_" + this.randomUsernameSuffix();
 		}
+
 		// we could not find a unique username (!?!?)
 		throw("Could not create unique username.");
 	}
 
 
+	static async fixImportedUsernameSyntaxLength(username) {
+		// needs to be a valid username 
+		// we don't care if it is unique, but it must be short enough to add random suffix to
+		// we may have to be clever to automate the process of "fixing" an illegal username
+
+		if (jrhelpers.isEmpty(username)) {
+			// fall back on default username
+			username = DEF_defaultUsername;
+		}
+
+		// force lowercase?
+		if (DEF_usernameAlwaysLowercase) {
+			username = username.toLowerCase();
+		}
+
+		// REMOVE bad characters
+
+		// loop through the username
+		var c;
+		const allowedStartChars = DEF_usernameAllowedStartingCharacters;
+		const allowedChars = DEF_usernameAllowedCharacters;
+		for (var i = 0; i<username.length;++i) {
+			c = username.charAt(i);
+			if ((i==0 && DEF_usernameAllowedStartingCharacters.indexOf(c)==-1) || (i>0 && DEF_usernameAllowedCharacters.indexOf(c)==-1) ) {
+				// not in our list of allowed characters, so splice it out
+				username = username.substring(0,i) + username.substring(i+1);
+				// backup i so we look at next char in this position and continue
+				--i;
+				continue;
+			}
+		}
+
+		// fix length
+		if (username.length > DEF_usernameMaxLength) {
+			// too long
+			username = username.substring(0, DEF_usernameMaxLength);
+		} else if (username.length < DEF_usernameMinLength) {
+			// just add random characters
+			username = username + randomUsernameSuffix();
+		}
+
+		// ok let's take an early try at validating it -- IT SHOULD be good.
+		var jrResult;		
+		jrResult = await this.validateUsername(username, false, false);
+		if (!jrResult.isError()) {
+			// good!
+			return username;
+		}
+
+		jrlog.debugObj(jrResult,"username validate result");
+
+		// we got an error, it's not valid syntax.. but we removed all bad characters, corrected length, etc.
+		throw("Failed to fix imported username to comply with username syntax.")
+	}
+
+
 	static randomUsernameSuffix() {
 		// just return some random letters to add to a username that has a clash with an existing one
-		const SUFFIXLEN = 4;
-		return jrcrypto.genRandomString(SUFFIXLEN);
+		var str = jrcrypto.genRandomString(DEF_randomUsernameRandomSuffixLength);
+		if (DEF_usernameAlwaysLowercase) {
+			str = str.toLowerCase();
+		}
+		return str;
 	}
 	//---------------------------------------------------------------------------
+
+
 
 
 

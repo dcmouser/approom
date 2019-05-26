@@ -14,6 +14,7 @@ const UserModel = require("./user");
 const jrhelpers = require("../helpers/jrhelpers");
 const jrlog = require("../helpers/jrlog");
 const jrcrypto = require("../helpers/jrcrypto");
+const JrResult = require("../helpers/jrresult");
 
 
 
@@ -72,6 +73,7 @@ class VerificationModel extends ModelBaseMongoose {
 		verification.loginId = loginId;
 		verification.extraData = JSON.stringify(extraData);
 		verification.expirationDate = jrhelpers.DateNowPlusMinutes(expirationMinutes);
+		verification.usedDate = null;
 		//NOTE: verification.uniqueCode set below
 
 		// and save it
@@ -223,35 +225,31 @@ ATTN: Not implemented yet
 
 
 	//---------------------------------------------------------------------------
+	// verify different kinds of codes
+	// always return a JrResult object which can indicate success or failure
 	static async verifiyCode(code, extraValues, req) {
-		// verify the code, return an object where obj.success is true/false obj.message is message to display
-		var retvo = {
-			success: false
-		};
+
 		var verification = await this.findOneByCode(code);
 		if (verification == null) {
 			// not found
-			retvo.message = "Code not found."
-			return retvo;
+			return JrResult.makeNew("VerificationError").pushError("Code not found.");
 		} 
 
 		// found verification code, is it already used?
 		if (verification.isUsed()) {
 			// already used
-			retvo.message = "This code has already been used.";
-			return retvo;
+			return JrResult.makeNew("VerificationError").pushError("This code ("+code+") has already been used.");
 		}
 
 		// ok it's not been used, is it expired?
 		if (verification.isExpired()) {
-			retvo.message = "This verification code has expired.";
-			return retvo;
+			return JrResult.makeNew("VerificationError").pushError("This verification code ("+code+") has expired.");
 		}
 
 		// ok its not used, and not expired
-
-		// let's mark it as used
-		return await verification.useNow(extraValues, req);
+		// let's use it up and return success if we can
+		var jrResult = await verification.useNow(extraValues, req);
+		return jrResult;
 	}
 
 
@@ -270,59 +268,90 @@ ATTN: Not implemented yet
 		}
 	return false;
 	}
+	//---------------------------------------------------------------------------
 
 
 
+
+
+
+	
+
+	//---------------------------------------------------------------------------
 	async useNow(extraValues, req) {
 		// consume the verification and process it
 		// ATTN: there is a small chance a verification code could be used twice, if called twice in the middle of checking unused and marking it used
 		// if we are worried about this we can use the enabled field and do a findAndUpdate set it to 0 so that it can only succeed once, 
-		var retvo = {};
+		// ATTN: there is also the dilemma, do we use up token and then try to perform action, or vice versa; in case of error it matters
+		// ATTN: unfinished
+		// @return JrResult
+
+		// switch for the different kinds of verifications
 
 		if (this.type == "newAccountEmail") {
-			// create the new user account
-			// ATTN: at this point we should check if there is already a user with username or if username is blank, and if so present user with form before they process
-			// and don't use up the verification item until they do.
-			// ATTN: if email already exists, then complain and reject
-			// data from extraData
-			var extraData = JSON.parse(this.extraData);
-			var userObj = {
-				username: jrhelpers.firstNonEmptyValue(extraData.username, extraValues.username),
-				passwordHashedObj: extraData.passwordHashed,
-				email: this.val,
-				realname: jrhelpers.firstNonEmptyValue(extraData.realname, extraValues.realname)
-			};
-			var user = await UserModel.createUserFromObj(userObj);
-			retvo.message = "New account with username '"+user.username+"' has been created";
-			retvo.success = true;
-			await this.useUpAndSave();
-		} else if (this.type == "onetimeLogin") {
-			// login the user associated with this email address
-			var userId = this.userId;
-			var user = await UserModel.findOneById(userId, true);
-			//jrlog.debugObj(userId,"userId");
-			//jrlog.debugObj(user,"user");
-			var userPassport = user.getMinimalPassportProfile();
-			await req.login(userPassport, async function(err) {
-  				if (err) { 
-  					jrlog.debug("Error tryign to log in user.");
-  				} else {
-  					// success
-					retvo.message = "You have been logged in";
-					retvo.success = true;
-				}
-			});
+			return await this.useNowNewAccountEmail(extraValues,req);
+		}
+		
+		else if (this.type == "onetimeLogin") {
+			var jrResult = await this.useNowOneTimeLogin(extraValues,req);
+			return jrResult;
+		}
+		
+		// unknown
+		return JrResult.makeNew("VerificationError").pushError("Unknown verification token type (" + this.type + ")");
+	}
 
-			if (retvo.success) {
-				await this.useUpAndSave();
+
+	async useNowNewAccountEmail(extraValues, req) {
+		// create the new user account
+		// ATTN: at this point we should check if there is already a user with username or if username is blank, and if so present user with form before they process
+		// and don't use up the verification item until they do.
+		// ATTN: if email already exists, then complain and reject
+		// data from extraData
+		var extraData = JSON.parse(this.extraData);
+		var userObj = {
+			username: jrhelpers.firstNonEmptyValue(extraData.username, extraValues.username),
+			passwordHashedObj: extraData.passwordHashed,
+			email: this.val,
+			realname: jrhelpers.firstNonEmptyValue(extraData.realname, extraValues.realname)
+		};
+		var user = await UserModel.createUserFromObj(userObj);
+		// success
+		await this.useUpAndSave();
+		return JrResult.makeSucces("Your new account with username '"+user.username+"' has been created");
+	}
+
+
+	async useNowOneTimeLogin(extraValues, req) {
+		// login the user associated with this email address
+		var userId = this.userId;
+		var user = await UserModel.findOneById(userId, true);
+		var userPassport = user.getMinimalPassportProfile();
+		//
+		var jrResult;
+		var success = false;
+
+		// ATTN: call passport login helper; im not sure errors return as expected?
+		var unusableLoginResult = await req.login(userPassport, function (err)  {
+			if (err) { 
+				jrResult = JrResult.makeNew("VerificationError").pushError(JrResult.passportErrorAsString(err));
+			} else {
+				success = true;
 			}
+			// note that if we try to handle success actions in here that have to async await, like a model save, we wind up in trouble for some reason -- weird things happen that i don't understand
+			// so instead we drop down on success and can check jrResult
+		});
 
-		} else {
-			retvo.message = "Unknown verification token type (" + this.type + ")";
-			retvo.success = false;
+		if (success) {
+			// success
+			await this.useUpAndSave();
+			jrResult = JrResult.makeSuccess("You are now logged in.");
+		} else if (jrResult == undefined) {
+			// unknown exception error that happened in passport login attempt?
+			jrResult = JrResult.makeNew("VerificationError").pushError("Unknown passport login error in useNowOneTimeLogin.");
 		}
 
-		return retvo;
+		return jrResult;
 	}
 
 
@@ -331,9 +360,12 @@ ATTN: Not implemented yet
 		this.usedDate = new Date;
 		this.enabled = 0;
 		// save it to mark it as used
-		this.save();
+		await this.save();
 	}
 	//---------------------------------------------------------------------------
+
+
+
 
 }
 

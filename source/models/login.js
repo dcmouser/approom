@@ -90,11 +90,13 @@ class LoginModel extends ModelBaseMongoose {
 			// we found the bridged login, so just grab the associated user and return them
 			jrlog.cdebugObj(login,"Found a matching login.");
 			//
-			user = await UserModel.findOneById(login.userid, true);
-			if (user!=null) {
-				jrlog.cdebugObj(user,"Found a matching user.");
-			} else {
-				jrlog.cdebugObj(user,"Failed to find a matching user login.");
+			if (!jrhelpers.isEmpty(login.userid)) {
+				user = await UserModel.findOneById(login.userid, true);
+				if (user!=null) {
+					jrlog.cdebugObj(user,"Found a matching user.");
+				} else {
+					jrlog.cdebugObj(user,"Failed to find a matching user login even though login had a userid.");
+				}
 			}
 		}
 

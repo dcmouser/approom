@@ -33,8 +33,11 @@ class JrResult {
         return jrResult;
     }
 
-    static makeSuccess() {
+    static makeSuccess(msg) {
         var jrResult = new JrResult("success");
+        if (msg!==undefined) {
+            jrResult.pushMessage(msg);
+        }
         return jrResult;
     }
     //---------------------------------------------------------------------------
@@ -174,6 +177,7 @@ class JrResult {
     // passport helpers
     static createFromPassportInfoError(info) {
         // just convert from a passport error info object, which simply has a message field
+        return JrResult.makeNew("PassportError").pushError(this.passportErrorAsString(info));
         var jrresult = new JrResult("PassportError");
         if (info.message !== undefined) {
             jrresult.pushError(info.message);   
@@ -192,6 +196,14 @@ class JrResult {
             return info;
         }
         return this.createFromPassportInfoError(info);
+    }
+
+
+    static passportErrorAsString(info) {
+        if (info==undefined || info.message == undefined) {
+            return "unknown authorization error";
+        } 
+        return info.message;
     }
     //---------------------------------------------------------------------------
 

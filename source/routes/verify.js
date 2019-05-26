@@ -45,19 +45,11 @@ router.get("/", function(req, res, next) {
 
 
 async function handleVerifyCode(code, req, res, next) {
-	var jrResult = JrResult.makeNew();
-
+	var jrResult;
 	if (jrhelpers.isEmpty(code)) {
-		jrResult.pushError("Please specify the code to verify.");
+		jrResult = JrResult.makeNew("VerificationError").pushError("Please specify the code to verify.");
 	} else {
-		var retv = await VerificationModel.verifiyCode(code, {}, req);
-		var success = retv.success;
-		var message = retv.message;
-		if (success) {
-			jrResult.pushSuccess("With code "+code+": "+message);
-		} else {
-			jrResult.pushError("With code "+code+": "+message);			
-		}
+		jrResult = await VerificationModel.verifiyCode(code, {}, req);
 	}
 
 	if (jrResult.isError()) {

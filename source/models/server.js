@@ -466,16 +466,14 @@ class AppRoomServer {
 				var user = await UserModel.findOneByUsername(username);
 				if (user==null) {
 					// not found
-					var jrResult = new JrResult("UsernameNotFound");
-					jrResult.pushFieldError("username", "Username not found");
+					var jrResult = JrResult.makeNew("UsernameNotFound").pushFieldError("username", "Username not found");
 					return done(null, false, jrResult);
 				}
 				// ok we found the user, now check their password
 				var bretv = await user.testPassword(password);
 				if (bretv!==true) {
 					// password doesn't match
-					var jrResult = new JrResult("PasswordMismatch");
-					jrResult.pushFieldError("password", "Password does not match");
+					var jrResult = JrResult.makeNew("PasswordMismatch").pushFieldError("password", "Password does not match");
 					return done(null, false, jrResult);
 				}
 				// password matches!
@@ -518,8 +516,10 @@ class AppRoomServer {
 						realName: profile.displayName
 					},
 				};
-				// created bridged 
-				var user = await LoginModel.processBridgedLoginGetOrCreateUser(bridgedLoginObj);
+				// already existing logged in user? if so we will bridge the new login bridge to the existing logged in user
+				var existingUserId = AppRoomServer.getLoggedInLocalUserIdFromSession(req);
+				// created bridged user
+				var user = await LoginModel.processBridgedLoginGetOrCreateUser(bridgedLoginObj, existingUserId);
 				// if user could not be created, it's an error
 				// otherwise log in the user
 				const userProfile = user.getMinimalPassportProfile();
@@ -527,6 +527,19 @@ class AppRoomServer {
 				return done(null, userProfile);
 			}
 		));
+	}
+
+
+	// helper function to get logged in local user id
+	static getLoggedInLocalUserIdFromSession(req) {
+		var passportUser = req.session.passport.user;
+		if (passportUser == undefined) {
+			return undefined;
+		}
+		if (passportUser.provider == "localUser") {
+			return passportUser.id;
+		}
+		return undefined;
 	}
 
 
@@ -565,6 +578,42 @@ class AppRoomServer {
 		return url;
 	}
 
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	// generic passport route login helper function, invoked from login routes
+	// @param errorCallback is a function that takes (req,res,jrinfo) for custom error handling, where jrinfo is the JrResult style error message created from the passport error; normally you would use this to RE-RENDER a form from a post submission, overriding the default behavior to redirect to the login page with flash error message
+	async routePassportAuthenticate(provider, req, res, next, providerNiceLabel, errorCallback) {
+		// "manual" authenticate via passport (as opposed to middleware auto); allows us to get richer info about error, and better decide what to do
+		await passport.authenticate(provider, async function(err, user, info) {
+			if (err) {
+			  return next(err);
+			}
+			if (!user) {
+				// sometimes passport returns error info instead of us, when credentials are missing; this ensures we have error in format we like
+				var jrinfo = JrResult.passportInfoAsJrResult(info);
+				if (errorCallback==undefined) {
+					// save error to session (flash) and redirect to login
+					jrinfo.storeInSession(req);
+					return res.redirect('/login');
+				} else {
+					return errorCallback(req,res,jrinfo);
+				}
+			}
+			// actually login the user
+			var unusableLoginResult = await req.logIn(user, function(err) {
+				if (err) {
+					// error (exception) logging them in
+					return next(err);
+				}
+				// success
+				JrResult.makeNew("info").pushSuccess("You have successfully logged in " + providerNiceLabel + ".").storeInSession(req);
+				return res.redirect('/profile');
+				});
+				// ATTN: if we get here, we are back from failed login attempt?
+			})(req, res, next);
+	}
 	//---------------------------------------------------------------------------
 
 
