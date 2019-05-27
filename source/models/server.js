@@ -261,15 +261,19 @@ class AppRoomServer {
 		  res.locals.error = req.app.get('env') === 'development' ? err : {};
 		  // render the error page
 		  res.status(err.status || 500);
-		  res.render('error');
+		  res.render('error', {
+			jrResult: JrResult.sessionRenderResult(req, res),
+		  });
 		});
 	}
 
 
 	setupExpressCustomMiddleware() {
 		// setup any custom middleware
+
+		// see our documentation in JrResult, we have decided to not use automatic injection of JrResult data
 		// auto inject into render any saves session jrResult
-		this.expressApp.use(JrResult.expressMiddlewareInjectSessionResult());
+		//this.expressApp.use(JrResult.expressMiddlewareInjectSessionResult());
 	}
 
 
@@ -519,8 +523,15 @@ class AppRoomServer {
 				// already existing logged in user? if so we will bridge the new login bridge to the existing logged in user
 				var existingUserId = AppRoomServer.getLoggedInLocalUserIdFromSession(req);
 				// created bridged user
-				var user = await LoginModel.processBridgedLoginGetOrCreateUser(bridgedLoginObj, existingUserId);
+				var {user, jrResult} = await LoginModel.processBridgedLoginGetOrCreateUser(bridgedLoginObj, existingUserId);
+				jrlog.debugObj(user, "returned user");
+				jrlog.debugObj(jrResult, " returned jrResult");
 				// if user could not be created, it's an error
+				// add jrResult to session in case we did extra stuff and info to show the user
+				if (jrResult !== undefined) {
+					jrlog.debugObj(jrResult,"Trying to add to sesssion data.");
+					jrResult.addToSession(req);
+				}
 				// otherwise log in the user
 				const userProfile = user.getMinimalPassportProfile();
 				// return success
@@ -583,6 +594,7 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	// generic passport route login helper function, invoked from login routes
+	// this will end up calling a passport STRATEGY above
 	// @param errorCallback is a function that takes (req,res,jrinfo) for custom error handling, where jrinfo is the JrResult style error message created from the passport error; normally you would use this to RE-RENDER a form from a post submission, overriding the default behavior to redirect to the login page with flash error message
 	async routePassportAuthenticate(provider, req, res, next, providerNiceLabel, errorCallback) {
 		// "manual" authenticate via passport (as opposed to middleware auto); allows us to get richer info about error, and better decide what to do
@@ -595,7 +607,7 @@ class AppRoomServer {
 				var jrinfo = JrResult.passportInfoAsJrResult(info);
 				if (errorCallback==undefined) {
 					// save error to session (flash) and redirect to login
-					jrinfo.storeInSession(req);
+					jrinfo.addToSession(req);
 					return res.redirect('/login');
 				} else {
 					return errorCallback(req,res,jrinfo);
@@ -608,7 +620,7 @@ class AppRoomServer {
 					return next(err);
 				}
 				// success
-				JrResult.makeNew("info").pushSuccess("You have successfully logged in " + providerNiceLabel + ".").storeInSession(req);
+				JrResult.makeNew("info").pushSuccess("You have successfully logged in " + providerNiceLabel + ".").addToSession(req, true);
 				return res.redirect('/profile');
 				});
 				// ATTN: if we get here, we are back from failed login attempt?

@@ -33,6 +33,7 @@ router.get("/", function(req, res, next) {
 	// grab pending session errors to display
 	// render page
 	res.render("account/login", {
+		jrResult: JrResult.sessionRenderResult(req, res),
 	});
 });
 
@@ -46,7 +47,7 @@ router.post("/", async function(req, res, next) {
 	await AppRoomServer.routePassportAuthenticate("local", req, res, next, "using your username and password", (req,res,jrinfo) => {
 		res.render("account/login", {
 			reqBody: req.body,
-			jrResult: jrinfo,
+			jrResult: JrResult.sessionRenderResult(req, res, jrinfo),
 		  });
 		});
 	});
@@ -93,6 +94,7 @@ router.get("/twitter/auth", async function(req, res, next) {
 // simple login via email
 router.get("/email", function(req, res, next) {
 	res.render("account/login_email", {
+		jrResult: JrResult.sessionRenderResult(req, res),
 	});
 });
 
@@ -112,12 +114,12 @@ router.post("/email", async function(req, res, next) {
 		// set error and drop down to re-display email login form with error
 		jrResult = UserModel.makeJrResultErrorNoUserFromField("email", emailAddress);
 	} else {
-		var userId = user.getId();
-		jrResult = await VerificationModel.createVerificationOneTimeLoginTokenEmail(emailAddress, null, null, userId, null, null);
+		var userid = user.getIdAsString();
+		jrResult = await VerificationModel.createVerificationOneTimeLoginTokenEmail(emailAddress, null, null, userid, null, null);
 		if (!jrResult.isError()) {
 			// success; redirect them to homepage and tell them to check their email for a login token (see the verify route for when they click the link to login)
 			jrResult.pushSuccess("Check your mail for your link to login.");
-			jrResult.storeInSession(req);
+			jrResult.addToSession(req);
 			return res.redirect('/');
 		} else {
 			// error, just drop down and re-display the email login form with error
@@ -126,7 +128,7 @@ router.post("/email", async function(req, res, next) {
 
 	// show the email login form
 	res.render("account/login_email", {
-		jrResult: jrResult,
+		jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 		reqBody: req.body,
 	});
 });

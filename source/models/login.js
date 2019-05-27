@@ -12,6 +12,7 @@ const UserModel = require("./user");
 //
 const jrlog = require("../helpers/jrlog");
 const jrhelpers = require("../helpers/jrhelpers");
+const JrResult = require("../helpers/jrresult");
 
 
 
@@ -21,7 +22,7 @@ class LoginModel extends ModelBaseMongoose {
 	static getVersion() { return 1; }
 
 	// accessors
-	getId() { return this._id; }
+	getIdAsString() { return this._id.toString(); }
 
 	// collection name for this model
 	static getCollectionName() {
@@ -74,12 +75,17 @@ class LoginModel extends ModelBaseMongoose {
 		// if existingUserId is not null, then connect the new bridge to the existing (already logged in user)
 		// return the user
 		var user;
+		// potential result to return with extra messages
+		var jrResult = JrResult.makeNew();
 
 		// ATTN: we have a choice to make when someone performs a bridged login, we can EITHER create a real User object now, but perhaps without good final info about their desired username, etc
 		// OR we can defer creating a new full User object at this point
 		// regardless we will create a Login object so we can uniquely identify this visitor and remember their details for a subsequent deferred User account creation; but a Login object does not have a username or email
 		//
 		const flagMakeNewUser = true;
+		//
+		var eventAddedNewUser = false;
+		var eventNewlyLinked = false;
 
 
 		// ok first let's see if we can find an existing bridged login
@@ -112,6 +118,10 @@ class LoginModel extends ModelBaseMongoose {
 				if (flagMakeNewUser) {
 					// make a new user object
 					user = await UserModel.createUniqueUserFromBridgedLogin(bridgedLoginObj, true);
+					if (!jrhelpers.isEmpty(user)) {
+						eventAddedNewUser = true;
+						jrResult.pushSuccess("A new user account has been created and assoicated with this "+bridgedLoginObj.provider+" login.");
+					}
 				} else {
 					// create empty user object which is not saved to db
 					user = new UserModel;
@@ -119,6 +129,7 @@ class LoginModel extends ModelBaseMongoose {
 			}
 		}
 
+		var userid = user.getIdAsString();
 
 		// create Login if it's not been created yet; saving userId with it
 		if (login==null || login==undefined) {
@@ -126,32 +137,41 @@ class LoginModel extends ModelBaseMongoose {
 			var loginObj = {
 				provider: bridgedLoginObj.provider,
 				provider_userid: bridgedLoginObj.provider_userid,
-				userid: user.getId(),
+				userid: userid,
 				extraData: JSON.stringify(bridgedLoginObj.extraData),
 				loginDate: new Date,
 			};
 			// create model (this will also add default properties to it)
 			login = this.createModel(loginObj);
 			await login.save();
+			eventNewlyLinked = true;
 		} else {
-			// login already existed -- but did it have the right userid?
-			var userid = user.getId();
-			if (login.userid !== userid && userid!==null && userid!==undefined) {
+			// login already existed -- but did it have the right userid already?
+			if (login.userid !== userid && userid !== null && userid !== undefined) {
 				// ok we need to update login data to point to the new user
 				// ATTN: We expect this case to happen login.userid is empty;
 				// but is it possible for us to get here with login.userid with a real user? i think the only way would be if the user was not actually found; that would be the only way to make a new user with a different id and get to here.
-				login.userid = user.getId();
+				login.userid = userid;
 				await login.save();
+				eventNewlyLinked = true;
 			}
+		}
+
+		if (eventNewlyLinked && !eventAddedNewUser && userid !== null && userid !== undefined) {
+			// an existing user was either NEWLY linked to this existing login object, or with a newly created login object
+			jrResult.pushSuccess("The "+bridgedLoginObj.provider+" login has now been linked with your existing user account.");
 		}
 
 
 		// NEW - ADD login id to user id -- this (may not) be saved to database, since that's not important, but WILL be carried around with session data after a user does a bridged login
 		// this is most important if in this function we decide we do want to actually create a full user object here
-		user.loginId = login.getId();
+		user.loginId = login.getIdAsString();
 
 		// now return the associated user we found (or created above)
-		return user;
+		return {
+			user: user,
+			jrResult: jrResult.undefinedIfBlank(),
+		};
 	}
 
 

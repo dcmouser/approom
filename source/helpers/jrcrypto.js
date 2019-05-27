@@ -39,6 +39,10 @@ const DEF_CryptSaltRounds = 11;
 const DEF_latestPasswordVersion = 2;
 
 // ATTN: TODO -- we might add support to automatically fail any password check falling below some configured date or passwordVersion
+
+// for humaneasy codes (all uppercase, no I no O no Z no 0 no 1 no 2)
+const DEF_HumanEasyCharactersArray = ["ABCDEFGHJKLMNPQRSTUVWXY", "3456789"];
+const DEF_HumanEasyCharacters = DEF_HumanEasyCharactersArray[0] + DEF_HumanEasyCharactersArray[1];
 //---------------------------------------------------------------------------
 
 
@@ -159,7 +163,7 @@ async function testPassword(passwordPlaintext, passwordHashedObj) {
 
 function generateRandomSalt() {
 	// private func
-	return genRandomString(DEF_CryptSaltLength);
+	return genRandomStringHex(DEF_CryptSaltLength);
 }
 
 
@@ -170,11 +174,48 @@ function generateRandomSalt() {
  * @function
  * @param {number} length - Length of the random string.
  */
-function genRandomString(length) {
+function genRandomStringHex(length) {
     return crypto.randomBytes(Math.ceil(length/2))
             .toString("hex") /** convert to hexadecimal format */
             .slice(0,length);   /** return required number of characters */
-};
+}
+
+
+function genRandomStringHumanEasy(length) {
+	// generate a string of letters and numbers that is hard for humans to mistake
+	// so all uppercase and avoid letters that could be duplicates
+	// see https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
+	var retstr = "";
+	var charlen = DEF_HumanEasyCharacters.length;
+	var charpos;
+	for ( var i = 0; i < length; i++ ) {
+		charpos = Math.floor(Math.random() * charlen);
+		retstr +=  DEF_HumanEasyCharacters.charAt(charpos);
+	}
+	return retstr;
+}
+
+
+function genRandomStringHumanEasier(length) {
+	// generate a string of letters and numbers that is hard for humans to mistake
+	// so all uppercase and avoid letters that could be duplicates
+	// see https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
+	// this version alternates digits and letters for even easier to read codes
+	var retstr = "";
+	var charlen, charpos;
+	var group = 0;
+	for ( var i = 0; i < length; i++ ) {
+		if (group>1) {
+			// alternate 
+			group = 0;
+		}
+		charlen = DEF_HumanEasyCharactersArray[group].length;
+		charpos = Math.floor(Math.random() * charlen);
+		retstr +=  DEF_HumanEasyCharactersArray[group].charAt(charpos);
+		group++;
+	}
+	return retstr;
+}
 //---------------------------------------------------------------------------
 
 
@@ -191,6 +232,7 @@ function genRandomString(length) {
 
 //---------------------------------------------------------------------------
 module.exports = {
-	hashPlaintextPasswordToObj, createPasswordHashedObj, testPassword, genRandomString
+	hashPlaintextPasswordToObj, createPasswordHashedObj, testPassword,
+	genRandomStringHex, genRandomStringHumanEasy, genRandomStringHumanEasier
 	}
 //---------------------------------------------------------------------------

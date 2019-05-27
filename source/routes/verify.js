@@ -28,8 +28,6 @@ router.get("/code/:code?", async function(req, res, next) {
 
 
 router.post(/(code\/.*)?/, async function(req, res, next) {
-//router.post(/^.*$/, async function(req, res, next) {
-//router.post("/", async function(req, res, next) {
 	var code = req.body.code;
 	await handleVerifyCode(code, req, res, next);
 });
@@ -38,6 +36,7 @@ router.post(/(code\/.*)?/, async function(req, res, next) {
 // we don't know what they want to verify?
 router.get("/", function(req, res, next) {
 	res.render("account/verify", {
+		jrResult: JrResult.sessionRenderResult(req, res),
 	});
 });
 
@@ -55,14 +54,14 @@ async function handleVerifyCode(code, req, res, next) {
 	if (jrResult.isError()) {
 		// on error, show verify form
 		res.render("account/verify", {
-			jrResult: jrResult,
+			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 			reqBody: req.body,
 		});
 		return;
 	}
 
 	// success -- redirect and show flash message about success
-	jrResult.storeInSession(req);
+	jrResult.addToSession(req);
 	return res.redirect('/');
 }
 

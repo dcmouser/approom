@@ -24,6 +24,7 @@ const router = express.Router();
 
 router.get("/", function(req, res, next) {
 	res.render("account/register", {
+		jrResult: JrResult.sessionRenderResult(req, res),
 	});
 });
 
@@ -68,8 +69,8 @@ router.post("/", async function (req, res) {
 	// any errors, re-render form with errors
 	if (jrResult.isError()) {
 		res.render("account/register", {
+			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 			reqbody: req.body,
-			jrResult: jrResult,
 		});
 		return;
 	}
@@ -88,12 +89,12 @@ router.post("/", async function (req, res) {
 	//
 	jrResult.pushSuccess("Please check for the verification email.  You will need to verify that you have received it before you can log in.");
 	if (true) {
-		jrResult.storeInSession(req);
+		jrResult.addToSession(req);
 		return res.redirect('/');
 	} else {
 		res.render("account/register", {
+			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 			reqbody: req.body,
-			jrResult: jrResult,
 		});
 	}
 });

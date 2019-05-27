@@ -8,8 +8,9 @@
 
 // modules
 const express = require("express");
-// helpers
 
+// helpers
+const JrResult = require("../helpers/jrresult");
 
 // init
 const router = express.Router();
@@ -27,6 +28,7 @@ router.get("/", function(req, res, next) {
 
 	// render view
 	res.render("index", {
+		jrResult: JrResult.sessionRenderResult(req, res),
 		title: "AppRoom" 
 	});
 });

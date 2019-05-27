@@ -9,6 +9,7 @@
 // modules
 const express = require("express");
 // helpers
+const JrResult = require("../helpers/jrresult");
 const jrlog = require("../helpers/jrlog");
 
 // init
@@ -25,7 +26,11 @@ router.get("/", function(req, res, next) {
 
 	var userInfo = (req.session.passport!=undefined) ? JSON.stringify(req.session.passport.user) : 'not logged in';
 
+	// ATTN: test
+	//var jrResult = JrResult.makeSuccess("Hello.");
+
 	res.render("user/profile", {
+		jrResult: JrResult.sessionRenderResult(req, res /*, jrResult, true*/),
 		auth: auth,
  		userInfo: userInfo,
 	});

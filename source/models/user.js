@@ -53,7 +53,7 @@ class UserModel extends ModelBaseMongoose {
 
 
 	// accessors
-	getId() { return this._id; }
+	getIdAsString() { return this._id.toString(); }
 
 
 	// User model mongoose db schema
@@ -360,7 +360,7 @@ class UserModel extends ModelBaseMongoose {
 			user.loginDate = new Date;
 		}
 		// and save it
-		var userdoc = await user.save();
+		await user.save();
 		//
 		return user;
 	}
@@ -488,7 +488,7 @@ class UserModel extends ModelBaseMongoose {
 
 	static randomUsernameSuffix() {
 		// just return some random letters to add to a username that has a clash with an existing one
-		var str = jrcrypto.genRandomString(DEF_randomUsernameRandomSuffixLength);
+		var str = jrcrypto.genRandomStringHumanEasy(DEF_randomUsernameRandomSuffixLength);
 		if (DEF_usernameAlwaysLowercase) {
 			str = str.toLowerCase();
 		}

@@ -18,7 +18,7 @@ const router = express.Router();
 router.get("/", function(req, res, next) {
 	// logout the user from passport
 	req.logout();
-	JrResult.makeNew("info").pushSuccess("You have been logged out.").storeInSession(req);
+	JrResult.makeNew("info").pushSuccess("You have been logged out.").addToSession(req);
 	return res.redirect("/");
 	});
 

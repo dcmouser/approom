@@ -33,8 +33,27 @@ class JrResult {
         return jrResult;
     }
 
+    static makeError(typestr, msg) {
+        if (msg == undefined) {
+            // if only one arg is passed, its a message with typestr treated as the msg
+            msg = typestr;
+            typestr = "error";
+        }
+        var jrResult = new JrResult(typestr);
+        jrResult.pushError(msg);
+        return jrResult;
+    }
+
     static makeSuccess(msg) {
         var jrResult = new JrResult("success");
+        if (msg!==undefined) {
+            jrResult.pushSuccess(msg);
+        }
+        return jrResult;
+    }
+
+    static makeMessage(msg) {
+        var jrResult = new JrResult("message");
         if (msg!==undefined) {
             jrResult.pushMessage(msg);
         }
@@ -116,51 +135,61 @@ class JrResult {
 
 
     //---------------------------------------------------------------------------
-    // merge result into us, adding errors
-    mergeIn(result) {
+    // merge source into us, adding errors
+    mergeIn(source, flagMergeSourceToTop) {
         // this is really an awkward function, i wonder if there isn't a better cleaner way to merge objects and arrays
         // this function is specific to the JrResult class, and not generic
 
-        // for fields, each keyed item should be a string; on the rare occasion we have an entry in both our field and result field with same key, we can append them.
-        if (result.fields !== undefined) {
+        if (jrhelpers.isEmpty(source)) {
+            return this;
+        }
+
+        // for fields, each keyed item should be a string; on the rare occasion we have an entry in both our field and source field with same key, we can append them.
+        if (source.fields !== undefined) {
             if (this.fields == undefined) {
-                this.fields = Object.assign({}, result.fields);
+                this.fields = Object.assign({}, source.fields);
             } else {
-                for (var key in result.fields) {
+                for (var key in source.fields) {
                     if (this.fields[key] == undefined) {
-                        this.fields[key] = result.fields[key];
+                        this.fields[key] = source.fields[key];
                     } else {
-                        this.fields[key] = this.fields[key] + " " + result.fields[key];
+                        if (flagMergeSourceToTop) {
+                            this.fields[key] = source.fields[key] + " " + this.fields[key];
+                        } else {
+                            this.fields[key] = this.fields[key] + " " + source.fields[key];
+                        }
                     }
                 }
             }
-            /*
-            this.fields = {
-                ...this.fields,
-                ...result.fields
-            };
-            */
         }
 
-        if (result.items != undefined) {
+        if (source.items != undefined) {
             // but items need to be concatenated
             if (this.items == undefined) {
-                this.items = Object.assign({}, result.items);
+                this.items = Object.assign({}, source.items);
             } else {
-                for (var key in result.items) {
+                for (var key in source.items) {
                     if (this.items[key] == undefined) {
-                        this.items[key] = Object.assign({}, result.items[key]);
+                        this.items[key] = Object.assign({}, source.items[key]);
                     } else {
-                        this.items[key] = (this.items[key]).concat(result.items[key]);
+                        if (flagMergeSourceToTop) {
+                            this.items[key] = (source.items[key]).concat(this.items[key]);
+                        } else {
+                            this.items[key] = (this.items[key]).concat(source.items[key]);
+                        }
                     }
                 }
             }
         }
 
-        // if our typestr is blank, use result typestr
-        if (this.typestr == undefined || this.typestr == null || this.typestr == "") {
-            this.typestr = result.typestr;
+        // if our typestr is blank, use source typestr
+        if (jrhelpers.isEmpty(this.typestr)) {
+            this.typestr = source.typestr;
+        } else if (flagMergeSourceToTop && !jrhelpers.isEmpty(source.typestr)) {
+            this.typestr = source.typestr
         }
+
+        return this;
     }
     //---------------------------------------------------------------------------
 
@@ -170,6 +199,25 @@ class JrResult {
     static is(obj) {
         return obj instanceof JrResult;
     }
+
+    // this static helper lets us easily check for a case where caller did something like "var jrResult = JrResult.makeNew();" but then in conditional blocks never added any messages or errors to it
+    static isBlank(obj) {
+        // helper function
+        if (jrhelpers.isEmpty(obj)) {
+            return true;
+        }
+        if ( obj.items == undefined && obj.fields == undefined) {
+            return true;
+        }
+        return false;
+    }
+    //
+    undefinedIfBlank() {
+        if (JrResult.isBlank(this)) {
+            return undefined;
+        }
+        return this;
+    }
     //---------------------------------------------------------------------------
 
 
@@ -178,13 +226,6 @@ class JrResult {
     static createFromPassportInfoError(info) {
         // just convert from a passport error info object, which simply has a message field
         return JrResult.makeNew("PassportError").pushError(this.passportErrorAsString(info));
-        var jrresult = new JrResult("PassportError");
-        if (info.message !== undefined) {
-            jrresult.pushError(info.message);   
-        } else {
-            jrresult.pushError("unknown authorization error");
-        }
-        return jrresult;
     }
 
 
@@ -200,7 +241,7 @@ class JrResult {
 
 
     static passportErrorAsString(info) {
-        if (info==undefined || info.message == undefined) {
+        if (info == undefined || info.message == undefined) {
             return "unknown authorization error";
         } 
         return info.message;
@@ -210,9 +251,18 @@ class JrResult {
 
     //---------------------------------------------------------------------------
     // session helpers for flash message save/load
-    storeInSession(req) {
+    addToSession(req, flagAddToTop) {
         // addd to session
-        req.session.jrResult = this;
+        if (req.session == undefined) {
+            throw("No session defined, can't add result to it.");
+        }
+        if (req.session.jrResult == undefined) {
+            req.session.jrResult = this;
+            return req.session.jrResult;
+        }
+        // merge it
+        req.session.jrResult.mergeIn(this, flagAddToTop);
+        return req.session.jrResult;
     }
 
     loadFromSession(req) {
@@ -226,12 +276,29 @@ class JrResult {
 
     static restoreFromSession(req) {
         // if not found, just return undefined quickly
-        if (req.session.jrResult == undefined) {
+        if (req.session == undefined || jrhelpers.isEmpty(req.session.jrResult)) {
             return undefined;
         }
         //
         var jrResult = new JrResult;
         jrResult.loadFromSession(req);
+        return jrResult;
+    }
+
+
+    static sessionRenderResult(req, res, jrResult, flagSessionAtTop) {
+        // ok we have a jrResult locally that we are about to pass along to view template
+        // but if we just passed it in as a local template/view variable, it would OVERWRITE any session data, so we would like to
+        // combine them
+        // session result, if any (deleting it from session if found, like a flash message)
+        var jrResultSession = this.restoreFromSession(req);
+        // 
+        if (!jrResult) {
+            // empty jrResult, just return session version
+            return jrResultSession;
+        }
+        // combine them
+        jrResult.mergeIn(jrResultSession, flagSessionAtTop);
         return jrResult;
     }
     //---------------------------------------------------------------------------
@@ -244,8 +311,17 @@ class JrResult {
     //    	res.render("viewpage", {
     //          jrResult: JrResult.restoreFromSession(req);
 	//      });
-    // ATTN: I don't trust this (or the performance of it)
     // see https://stackoverflow.com/questions/9285880/node-js-express-js-how-to-override-intercept-res-render-function
+    //
+    // ATTN: 5/27/19 -- although this worked flawlessly, we have decided to force the manaul use of this into all render calls, to have better control over it
+    // but the proper call now is a bit more involved, it should be like this:
+    //	res.render("urlpath", {
+    //      jrResult: JrResult.sessionRenderResult(req, res, jrResult),
+    //      // or if we have no result of our own: jrResult: JrResult.sessionRenderResult(req, res)
+    //      }
+    // this old code does NOT do a merge combine of session data with manual jrresult, so can no longer be used
+    //
+    /*
     static expressMiddlewareInjectSessionResult(options) {
         options = options || {};
         var safe = (options.unsafe === undefined) ? true : !options.unsafe;
@@ -265,6 +341,7 @@ class JrResult {
             next();
         }
     }
+    */
     //---------------------------------------------------------------------------
 
 }

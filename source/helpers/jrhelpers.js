@@ -38,7 +38,7 @@ function mergeArraysDedupe(array1, array2) {
 
 //---------------------------------------------------------------------------
 function getNonEmptyPropertyOrDefault(val, defaultval) {
-	if (isEmpty(val)) {
+	if (!val) {
 		return defaultval;
 	}
 	return val;
@@ -46,7 +46,9 @@ function getNonEmptyPropertyOrDefault(val, defaultval) {
 
 
 function isEmpty(val) {
-	return (val == undefined || val==null || val=="");
+	// ATTN: we could just simply do:  "if (val) return true; else return false"
+	// which would only differ in the cases like where val is false or 0
+	return (val === undefined || val===null || val==="");
 }
 
 

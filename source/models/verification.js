@@ -19,7 +19,7 @@ const JrResult = require("../helpers/jrresult");
 
 
 //---------------------------------------------------------------------------
-const DEF_CodeLength = 4;
+const DEF_CodeLength = 5;
 const DEF_MaxUniqueCodeCollissions = 10;
 //
 const DEF_ExpirationDurationMinutesLong = 24*60;
@@ -97,7 +97,7 @@ class VerificationModel extends ModelBaseMongoose {
 					await this.pruneOldVerifications(true);
 				} else if (tryCount == DEF_MaxUniqueCodeCollissions) {
 					// we failed
-					throw(lasterr);
+					throw(err);
 				}
 			}
 		}
@@ -138,41 +138,9 @@ class VerificationModel extends ModelBaseMongoose {
 	}
 
 
-/*
-	// create an email verification
-	static async createVerificationEmail(emailAddress, userId, loginId, extraData) {
-		// ATTN: unfinished
-		// make the verification item and email the user about it with verification code
-		var verification = await this.createModel("email", "email", emailAddress, userId, loginId, extraData);
-		return await verification.sendViaEmail();
-	}
-
-
-ATTN: Not implemented yet
-	// verify sometone's mobile phone number
-	static async createVerificationMobilePhone(phoneNumber, userId, loginId, extraData) {
-		// ATTN: unfinished
-		// make the verification item and text user with verification code
-		var verification = await this.createModel("mobilePhone", "phone", phoneNumber, userId, loginId, extraData);
-	}
-
-
-
-	// verify sometone's voice phone number
-	static async createVerificationVoicePhone(phoneNumber, userId, loginId, extraData) {
-		// ATTN: unfinished
-		// make the verification item and call the user with voice verification code
-		var verification = await this.createModel("voicePhone", "phone", phoneNumber,userId, loginId, extraData);
-	}
-
-
-
-*/
-
 
 	static async generateUniqueCode() {
-		// ATTN: test
-		return jrcrypto.genRandomString(DEF_CodeLength).toUpperCase();
+		return jrcrypto.genRandomStringHumanEasier(DEF_CodeLength);
 	}
 
 
@@ -345,7 +313,7 @@ ATTN: Not implemented yet
 		if (success) {
 			// success
 			await this.useUpAndSave();
-			jrResult = JrResult.makeSuccess("You are now logged in.");
+			jrResult = JrResult.makeSuccess("You have successfully logged in using your one-time login code.");
 		} else if (jrResult == undefined) {
 			// unknown exception error that happened in passport login attempt?
 			jrResult = JrResult.makeNew("VerificationError").pushError("Unknown passport login error in useNowOneTimeLogin.");
