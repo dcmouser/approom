@@ -53,7 +53,16 @@ class UserModel extends ModelBaseMongoose {
 
 
 	// accessors
-	getIdAsString() { return this._id.toString(); }
+	getIdAsString() {
+		if (!this._id) {
+			return "";
+		}
+		return this._id.toString();
+	}
+
+	getUsername() {
+		return this.username;
+	}
 
 
 	// User model mongoose db schema
@@ -81,7 +90,6 @@ class UserModel extends ModelBaseMongoose {
 		jrlog.cdebug("Inside User dbInit");
 
 		// see if admin user exists, if not add it
-		//var doc = await this.mongooseModel.findOne().where("username","admin").exec();
 		var doc = await this.mongooseModel.findOne({username: "admin"}).exec();
 		if (doc==undefined) {
 			// create admin object
@@ -149,11 +157,28 @@ class UserModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
+	static async findOneByUsernameEmail(usernameEmail) {
+		// find a user by their username and return the matching model
+		// return null if not found
+		// ATTN: Note that it is very important that our syntax forbids anyone having a username formatted like an email, or an email formatted like a username, otherwise
+		// we will have 2 users with different info.
+		if (!usernameEmail) {
+			return null;
+		}
+		var user = await this.mongooseModel.findOne({$or: [
+			{username: usernameEmail},
+			{email: usernameEmail}
+		]}).exec();
+		jrlog.cdebugObj(user,"in findOneByUsernameEmail");
+		return user;		
+	}
+
+
 	// lookup user by their username
 	static async findOneByUsername(username) {
 		// find a user by their username and return the matching model
 		// return null if not found
-		if (jrhelpers.isEmpty(username)) {
+		if (!username) {
 			return null;
 		}
 		var user = await this.mongooseModel.findOne({username: username}).exec();
@@ -164,7 +189,7 @@ class UserModel extends ModelBaseMongoose {
 	// lookup user by their id
 	static async findOneById(id, flag_updateLoginDate) {
 		// return null if not found
-		if (jrhelpers.isEmpty(id)) {
+		if (!id) {
 			return null;
 		}
 		//
@@ -180,7 +205,7 @@ class UserModel extends ModelBaseMongoose {
 
 	// fine user by email
 	static async findOneByEmail(email) {
-		if (jrhelpers.isEmpty(email)) {
+		if (!email) {
 			return null;
 		}
 		// ask user model to find user by email
@@ -201,7 +226,7 @@ class UserModel extends ModelBaseMongoose {
 		// validation helper
 		const validator = require("validator");
 
-		if (jrhelpers.isEmpty(email)) {
+		if (!email) {
 			if (flag_canBeBlank) {
 				return JrResult.makeSuccess();
 			}
@@ -236,7 +261,7 @@ class UserModel extends ModelBaseMongoose {
 		// validation helper
 		const validator = require("validator");
 
-		if (jrhelpers.isEmpty(username)) {
+		if (!username) {
 			if (flag_canBeBlank) {
 				return JrResult.makeSuccess();
 			}
@@ -304,7 +329,7 @@ class UserModel extends ModelBaseMongoose {
 		// validation helper
 		const validator = require("validator");
 	
-		if (jrhelpers.isEmpty(password)) {
+		if (!password) {
 			if (flag_canBeBlank) {
 				return JrResult.makeSuccess();;
 			}
@@ -371,15 +396,15 @@ class UserModel extends ModelBaseMongoose {
 
 		// first initialize username
 		var username = userObj.username;
-		if (jrhelpers.isEmpty(username)) {
+		if (!username) {
 			// is there a real name for this person
 			username = userObj.realname;
 		}
-		if (jrhelpers.isEmpty(username)) {
+		if (!username) {
 			// maybe providername is something we can use
 			username = providerUniqueUserName;
 		}
-		if (jrhelpers.isEmpty(username)) {
+		if (!username) {
 			// fall back on default username
 			username = DEF_defaultUsername;
 		}
@@ -435,7 +460,7 @@ class UserModel extends ModelBaseMongoose {
 		// we don't care if it is unique, but it must be short enough to add random suffix to
 		// we may have to be clever to automate the process of "fixing" an illegal username
 
-		if (jrhelpers.isEmpty(username)) {
+		if (!username) {
 			// fall back on default username
 			username = DEF_defaultUsername;
 		}
@@ -527,8 +552,9 @@ class UserModel extends ModelBaseMongoose {
 	// error helper
 	static makeJrResultErrorNoUserFromField(key, value) {
 		var jrResult = JrResult.makeNew("UserNotFound");
-		var msgShort = "Email not found.";
-		var msgLong = "No user found with " + key + " matching " + value + ".";
+		var msgShort = "User not found.";
+		var keylabel = key == "username_email" ? "username or email" : key;
+		var msgLong = "No user found with user "+keylabel+ " matching " + value + ".";
 		jrResult.pushBiFieldError(key,msgShort, msgLong);
 		return jrResult;
 	}

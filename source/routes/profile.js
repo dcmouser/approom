@@ -12,6 +12,9 @@ const express = require("express");
 const JrResult = require("../helpers/jrresult");
 const jrlog = require("../helpers/jrlog");
 
+// models
+const arserver = require("../models/server");
+
 // init
 const router = express.Router();
 
@@ -27,7 +30,10 @@ router.get("/", function(req, res, next) {
 	var userInfo = (req.session.passport!=undefined) ? JSON.stringify(req.session.passport.user) : 'not logged in';
 
 	// ATTN: test
-	//var jrResult = JrResult.makeSuccess("Hello.");
+	var jrResult = JrResult.makeSuccess("Hello.");
+
+	// ignore any previous login diversions
+	arserver.forgetLoginDiversions(req);
 
 	res.render("user/profile", {
 		jrResult: JrResult.sessionRenderResult(req, res /*, jrResult, true*/),

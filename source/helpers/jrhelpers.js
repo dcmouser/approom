@@ -45,20 +45,23 @@ function getNonEmptyPropertyOrDefault(val, defaultval) {
 }
 
 
+/*
 function isEmpty(val) {
 	// ATTN: we could just simply do:  "if (val) return true; else return false"
-	// which would only differ in the cases like where val is false or 0
+	// which would only differ in the unimportant cases like where val is false or 0
+	// The reason we are using this function instead of the simpler "if (val)" is only to help us locate these kind of tests in code via a search, since they are prone to issues..
 	return (val === undefined || val===null || val==="");
 }
+*/
 
 
 function firstNonEmptyValue(...args) {
 	if (args == undefined || args.length == 0) {
 		return undefined;
 	}
-    for (arg of args) {
-    	if (!isEmpty(arg)) {
-    		return arg;
+    for (var arg of args) {
+		if (arg) {
+			return arg;
     	}
     // return last
     return args[args.length-1];
@@ -89,13 +92,24 @@ function stringArrayToNiceString(arr) {
 
 
 
+//---------------------------------------------------------------------------
+function makeClonedObjFromEnumerableProperties(source) {
+	// just a simple wrapper to make code easier to understand
+	var obj = Object.assign({}, source);
+	return obj;
+}
+//---------------------------------------------------------------------------
+
+
+
 
 
 
 //---------------------------------------------------------------------------
 module.exports = {
-	mergeArraysDedupe, getNonEmptyPropertyOrDefault, isEmpty, firstNonEmptyValue,
+	mergeArraysDedupe, getNonEmptyPropertyOrDefault, firstNonEmptyValue,
 	DateNowPlusMinutes,
-	stringArrayToNiceString
+	stringArrayToNiceString,
+	makeClonedObjFromEnumerableProperties,
 	}
 //---------------------------------------------------------------------------

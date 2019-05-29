@@ -60,7 +60,7 @@ router.post("/", async function (req, res) {
 		jrResult.mergeIn(retvResult);
 	} else {
 		// hash password for storage
-		if (!jrhelpers.isEmpty(req.body.password)) {
+		if (req.body.password) {
 			// hash their password
 			passwordHashed = await UserModel.hashPasswordToObj(req.body.password);
 		}

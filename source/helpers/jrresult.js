@@ -140,17 +140,18 @@ class JrResult {
         // this is really an awkward function, i wonder if there isn't a better cleaner way to merge objects and arrays
         // this function is specific to the JrResult class, and not generic
 
-        if (jrhelpers.isEmpty(source)) {
+        if (!source) {
             return this;
         }
 
         // for fields, each keyed item should be a string; on the rare occasion we have an entry in both our field and source field with same key, we can append them.
-        if (source.fields !== undefined) {
-            if (this.fields == undefined) {
-                this.fields = Object.assign({}, source.fields);
+        if (source.fields) {
+            if (!this.fields) {
+                //this.fields = Object.assign({}, source.fields);
+                this.fields = jrhelpers.makeClonedObjFromEnumerableProperties(source.fields);
             } else {
                 for (var key in source.fields) {
-                    if (this.fields[key] == undefined) {
+                    if (!this.fields[key]) {
                         this.fields[key] = source.fields[key];
                     } else {
                         if (flagMergeSourceToTop) {
@@ -163,14 +164,16 @@ class JrResult {
             }
         }
 
-        if (source.items != undefined) {
+        if (source.items) {
             // but items need to be concatenated
-            if (this.items == undefined) {
-                this.items = Object.assign({}, source.items);
+            if (!this.items) {
+                //this.items = Object.assign({}, source.items);
+                this.items = jrhelpers.makeClonedObjFromEnumerableProperties(source.items);
             } else {
                 for (var key in source.items) {
-                    if (this.items[key] == undefined) {
-                        this.items[key] = Object.assign({}, source.items[key]);
+                    if (!this.items[key]) {
+                        //this.items[key] = Object.assign({}, source.items[key]);
+                        this.items[key] = jrhelpers.makeClonedObjFromEnumerableProperties(source.items[key]);
                     } else {
                         if (flagMergeSourceToTop) {
                             this.items[key] = (source.items[key]).concat(this.items[key]);
@@ -183,12 +186,27 @@ class JrResult {
         }
 
         // if our typestr is blank, use source typestr
-        if (jrhelpers.isEmpty(this.typestr)) {
+        if (!this.typestr) {
             this.typestr = source.typestr;
-        } else if (flagMergeSourceToTop && !jrhelpers.isEmpty(source.typestr)) {
+        } else if (flagMergeSourceToTop && source.typestr) {
             this.typestr = source.typestr
         }
 
+        return this;
+    }
+
+
+    static makeClone(source) {
+        // first we make a new JrResult object, then copy properties
+        var target = this.makeNew();
+        target.copyFrom(source);
+        //Object.assign(target, source);
+        return target;
+    }
+
+    copyFrom(source) {
+        // first we make a new JrResult object, then copy properties
+        Object.assign(this, source);
         return this;
     }
     //---------------------------------------------------------------------------
@@ -203,10 +221,10 @@ class JrResult {
     // this static helper lets us easily check for a case where caller did something like "var jrResult = JrResult.makeNew();" but then in conditional blocks never added any messages or errors to it
     static isBlank(obj) {
         // helper function
-        if (jrhelpers.isEmpty(obj)) {
+        if (!obj) {
             return true;
         }
-        if ( obj.items == undefined && obj.fields == undefined) {
+        if ( !obj.items && !obj.fields) {
             return true;
         }
         return false;
@@ -230,7 +248,7 @@ class JrResult {
 
 
     static passportInfoAsJrResult(info) {
-        if (info == undefined) {
+        if (!info) {
             return undefined;
         }
         if (JrResult.is(info)) {
@@ -241,7 +259,7 @@ class JrResult {
 
 
     static passportErrorAsString(info) {
-        if (info == undefined || info.message == undefined) {
+        if (!info || !info.message) {
             return "unknown authorization error";
         } 
         return info.message;
@@ -253,35 +271,48 @@ class JrResult {
     // session helpers for flash message save/load
     addToSession(req, flagAddToTop) {
         // addd to session
-        if (req.session == undefined) {
+        // for consistency we return THIS not the newly merged session info
+        if (!req.session) {
             throw("No session defined, can't add result to it.");
         }
-        if (req.session.jrResult == undefined) {
-            req.session.jrResult = this;
-            return req.session.jrResult;
+        if (!req.session.jrResult) {
+            // just assign it since there is nothing in session -- but should we ASSIGN it instead?
+            //jrlog.debugObj(this, "addToSession 1");
+            if (false) {
+                req.session.jrResult = this;
+            } else {
+                req.session.jrResult = JrResult.makeClone(this);
+            }
+        } else {
+            // merge it
+            //jrlog.debugObj(req.session.jrResult, "addToSession 2a");
+            req.session.jrResult.mergeIn(this, flagAddToTop);
+            //jrlog.debugObj(req.session.jrResult, "addToSession 2b");
         }
-        // merge it
-        req.session.jrResult.mergeIn(this, flagAddToTop);
-        return req.session.jrResult;
+        return this;
     }
 
     loadFromSession(req) {
         // load and ADD from session, then CLEAR session
-        if (req.session.jrResult != undefined) {
-            Object.assign(this, req.session.jrResult);
+        if (req.session.jrResult) {
+            //jrlog.debugObj(req.session.jrResult, "loadFromSession 1");
+            this.copyFrom(req.session.jrResult);
+            //jrlog.debugObj(this, "loadFromSession 2");
             // remove it from session
             delete req.session.jrResult;
         }
+        // return ourselves so we can be used to chain functions
+        return this;
     }
 
-    static restoreFromSession(req) {
+    static makeFromSession(req) {
         // if not found, just return undefined quickly
-        if (req.session == undefined || jrhelpers.isEmpty(req.session.jrResult)) {
+        if (!req.session || !req.session.jrResult) {
             return undefined;
         }
         //
-        var jrResult = new JrResult;
-        jrResult.loadFromSession(req);
+        var jrResult = JrResult.makeNew().loadFromSession(req);
+        //jrlog.debugObj(jrResult, "makeFromSession");
         return jrResult;
     }
 
@@ -291,7 +322,10 @@ class JrResult {
         // but if we just passed it in as a local template/view variable, it would OVERWRITE any session data, so we would like to
         // combine them
         // session result, if any (deleting it from session if found, like a flash message)
-        var jrResultSession = this.restoreFromSession(req);
+        //jrlog.debugObj(jrResult, "In sessionRenderResult");
+        var jrResultSession = this.makeFromSession(req);
+
+        //jrlog.debugObj(jrResultSession,"Got jrResultSession from session");
         // 
         if (!jrResult) {
             // empty jrResult, just return session version
@@ -332,7 +366,7 @@ class JrResult {
             // override logic
             res.render = function( view, options, fn ) {
                 // transfer any session jrResult into RESPONSE view available variable
-                res.locals.jrResult = JrResult.restoreFromSession(req);
+                res.locals.jrResult = JrResult.makeFromSession(req);
                 //console.log(res.jrResult);
                 //console.log(req.session);
                 // continue with original render

@@ -124,15 +124,16 @@ class VerificationModel extends ModelBaseMongoose {
 
 
 	// generate a one-time login token for the user
-	static async createVerificationOneTimeLoginTokenEmail(emailAddress, mobilePhoneNumber, voicePhoneNumber, userId, loginId, extraData) {
+	static async createVerificationOneTimeLoginTokenEmail(emailAddress, mobilePhoneNumber, voicePhoneNumber, userId, loginId, flagRevealEmail, extraData) {
 		// ATTN: unfinished
 		// make the verification item and email and/or call the user with the one time login/verification code
 		var verification = await this.createModel("onetimeLogin", null, null, userId, loginId, extraData, DEF_ExpirationDurationMinutesShort);
 		// 
 		var mailobj = {
+			revealEmail: flagRevealEmail,
 			subject: "Email verification code",
 			text: "Please click on the link below to verify that you are the owner of this email address("+emailAddress+"):\n"
-			+ " " + verification.createVerificationCodeUrl()
+			+ " " + verification.createVerificationCodeUrl(),
 		};
 		return await verification.sendViaEmail(mailobj, emailAddress);
 	}
@@ -286,7 +287,7 @@ class VerificationModel extends ModelBaseMongoose {
 		var user = await UserModel.createUserFromObj(userObj);
 		// success
 		await this.useUpAndSave();
-		return JrResult.makeSucces("Your new account with username '"+user.username+"' has been created");
+		return JrResult.makeSuccess("Your new account with username '"+user.username+"' has been created");
 	}
 
 

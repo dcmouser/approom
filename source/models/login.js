@@ -9,6 +9,7 @@
 // modules
 const ModelBaseMongoose = require("./modelBaseMongoose");
 const UserModel = require("./user");
+
 //
 const jrlog = require("../helpers/jrlog");
 const jrhelpers = require("../helpers/jrhelpers");
@@ -22,7 +23,12 @@ class LoginModel extends ModelBaseMongoose {
 	static getVersion() { return 1; }
 
 	// accessors
-	getIdAsString() { return this._id.toString(); }
+	getIdAsString() {
+		if (!this._id) {
+			return "";
+		}
+		return this._id.toString();
+	}
 
 	// collection name for this model
 	static getCollectionName() {
@@ -47,7 +53,7 @@ class LoginModel extends ModelBaseMongoose {
 	// lookup user by their id
 	static async findOneByProviderInfo(provider, provider_userid, flag_updateLoginDate) {
 		// return null if not found
-		if (jrhelpers.isEmpty(provider_userid)) {
+		if (!provider_userid) {
 			return null;
 		}
 		//
@@ -61,9 +67,18 @@ class LoginModel extends ModelBaseMongoose {
 		return login;
 	}
 
+	// lookup user by their id
+	static async findOneById(id) {
+		// return null if not found
+		if (!id) {
+			return null;
+		}
+		//
+		var login = await this.mongooseModel.findOne({_id: id}).exec();
+		return login;
+	}
 
-
-	static async processBridgedLoginGetOrCreateUser(bridgedLoginObj, existingUserId) {
+	static async processBridgedLoginGetOrCreateUser(bridgedLoginObj, req) {
 		// a successful bridged login has happened.
 		// bridgedLoginObj has properties: provider, id
 		//
@@ -82,11 +97,14 @@ class LoginModel extends ModelBaseMongoose {
 		// OR we can defer creating a new full User object at this point
 		// regardless we will create a Login object so we can uniquely identify this visitor and remember their details for a subsequent deferred User account creation; but a Login object does not have a username or email
 		//
-		const flagMakeNewUser = true;
+		const flagMakeNewUser = false;
 		//
 		var eventAddedNewUser = false;
 		var eventNewlyLinked = false;
 
+		// is there already a user logged into this section? if so we will bridge the new login bridge to the existing logged in user
+		const arserver = require("./server");
+		var existingUserId = arserver.getLoggedInLocalUserIdFromSession(req);
 
 		// ok first let's see if we can find an existing bridged login
 		jrlog.cdebugObj(bridgedLoginObj, "Looking for existing bridged login.");
@@ -96,7 +114,7 @@ class LoginModel extends ModelBaseMongoose {
 			// we found the bridged login, so just grab the associated user and return them
 			jrlog.cdebugObj(login,"Found a matching login.");
 			//
-			if (!jrhelpers.isEmpty(login.userid)) {
+			if (login.userid) {
 				user = await UserModel.findOneById(login.userid, true);
 				if (user!=null) {
 					jrlog.cdebugObj(user,"Found a matching user.");
@@ -118,7 +136,7 @@ class LoginModel extends ModelBaseMongoose {
 				if (flagMakeNewUser) {
 					// make a new user object
 					user = await UserModel.createUniqueUserFromBridgedLogin(bridgedLoginObj, true);
-					if (!jrhelpers.isEmpty(user)) {
+					if (user) {
 						eventAddedNewUser = true;
 						jrResult.pushSuccess("A new user account has been created and assoicated with this "+bridgedLoginObj.provider+" login.");
 					}
@@ -157,9 +175,9 @@ class LoginModel extends ModelBaseMongoose {
 			}
 		}
 
-		if (eventNewlyLinked && !eventAddedNewUser && userid !== null && userid !== undefined) {
+		if (eventNewlyLinked && !eventAddedNewUser && userid) {
 			// an existing user was either NEWLY linked to this existing login object, or with a newly created login object
-			jrResult.pushSuccess("The "+bridgedLoginObj.provider+" login has now been linked with your existing user account.");
+			jrResult.pushSuccess("The "+bridgedLoginObj.provider+" login has been linked with your existing user account.");
 		}
 
 
@@ -173,6 +191,40 @@ class LoginModel extends ModelBaseMongoose {
 			jrResult: jrResult.undefinedIfBlank(),
 		};
 	}
+
+
+
+	static async connectUserToLogin(existingUserId, existingLoginId, flagConnectEvenIfLoginHasUser) {
+		// potentially set the userid of a login object -- useful if user logs in when they are already logged in with a Login objjet
+		if (!existingUserId || !existingLoginId) {
+			return null;
+		}
+		// get both models
+		var user = await UserModel.findOneById(existingUserId);
+		var login = await LoginModel.findOneById(existingLoginId);
+		if (!user || !login) {
+			return null;
+		}
+
+		// should we connect
+		if (login.userid && login.userid!=user.getIdAsString() && !flagConnectEvenIfLoginHasUser) {
+			// mismatch, dont connect them
+			return null;
+		}
+
+		// connect them!
+		login.userid = user.getIdAsString();
+		await login.save();
+		var jrResult = JrResult.makeSuccess("Connected your "+login.provider+" login with this user account.");
+		return jrResult;
+	}
+
+
+
+
+
+
+
 
 
 

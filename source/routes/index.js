@@ -9,6 +9,9 @@
 // modules
 const express = require("express");
 
+// models
+const arserver = require("../models/server");
+
 // helpers
 const JrResult = require("../helpers/jrresult");
 
@@ -25,6 +28,10 @@ router.get("/", function(req, res, next) {
 	} else {
 		req.session.views = 1;
 	}
+
+	// ignore any previous login diversions
+	// NOTE: we have to be careful about this to make sure nothing like the email token onetime login redirects here after login token sent, or we will forget diverted url info
+	arserver.forgetLoginDiversions(req);
 
 	// render view
 	res.render("index", {

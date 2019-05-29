@@ -67,10 +67,6 @@ class AppRoomServer {
 	static getVersion() { return 1; }
 
 
-	calcTest1() { return "test1";}
-	static calcTest2() { return "test2";}
-
-
 	// global singleton request
 	static getSingleton(...args) {
 		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
@@ -365,6 +361,9 @@ class AppRoomServer {
 
 		// profile
 		this.setupRoute("/profile","profile");
+
+		// test stuff
+		this.setupRoute("/membersonly","membersonly");
 	}
 
 
@@ -457,20 +456,21 @@ class AppRoomServer {
 
 		var strategyOptions = {
 			passReqToCallback: true,
+			usernameField: 'username_email',
 		};
 
 		// see http://www.passportjs.org/docs/configure/
 		passport.use(new Strategy(
 			strategyOptions,
-			async function(req, username, password, done) {
+			async function(req, username_email, password, done) {
 				// this is the function called when user tries to login
 				// so we check their username and password and return either FALSE or the user
 				// first, find the user via their password
-				//jrlog.debugf("In passport local strategy test with username=%s and password=%s", username, password);
-				var user = await UserModel.findOneByUsername(username);
+				jrlog.cdebugf("In passport local strategy test with username=%s and password=%s", username_email, password);
+				var user = await UserModel.findOneByUsernameEmail(username_email);
 				if (user==null) {
 					// not found
-					var jrResult = JrResult.makeNew("UsernameNotFound").pushFieldError("username", "Username not found");
+					var jrResult = JrResult.makeNew("UsernameNotFound").pushFieldError("username_email", "Username/Email-address not found");
 					return done(null, false, jrResult);
 				}
 				// ok we found the user, now check their password
@@ -520,40 +520,67 @@ class AppRoomServer {
 						realName: profile.displayName
 					},
 				};
-				// already existing logged in user? if so we will bridge the new login bridge to the existing logged in user
-				var existingUserId = AppRoomServer.getLoggedInLocalUserIdFromSession(req);
 				// created bridged user
-				var {user, jrResult} = await LoginModel.processBridgedLoginGetOrCreateUser(bridgedLoginObj, existingUserId);
-				jrlog.debugObj(user, "returned user");
-				jrlog.debugObj(jrResult, " returned jrResult");
+				var {user, jrResult} = await LoginModel.processBridgedLoginGetOrCreateUser(bridgedLoginObj, req);
 				// if user could not be created, it's an error
 				// add jrResult to session in case we did extra stuff and info to show the user
 				if (jrResult !== undefined) {
-					jrlog.debugObj(jrResult,"Trying to add to sesssion data.");
 					jrResult.addToSession(req);
 				}
 				// otherwise log in the user
-				const userProfile = user.getMinimalPassportProfile();
+				var userProfile;
+				if (user) {
+					userProfile = user.getMinimalPassportProfile();
+				} else {
+					userProfile = null;
+				}
 				// return success
 				return done(null, userProfile);
 			}
 		));
 	}
+	//---------------------------------------------------------------------------
 
 
-	// helper function to get logged in local user id
-	static getLoggedInLocalUserIdFromSession(req) {
-		var passportUser = req.session.passport.user;
-		if (passportUser == undefined) {
+	//---------------------------------------------------------------------------
+	// helper function to get logged in local User model id
+	getLoggedInLocalUserIdFromSession(req) {
+		if (!req.session || !req.session.passport || !req.session.passport.user) {
 			return undefined;
 		}
-		if (passportUser.provider == "localUser") {
-			return passportUser.id;
+		var passportUser = req.session.passport.user;
+		if (passportUser.provider != "localUser") {
+			return undefined;
 		}
-		return undefined;
+		return passportUser.id;
+	}
+
+	// helper function to get logged in local Login model id
+	getLoggedInLocalLoginIdFromSession(req) {
+		if (!req.session || !req.session.passport || !req.session.passport.user) {
+			return undefined;
+		}
+		var passportUser = req.session.passport.user;
+		if (passportUser.provider != "localLogin") {
+			return undefined;
+		}
+		return passportUser.loginId;
 	}
 
 
+	async getLoggedInUser(req) {
+		var userid = this.getLoggedInLocalUserIdFromSession(req);
+		if (!userid) {
+			return null;
+		}
+		var user = await UserModel.findOneById(userid);
+		return user;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
 	calcAbsoluteSiteUrlPreferHttps(relativePath) {
 		// build an absolute url
 		var protocol;
@@ -598,6 +625,11 @@ class AppRoomServer {
 	// @param errorCallback is a function that takes (req,res,jrinfo) for custom error handling, where jrinfo is the JrResult style error message created from the passport error; normally you would use this to RE-RENDER a form from a post submission, overriding the default behavior to redirect to the login page with flash error message
 	async routePassportAuthenticate(provider, req, res, next, providerNiceLabel, errorCallback) {
 		// "manual" authenticate via passport (as opposed to middleware auto); allows us to get richer info about error, and better decide what to do
+
+		// but before we authenticate and log in the user lets see if they are already "logged in" using a Login object
+		var previousLoginId = this.getLoggedInLocalLoginIdFromSession(req);
+
+		var thisArserver = this;
 		await passport.authenticate(provider, async function(err, user, info) {
 			if (err) {
 			  return next(err);
@@ -613,14 +645,35 @@ class AppRoomServer {
 					return errorCallback(req,res,jrinfo);
 				}
 			}
+
 			// actually login the user
-			var unusableLoginResult = await req.logIn(user, function(err) {
+			var unusableLoginResult = await req.logIn(user, async function(err) {
 				if (err) {
 					// error (exception) logging them in
 					return next(err);
 				}
 				// success
-				JrResult.makeNew("info").pushSuccess("You have successfully logged in " + providerNiceLabel + ".").addToSession(req, true);
+				var jrResult = JrResult.makeNew("info");
+				jrResult.pushSuccess("You have successfully logged in " + providerNiceLabel + ".");
+				// userid we JUST signed in as -- NOTE: this could be null if its a local bridged login short of a full user account
+				var newlyLoggedInUserId = thisArserver.getLoggedInLocalUserIdFromSession(req);
+				// and NOW if they were previously sessioned with a pre-account Login object, we can connect that to this account
+				if (newlyLoggedInUserId && previousLoginId) {
+					// try to connect
+					var jrResult2 = await LoginModel.connectUserToLogin(newlyLoggedInUserId, previousLoginId, false);
+					if (jrResult2) {
+						jrResult.mergeIn(jrResult2);
+					}
+				}
+				// add message to session.
+				jrResult.addToSession(req, true);
+
+				// check if they were waiting to go to another page
+				if (newlyLoggedInUserId && thisArserver.userLogsInCheckDiverted(req,res)) {
+					return;
+				}
+
+				// redirecto to profile
 				return res.redirect('/profile');
 				});
 				// ATTN: if we get here, we are back from failed login attempt?
@@ -686,18 +739,29 @@ class AppRoomServer {
 
 		var result = await this.mailTransport.sendMail(mailobj);
 		jrlog.cdebugObj(result,"Result from sendMail.");
-		var jrResult = AppRoomServer.makeJrResultFromSendmailRetv(result);
+		var jrResult = this.makeJrResultFromSendmailRetv(result, mailobj);
 		return jrResult;
 	}
 
 
-	static makeJrResultFromSendmailRetv(retv) {
+	makeJrResultFromSendmailRetv(retv, mailobj) {
+		var msg;
 		if (retv.rejected.length==0) {
 			// success!
-			return JrResult.makeNew("SendmailSucccess").pushSuccess("Mail sent to " + jrhelpers.stringArrayToNiceString(retv.accepted) + ".");
+			if (mailobj.revealEmail) {
+				msg = "Mail sent to " + jrhelpers.stringArrayToNiceString(retv.accepted) + ".";
+			} else {
+				msg = "Mail sent.";
+			}
+			return JrResult.makeNew("SendmailSucccess").pushSuccess(msg);
 		}
 		// error
-		return JrResult.makeNew("SendmailError").pushError("Failed to send email to " + jrhelpers.stringArrayToNiceString(retv.rejected) + ".");
+		if (mailobj.revealEmail) {
+			msg = "Failed to send email to " + jrhelpers.stringArrayToNiceString(retv.rejected) + ".";
+		} else {
+			msg = "Failed to send email.";
+		}
+		return JrResult.makeNew("SendmailError").pushError(msg);
 	}
 	//---------------------------------------------------------------------------
 
@@ -877,6 +941,79 @@ class AppRoomServer {
 		jrlog.dblog(type, message, severity);
 	}
 	//---------------------------------------------------------------------------
+
+	
+
+
+
+	//---------------------------------------------------------------------------
+	requireUserIsLoggedIn(req, res, user, goalRelUrl, failureRelUrl) {
+		// if user fails permission, remember the goalRelUrl in session and temporarily redirect to failureRelUrl and return false
+		// otherwise return true
+
+		// we just need to check if the user is non-empty
+		if (!user) {
+			// ok this is failure, save rediret goal url
+			this.rememberDivertedRelUrlAndGo(req, res, goalRelUrl, failureRelUrl, "You need to log in before you can access that page.");
+			return false;
+		}
+
+		return true;
+	}
+
+
+	rememberDivertedRelUrlAndGo(req, res, goalRelUrl, failureRelUrl, msg) {
+		// 
+		this.rememberDivertedRelUrl(req, res, goalRelUrl, msg);
+		// now redirect
+		if (failureRelUrl) {
+			res.redirect(failureRelUrl);
+		}
+	}
+
+
+	rememberDivertedRelUrl(req, res, goalRelUrl, msg) {
+		// remember where they were trying to go when we diverted them, so we can go BACK there after they log in
+		req.session.divertedUrl = goalRelUrl;
+		if (msg) {
+			JrResult.makeError("acl", msg).addToSession(req);
+		}
+	}
+
+
+	userLogsInCheckDiverted(req, res) {
+		// check if user should be diverted to another page, for example after logging in
+		// return true if we divert them, meaning the caller should not do any rendering of the page, etc.
+
+		if (!req.session || !req.session.divertedUrl) {
+			return false;
+		}
+
+		// ok we got one
+		var divertedUrl = req.session.divertedUrl;
+		// forget it
+		this.forgetLoginDiversions(req);
+
+		// now send them there!
+		res.redirect(divertedUrl);
+		return true;
+	}
+
+
+	forgetLoginDiversions(req) {
+		// call this to unset any session diversions -- this can be useful if the user tried to access a protected page but then left the login page and did other things
+		// remove it from session
+		if (!req.session || ! req.session.divertedUrl) {
+			return;
+		}
+		delete req.session.divertedUrl;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
 
 
 
