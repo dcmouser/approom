@@ -34,7 +34,7 @@ class JrResult {
     }
 
     static makeError(typestr, msg) {
-        if (msg == undefined) {
+        if (!msg) {
             // if only one arg is passed, its a message with typestr treated as the msg
             msg = typestr;
             typestr = "error";
@@ -46,7 +46,7 @@ class JrResult {
 
     static makeSuccess(msg) {
         var jrResult = new JrResult("success");
-        if (msg!==undefined) {
+        if (msg) {
             jrResult.pushSuccess(msg);
         }
         return jrResult;
@@ -54,7 +54,7 @@ class JrResult {
 
     static makeMessage(msg) {
         var jrResult = new JrResult("message");
-        if (msg!==undefined) {
+        if (msg) {
             jrResult.pushMessage(msg);
         }
         return jrResult;
@@ -142,6 +142,10 @@ class JrResult {
 
         if (!source) {
             return this;
+        }
+
+        if (!source instanceof JrResult) {
+            throw("In JrResult mergeIn with improper source result of class " + (typeof source));
         }
 
         // for fields, each keyed item should be a string; on the rare occasion we have an entry in both our field and source field with same key, we can append them.
@@ -334,6 +338,19 @@ class JrResult {
         // combine them
         jrResult.mergeIn(jrResultSession, flagSessionAtTop);
         return jrResult;
+    }
+    //---------------------------------------------------------------------------
+
+
+
+    //---------------------------------------------------------------------------
+    // to help use short circuit a procedure that would normally end in rendering a view -- sort of like throwing an exception
+    setDoneRendering(val) {
+        this.doneRendering = val;
+    }
+
+    getDoneRendering() {
+        return this.doneRendering;
     }
     //---------------------------------------------------------------------------
 

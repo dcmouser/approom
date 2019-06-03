@@ -1,5 +1,5 @@
 // approom
-// profile route
+// signup route
 // v1.0.0 on 5/1/19 by mouser@donationcoder.com
 //
 
@@ -11,10 +11,9 @@ const express = require("express");
 
 // models
 const UserModel = require("../models/user");
-const VerificationModel = require("../models/verification");
+const arserver = require("../models/server");
 
 // helpers
-const jrhelpers = require("../helpers/jrhelpers");
 const JrResult = require("../helpers/jrresult");
 
 // init
@@ -22,11 +21,29 @@ const router = express.Router();
 
 
 
-router.get("/", function(req, res, next) {
-	res.render("account/register", {
+
+//---------------------------------------------------------------------------
+// simple request at register page
+router.get("/", async function(req, res, next) {
+
+	// they should not already be logged in. if they are send them elsewhere (e.g. to their profile page)
+	if (arserver.sendLoggedInUsersElsewhere(req)) {
+		return;
+	}
+
+	// initialize req.body with default values for form if we find them in a session field (for example if they just verified their new account), similar to as if they had submitted values and we were re-presenting with errors
+	await UserModel.fillReqBodyWithSessionedFieldValues(req);
+
+	// render
+	res.render(getRegisterViewPath(req), {
 		jrResult: JrResult.sessionRenderResult(req, res),
+		reqbody: req.body,
+		flagFullRegistrationForm: getUseFullRegistrationForm(),
 	});
 });
+
+
+
 
 
 // user is posting registration form
@@ -35,69 +52,56 @@ router.post("/", async function (req, res) {
 	// first thing we can do is check if person is asking for an email address already in use; if so we can error them right away
 	// if not, we generate a special verification object with their registration info and email it to them, in order to defer creation of user and verify email address
 
-	// ok lets check for errors
-	var retvResult;
-	var jrResult = JrResult.makeNew();
-
-	// defaults
-	var passwordHashed = "";
-
-	// valid email?
-	retvResult = await UserModel.validateEmail(req.body.email, true, false);
-	if (retvResult.isError()) {
-		jrResult.mergeIn(retvResult);
+	// they should not already be logged in. if they are send them elsewhere (e.g. to their profile page)
+	if (arserver.sendLoggedInUsersElsewhere(req)) {
+		return;
 	}
 
-	// valid username? they don't have to specify one, but if they do it must be unique
-	retvResult = await UserModel.validateUsername(req.body.username, true, true);
-	if (retvResult.isError()) {
-		jrResult.mergeIn(retvResult);
-	}
-
-	// valid password? they don't have to specify one, but if they do?
-	retvResult = await UserModel.validatePassword(req.body.password, true);
-	if (retvResult.isError()) {
-		jrResult.mergeIn(retvResult);
-	} else {
-		// hash password for storage
-		if (req.body.password) {
-			// hash their password
-			passwordHashed = await UserModel.hashPasswordToObj(req.body.password);
-		}
-	}
+	// ok hand off processing of the registration form
+	var {jrResult, successRedirectTo} = await UserModel.processAccountAllInOneForm(req);
 
 	// any errors, re-render form with errors
 	if (jrResult.isError()) {
-		res.render("account/register", {
+		res.render(getRegisterViewPath(req), {
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 			reqbody: req.body,
+			flagFullRegistrationForm: getUseFullRegistrationForm(),
 		});
 		return;
 	}
 
-	// ok form is good, process it
-	var message;
-
-	// extra data to remember and use if they verify their email and we eventually create account
-	var extraData = {
-		username: req.body.username,
-		passwordHashed: passwordHashed
-	}
-
-	// create the email verification and mail it; we pass userId and loginId as null, so this is an email verification NOT associated with an existing user
-	var jrResult = await VerificationModel.createVerificationNewAccountEmail(req.body.email, null, null, extraData);
-	//
-	jrResult.pushSuccess("Please check for the verification email.  You will need to verify that you have received it before you can log in.");
-	if (true) {
-		jrResult.addToSession(req);
-		return res.redirect('/');
-	} else {
-		res.render("account/register", {
-			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
-			reqbody: req.body,
-		});
-	}
+	// redirect on success
+	jrResult.addToSession(req);
+	return res.redirect(successRedirectTo);
 });
+//---------------------------------------------------------------------------
+
+
+
+//---------------------------------------------------------------------------
+// which register view we render depends on whether this is initial registration, or continuing one after they have verified an email
+function getRegisterViewPath(req) {
+	var renderview;
+	if (!arserver.getLoggedInLocalVerificationIdFromSession(req) && !req.body.verifyCode) {
+		renderview = "account/register_initial";
+	} else {
+		renderview = "account/register_full";
+	}
+	return renderview;
+}
+
+
+function getUseFullRegistrationForm() {
+	// present with full registration even on initial signup?
+	// if false, we just ask for email at signup and get other info after
+	return false;
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
 
 
 

@@ -1,0 +1,40 @@
+<h1>Register a New Account</h1>
+
+    <form action="" method="post">
+
+{{#if flagFullRegistrationForm}}
+      <div>
+        <label>Requested Username:</label>
+        <input type="text" name="username" value="{{reqbody.username}}" />
+          <span class="jrErrorInline">{{jrResult.fields.username}}</span>
+        <br/>
+      </div>
+{{/if}}
+
+
+      <div>
+        <label>Requested Email:</label>
+        <input type="text" name="email" value="{{reqbody.email}}"/>
+          <span class="jrErrorInline">{{jrResult.fields.email}}</span>
+      </div>
+
+{{#if flagFullRegistrationForm}}
+      <div>
+        <label>Password:</label>
+        <input type="password" name="password" value="{{reqbody.password}}" />
+          <span class="jrErrorInline">{{jrResult.fields.password}}</span>
+      </div>
+{{/if}}
+
+      <div>
+        <input type="submit" value="Submit" />
+      </div>
+    </form>
+
+
+<ul>
+  <li><a href="profile">profile</a></li>
+  <li><a href="register">register</a></li>
+  <li><a href="login">login</a></li>
+  <li><a href="logout">logout</a></li>
+</ul>

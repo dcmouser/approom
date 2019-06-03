@@ -30,7 +30,8 @@ const router = express.Router();
 //---------------------------------------------------------------------------
 // simple login, present form
 router.get("/", function(req, res, next) {
-	// grab pending session errors to display
+	// ATTN: unfinished - if they have just created an account and been redirected here to login (in order to encourage them to remember their password), we could try to be a bit nice and pre-fill their username, eg. req.body.username_email
+	//
 	// render page
 	res.render("account/login", {
 		jrResult: JrResult.sessionRenderResult(req, res),
@@ -118,7 +119,7 @@ router.post("/email", async function(req, res, next) {
 		var userid = user.getIdAsString();
 		var userEmail = user.email;
 		var flagRevealEmail = (userEmail == username_email);
-		jrResult = await VerificationModel.createVerificationOneTimeLoginTokenEmail(userEmail, null, null, userid, null, flagRevealEmail, null);
+		jrResult = await VerificationModel.createVerificationOneTimeLoginTokenEmail(userEmail, userid, null, flagRevealEmail, null);
 		if (!jrResult.isError()) {
 			// success; redirect them to homepage and tell them to check their email for a login token (see the verify route for when they click the link to login)
 			jrResult.pushSuccess("Check your mail for your link to login.");

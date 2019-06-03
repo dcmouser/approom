@@ -52,30 +52,30 @@ const DEF_HumanEasyCharacters = DEF_HumanEasyCharactersArray[0] + DEF_HumanEasyC
 
 
 //---------------------------------------------------------------------------
-async function hashPlaintextPasswordToObj(passwordPlaintext) {
+async function hashPlaintextPassword(passwordPlaintext) {
 	// algorithm to use
 	var passwordAlgorithm = DEF_PasswordAlgorithm
 	var salt = "";
 	// hash it
-	var passwordHashedObj = await createPasswordHashedObj(passwordPlaintext, passwordAlgorithm, salt, DEF_CryptSaltRounds, DEF_latestPasswordVersion);
+	var passwordHashed = await createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, DEF_CryptSaltRounds, DEF_latestPasswordVersion);
 	// return it -- an OBJECT with properties not just a string
-	return passwordHashedObj;
+	return passwordHashed;
 }
 
 
 
-async function createPasswordHashedObj(passwordPlaintext, passwordAlgorithm, salt, saltRounds, passwordVersion) {
+async function createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, saltRounds, passwordVersion) {
 	// function to hash plaintext password and return an object with hashed password properties
 
-	var passwordHashed;
+	var passwordHashedStr;
 	//
 	if (passwordAlgorithm == "plain") {
-		passwordHashed = passwordPlaintext;
+		passwordHashedStr = passwordPlaintext;
 		salt = "";
 	} else if (passwordAlgorithm=="bcrypt") {
 		// bcrypt module hash -- the most widely recommended method
-		// note that bcrypt does not let us specify salt, and embeds extra info in passwordHashed string
-		passwordHashed = await bcrypt.hash(passwordPlaintext, saltRounds);
+		// note that bcrypt does not let us specify salt, and embeds extra info in passwordHashedStr string
+		passwordHashedStr = await bcrypt.hash(passwordPlaintext, saltRounds);
 		// null these so we dont save them (saltRound info is embedded in the bcrypt hash)
 		salt = null;
 		saltRounds = null;
@@ -90,16 +90,16 @@ async function createPasswordHashedObj(passwordPlaintext, passwordAlgorithm, sal
 		//
 		var hash = crypto.createHmac("sha512", salt);
 		hash.update(passwordPlaintext);
-		passwordHashed = hash.digest("hex");
+		passwordHashedStr = hash.digest("hex");
 		// null these so we dont save them
 		saltRounds = null;
 	} else {
 		throw("Uknown password hash algorithm: "+passwordAlgorithm);
 	}
 
-	// build the passwordHashedObj and return it
-	var passwordHashedObj = {
-		hash: passwordHashed,
+	// build the passwordHashed and return it
+	var passwordHashed = {
+		hash: passwordHashedStr,
 		alg: passwordAlgorithm,
 		// version is a numeric value we can use in case we need to force upgrade everyone with an old password algorithm, etc.
 		ver: passwordVersion,
@@ -107,47 +107,47 @@ async function createPasswordHashedObj(passwordPlaintext, passwordAlgorithm, sal
 		date: new Date,
 	};
 	if (salt !== null) {
-		passwordHashedObj.salt = salt;
+		passwordHashed.salt = salt;
 	}
 	if (saltRounds !== null) {
-		passwordHashedObj.saltRounds = saltRounds;
+		passwordHashed.saltRounds = saltRounds;
 	}
 	//
-	return passwordHashedObj;
+	return passwordHashed;
 }
 
 
 
 
-async function testPassword(passwordPlaintext, passwordHashedObj) {
+async function testPassword(passwordPlaintext, passwordHashed) {
 	// see if password matches
 
 	// if passwordHashStringFromDb == "" then there is no password stored, so result is always false
-	if (passwordPlaintext == "" || passwordHashedObj==null) {
+	if (passwordPlaintext == "" || passwordHashed==null) {
 		return false;
 	}
 
 	// password obj properties
-	var passwordAlgorithm = passwordHashedObj.alg;
-	var passwordHashed = passwordHashedObj.hash;
-	var passwordDate = passwordHashedObj.date;
-	var passwordVersion = passwordHashedObj.ver;
+	var passwordAlgorithm = passwordHashed.alg;
+	var passwordHashedStr = passwordHashed.hash;
+	var passwordDate = passwordHashed.date;
+	var passwordVersion = passwordHashed.ver;
 
 	// ok compare
 	try {
 		if (passwordAlgorithm == "bcrypt") {
 			// bcrypt uses its own explicit compare function, that is meant to defeat timing attacks
 			// note that it will figure out the salt and saltrounds from the actual hash string
-			var bretv = bcrypt.compare(passwordPlaintext, passwordHashed);
+			var bretv = bcrypt.compare(passwordPlaintext, passwordHashedStr);
 			return bretv;
 		} else {
 			// for non-bcrypt, we essentially repeat the hash process with the previously used salt and then compare
-			var salt = passwordHashedObj.salt;
-			var saltRounds = passwordHashedObj.saltRounds;
+			var salt = passwordHashed.salt;
+			var saltRounds = passwordHashed.saltRounds;
 			//
-			var passwordHashedObjTest = await createPasswordHashedObj(passwordPlaintext, passwordAlgorithm, salt, saltRounds, passwordVersion);
+			var passwordHashedTest = await createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, saltRounds, passwordVersion);
 			// now is the hashed version of the new plaintext the same as the hashed version of the old stored one?
-			return (passwordHashedObjTest.hash == passwordHashed)
+			return (passwordHashedTest.passwordHashedStr == passwordHashedStr)
 		}
 	}
 	catch (err) {
@@ -232,7 +232,7 @@ function genRandomStringHumanEasier(length) {
 
 //---------------------------------------------------------------------------
 module.exports = {
-	hashPlaintextPasswordToObj, createPasswordHashedObj, testPassword,
+	hashPlaintextPassword, createPasswordHashed, testPassword,
 	genRandomStringHex, genRandomStringHumanEasy, genRandomStringHumanEasier
 	}
 //---------------------------------------------------------------------------

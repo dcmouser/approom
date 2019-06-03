@@ -32,14 +32,15 @@ router.get("/", async function(req, res, next) {
     }
 
     // ATTN: test
-    jrlog.debugObj(user, "User in members");
-	var jrResult = JrResult.makeSuccess("Welcome, "+user.getUsername()+"!");
+    //jrlog.debugObj(user, "User in members");
+	//var jrResult = JrResult.makeSuccess("Welcome, "+user.getUsername()+"!");
 
 	// ignore any previous login diversions
     arserver.forgetLoginDiversions(req);
     
 	res.render("user/membersonly", {
-        jrResult: JrResult.sessionRenderResult(req, res, jrResult, true),
+        //jrResult: JrResult.sessionRenderResult(req, res, jrResult, true),
+        jrResult: JrResult.sessionRenderResult(req, res),
         username: user.getUsername(),
         id: user.getIdAsString(),
 	});

@@ -49,6 +49,13 @@ class LoginModel extends ModelBaseMongoose {
 	};
 
 
+	getExtraData() {
+		if (!this.extraData) {
+			return {};
+		}
+		return JSON.parse(this.extraData);
+	}
+
 
 	// lookup user by their id
 	static async findOneByProviderInfo(provider, provider_userid, flag_updateLoginDate) {
@@ -67,7 +74,7 @@ class LoginModel extends ModelBaseMongoose {
 		return login;
 	}
 
-	// lookup user by their id
+	// lookup by id
 	static async findOneById(id) {
 		// return null if not found
 		if (!id) {
@@ -78,7 +85,7 @@ class LoginModel extends ModelBaseMongoose {
 		return login;
 	}
 
-	static async processBridgedLoginGetOrCreateUser(bridgedLoginObj, req) {
+	static async processBridgedLoginGetOrCreateUserOrProxy(bridgedLoginObj, req) {
 		// a successful bridged login has happened.
 		// bridgedLoginObj has properties: provider, id
 		//
@@ -92,19 +99,20 @@ class LoginModel extends ModelBaseMongoose {
 		var user;
 		// potential result to return with extra messages
 		var jrResult = JrResult.makeNew();
+		var eventAddedNewUser = false;
+		var eventNewlyLinked = false;
 
+	
 		// ATTN: we have a choice to make when someone performs a bridged login, we can EITHER create a real User object now, but perhaps without good final info about their desired username, etc
 		// OR we can defer creating a new full User object at this point
 		// regardless we will create a Login object so we can uniquely identify this visitor and remember their details for a subsequent deferred User account creation; but a Login object does not have a username or email
-		//
 		const flagMakeNewUser = false;
-		//
-		var eventAddedNewUser = false;
-		var eventNewlyLinked = false;
+
 
 		// is there already a user logged into this section? if so we will bridge the new login bridge to the existing logged in user
 		const arserver = require("./server");
 		var existingUserId = arserver.getLoggedInLocalUserIdFromSession(req);
+		var existingVerificationId = arserver.getLoggedInLocalVerificationIdFromSession(req);
 
 		// ok first let's see if we can find an existing bridged login
 		jrlog.cdebugObj(bridgedLoginObj, "Looking for existing bridged login.");
@@ -131,22 +139,25 @@ class LoginModel extends ModelBaseMongoose {
 			if (existingUserId != null) {
 				// there is already a user logged in, so just load this user
 				user = await UserModel.findOneById(existingUserId, true);
-			} else {
-				// we want to create a new user associated with this bridged login
+			}
+			
+			if (!user) {
+				// IMPORTANT: DO WE want to create a new user associated with this bridged login?
 				if (flagMakeNewUser) {
-					// make a new user object
+					// make a new user object, this WILL find and assign a UNIQUE username (based on their real name), and leave the account without a password
 					user = await UserModel.createUniqueUserFromBridgedLogin(bridgedLoginObj, true);
 					if (user) {
 						eventAddedNewUser = true;
 						jrResult.pushSuccess("A new user account has been created and assoicated with this "+bridgedLoginObj.provider+" login.");
 					}
 				} else {
-					// create empty user object which is not saved to db
+					// create a proxy empty user object which is not saved to db
+					// in this formulation, we are NOT saving a user to the database
+					// note: if an attempt is made to save this to database it will fail, as it has no username, etc.
 					user = new UserModel;
 				}
 			}
 		}
-
 		var userid = user.getIdAsString();
 
 		// create Login if it's not been created yet; saving userId with it
@@ -167,7 +178,7 @@ class LoginModel extends ModelBaseMongoose {
 			// login already existed -- but did it have the right userid already?
 			if (login.userid !== userid && userid !== null && userid !== undefined) {
 				// ok we need to update login data to point to the new user
-				// ATTN: We expect this case to happen login.userid is empty;
+				// ATTN: We expect this case to happen when login.userid is empty;
 				// but is it possible for us to get here with login.userid with a real user? i think the only way would be if the user was not actually found; that would be the only way to make a new user with a different id and get to here.
 				login.userid = userid;
 				await login.save();
@@ -185,6 +196,10 @@ class LoginModel extends ModelBaseMongoose {
 		// this is most important if in this function we decide we do want to actually create a full user object here
 		user.loginId = login.getIdAsString();
 
+		// preserve existing verification id?
+		user.verificationId = existingVerificationId;
+
+
 		// now return the associated user we found (or created above)
 		return {
 			user: user,
@@ -200,8 +215,21 @@ class LoginModel extends ModelBaseMongoose {
 			return null;
 		}
 		// get both models
-		var user = await UserModel.findOneById(existingUserId);
-		var login = await LoginModel.findOneById(existingLoginId);
+		var user;
+		var login;
+
+		// shortcuts for calling with already resolved user
+		if (existingUserId instanceof UserModel) {
+			user = existingUserId;
+		} else {
+			user = await UserModel.findOneById(existingUserId);
+		}
+		if (existingLoginId instanceof LoginModel) {
+			login = existingLoginId;
+		} else {
+			login = await LoginModel.findOneById(existingLoginId);
+		}
+
 		if (!user || !login) {
 			return null;
 		}

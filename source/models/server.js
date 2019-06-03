@@ -349,8 +349,10 @@ class AppRoomServer {
 
 		// home page
 		this.setupRoute("/","index");
-		// register
+
+		// register/signup
 		this.setupRoute("/register","register");
+
 		// login
 		this.setupRoute("/login","login");
 		// logout
@@ -521,13 +523,13 @@ class AppRoomServer {
 					},
 				};
 				// created bridged user
-				var {user, jrResult} = await LoginModel.processBridgedLoginGetOrCreateUser(bridgedLoginObj, req);
+				var {user, jrResult} = await LoginModel.processBridgedLoginGetOrCreateUserOrProxy(bridgedLoginObj, req);
 				// if user could not be created, it's an error
 				// add jrResult to session in case we did extra stuff and info to show the user
 				if (jrResult !== undefined) {
 					jrResult.addToSession(req);
 				}
-				// otherwise log in the user
+				// otherwise log in the user -- either with a REAL user account, OR if user is a just a namless proxy for the bridged login, with that
 				var userProfile;
 				if (user) {
 					userProfile = user.getMinimalPassportProfile();
@@ -543,38 +545,72 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	// helper function to get logged in local User model id
-	getLoggedInLocalUserIdFromSession(req) {
+	getLoggedInPassportUserOfProvider(req, provider) {
+		var passportUser = this.getLoggedInPassportUser(req);
+		if (!passportUser) {
+			return undefined;
+		}
+		if (provider == "localUser") {
+			return passportUser.id;
+		}
+		if (provider == "localLogin") {
+			return passportUser.loginId;
+		}		
+		if (provider == "localVerification") {
+			return passportUser.verificationId;
+		}
+		throw ("Unknown provider requested in getLoggedInPassportUserOfProvider");
+	}
+
+	getLoggedInPassportUser(req) {
 		if (!req.session || !req.session.passport || !req.session.passport.user) {
 			return undefined;
 		}
-		var passportUser = req.session.passport.user;
-		if (passportUser.provider != "localUser") {
-			return undefined;
+		return req.session.passport.user;
+	}
+
+	async getLoggedInUser(req) {
+		var userId = this.getLoggedInLocalUserIdFromSession(req);
+		if (!userId) {
+			return null;
 		}
-		return passportUser.id;
+		var user = await UserModel.findOneById(userId);
+		return user;
+	}
+
+	async getLoggedInLogin(req) {
+		var loginId = this.getLoggedInLocalLoginIdFromSession(req);
+		if (!loginId) {
+			return null;
+		}
+		var login = await LoginModel.findOneById(loginId);
+		return login;
+	}
+
+	async getLoggedInVerification(req) {
+		var verificationId = this.getLoggedInLocalVerificationIdFromSession(req);
+		if (!verificationId) {
+			return null;
+		}
+		const VerificationModel = require("./verification");
+		var verification = await VerificationModel.findOneById(verificationId);
+		return verification;
+	}
+	
+
+	// helper function to get logged in local User model id
+	getLoggedInLocalUserIdFromSession(req) {
+		return this.getLoggedInPassportUserOfProvider(req, "localUser");
 	}
 
 	// helper function to get logged in local Login model id
 	getLoggedInLocalLoginIdFromSession(req) {
-		if (!req.session || !req.session.passport || !req.session.passport.user) {
-			return undefined;
-		}
-		var passportUser = req.session.passport.user;
-		if (passportUser.provider != "localLogin") {
-			return undefined;
-		}
-		return passportUser.loginId;
+		return this.getLoggedInPassportUserOfProvider(req, "localLogin");
 	}
 
-
-	async getLoggedInUser(req) {
-		var userid = this.getLoggedInLocalUserIdFromSession(req);
-		if (!userid) {
-			return null;
-		}
-		var user = await UserModel.findOneById(userid);
-		return user;
+	// helper function to get logged in local Login model id
+	getLoggedInLocalVerificationIdFromSession(req) {
+		return this.getLoggedInPassportUserOfProvider(req, "localVerification");
 	}
 	//---------------------------------------------------------------------------
 
@@ -673,8 +709,13 @@ class AppRoomServer {
 					return;
 				}
 
-				// redirecto to profile
-				return res.redirect('/profile');
+				// new full account connected?
+				if (newlyLoggedInUserId) {
+					return res.redirect('/profile');
+				}
+				// no user account made yet, 
+				// default send them to full account fill int
+				return res.redirect('/account');
 				});
 				// ATTN: if we get here, we are back from failed login attempt?
 			})(req, res, next);
@@ -1012,7 +1053,59 @@ class AppRoomServer {
 
 
 
+	//---------------------------------------------------------------------------
+	async loginUserThroughPassport(req, user) {
+		var jrResult;
+		var success = false;
 
+		var userPassport = user.getMinimalPassportProfile();
+
+		var unusableLoginResult = await req.login(userPassport, function (err)  {
+			if (err) { 
+				jrResult = JrResult.makeError("VerificationError", JrResult.passportErrorAsString(err));
+			} else {
+				success = true;
+			}
+			// note that if we try to handle success actions in here that have to async await, like a model save, we wind up in trouble for some reason -- weird things happen that i don't understand
+			// so instead we drop down on success and can check jrResult
+		});
+
+		if (success) {
+			jrResult = JrResult.makeSuccess();
+		} else if (jrResult == undefined) {
+			// unknown exception error that happened in passport login attempt?
+			jrResult = JrResult.makeError("VerificationError", "Unknown passport login error in useNowOneTimeLogin.");
+		}
+
+		return jrResult;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+	//---------------------------------------------------------------------------
+	// present user with new account create form they can submit to ACTUALLY create their new account
+	// this would typically be called AFTER the user has verified their email with verification model
+	presentNewAccountRegisterForm(userObj, verification, req, res) {
+		// ATTN: is this ever called
+		throw("presentNewAccountRegisterForm not implemented yet.");
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	sendLoggedInUsersElsewhere(req, res) {
+		// if they are logged in with a real user account already, just redirect them to their profile and return true
+		// otherwise return false;
+		var userId = this.getLoggedInLocalUserIdFromSession(req);
+		if (userId) {
+			res.redirect("profile");
+			return true;
+		}
+		return false;
+	}
+	//---------------------------------------------------------------------------	
 
 
 

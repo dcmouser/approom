@@ -29,6 +29,12 @@
 		"USERNAME": "YOUR_SMTP_USERNAME",
 		"PASSWORD": "YOU_SMTP_USERPASSS",
 		"FROM": "me@mydomain.com"
+	},
+
+	
+	"options": {
+		"ACCOUNTREQUIRE_PASSWORD": false,
+		"ACCOUNTREQUIRE_EMAIL": false
 	}
 
 }
