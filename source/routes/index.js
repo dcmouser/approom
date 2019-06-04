@@ -21,7 +21,7 @@ const router = express.Router();
 
 
 // Get home page
-router.get("/", function(req, res, next) {
+router.get("/", (req, res, next) => {
 	// session test - store count of how many times they've viewed page
 	if (req.session.views) {
 		req.session.views++;
@@ -36,7 +36,7 @@ router.get("/", function(req, res, next) {
 	// render view
 	res.render("index", {
 		jrResult: JrResult.sessionRenderResult(req, res),
-		title: "AppRoom" 
+		title: "AppRoom",
 	});
 });
 

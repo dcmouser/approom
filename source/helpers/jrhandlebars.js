@@ -14,31 +14,31 @@
 
 //---------------------------------------------------------------------------
 function setupJrHandlebarHelpers(hbs) {
-    // pluralizing helpers
-	hbs.registerHelper('jrPluralize', function(number, singular, plural) {
+	// pluralizing helpers
+	hbs.registerHelper("jrPluralize", (number, singular, plural) => {
 		if (number === undefined) {
 			number = 0;
-		} else if (Array.isArray(number) ) {
+		} else if (Array.isArray(number)) {
 			number = number.length;
 		}
-		if (number === 1)
+		if (number === 1) {
 			return singular;
-		else
-			return (typeof plural === 'string' ? plural : singular + 's');
+		}
+		return (typeof plural === "string" ? plural : singular + "s");
 	});
-    //
-	hbs.registerHelper('jrPluralizeCount', function(number, singular, plural) {
+	//
+	hbs.registerHelper("jrPluralizeCount", (number, singular, plural) => {
 		if (number === undefined) {
 			number = 0;
-		} else if (Array.isArray(number) ) {
+		} else if (Array.isArray(number)) {
 			number = number.length;
 		}
 		//
 		var numberStr = number.toString();
-		if (number === 1)
+		if (number === 1) {
 			return numberStr + " " + singular;
-		else
-			return (typeof plural === 'string' ? numberStr + " " + plural : numberStr + " " + singular + 's');
+		}
+		return (typeof plural === "string" ? numberStr + " " + plural : numberStr + " " + singular + "s");
 	});
 }
 //---------------------------------------------------------------------------
@@ -54,13 +54,13 @@ function loadPartialFiles(hbs, partialsDir) {
 	const fs = require("fs");
 	var filenames = fs.readdirSync(partialsDir);
 
-	filenames.forEach(function (filename) {
+	filenames.forEach((filename) => {
 		var matches = /^([^.]+).hbs$/.exec(filename);
-        if (!matches) {
-            return;
+		if (!matches) {
+			return;
 		}
-    	var name = matches[1];
-    	var template = fs.readFileSync(partialsDir + "/" + filename, "utf8");
+		var name = matches[1];
+		var template = fs.readFileSync(partialsDir + "/" + filename, "utf8");
 		hbs.registerPartial(name, template);
 	});
 }
@@ -74,6 +74,6 @@ function loadPartialFiles(hbs, partialsDir) {
 
 //---------------------------------------------------------------------------
 module.exports = {
-	setupJrHandlebarHelpers, loadPartialFiles
-	}
+	setupJrHandlebarHelpers, loadPartialFiles,
+};
 //---------------------------------------------------------------------------

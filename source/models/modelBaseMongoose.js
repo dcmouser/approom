@@ -7,7 +7,6 @@
 "use strict";
 
 // our helper modules
-const jrhelpers = require("../helpers/jrhelpers");
 const jrlog = require("../helpers/jrlog");
 
 
@@ -40,16 +39,13 @@ class ModelBaseMongoose {
 		this.mongooseModel = await mongooser.model(collectionName, this.modelSchema);
 
 		// ensure the collection is created now even though it's blank
-		// ATTN: 5/11/19 - mongoose/mongodb is having a weird fit here, where it is throwing an error about connection already exists if while making schema it is creating indexes, even if strict = false
+		// ATTN: 5/11/19 - mongoose/mongodb is having a weird fit here, where it is throwing an error
+		//  about connection already exists if while making schema it is creating indexes, even if strict = false
 		// so we are going to try to check for collection manually before creating it.
 		// note that even with this check, we must use the default strict:false, otherwise we still get a complaint
 		if (!await this.collectionExists(mongooser, collectionName)) {
-			await this.mongooseModel.createCollection({strict:false});				
+			await this.mongooseModel.createCollection({ strict: false });
 		}
-
-		// debug
-		//jrlog.cinfoObj(this.mongooseModel, "mongoose model");
-		//jrlog.cdebugObj(this.mongooseModel,"mongoose model");
 
 		// any database initialization to be done (e.g. create initial objects/documents, etc.)
 		await this.dbInit();
@@ -58,9 +54,8 @@ class ModelBaseMongoose {
 
 	static async collectionExists(mongooser, collectionName) {
 		// return true if collection already exists
-		var list = await mongooser.connection.db.listCollections({name: collectionName}).toArray();
-		//jrlog.cdebugObj(list,"collectionList");
-		if (list.length>0) {
+		var list = await mongooser.connection.db.listCollections({ name: collectionName }).toArray();
+		if (list.length > 0) {
 			return true;
 		}
 		// not found
@@ -78,10 +73,10 @@ class ModelBaseMongoose {
 	static createModel(inobj) {
 		var obj = {
 			version: this.getVersion(),
-			creationDate: new Date,
+			creationDate: new Date(),
 			modificationDate: null,
 			enabled: 1,
-			...inobj
+			...inobj,
 		};
 		var model = new this.mongooseModel(obj);
 		return model;
@@ -93,10 +88,10 @@ class ModelBaseMongoose {
 		// some base schema properties for ALL models
 		// this helps us keep track of some basic stuff for everything
 		var obj = {
-			version: {type: Number},
-			creationDate: {type: Date},
-			modificationDate: {type: Date},
-			enabled: {type: Number}
+			version: { type: Number },
+			creationDate: { type: Date },
+			modificationDate: { type: Date },
+			enabled: { type: Number },
 		};
 		return obj;
 	}
@@ -105,4 +100,4 @@ class ModelBaseMongoose {
 
 
 // export the class as the sole export
-module.exports = ModelBaseMongoose
+module.exports = ModelBaseMongoose;

@@ -53,12 +53,16 @@ class JrLog {
 
 	//---------------------------------------------------------------------------
 	// just pass through stuff to winston
-	log(...args) {return this.logger.log(...args);}
-	info(...args) {return this.logger.info(...args);}
-	warning(...args) {return this.logger.warning(...args);}
-	error(...args) {return this.logger.error(...args);}
+	log(...args) { return this.logger.log(...args); }
+
+	info(...args) { return this.logger.info(...args); }
+
+	warning(...args) { return this.logger.warning(...args); }
+
+	error(...args) { return this.logger.error(...args); }
+
 	// meant as quick replacement for console.log
-	clog(...args) {return this.logger.info(...args);}
+	clog(...args) { return this.logger.info(...args); }
 	//---------------------------------------------------------------------------
 
 
@@ -66,24 +70,27 @@ class JrLog {
 
 	//---------------------------------------------------------------------------
 	// pass through to debug function for quick and dirty screen display
-	// 
-	cdebug(...args) {if (this.getDebugEnable()) return this.debug(...args); else return null;}
-	debug(...args) {return this.debugfunc(...args);}
+
+	cdebug(...args) { if (this.getDebugEnable()) return this.debug(...args); return null; }
+
+	debug(...args) { return this.debugfunc(...args); }
+
 	// helper that simplifies sending a formatted string ("%s:%d", str, val)
-	cdebugf(str,...args) {if (this.getDebugEnable()) return this.debugf(str, ...args); else return null;}
-	debugf(str,...args) {return this.debugfunc(util.format(str,...args));}
-	//
-	cdebugObj(obj,msg) {if (this.getDebugEnable()) return this.debugObj(obj,msg); else return null;}
+	cdebugf(str, ...args) { if (this.getDebugEnable()) return this.debugf(str, ...args); return null; }
+
+	debugf(str, ...args) { return this.debugfunc(util.format(str, ...args)); }
+
+	cdebugObj(obj, msg) { if (this.getDebugEnable()) return this.debugObj(obj, msg); return null; }
 	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
 	calcLogFilePath(fileSuffix) {
 		var filePath = path.join(this.logDir, this.serviceName);
-		if (fileSuffix!="") {
-		 	filePath+= "_" + fileSuffix + ".log";
+		if (fileSuffix !== "") {
+			filePath += ("_" + fileSuffix + ".log");
 		} else {
-			filePath+= ".log";
+			filePath += ".log";
 		}
 		return filePath;
 	}
@@ -113,38 +120,38 @@ class JrLog {
 		// NOTE: we use the module global winstonLogger here, as our default
 
 		const customLevels = {
-			emerg: 0, 
-			alert: 1, 
-			crit: 2, 
-			error: 3, 
-			warning: 4, 
-			notice: 5, 
-			info: 6, 
-  			debug: 7,
-  			db: 6,
+			emerg: 0,
+			alert: 1,
+			crit: 2,
+			error: 3,
+			warning: 4,
+			notice: 5,
+			info: 6,
+			debug: 7,
+			db: 6,
 		};
 		const customColors = {
-			emerg: "red", 
-			alert: "red", 
-			crit: "red", 
-			error: "red", 
-			warning: "yellow", 
-			notice: "green", 
-			info: "blue", 
-  			debug: "cyan",
-  			db: "grey",
+			emerg: "red",
+			alert: "red",
+			crit: "red",
+			error: "red",
+			warning: "yellow",
+			notice: "green",
+			info: "blue",
+			debug: "cyan",
+			db: "grey",
 		};
 
-		var winstonLogger = winston.createLogger( {
+		var winstonLogger = winston.createLogger({
 			levels: customLevels,
-			//level: "info",
+			// level: "info",
 			format: winston.format.combine(
 				winston.format.timestamp({
-					format: "YYYY-MM-DD HH:mm:ss"
-					}),
+					format: "YYYY-MM-DD HH:mm:ss",
+				}),
 				winston.format.errors({ stack: true }),
 				winston.format.splat(),
-				winston.format.json()
+				winston.format.json(),
 			),
 			defaultMeta: { service: this.serviceName },
 			transports: [
@@ -152,23 +159,23 @@ class JrLog {
 				// - Write to all logs with level `info` and below to `.log`
 				// - Write all logs error (and below) to `error.log`.
 				//
-				new winston.transports.File({ filename: this.calcLogFilePath("errors"), level: 'error' }),
-				new winston.transports.File({ filename: this.calcLogFilePath("") })
-			]
+				new winston.transports.File({ filename: this.calcLogFilePath("errors"), level: "error" }),
+				new winston.transports.File({ filename: this.calcLogFilePath("") }),
+			],
 		});
 
 
 		if (false) {
 			// setup console logging
 			winstonLogger.add(new winston.transports.Console({
-	    		format: winston.format.combine(
-	      			winston.format.colorize(),
-	      			winston.format.simple()
-	    		)
-	  		}));
+				format: winston.format.combine(
+					winston.format.colorize(),
+					winston.format.simple(),
+				),
+			}));
 
-		// we need to set colors since we are adding a custom log level (db)
-		winston.addColors(customColors);
+			// we need to set colors since we are adding a custom log level (db)
+			winston.addColors(customColors);
 		}
 
 
@@ -177,16 +184,15 @@ class JrLog {
 			winstonLogger.add(new winston.transports.File({
 				format: winston.format.combine(
 					winston.format.timestamp({
-						format: "YYYY-MM-DD HH:mm:ss"
-						}),
+						format: "YYYY-MM-DD HH:mm:ss",
+					}),
 					winston.format.errors({ stack: true }),
 					winston.format.splat(),
-					winston.format.json()
+					winston.format.json(),
 				),
-	    		filename: this.calcLogFilePath("dblog"),
-	    		level: "db"
-	  		}));
-
+				filename: this.calcLogFilePath("dblog"),
+				level: "db",
+			}));
 		}
 
 		return winstonLogger;
@@ -213,10 +219,11 @@ class JrLog {
 	setDebugEnable(val) {
 		this.debugEnabled = val;
 	}
+
 	getDebugEnable() {
 		return this.debugEnabled;
 	}
-//---------------------------------------------------------------------------
+	//---------------------------------------------------------------------------
 
 
 
@@ -231,11 +238,11 @@ class JrLog {
 	infoObj(obj, msg) {
 		// just helper log function
 
-		if (obj==undefined) {
+		if (obj === undefined) {
 			obj = "___UNDEFINED___";
 		}
 
-		if (msg!=="" && msg!==undefined) {
+		if (msg) {
 			this.info(msg + ": " + this.objToString(obj, true));
 		} else {
 			this.info(this.objToString(obj, true));
@@ -243,12 +250,12 @@ class JrLog {
 	}
 
 
-	debugObj(obj,msg) {
+	debugObj(obj, msg) {
 		// just helper log function
-		if (msg!=="" && msg!==undefined) {
+		if (msg) {
 			this.debug(msg + ": " + this.objToString(obj, false));
 		} else {
-			this.debug(objToString(this.obj, false));
+			this.debug(this.objToString(this.obj, false));
 		}
 	}
 
@@ -256,12 +263,24 @@ class JrLog {
 	// see https://stackoverflow.com/questions/10729276/how-can-i-get-the-full-object-in-node-jss-console-log-rather-than-object
 	// see https://nodejs.org/api/util.html#util_util_inspect_object_options
 	objToString(obj, flagCompact) {
-		//return util.inspect(obj, false, null, true /* enable colors */);
+		// return util.inspect(obj, false, null, true /* enable colors */);
 		var options = {};
 		if (flagCompact) {
-			options = {showHidden: false, depth: 2, colors: false, compact: true, breakLength: Infinity}; 
+			options = {
+				showHidden: false,
+				depth: 2,
+				colors: false,
+				compact: true,
+				breakLength: Infinity,
+			};
 		} else {
-			options = {showHidden: false, depth: 2, colors: false, compact: false,  breakLength: 80}; 
+			options = {
+				showHidden: false,
+				depth: 2,
+				colors: false,
+				compact: false,
+				breakLength: 80,
+			};
 		}
 		return util.inspect(obj, options);
 	}
@@ -272,8 +291,8 @@ class JrLog {
 	// dblog is a mirror of our server.log function that adds log to file, so see Server object
 	dblog(type, message, severity) {
 		var msg = util.format("type='%s' severity='%s' msg='%s'", type, severity, message);
-		this.logger.log("db",msg);
-		//console.log("dblogging "+msg);
+		this.logger.log("db", msg);
+		// console.log("dblogging "+msg);
 	}
 	//---------------------------------------------------------------------------
 

@@ -16,7 +16,6 @@ var bcrypt = require("bcrypt");
 
 // our helper modules
 const jrlog = require("./jrlog");
-const jrhelpers = require("./jrhelpers");
 //---------------------------------------------------------------------------
 
 
@@ -25,24 +24,25 @@ const jrhelpers = require("./jrhelpers");
 //---------------------------------------------------------------------------
 // constants
 
-const DEF_PasswordAlgorithm = "bcrypt";
-//const DEF_PasswordAlgorithm = "crypto_sha512";
+const DefPasswordAlgorithm = "bcrypt";
+// const DefPasswordAlgorithm = "crypto_sha512";
 
 // salt length, not used by bcrypt
-const DEF_CryptSaltLength = 16;
+const DefCryptSaltLength = 16;
 
 // salt rounds, used by bcrypt
-const DEF_CryptSaltRounds = 11;
+const DefCryptSaltRounds = 11;
 
-// update this when you change something about the way a pass algorithm works or the options here, so you can easily filter users based using a password version threshold to force updates
+// update this when you change something about the way a pass algorithm works or the options here,
+//  so you can easily filter users based using a password version threshold to force updates.
 // in addition we store password creation dates, so we can filter based on some date of db compromise
-const DEF_latestPasswordVersion = 2;
+const DefLatestPasswordVersion = 2;
 
 // ATTN: TODO -- we might add support to automatically fail any password check falling below some configured date or passwordVersion
 
 // for humaneasy codes (all uppercase, no I no O no Z no 0 no 1 no 2)
-const DEF_HumanEasyCharactersArray = ["ABCDEFGHJKLMNPQRSTUVWXY", "3456789"];
-const DEF_HumanEasyCharacters = DEF_HumanEasyCharactersArray[0] + DEF_HumanEasyCharactersArray[1];
+const DefHumanEasyCharactersArray = ["ABCDEFGHJKLMNPQRSTUVWXY", "3456789"];
+const DefHumanEasyCharacters = DefHumanEasyCharactersArray[0] + DefHumanEasyCharactersArray[1];
 //---------------------------------------------------------------------------
 
 
@@ -54,10 +54,10 @@ const DEF_HumanEasyCharacters = DEF_HumanEasyCharactersArray[0] + DEF_HumanEasyC
 //---------------------------------------------------------------------------
 async function hashPlaintextPassword(passwordPlaintext) {
 	// algorithm to use
-	var passwordAlgorithm = DEF_PasswordAlgorithm
+	var passwordAlgorithm = DefPasswordAlgorithm;
 	var salt = "";
 	// hash it
-	var passwordHashed = await createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, DEF_CryptSaltRounds, DEF_latestPasswordVersion);
+	var passwordHashed = await createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, DefCryptSaltRounds, DefLatestPasswordVersion);
 	// return it -- an OBJECT with properties not just a string
 	return passwordHashed;
 }
@@ -69,21 +69,21 @@ async function createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, 
 
 	var passwordHashedStr;
 	//
-	if (passwordAlgorithm == "plain") {
+	if (passwordAlgorithm === "plain") {
 		passwordHashedStr = passwordPlaintext;
 		salt = "";
-	} else if (passwordAlgorithm=="bcrypt") {
+	} else if (passwordAlgorithm === "bcrypt") {
 		// bcrypt module hash -- the most widely recommended method
 		// note that bcrypt does not let us specify salt, and embeds extra info in passwordHashedStr string
 		passwordHashedStr = await bcrypt.hash(passwordPlaintext, saltRounds);
 		// null these so we dont save them (saltRound info is embedded in the bcrypt hash)
 		salt = null;
 		saltRounds = null;
-	} else if (passwordAlgorithm=="crypto_sha512") {
+	} else if (passwordAlgorithm === "crypto_sha512") {
 		// crypto module hash
 		// see https://ciphertrick.com/2016/01/18/salt-hash-passwords-using-nodejs-crypto/
 		// note: crypto does not use saltRounds
-		if (salt == "") {
+		if (!salt) {
 			// no salt provided, make a random one
 			salt = generateRandomSalt();
 		}
@@ -94,7 +94,7 @@ async function createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, 
 		// null these so we dont save them
 		saltRounds = null;
 	} else {
-		throw("Uknown password hash algorithm: "+passwordAlgorithm);
+		throw ("Uknown password hash algorithm: " + passwordAlgorithm);
 	}
 
 	// build the passwordHashed and return it
@@ -104,7 +104,7 @@ async function createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, 
 		// version is a numeric value we can use in case we need to force upgrade everyone with an old password algorithm, etc.
 		ver: passwordVersion,
 		// save date so we can find older passwords we want to force users to update after some issue
-		date: new Date,
+		date: new Date(),
 	};
 	if (salt !== null) {
 		passwordHashed.salt = salt;
@@ -123,34 +123,31 @@ async function testPassword(passwordPlaintext, passwordHashed) {
 	// see if password matches
 
 	// if passwordHashStringFromDb == "" then there is no password stored, so result is always false
-	if (passwordPlaintext == "" || passwordHashed==null) {
+	if (!passwordPlaintext || !passwordHashed) {
 		return false;
 	}
 
 	// password obj properties
 	var passwordAlgorithm = passwordHashed.alg;
 	var passwordHashedStr = passwordHashed.hash;
-	var passwordDate = passwordHashed.date;
 	var passwordVersion = passwordHashed.ver;
 
 	// ok compare
 	try {
-		if (passwordAlgorithm == "bcrypt") {
+		if (passwordAlgorithm === "bcrypt") {
 			// bcrypt uses its own explicit compare function, that is meant to defeat timing attacks
 			// note that it will figure out the salt and saltrounds from the actual hash string
 			var bretv = bcrypt.compare(passwordPlaintext, passwordHashedStr);
 			return bretv;
-		} else {
-			// for non-bcrypt, we essentially repeat the hash process with the previously used salt and then compare
-			var salt = passwordHashed.salt;
-			var saltRounds = passwordHashed.saltRounds;
-			//
-			var passwordHashedTest = await createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, saltRounds, passwordVersion);
-			// now is the hashed version of the new plaintext the same as the hashed version of the old stored one?
-			return (passwordHashedTest.passwordHashedStr == passwordHashedStr)
 		}
-	}
-	catch (err) {
+		// for non-bcrypt, we essentially repeat the hash process with the previously used salt and then compare
+		var salt = passwordHashed.salt;
+		var saltRounds = passwordHashed.saltRounds;
+		//
+		var passwordHashedTest = await createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, saltRounds, passwordVersion);
+		// now is the hashed version of the new plaintext the same as the hashed version of the old stored one?
+		return (passwordHashedTest.passwordHashedStr === passwordHashedStr);
+	} catch (err) {
 		jrlog.log("Error in jrhelpers exports.testPassword while attempting to parse/compare hashed password string");
 		jrlog.log(err);
 	}
@@ -163,7 +160,7 @@ async function testPassword(passwordPlaintext, passwordHashed) {
 
 function generateRandomSalt() {
 	// private func
-	return genRandomStringHex(DEF_CryptSaltLength);
+	return genRandomStringHex(DefCryptSaltLength);
 }
 
 
@@ -175,9 +172,9 @@ function generateRandomSalt() {
  * @param {number} length - Length of the random string.
  */
 function genRandomStringHex(length) {
-    return crypto.randomBytes(Math.ceil(length/2))
-            .toString("hex") /** convert to hexadecimal format */
-            .slice(0,length);   /** return required number of characters */
+	return crypto.randomBytes(Math.ceil(length / 2))
+		.toString("hex")
+		.slice(0, length);
 }
 
 
@@ -186,11 +183,11 @@ function genRandomStringHumanEasy(length) {
 	// so all uppercase and avoid letters that could be duplicates
 	// see https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
 	var retstr = "";
-	var charlen = DEF_HumanEasyCharacters.length;
+	var charlen = DefHumanEasyCharacters.length;
 	var charpos;
-	for ( var i = 0; i < length; i++ ) {
+	for (var i = 0; i < length; i++) {
 		charpos = Math.floor(Math.random() * charlen);
-		retstr +=  DEF_HumanEasyCharacters.charAt(charpos);
+		retstr += DefHumanEasyCharacters.charAt(charpos);
 	}
 	return retstr;
 }
@@ -204,14 +201,14 @@ function genRandomStringHumanEasier(length) {
 	var retstr = "";
 	var charlen, charpos;
 	var group = 0;
-	for ( var i = 0; i < length; i++ ) {
-		if (group>1) {
-			// alternate 
+	for (var i = 0; i < length; i++) {
+		if (group > 1) {
+			// alternate
 			group = 0;
 		}
-		charlen = DEF_HumanEasyCharactersArray[group].length;
+		charlen = DefHumanEasyCharactersArray[group].length;
 		charpos = Math.floor(Math.random() * charlen);
-		retstr +=  DEF_HumanEasyCharactersArray[group].charAt(charpos);
+		retstr += DefHumanEasyCharactersArray[group].charAt(charpos);
 		group++;
 	}
 	return retstr;
@@ -233,6 +230,6 @@ function genRandomStringHumanEasier(length) {
 //---------------------------------------------------------------------------
 module.exports = {
 	hashPlaintextPassword, createPasswordHashed, testPassword,
-	genRandomStringHex, genRandomStringHumanEasy, genRandomStringHumanEasier
-	}
+	genRandomStringHex, genRandomStringHumanEasy, genRandomStringHumanEasier,
+};
 //---------------------------------------------------------------------------

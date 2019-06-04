@@ -8,7 +8,7 @@
 
 "use strict";
 
-// modules
+// models
 const ModelBaseMongoose = require("./modelBaseMongoose");
 
 
@@ -27,13 +27,15 @@ class AppModel extends ModelBaseMongoose {
 	static buildSchema(mongooser) {
 		this.schema = new mongooser.Schema({
 			...(this.getUniversalSchemaObj()),
-			name: {type: String, unique: true, required: true},
-			label: {type: String},
-			description: {type: String},
-			shortcode: {type: String},
-		}, {collection: this.getCollectionName()});
+			name: { type: String, unique: true, required: true },
+			label: { type: String },
+			description: { type: String },
+			shortcode: { type: String },
+		}, {
+			collection: this.getCollectionName(),
+		});
 		return this.schema;
-	};
+	}
 
 }
 

@@ -22,27 +22,27 @@ const router = express.Router();
 
 
 
-router.get("/", async function(req, res, next) {
+router.get("/", async (req, res, next) => {
 
-    // require them to be logged in, or creates a redirect
-    var user = await arserver.getLoggedInUser(req);
-    if (!arserver.requireUserIsLoggedIn(req, res, user, "/membersonly", "/login")) {
-        // all done
-        return;
-    }
+	// require them to be logged in, or creates a redirect
+	var user = await arserver.getLoggedInUser(req);
+	if (!arserver.requireUserIsLoggedIn(req, res, user, "/membersonly", "/login")) {
+		// all done
+		return;
+	}
 
-    // ATTN: test
-    //jrlog.debugObj(user, "User in members");
-	//var jrResult = JrResult.makeSuccess("Welcome, "+user.getUsername()+"!");
+	// ATTN: test
+	// jrlog.debugObj(user, "User in members");
+	// var jrResult = JrResult.makeSuccess("Welcome, "+user.getUsername()+"!");
 
 	// ignore any previous login diversions
-    arserver.forgetLoginDiversions(req);
-    
+	arserver.forgetLoginDiversions(req);
+
 	res.render("user/membersonly", {
-        //jrResult: JrResult.sessionRenderResult(req, res, jrResult, true),
-        jrResult: JrResult.sessionRenderResult(req, res),
-        username: user.getUsername(),
-        id: user.getIdAsString(),
+		// jrResult: JrResult.sessionRenderResult(req, res, jrResult, true),
+		jrResult: JrResult.sessionRenderResult(req, res),
+		username: user.getUsername(),
+		id: user.getIdAsString(),
 	});
 });
 

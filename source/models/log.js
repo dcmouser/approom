@@ -6,7 +6,7 @@
 
 "use strict";
 
-// modules
+// models
 const ModelBaseMongoose = require("./modelBaseMongoose");
 
 
@@ -26,18 +26,20 @@ class LogModel extends ModelBaseMongoose {
 	static buildSchema(mongooser) {
 		this.schema = new mongooser.Schema({
 			...(this.getUniversalSchemaObj()),
-			type: {type: String },
-			message: {type: String },
-			severity: {type: Number},
-		}, {collection: this.getCollectionName()});
+			type: { type: String },
+			message: { type: String },
+			severity: { type: Number },
+		}, {
+			collection: this.getCollectionName(),
+		});
 		return this.schema;
-	};
+	}
 
 
 	// we override this base schema because logs need to be MINIMAL
 	static getUniversalSchemaObj() {
 		var obj = {
-			creationDate: {type: Date},
+			creationDate: { type: Date },
 		};
 		return obj;
 	}
@@ -47,8 +49,8 @@ class LogModel extends ModelBaseMongoose {
 	// create new obj
 	static createModel(inobj) {
 		var obj = {
-			creationDate: new Date,
-			...inobj
+			creationDate: new Date(),
+			...inobj,
 		};
 		var model = new this.mongooseModel(obj);
 		return model;
@@ -59,4 +61,3 @@ class LogModel extends ModelBaseMongoose {
 
 // export the class as the sole export
 module.exports = LogModel;
-

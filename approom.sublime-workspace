@@ -186,7 +186,7 @@
 			"new date",
 			"jrhelpers",
 			"createModel",
-			"DEF_ExpirationDurationMinutes",
+			"DefExpirationDurationMinutes",
 			"getmin",
 			"verifiyCode",
 			"testPassword",

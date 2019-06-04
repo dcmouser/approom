@@ -8,10 +8,12 @@
 "use strict";
 
 // modules
-const ModelBaseMongoose = require("./modelBaseMongoose");
-
 // acl module - https://www.npmjs.com/package/acl
 const acl = require("acl");
+
+// models
+const ModelBaseMongoose = require("./modelBaseMongoose");
+
 
 
 
@@ -30,10 +32,12 @@ class AclModel extends ModelBaseMongoose {
 	static buildSchema(mongooser) {
 		this.schema = new mongooser.Schema({
 			...(this.getUniversalSchemaObj()),
-			permission: {type: String }
-		}, {collection: this.getCollectionName()});
+			permission: { type: String },
+		}, {
+			collection: this.getCollectionName(),
+		});
 		return this.schema;
-	};
+	}
 
 }
 

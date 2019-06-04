@@ -20,7 +20,6 @@ const morgan = require("morgan");
 const http = require("http");
 const bodyParser = require("body-parser");
 const https = require("https");
-//const connectFlash = require('connect-flash');
 
 // passport authentication stuff
 const passport = require("passport");
@@ -54,8 +53,9 @@ const UserModel = require("./user");
 const LoginModel = require("./login");
 const LogModel = require("./log");
 const OptionModel = require("./option");
+
 // ATTN: circular reference problem? so we require this only when we need it below
-//const VerificationModel = require("./verification");
+// const VerificationModel = require("./verification");
 // may have to do this with other models that also bring in require("server")
 
 
@@ -72,10 +72,7 @@ class AppRoomServer {
 		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
 		if (this.globalSingleton === undefined) {
 			this.globalSingleton = new AppRoomServer(...args);
-			//console.log("making new server");
 		}
-		//console.log("RETURNING SERVER");
-		//console.log(this.globalSingleton);
 		return this.globalSingleton;
 	}
 
@@ -87,7 +84,7 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	getBaseDir() {
-		return path.resolve(__dirname, '..');
+		return path.resolve(__dirname, "..");
 	}
 
 	getBaseSubDir(relpath) {
@@ -106,11 +103,9 @@ class AppRoomServer {
 
 		// setup singleton loggers
 		jrlog.setup(arGlobals.programName, this.getLogDir());
-		//jrlog.enableDebuggingOnservice(arGlobals.programName);
 
 		// show some info about app
 		jrlog.debugf("%s v%s (%s) by %s", arGlobals.programName, arGlobals.programVersion, arGlobals.programDate, arGlobals.programAuthor);
-		//jrlog.info("approom started logging.");
 
 		jrlog.info("this is info");
 		jrlog.error("this is error");
@@ -125,9 +120,9 @@ class AppRoomServer {
 	}
 
 
-	configFromJrConfig(jrconfig) {
+	configFromJrConfig(ajrconfig) {
 		// now parse commandline/config/env/ etc.
-		jrconfig.parseIfNotYetParsed();
+		ajrconfig.parseIfNotYetParsed();
 
 		// enable debugging based on DEBUG field
 		jrlog.setDebugEnable(this.getOptionDebugEnabled());
@@ -140,17 +135,21 @@ class AppRoomServer {
 	// getting options via jrconfig
 	//
 	getOptionDbUrl() { return jrconfig.get("server:DB_URL"); }
-	//
+
 	getOptionHttp() { return jrconfig.get("server:HTTP"); }
-	getOptionHttpPort() { return jrconfig.get("server:HTTP_PORT");}
-	//
+
+	getOptionHttpPort() { return jrconfig.get("server:HTTP_PORT"); }
+
 	getOptionHttps() { return jrconfig.get("server:HTTPS"); }
-	getOptionHttpsKey() { return jrconfig.get("server:HTTPS_KEY");}
-	getOptionHttpsCert() { return jrconfig.get("server:HTTPS_CERT");}
-	getOptionHttpsPort() { return jrconfig.get("server:HTTPS_PORT");}
-	//
-	getOptionSiteDomain() { return jrconfig.get("server:SITE_DOMAIN");}
-	//
+
+	getOptionHttpsKey() { return jrconfig.get("server:HTTPS_KEY"); }
+
+	getOptionHttpsCert() { return jrconfig.get("server:HTTPS_CERT"); }
+
+	getOptionHttpsPort() { return jrconfig.get("server:HTTPS_PORT"); }
+
+	getOptionSiteDomain() { return jrconfig.get("server:SITE_DOMAIN"); }
+
 	getOptionDebugEnabled() { return jrconfig.getDefault("DEBUG", false); }
 	//---------------------------------------------------------------------------
 
@@ -162,19 +161,16 @@ class AppRoomServer {
 		var expressApp = express();
 
 		// view file engine setup
-		expressApp.set('views', this.getBaseSubDir("views"));
+		expressApp.set("views", this.getBaseSubDir("views"));
 
 		// handlebar template ending
-		expressApp.set('view engine', 'hbs');
+		expressApp.set("view engine", "hbs");
 
 		// setup logging stuff
 		this.setupExpressLogging(expressApp);
 
 		// other stuff?
 		expressApp.use(express.json());
-		//
-		// ? 4/15/19
-		//expressApp.use(express.urlencoded({ extended: false }));
 		expressApp.use(bodyParser.urlencoded({ extended: true }));
 
 		// cookie support
@@ -186,30 +182,27 @@ class AppRoomServer {
 		// ATTN: we could try to share the mongood connection instead of re-specifying it here; not clear what performance implications are
 		const mongoStoreOptions = {
 			url: this.getOptionDbUrl(),
-			autoRemove: 'interval',
-			autoRemoveInterval: 600 // minutes
+			autoRemove: "interval",
+			autoRemoveInterval: 600, // minutes
 		};
 		const MonstStore = connectMongo(session);
 		const sessionStore = new MonstStore(mongoStoreOptions);
 
 		// cookie options
 		const cookieOptions = {
-			secure: false
+			secure: false,
 		};
 
 		// sesssion support
 		// see https://github.com/expressjs/session
 		expressApp.use(session({
-			name: 'approomconnect.sid',
-			secret: 'approomsecret',
+			name: "approomconnect.sid",
+			secret: "approomsecret",
 			resave: false,
 			cookie: cookieOptions,
 			saveUninitialized: false,
 			store: sessionStore,
 		}));
-
-		// flash messages (see https://github.com/jaredhanson/connect-flash)
-		// expressApp.use(connectFlash());
 
 		// parse query parameters automatically
 		expressApp.use(express.query());
@@ -219,7 +212,7 @@ class AppRoomServer {
 		const staticAbsoluteDir = this.getBaseSubDir("static");
 		const staticUrl = "/static";
 		expressApp.use(staticUrl, express.static(staticAbsoluteDir));
-		jrlog.cdebugf("Serving static files from '%s' at '%s",staticAbsoluteDir,staticUrl);
+		jrlog.cdebugf("Serving static files from '%s' at '%s", staticAbsoluteDir, staticUrl);
 
 		// save expressApp for easier referencing later
 		this.expressApp = expressApp;
@@ -230,36 +223,37 @@ class AppRoomServer {
 
 
 	setupExpressLogging(expressApp) {
-			// logging system for express httpd server - see https://github.com/expressjs/morgan
-			// by default this is displaying to screen
-		 	// see https://github.com/expressjs/morgan
-			const morganMode = "combined";
-			const morganOutputAbsoluteFilePath = jrlog.calcLogFilePath("access");
-			var morganOutput = {
-				stream: fs.createWriteStream(morganOutputAbsoluteFilePath, { flags: 'a' })
-			};
-			expressApp.use(morgan(morganMode, morganOutput));
-		}
+		// logging system for express httpd server - see https://github.com/expressjs/morgan
+		// by default this is displaying to screen
+		// see https://github.com/expressjs/morgan
+		const morganMode = "combined";
+		const morganOutputAbsoluteFilePath = jrlog.calcLogFilePath("access");
+		var morganOutput = {
+			stream: fs.createWriteStream(morganOutputAbsoluteFilePath, { flags: "a" }),
+		};
+		expressApp.use(morgan(morganMode, morganOutput));
+	}
 
 
 	setupExpressErrorHandlers() {
 		// catch 404 and forward to error handler
-		this.expressApp.use(function(req, res, next) {
-			// so i think what this says is that if we get to this use handler, nothing else has caught it, so WE push on a 404 error for the next handler
-  			next(httpErrors(404));
+		this.expressApp.use((req, res, next) => {
+			// so i think what this says is that if we get to this use handler,
+			//  nothing else has caught it, so WE push on a 404 error for the next handler
+			next(httpErrors(404));
 		});
 
 		// and then this is the fall through NEXT handler, which gets called when an error is unhandled by previous use() or pushed on with next(httperrors())
 		// error handler
-		this.expressApp.use(function(err, req, res, next) {
-		  // set locals, only providing error in development
-		  res.locals.message = err.message;
-		  res.locals.error = req.app.get('env') === 'development' ? err : {};
-		  // render the error page
-		  res.status(err.status || 500);
-		  res.render('error', {
-			jrResult: JrResult.sessionRenderResult(req, res),
-		  });
+		this.expressApp.use((err, req, res, next) => {
+			// set locals, only providing error in development
+			res.locals.message = err.message;
+			res.locals.error = req.app.get("env") === "development" ? err : {};
+			// render the error page
+			res.status(err.status || 500);
+			res.render("error", {
+				jrResult: JrResult.sessionRenderResult(req, res),
+			});
 		});
 	}
 
@@ -269,7 +263,7 @@ class AppRoomServer {
 
 		// see our documentation in JrResult, we have decided to not use automatic injection of JrResult data
 		// auto inject into render any saves session jrResult
-		//this.expressApp.use(JrResult.expressMiddlewareInjectSessionResult());
+		// this.expressApp.use(JrResult.expressMiddlewareInjectSessionResult());
 	}
 
 
@@ -294,20 +288,20 @@ class AppRoomServer {
 			// http server
 			const options = {};
 			const port = this.getOptionHttpPort();
-			this. createOneExpressServerAndListen(false, port, options);
+			this.createOneExpressServerAndListen(false, port, options);
 		}
 
 	}
 
-	
 
-	createOneExpressServerAndListen(flag_https, port, options) {
+
+	createOneExpressServerAndListen(flagHttps, port, options) {
 		// create an http or https server and listen
 		var expressServer;
 
 		var normalizedPort = this.normalizePort(port);
 
-		if (flag_https) {
+		if (flagHttps) {
 			expressServer = https.createServer(options, this.expressApp);
 		} else {
 			expressServer = http.createServer(options, this.expressApp);
@@ -317,8 +311,8 @@ class AppRoomServer {
 		var listener = expressServer.listen(normalizedPort);
 
 		// add event handlers (after server is listening)
-		expressServer.on('error', (...args) => {this.onErrorEs(listener, expressServer, flag_https, ...args);});
-		expressServer.on('listening',  (...args) => {this.onListeningEs(listener, expressServer, flag_https, ...args);});	
+		expressServer.on("error", (...args) => { this.onErrorEs(listener, expressServer, flagHttps, ...args); });
+		expressServer.on("listening", (...args) => { this.onListeningEs(listener, expressServer, flagHttps, ...args); });
 	}
 
 
@@ -326,7 +320,7 @@ class AppRoomServer {
 	normalizePort(portval) {
 		// from nodejs express builder suggested code
 		var port = parseInt(portval, 10);
-		if (isNaN(port)) {
+		if (Number.isNaN(port)) {
 			// named pipe
 			return portval;
 		}
@@ -348,29 +342,29 @@ class AppRoomServer {
 		// add routes to express app
 
 		// home page
-		this.setupRoute("/","index");
+		this.setupRoute("/", "index");
 
 		// register/signup
-		this.setupRoute("/register","register");
+		this.setupRoute("/register", "register");
 
 		// login
-		this.setupRoute("/login","login");
+		this.setupRoute("/login", "login");
 		// logout
-		this.setupRoute("/logout","logout");
+		this.setupRoute("/logout", "logout");
 
 		// verifications
-		this.setupRoute("/verify","verify");
+		this.setupRoute("/verify", "verify");
 
 		// profile
-		this.setupRoute("/profile","profile");
+		this.setupRoute("/profile", "profile");
 
 		// test stuff
-		this.setupRoute("/membersonly","membersonly");
+		this.setupRoute("/membersonly", "membersonly");
 	}
 
 
 	setupRoute(urlPath, routeFilename) {
-		this.expressApp.use(urlPath, require("../routes/" + routeFilename));		
+		this.expressApp.use(urlPath, require("../routes/" + routeFilename));
 	}
 	//---------------------------------------------------------------------------
 
@@ -400,20 +394,13 @@ class AppRoomServer {
 		// setup passport module for login authentication, etc.
 
 		// provide callback function to help passport serialize a user
-		passport.serializeUser( (profile, done) => {
+		passport.serializeUser((profile, done) => {
 			// here we are converting from the profile object returned by the strategy, to the minimal user data stored in the SESSION object
 			// so we want this to be just enough to uniquely identify the user.
 			// profile is the user profile object returned by the passport strategy callback below, so we can decide what to return from that
 			// so in this case, we just return the profile object
-			jrlog.cdebugObj(profile,"serializeUser profile");
+			jrlog.cdebugObj(profile, "serializeUser profile");
 			var userProfileObj = profile;
-			/*
-			var userProfileObj = {
-				id: profile.id,
-				provider: profile.provider,
-				username: profile.username,
-			}
-			*/
 			// call passport callback
 			done(null, userProfileObj);
 		});
@@ -427,7 +414,7 @@ class AppRoomServer {
 			// but we may not want to actually use this function to help passport load up a full user object from the db, because of the overhead and cost of doing
 			// that when it's not needed.  So we are converting from the SESSION userdata to possibly FULLER userdata
 			// however, remember that we might want to check that the user is STILL allowed into our site, etc.
-			jrlog.cdebugObj(user,"deserializeUser user");
+			jrlog.cdebugObj(user, "deserializeUser user");
 			// build full user ?
 			var userFull = user;
 			// call passport callback
@@ -458,28 +445,29 @@ class AppRoomServer {
 
 		var strategyOptions = {
 			passReqToCallback: true,
-			usernameField: 'username_email',
+			usernameField: "usernameEmail",
 		};
 
 		// see http://www.passportjs.org/docs/configure/
 		passport.use(new Strategy(
 			strategyOptions,
-			async function(req, username_email, password, done) {
+			async (req, usernameEmail, password, done) => {
 				// this is the function called when user tries to login
 				// so we check their username and password and return either FALSE or the user
 				// first, find the user via their password
-				jrlog.cdebugf("In passport local strategy test with username=%s and password=%s", username_email, password);
-				var user = await UserModel.findOneByUsernameEmail(username_email);
-				if (user==null) {
+				var jrResult;
+				jrlog.cdebugf("In passport local strategy test with username=%s and password=%s", usernameEmail, password);
+				var user = await UserModel.findOneByUsernameEmail(usernameEmail);
+				if (!user) {
 					// not found
-					var jrResult = JrResult.makeNew("UsernameNotFound").pushFieldError("username_email", "Username/Email-address not found");
+					jrResult = JrResult.makeNew("UsernameNotFound").pushFieldError("usernameEmail", "Username/Email-address not found");
 					return done(null, false, jrResult);
 				}
 				// ok we found the user, now check their password
 				var bretv = await user.testPassword(password);
-				if (bretv!==true) {
+				if (!bretv) {
 					// password doesn't match
-					var jrResult = JrResult.makeNew("PasswordMismatch").pushFieldError("password", "Password does not match");
+					jrResult = JrResult.makeNew("PasswordMismatch").pushFieldError("password", "Password does not match");
 					return done(null, false, jrResult);
 				}
 				// password matches!
@@ -488,8 +476,8 @@ class AppRoomServer {
 				// IMP NOTE: the profile object we return here is precisely what gets passed to the serializeUser function above
 				const userProfile = user.getMinimalPassportProfile();
 				return done(null, userProfile);
-			}
-			));
+			},
+		));
 	}
 
 
@@ -506,24 +494,24 @@ class AppRoomServer {
 		};
 
 		// debug info
-		jrlog.cdebugObj(strategyOptions,"setupPassportStrategyFacebook options");
+		jrlog.cdebugObj(strategyOptions, "setupPassportStrategyFacebook options");
 
 		passport.use(new Strategy(
 			strategyOptions,
-			async function(req, accessToken, refreshToken, profile, done) {
-				jrlog.cdebugObj(accessToken,"facebook accessToken");
-				jrlog.cdebugObj(refreshToken,"facebook refreshToken");
-				jrlog.cdebugObj(profile,"facebook profile");
+			async (req, accessToken, refreshToken, profile, done) => {
+				jrlog.cdebugObj(accessToken, "facebook accessToken");
+				jrlog.cdebugObj(refreshToken, "facebook refreshToken");
+				jrlog.cdebugObj(profile, "facebook profile");
 				// get user associated with this facebook profile, OR create one, etc.
 				var bridgedLoginObj = {
 					provider: profile.provider,
-					provider_userid: profile.id,
+					providerUserId: profile.id,
 					extraData: {
-						realName: profile.displayName
+						realName: profile.displayName,
 					},
 				};
 				// created bridged user
-				var {user, jrResult} = await LoginModel.processBridgedLoginGetOrCreateUserOrProxy(bridgedLoginObj, req);
+				var { user, jrResult } = await LoginModel.processBridgedLoginGetOrCreateUserOrProxy(bridgedLoginObj, req);
 				// if user could not be created, it's an error
 				// add jrResult to session in case we did extra stuff and info to show the user
 				if (jrResult !== undefined) {
@@ -538,7 +526,7 @@ class AppRoomServer {
 				}
 				// return success
 				return done(null, userProfile);
-			}
+			},
 		));
 	}
 	//---------------------------------------------------------------------------
@@ -550,13 +538,13 @@ class AppRoomServer {
 		if (!passportUser) {
 			return undefined;
 		}
-		if (provider == "localUser") {
+		if (provider === "localUser") {
 			return passportUser.id;
 		}
-		if (provider == "localLogin") {
+		if (provider === "localLogin") {
 			return passportUser.loginId;
-		}		
-		if (provider == "localVerification") {
+		}
+		if (provider === "localVerification") {
 			return passportUser.verificationId;
 		}
 		throw ("Unknown provider requested in getLoggedInPassportUserOfProvider");
@@ -596,7 +584,7 @@ class AppRoomServer {
 		var verification = await VerificationModel.findOneById(verificationId);
 		return verification;
 	}
-	
+
 
 	// helper function to get logged in local User model id
 	getLoggedInLocalUserIdFromSession(req) {
@@ -627,23 +615,23 @@ class AppRoomServer {
 			// ok we are running an https server
 			protocol = "https";
 			port = this.getOptionHttpsPort();
-			if (String(port)=="443") {
+			if (String(port) === "443") {
 				port = "";
 			}
 		} else {
 			protocol = "http";
 			port = this.getOptionHttpPort();
-			if (String(port)=="80") {
+			if (String(port) === "80") {
 				port = "";
 			}
 		}
-	
+
 		// add full protocol
-		var url = protocol + "://" + this.getOptionSiteDomain()+":"+port;
+		var url = protocol + "://" + this.getOptionSiteDomain() + ":" + port;
 
 		// add relative path
-		if (relativePath!="") {
-			if (relativePath[0]!="/") {
+		if (relativePath !== "") {
+			if (relativePath[0] !== "/") {
 				url += "/";
 			}
 			url += relativePath;
@@ -658,7 +646,10 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	// generic passport route login helper function, invoked from login routes
 	// this will end up calling a passport STRATEGY above
-	// @param errorCallback is a function that takes (req,res,jrinfo) for custom error handling, where jrinfo is the JrResult style error message created from the passport error; normally you would use this to RE-RENDER a form from a post submission, overriding the default behavior to redirect to the login page with flash error message
+	// @param errorCallback is a function that takes (req,res,jrinfo) for custom error handling,
+	//  where jrinfo is the JrResult style error message created from the passport error;
+	//  normally you would use this to RE-RENDER a form from a post submission, overriding the
+	//  default behavior to redirect to the login page with flash error message
 	async routePassportAuthenticate(provider, req, res, next, providerNiceLabel, errorCallback) {
 		// "manual" authenticate via passport (as opposed to middleware auto); allows us to get richer info about error, and better decide what to do
 
@@ -666,32 +657,36 @@ class AppRoomServer {
 		var previousLoginId = this.getLoggedInLocalLoginIdFromSession(req);
 
 		var thisArserver = this;
-		await passport.authenticate(provider, async function(err, user, info) {
+		await passport.authenticate(provider, async (err, user, info) => {
 			if (err) {
-			  return next(err);
+				next(err);
+				return;
 			}
 			if (!user) {
 				// sometimes passport returns error info instead of us, when credentials are missing; this ensures we have error in format we like
 				var jrinfo = JrResult.passportInfoAsJrResult(info);
-				if (errorCallback==undefined) {
+				if (!errorCallback) {
 					// save error to session (flash) and redirect to login
 					jrinfo.addToSession(req);
-					return res.redirect('/login');
-				} else {
-					return errorCallback(req,res,jrinfo);
+					res.redirect("/login");
+					return;
 				}
+				errorCallback(req, res, jrinfo);
+				return;
 			}
 
 			// actually login the user
-			var unusableLoginResult = await req.logIn(user, async function(err) {
-				if (err) {
+			var unusableLoginResult = await req.logIn(user, async (ierr) => {
+				if (ierr) {
 					// error (exception) logging them in
-					return next(err);
+					// ATTN: are we sure we want to call next on ierr?
+					next(ierr);
+					return;
 				}
 				// success
 				var jrResult = JrResult.makeNew("info");
 				jrResult.pushSuccess("You have successfully logged in " + providerNiceLabel + ".");
-				// userid we JUST signed in as -- NOTE: this could be null if its a local bridged login short of a full user account
+				// userId we JUST signed in as -- NOTE: this could be null if its a local bridged login short of a full user account
 				var newlyLoggedInUserId = thisArserver.getLoggedInLocalUserIdFromSession(req);
 				// and NOW if they were previously sessioned with a pre-account Login object, we can connect that to this account
 				if (newlyLoggedInUserId && previousLoginId) {
@@ -705,20 +700,20 @@ class AppRoomServer {
 				jrResult.addToSession(req, true);
 
 				// check if they were waiting to go to another page
-				if (newlyLoggedInUserId && thisArserver.userLogsInCheckDiverted(req,res)) {
+				if (newlyLoggedInUserId && thisArserver.userLogsInCheckDiverted(req, res)) {
 					return;
 				}
 
 				// new full account connected?
 				if (newlyLoggedInUserId) {
-					return res.redirect('/profile');
+					res.redirect("/profile");
+					return;
 				}
-				// no user account made yet, 
-				// default send them to full account fill int
-				return res.redirect('/account');
-				});
-				// ATTN: if we get here, we are back from failed login attempt?
-			})(req, res, next);
+				// no user account made yet, default send them to full account fill int
+				res.redirect("/register");
+			});
+		// ATTN: if we get here, we are back from failed login attempt?
+		})(req, res, next);
 	}
 	//---------------------------------------------------------------------------
 
@@ -747,16 +742,16 @@ class AppRoomServer {
 		// see https://nodemailer.com/about/
 		// see https://medium.com/@SeanChenU/send-mail-using-node-js-with-nodemailer-in-2-mins-c3f3e23f4a1
 		this.mailTransport = nodemailer.createTransport({
- 			host: jrconfig.get("mailer:HOST"),
- 			port: jrconfig.get("mailer:PORT"),
- 			secure: jrconfig.get("mailer:SECURE"),
- 			auth: {
+			host: jrconfig.get("mailer:HOST"),
+			port: jrconfig.get("mailer:PORT"),
+			secure: jrconfig.get("mailer:SECURE"),
+			auth: {
 				user: jrconfig.get("mailer:USERNAME"),
 				pass: jrconfig.get("mailer:PASSWORD"),
-				}
-			});
+			},
+		});
 
-		jrlog.cdebugf("Setting up mail transport through %s.",jrconfig.get("mailer:HOST"));
+		jrlog.cdebugf("Setting up mail transport through %s.", jrconfig.get("mailer:HOST"));
 
 		// verify it?
 		if (jrconfig.get("DEBUG")) {
@@ -774,12 +769,12 @@ class AppRoomServer {
 
 	async sendMail(mailobj) {
 		// add from field
-		if (mailobj.from==undefined) {
+		if (!mailobj.from) {
 			mailobj.from = jrconfig.get("mailer:FROM");
 		}
 
 		var result = await this.mailTransport.sendMail(mailobj);
-		jrlog.cdebugObj(result,"Result from sendMail.");
+		jrlog.cdebugObj(result, "Result from sendMail.");
 		var jrResult = this.makeJrResultFromSendmailRetv(result, mailobj);
 		return jrResult;
 	}
@@ -787,7 +782,7 @@ class AppRoomServer {
 
 	makeJrResultFromSendmailRetv(retv, mailobj) {
 		var msg;
-		if (retv.rejected.length==0) {
+		if (retv.rejected.length === 0) {
 			// success!
 			if (mailobj.revealEmail) {
 				msg = "Mail sent to " + jrhelpers.stringArrayToNiceString(retv.accepted) + ".";
@@ -821,36 +816,35 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	// Event listener for HTTP server "error" event.
-	onErrorEs(listener, expressServer, flag_https, error) {
-		if (error.syscall !== 'listen') {
+	onErrorEs(listener, expressServer, flagHttps, error) {
+		if (error.syscall !== "listen") {
 			throw error;
 		}
 
 		// ATTN: not clear why this uses different method than OnListeningEs to get port info, etc.
-		port = listener.address().port;
+		var port = listener.address().port;
 		var bind = typeof port === "string"
 			? "Pipe " + port
 			: "Port " + port;
 
 		// handle specific listen errors with friendly messages
 		switch (error.code) {
-	  		case "EACCES":
-	  		jrlog.error(bind + " requires elevated privileges");
-	  		process.exit(1);
-	  		break;
-	  	case 'EADDRINUSE':
-	  		jrlog.error(bind + " is already in use");
-	  		process.exit(1);
-	  		break;
-	  	default:
-	  		throw error;
+			case "EACCES":
+				jrlog.error(bind + " requires elevated privileges");
+				process.exit(1);
+				break;
+			case "EADDRINUSE":
+				jrlog.error(bind + " is already in use");
+				process.exit(1);
+				break;
+			default:
+				throw error;
 		}
 	}
 
 
 	// Event listener for HTTP server "listening" event.
-	onListeningEs(listener, expressServer, flag_https) {
-		//jrlog.logObj(this,"this2");
+	onListeningEs(listener, expressServer, flagHttps) {
 		var server = expressServer;
 		var addr = server.address();
 		var bind = (typeof addr === "string")
@@ -858,8 +852,8 @@ class AppRoomServer {
 			: "port " + addr.port;
 
 		// show some info
-		var servertypestr = flag_https ? "https" : "http";
-		jrlog.debug("Server ("+servertypestr+") started, listening on "+bind);
+		var serverTypestr = flagHttps ? "https" : "http";
+		jrlog.debug("Server (" + serverTypestr + ") started, listening on " + bind);
 	}
 	//---------------------------------------------------------------------------
 
@@ -890,7 +884,7 @@ class AppRoomServer {
 
 		// done setup
 		return true;
-	};
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -936,19 +930,18 @@ class AppRoomServer {
 			await mongoose.set("useFindAndModify", false);
 
 			// save a log entry to db
-			await this.log("db","setup database", 1);
+			await this.log("db", "setup database", 1);
 
 			// success return value -- if we got this far it"s a success; drop down
 			bretv = true;
-		}
-		catch (err) {
-			jrlog.debug("Exception while trying to setup database:")
+		} catch (err) {
+			jrlog.debug("Exception while trying to setup database:");
 			jrlog.debug(err);
 			bretv = false;
 		}
 
 		return bretv;
-	};
+	}
 
 
 	async setupModelSchema(mongooser, modelClass) {
@@ -976,14 +969,17 @@ class AppRoomServer {
 		// create a new log entry and save it to the log
 
 		// ATTN: should we async and await here or let it just run?
-		var log = await LogModel.createModel({type:type, message:message, severity:severity}).save();
+		var log = await LogModel.createModel({
+			type,
+			message,
+			severity,
+		}).save();
 
 		// also log it using our normal system that makes us log to file?
 		jrlog.dblog(type, message, severity);
 	}
 	//---------------------------------------------------------------------------
 
-	
 
 
 
@@ -1004,7 +1000,6 @@ class AppRoomServer {
 
 
 	rememberDivertedRelUrlAndGo(req, res, goalRelUrl, failureRelUrl, msg) {
-		// 
 		this.rememberDivertedRelUrl(req, res, goalRelUrl, msg);
 		// now redirect
 		if (failureRelUrl) {
@@ -1044,7 +1039,7 @@ class AppRoomServer {
 	forgetLoginDiversions(req) {
 		// call this to unset any session diversions -- this can be useful if the user tried to access a protected page but then left the login page and did other things
 		// remove it from session
-		if (!req.session || ! req.session.divertedUrl) {
+		if (!req.session || !req.session.divertedUrl) {
 			return;
 		}
 		delete req.session.divertedUrl;
@@ -1060,19 +1055,20 @@ class AppRoomServer {
 
 		var userPassport = user.getMinimalPassportProfile();
 
-		var unusableLoginResult = await req.login(userPassport, function (err)  {
-			if (err) { 
+		var unusableLoginResult = await req.login(userPassport, (err) => {
+			if (err) {
 				jrResult = JrResult.makeError("VerificationError", JrResult.passportErrorAsString(err));
 			} else {
 				success = true;
 			}
-			// note that if we try to handle success actions in here that have to async await, like a model save, we wind up in trouble for some reason -- weird things happen that i don't understand
-			// so instead we drop down on success and can check jrResult
+			// note that if we try to handle success actions in here that have to async await, like a model save,
+			//  we wind up in trouble for some reason -- weird things happen that i don't understand
+			//  so instead we drop down on success and can check jrResult
 		});
 
 		if (success) {
 			jrResult = JrResult.makeSuccess();
-		} else if (jrResult == undefined) {
+		} else if (!jrResult) {
 			// unknown exception error that happened in passport login attempt?
 			jrResult = JrResult.makeError("VerificationError", "Unknown passport login error in useNowOneTimeLogin.");
 		}
@@ -1089,7 +1085,7 @@ class AppRoomServer {
 	// this would typically be called AFTER the user has verified their email with verification model
 	presentNewAccountRegisterForm(userObj, verification, req, res) {
 		// ATTN: is this ever called
-		throw("presentNewAccountRegisterForm not implemented yet.");
+		throw ("presentNewAccountRegisterForm not implemented yet.");
 	}
 	//---------------------------------------------------------------------------
 
@@ -1105,7 +1101,7 @@ class AppRoomServer {
 		}
 		return false;
 	}
-	//---------------------------------------------------------------------------	
+	//---------------------------------------------------------------------------
 
 
 

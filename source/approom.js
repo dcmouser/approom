@@ -15,15 +15,11 @@ const pkg = require("./package.json");
 // code files
 const arserver = require("./models/server");
 
-// modules
-const path = require("path");
-
 // our helper modules
 const jrconfig = require("./helpers/jrconfig");
-const jrhelpers = require("./helpers/jrhelpers");
 const jrlog = require("./helpers/jrlog");
 
-//
+// program globals (version, author, etc.)
 const arGlobals = require("./approomglobals");
 //---------------------------------------------------------------------------
 
@@ -56,13 +52,6 @@ arserver.configFromJrConfig(jrconfig);
 
 
 
-//jrlog.debugObj(arserver, "ARSERVER1");
-//console.log(arserver);
-//var verifyUrl = arserver.calcAbsoluteSiteUrlPreferHttps("verify/email");
-//console.log(verifyUrl);
-
-
-
 
 // Everything below here is app cli specific
 
@@ -70,21 +59,20 @@ arserver.configFromJrConfig(jrconfig);
 
 //---------------------------------------------------------------------------
 // now do what commandline says to do
-processJrConfigAndCommandline(jrconfig);
+processJrConfigAndCommandline();
 //---------------------------------------------------------------------------
 
 
 
 //---------------------------------------------------------------------------
 // commandline process
-function processJrConfigAndCommandline(jrconfig) {
+function processJrConfigAndCommandline() {
 	if (jrconfig.get("debug")) {
 		// testing
 		var nconfobj = jrconfig.getNconf();
 		var dataobj = nconfobj.get();
 		jrlog.logObj(dataobj, "dataobj");
 		jrlog.logObj(jrconfig.get("debug"), "jrconfig.debug");
-		//	jrlog.logObj(jrconfig.getYargs(), "yargs");
 	}
 
 	// run commandline callbacks (show help if none found)
@@ -111,21 +99,29 @@ function createYargsObj() {
 	yargs.epilog("copyright " + arGlobals.programDate + " by " + arGlobals.programAuthor);
 	yargs.strict();
 	yargs.options({
-		"config": {
-			describe: "Comma separated list of json configuration files to load"
-		}
+		config: {
+			describe: "Comma separated list of json configuration files to load",
+		},
 	});
 	//
 	yargs.command({
 		command: "dbsetup",
 		desc: "Setup the approoom database",
-		handler: (argv) => {jrconfig.queueYargsCommand("dbsetup", argv, (cmd)=> { commandDbSetup();} );}
+		handler: (argv) => {
+			jrconfig.queueYargsCommand("dbsetup", argv, (cmd) => {
+				commandDbSetup();
+			});
+		},
 	});
 	//
 	yargs.command({
 		command: "runserver",
 		desc: "Run the approoom server",
-		handler: (argv) => {jrconfig.queueYargsCommand("runserver",argv, (cmd)=> { commandRunServer();} );}
+		handler: (argv) => {
+			jrconfig.queueYargsCommand("runserver", argv, (cmd) => {
+				commandRunServer();
+			});
+		},
 	});
 	return yargs;
 }

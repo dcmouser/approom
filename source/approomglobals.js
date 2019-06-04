@@ -11,11 +11,11 @@
 
 //---------------------------------------------------------------------------
 // OPTIONS
-const programName = 'approom';
+const programName = "approom";
 const programVersion = "1.0.0";
 const programDate = "5/1/19 - 5/17/19";
 const programAuthor = "mouser@donationcoder.com";
-const programDescription = "multi-user room-based coordination framework"
+const programDescription = "multi-user room-based coordination framework";
 //---------------------------------------------------------------------------
 
 
@@ -25,12 +25,14 @@ const programDescription = "multi-user room-based coordination framework"
 // see also the default.json config file
 const defaultOptions = {
 };
+
 // these are forced and override anything specified on commandline or in config files
 const overrideOptions = {
-
 };
+
 // envListOptions is an array of strings to grab and merge from environment; use [""] for none, or set empty array for all
-const envListOptions = [""
+const envListOptions = [
+	"",
 ];
 //---------------------------------------------------------------------------
 
@@ -50,5 +52,5 @@ const envListOptions = [""
 module.exports = {
 	programName, programVersion, programDate, programAuthor, programDescription,
 	defaultOptions, overrideOptions, envListOptions,
-	}
+};
 //---------------------------------------------------------------------------

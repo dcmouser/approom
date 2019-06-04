@@ -18,7 +18,7 @@ const JrResult = require("../helpers/jrresult");
 
 const router = express.Router();
 
-router.get("/", function(req, res, next) {
+router.get("/", (req, res, next) => {
 	// logout the user from passport
 	req.logout();
 	JrResult.makeNew("info").pushSuccess("You have been logged out.").addToSession(req);
@@ -26,8 +26,8 @@ router.get("/", function(req, res, next) {
 	// ignore any previous login diversions
 	arserver.forgetLoginDiversions(req);
 
-	return res.redirect("/");
-	});
+	res.redirect("/");
+});
 
 
 

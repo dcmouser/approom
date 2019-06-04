@@ -11,13 +11,20 @@
     "runserver": "cls && node approom.js runserver",
     "dbsetup": "cls && node approom.js dbsetup",
     "UNUSED_configtest": "cross-env fun=cli node approom.js server",
-    "UNUSED_configtest2": "cross-env config=debug,dev node approom.js server"
+    "UNUSED_configtest2": "cross-env config=debug,dev node approom.js server",
+    "eslint": "eslint ."
   },
   "author": "jesse reichler / mouser (mouser@donationcoder.com)",
   "license": "UNLICENSED",
   "repository": "dcmouser/approom",
   "devDependencies": {
     "cross-env": "^5.2.0",
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb": "^17.1.0",
+    "eslint-plugin-import": "^2.17.3",
+    "eslint-plugin-jsx-a11y": "^6.2.1",
+    "eslint-plugin-mocha": "^5.3.0",
+    "eslint-plugin-react": "^7.13.0",
     "mocha": "^6.1.4"
   },
   "dependencies": {
@@ -27,6 +34,7 @@
     "commander": "^2.20.0",
     "connect-mongo": "^2.0.3",
     "cookie-parser": "^1.4.4",
+    "debug": "^4.1.1",
     "express": "^4.16.4",
     "express-session": "^1.16.1",
     "hbs": "^4.0.4",
@@ -41,6 +49,7 @@
     "passport-local": "^1.0.0",
     "redis": "^2.8.0",
     "validator": "^11.0.0",
-    "winston": "^3.2.1"
+    "winston": "^3.2.1",
+    "yargs": "^13.2.4"
   }
 }

@@ -19,12 +19,12 @@ const JrResult = require("../helpers/jrresult");
 
 
 //---------------------------------------------------------------------------
-const DEF_CodeLength = 5;
-const DEF_MaxUniqueCodeCollissions = 10;
+const DefCodeLength = 5;
+const DefMaxUniqueCodeCollissions = 10;
 //
-const DEF_ExpirationDurationMinutesLong = 24*60;
-const DEF_ExpirationDurationMinutesNormal = 30;
-const DEF_ExpirationDurationMinutesShort = 5;
+const DefExpirationDurationMinutesLong = 24 * 60;
+const DefExpirationDurationMinutesNormal = 30;
+const DefExpirationDurationMinutesShort = 5;
 //---------------------------------------------------------------------------
 
 
@@ -46,16 +46,16 @@ class VerificationModel extends ModelBaseMongoose {
 	static buildSchema(mongooser) {
 		this.schema = new mongooser.Schema({
 			...(this.getUniversalSchemaObj()),
-			uniqueCode: {type: String, unique: true, required: true},
-			type: {type: String},
-			key: {type: String},
-			val: {type: String},
-			userId: {type: String},
-			loginId: {type: String},
-			usedDate: {type: Date},
-			expirationDate: {type: Date},
-			extraData: {type: String},
-		}, {collection: this.getCollectionName()});
+			uniqueCode: { type: String, unique: true, required: true },
+			type: { type: String },
+			key: { type: String },
+			val: { type: String },
+			userId: { type: String },
+			loginId: { type: String },
+			usedDate: { type: Date },
+			expirationDate: { type: Date },
+			extraData: { type: String },
+		}, { collection: this.getCollectionName() });
 		return this.schema;
 	}
 	//---------------------------------------------------------------------------
@@ -87,9 +87,10 @@ class VerificationModel extends ModelBaseMongoose {
 	}
 
 	getVerifiedValue(key) {
-		if (this.key == key) {
+		if (this.key === key) {
 			return this.val;
 		}
+		return undefined;
 	}
 
 	getExtraValue(key) {
@@ -108,9 +109,9 @@ class VerificationModel extends ModelBaseMongoose {
 		// return null if not found
 		if (!id) {
 			return null;
-			}
+		}
 		//
-		var doc = await this.mongooseModel.findOne({_id: id}).exec();
+		var doc = await this.mongooseModel.findOne({ _id: id }).exec();
 		return doc;
 	}
 	//---------------------------------------------------------------------------
@@ -131,7 +132,7 @@ class VerificationModel extends ModelBaseMongoose {
 		verification.extraData = JSON.stringify(extraData);
 		verification.expirationDate = jrhelpers.DateNowPlusMinutes(expirationMinutes);
 		verification.usedDate = null;
-		//NOTE: verification.uniqueCode set below
+		// NOTE: verification.uniqueCode set below
 
 		// and save it
 		// note: we may have to try this multiple times if there is a collission with our uniqueCode
@@ -146,15 +147,15 @@ class VerificationModel extends ModelBaseMongoose {
 				verificationdoc = await verification.save();
 				// success
 				break;
-			} catch(err) {
+			} catch (err) {
 				// if we are here we caught an error above
 				// collission, generate a new code
-				if (tryCount == DEF_MaxUniqueCodeCollissions-1) {
+				if (tryCount === DefMaxUniqueCodeCollissions - 1) {
 					// we have failed a lot, maybe we can try a cleanup of our old verifications from database
 					await this.pruneOldVerifications(true);
-				} else if (tryCount == DEF_MaxUniqueCodeCollissions) {
+				} else if (tryCount === DefMaxUniqueCodeCollissions) {
 					// we failed
-					throw(err);
+					throw (err);
 				}
 			}
 		}
@@ -167,13 +168,13 @@ class VerificationModel extends ModelBaseMongoose {
 	// create an email verification
 	static async createVerificationNewAccountEmail(emailAddress, userId, loginId, extraData) {
 		// make the verification item and email the user about it with verification code
-		var verification = await this.createModel("newAccountEmail", "email", emailAddress, userId, loginId, extraData, DEF_ExpirationDurationMinutesNormal);
-		// 
+		var verification = await this.createModel("newAccountEmail", "email", emailAddress, userId, loginId, extraData, DefExpirationDurationMinutesNormal);
+		//
 		var mailobj = {
 			subject: "E-mail verification for new website account",
 			text: "We have received a request to create a new account on our website.\n\n"
-			+"If this request was made by you, please click on the link below to verify that you are the owner of this email address("+emailAddress+"):\n"
-			+ " " + verification.createVerificationCodeUrl(/*verifyBaseUrl*/),
+			+ "If this request was made by you, please click on the link below to verify that you are the owner of this email address(" + emailAddress + "):\n"
+			+ " " + verification.createVerificationCodeUrl(),
 			revealEmail: true,
 		};
 		return await verification.sendViaEmail(mailobj, emailAddress);
@@ -186,8 +187,8 @@ class VerificationModel extends ModelBaseMongoose {
 	static async createVerificationOneTimeLoginTokenEmail(emailAddress, userId, loginId, flagRevealEmail, extraData) {
 		// ATTN: unfinished
 		// make the verification item and email and/or call the user with the one time login/verification code
-		var verification = await this.createModel("onetimeLogin", null, null, userId, loginId, extraData, DEF_ExpirationDurationMinutesShort);
-		// 
+		var verification = await this.createModel("onetimeLogin", null, null, userId, loginId, extraData, DefExpirationDurationMinutesShort);
+		//
 		var mailobj = {
 			revealEmail: flagRevealEmail,
 			subject: "Link for one-time login via E-Mail",
@@ -201,7 +202,7 @@ class VerificationModel extends ModelBaseMongoose {
 
 
 	static async generateUniqueCode() {
-		return jrcrypto.genRandomStringHumanEasier(DEF_CodeLength);
+		return jrcrypto.genRandomStringHumanEasier(DefCodeLength);
 	}
 
 
@@ -213,7 +214,7 @@ class VerificationModel extends ModelBaseMongoose {
 			baseUrl = "verify";
 		}
 		const arserver = require("./server");
-		return arserver.calcAbsoluteSiteUrlPreferHttps(baseUrl+"/code/"+this.uniqueCode);
+		return arserver.calcAbsoluteSiteUrlPreferHttps(baseUrl + "/code/" + this.uniqueCode);
 	}
 	//---------------------------------------------------------------------------
 
@@ -222,7 +223,7 @@ class VerificationModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	static async findOneByCode(verificationCode) {
 		// find it and return it
-		var verification = this.mongooseModel.findOne({uniqueCode: verificationCode}).exec();
+		var verification = this.mongooseModel.findOne({ uniqueCode: verificationCode }).exec();
 		return verification;
 	}
 	//---------------------------------------------------------------------------
@@ -235,9 +236,6 @@ class VerificationModel extends ModelBaseMongoose {
 		//
 		// add fields
 		mailobj.to = emailAddress;
-		//console.log("showing mailobj");
-		//jrlog.debugObj(mailobj);
-		//console.log(mailobj);
 		//
 		// require here to avoid circular reference problem
 		const arserver = require("./server");
@@ -249,7 +247,7 @@ class VerificationModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static async pruneOldVerifications(flag_desperate) {
+	static async pruneOldVerifications(flagDesperate) {
 		// ATTN: 5/25/19 - unfinished
 		jrlog.debug("In pruneOldVerifications.");
 	}
@@ -264,21 +262,21 @@ class VerificationModel extends ModelBaseMongoose {
 	static async verifiyCode(code, extraValues, req, res) {
 
 		var verification = await this.findOneByCode(code);
-		if (verification == null) {
+		if (!verification) {
 			// not found
 			return {
 				jrResult: JrResult.makeError("VerificationError", "Code not found."),
-				successRedirectTo: null
-			}
-		} 
+				successRedirectTo: null,
+			};
+		}
 
 		// make sure it's still valid (not used or expired, etc.)
 		var validityResult = verification.isStillValid(false);
 		if (validityResult.isError()) {
 			return {
 				jrResult: validityResult,
-				successRedirectTo: null
-			}
+				successRedirectTo: null,
+			};
 		}
 
 		// ok its not used, and not expired
@@ -291,7 +289,7 @@ class VerificationModel extends ModelBaseMongoose {
 		if (this.usedDate != null) {
 			return true;
 		}
-	return false;
+		return false;
 	}
 
 
@@ -300,7 +298,7 @@ class VerificationModel extends ModelBaseMongoose {
 		if (this.creationDate > this.expirationDate) {
 			return true;
 		}
-	return false;
+		return false;
 	}
 	//---------------------------------------------------------------------------
 
@@ -313,8 +311,8 @@ class VerificationModel extends ModelBaseMongoose {
 		// create a minimal proxy user that points to us
 		// and then log them in with it
 		const arserver = require("./server");
-	
-		var user = new UserModel;
+
+		var user = new UserModel();
 		user.verificationId = this.getIdAsString();
 		user.loginId = arserver.getLoggedInLocalLoginIdFromSession(req);
 		//
@@ -344,11 +342,11 @@ class VerificationModel extends ModelBaseMongoose {
 		// make sure it's not used
 		if (!flagAllowedUsedExpiredVerifyCode && this.isUsed()) {
 			// already used
-			return JrResult.makeError("VerifcationError","Verification code ("+this.getUniqueCode()+") has been used.");
+			return JrResult.makeError("VerifcationError", "Verification code (" + this.getUniqueCode() + ") has been used.");
 		}
 		if (!flagAllowedUsedExpiredVerifyCode && this.isExpired()) {
 			// expired
-			return JrResult.makeError("VerifcationError","Verification code ("+this.getUniqueCode()+") has expired.");
+			return JrResult.makeError("VerifcationError", "Verification code (" + this.getUniqueCode() + ") has expired.");
 		}
 		// all good
 		return JrResult.makeSuccess();
@@ -368,13 +366,13 @@ class VerificationModel extends ModelBaseMongoose {
 
 
 
-	
+
 
 	//---------------------------------------------------------------------------
 	async useNow(extraValues, req, res) {
 		// consume the verification and process it
 		// ATTN: there is a small chance a verification code could be used twice, if called twice in the middle of checking unused and marking it used
-		// if we are worried about this we can use the enabled field and do a findAndUpdate set it to 0 so that it can only succeed once, 
+		// if we are worried about this we can use the enabled field and do a findAndUpdate set it to 0 so that it can only succeed once,
 		// ATTN: there is also the dilemma, do we use up token and then try to perform action, or vice versa; in case of error it matters
 		// ATTN: unfinished
 		// @return JrResult
@@ -382,24 +380,22 @@ class VerificationModel extends ModelBaseMongoose {
 
 		// switch for the different kinds of verifications
 
-		if (this.type == "newAccountEmail") {
-			return await this.useNowNewAccountEmail(extraValues,req,res);
+		if (this.type === "newAccountEmail") {
+			return await this.useNowNewAccountEmail(extraValues, req, res);
 		}
-		
-		else if (this.type == "onetimeLogin") {
-			return await this.useNowOneTimeLogin(req,res);
+		if (this.type === "onetimeLogin") {
+			return await this.useNowOneTimeLogin(req, res);
+		}
 
-		}
-		
 		// unknown
 		var jrResult = JrResult.makeError("VerificationError", "Unknown verification token type (" + this.type + ")");
-		return {jrResult, successRedirect};
+		return { jrResult, successRedirect };
 	}
 
-	
-	async useUpAndSave() {	
+
+	async useUpAndSave() {
 		// mark use as used
-		this.usedDate = new Date;
+		this.usedDate = new Date();
 		this.enabled = 0;
 		// save it to mark it as used
 		await this.save();
@@ -430,12 +426,12 @@ class VerificationModel extends ModelBaseMongoose {
 			}
 		}
 
-		return {jrResult, successRedirect};
+		return { jrResult, successRedirect };
 	}
 	//---------------------------------------------------------------------------
 
 
-	
+
 
 
 	//---------------------------------------------------------------------------
@@ -475,16 +471,16 @@ class VerificationModel extends ModelBaseMongoose {
 			// first they signed up when the email wasn't in use, and then later confirmed it, and then tried to access via this verification
 			// we could prevent this case by ensuring we cancel all verifications related to an email once a user confirms/claims that email, but better safe than sorry here
 			// or it means they somehow intercepted someone's verification code that they shouldn't have; regardless it's not important
-			jrResult = JrResult.makeError("VerificationError", "This email already has already been claimed by an existing user account ("+user.getUsername()+".");
+			jrResult = JrResult.makeError("VerificationError", "This email already has already been claimed by an existing user account (" + user.getUsername() + ".");
 			// use it up since we are done with it at this point
 			await this.useUpAndSave();
 			// return error
-			return {jrResult, successRedirectTo};
+			return { jrResult, successRedirectTo };
 		}
 
 		// ok their verified email is unique, now we'd PROBABLY like to present them with a form where they can give us a username and password of their choosing
 		// we can default to any values we found in their signup (or bridged login) request
-		// note that we are going to have to check the verified email AGAIN when they submit this next form, so really we could skip all testing of it here 
+		// note that we are going to have to check the verified email AGAIN when they submit this next form, so really we could skip all testing of it here
 		// and just check it when they submit the second form..
 
 		// ONE OPTION, if they provided sufficient info at their initial registration (username, password) in addition to email address
@@ -507,7 +503,6 @@ class VerificationModel extends ModelBaseMongoose {
 			// valid username?
 			retvResult = await UserModel.validateUsername(username, true, !requiredFields.includes("username"));
 			if (retvResult.isError()) {
-				//jrResult.mergeIn(retvResult);
 				readyToCreateUser = false;
 			}
 		}
@@ -516,16 +511,16 @@ class VerificationModel extends ModelBaseMongoose {
 			// we can go ahead and directly create the user
 			// this is duplicative of code in UserModel.processAccountAllInOneForm
 			var userData = {
-				username: username,
-				email: email,
-				passwordHashed: passwordHashed,
-				realname: realname,
-			}
+				username,
+				email,
+				passwordHashed,
+				realname,
+			};
 			retvResult = await UserModel.createFullNewUserAccount(req, this, userData);
 			if (!retvResult.isError()) {
 				// success creating user, so let them know, log them in and redirect to profile
 				successRedirectTo = "/profile";
-				var jrResult = JrResult.makeSuccess("Your email has been verified.");
+				jrResult = JrResult.makeSuccess("Your email has been verified.");
 				jrResult.mergeIn(retvResult);
 				// they may have been auto-logged-in
 				if (arserver.getLoggedInLocalUserIdFromSession(req)) {
@@ -537,7 +532,7 @@ class VerificationModel extends ModelBaseMongoose {
 			} else {
 				// failure creating user, just drop down
 				readyToCreateUser = false;
-			} 
+			}
 		}
 
 		if (!readyToCreateUser) {
@@ -555,40 +550,9 @@ class VerificationModel extends ModelBaseMongoose {
 			}
 		}
 
-		return {jrResult, successRedirectTo};
+		return { jrResult, successRedirectTo };
 	}
 	//---------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

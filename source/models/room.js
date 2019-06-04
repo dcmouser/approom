@@ -8,7 +8,7 @@
 
 "use strict";
 
-// modules
+// models
 const ModelBaseMongoose = require("./modelBaseMongoose");
 
 
@@ -27,13 +27,12 @@ class RoomModel extends ModelBaseMongoose {
 	static buildSchema(mongooser) {
 		this.schema = new mongooser.Schema({
 			...(this.getUniversalSchemaObj()),
-			label: {type: String},
-			description: {type: String},
-			shortcode: {type: String, unique: true, required: true},
-		}, {collection: this.getCollectionName()});
+			label: { type: String },
+			description: { type: String },
+			shortcode: { type: String, unique: true, required: true },
+		}, { collection: this.getCollectionName() });
 		return this.schema;
-	};
-
+	}
 }
 
 

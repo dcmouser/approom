@@ -6,7 +6,7 @@
 
 "use strict";
 
-// modules
+// models
 const ModelBaseMongoose = require("./modelBaseMongoose");
 
 
@@ -26,10 +26,12 @@ class ConnectionModel extends ModelBaseMongoose {
 	static buildSchema(mongooser) {
 		this.schema = new mongooser.Schema({
 			...(this.getUniversalSchemaObj()),
-			ip: {type: String},
-		}, {collection: this.getCollectionName()});
+			ip: { type: String },
+		}, {
+			collection: this.getCollectionName(),
+		});
 		return this.schema;
-	};
+	}
 
 }
 

@@ -18,24 +18,26 @@ const JrResult = require("../helpers/jrresult");
 
 //---------------------------------------------------------------------------
 // constants
-const DEF_defaultUsername = "Usr";
-const DEF_randomUsernameRandomSuffixLength = 4;
+const DefDefaultUsername = "Usr";
+const DefRandomUsernameRandomSuffixLength = 4;
 //
-const DEF_passwordAdminPlaintextDefault = "test";
+const DefPasswordAdminPlaintextDefault = "test";
 //
-const DEF_regexUsernamePattern = /^[A-Za-z][A-Za-z0-9_-]{3,16}$/
-const DEF_regexUsernameExplanation = "Must start with a letter (a-z), followed by a string of letters, digits, and the symbols _ and -, minimum length of 3, maximum length of 16 (no spaces)."
+const DefRegexUsernamePattern = /^[A-Za-z][A-Za-z0-9_-]{3,16}$/;
+const DefRegexUsernameExplanation = "Must start with a letter (a-z), followed by a string of letters,"
+	+ " digits, and the symbols _ and -, minimum length of 3, maximum length of 16 (no spaces).";
+
 // username legal properties, which we use to help us FIX imported usernames or report errors, etc.
 // these should coincide with the regex check above, but are used to explicitly FIX usernames
-const DEF_usernameMinLength = 3;
-const DEF_usernameMaxLength = 16;
-const DEF_usernameAlwaysLowercase = false;
-const DEF_usernameAllowedStartingCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const DEF_usernameAllowedCharacters = DEF_usernameAllowedStartingCharacters + "0123456789-_";
+const DefUsernameMinLength = 3;
+const DefUsernameMaxLength = 16;
+const DefUsernameAlwaysLowercase = false;
+const DefUsernameAllowedStartingCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const DefUsernameAllowedCharacters = DefUsernameAllowedStartingCharacters + "0123456789-_";
 //
-const DEF_regexPasswordPattern = /^.{3,64}$/
-const DEF_regexPasswordExplanation = "Must be a string of letters, numbers, and symbols, with a minimum length of 3, maximum length of 64."
-const DEF_disallowedUsernameList = ["admin*","root","guest","user","moderator*"];
+const DefRegexPasswordPattern = /^.{3,64}$/;
+const DefRegexPasswordExplanation = "Must be a string of letters, numbers, and symbols, with a minimum length of 3, maximum length of 64.";
+const DefDisallowedUsernameList = ["admin*", "root", "guest", "user", "moderator*"];
 //---------------------------------------------------------------------------
 
 
@@ -67,23 +69,22 @@ class UserModel extends ModelBaseMongoose {
 
 	// User model mongoose db schema
 	static buildSchema(mongooser) {
-		var objschema = 
 		this.schema = new mongooser.Schema({
 			...(this.getUniversalSchemaObj()),
-			username: {type: String, unique: true, required: true},
-			realname: {type: String},
-			email: {type: String},
-			passwordObj: {type: String},
-			passwordVersion: {type: Number},
-			passwordDate: {type: Date},
-			loginDate: {type: Date},
-			authenticationDate: {type: Date},
-			// we don't put these in the db, they are just fields for when we create small temporary proxy users 
-			//loginId : {type: String},
-			//verificationId: {type: String},
-		}, {collection: this.getCollectionName()});
+			username: { type: String, unique: true, required: true },
+			realname: { type: String },
+			email: { type: String },
+			passwordObj: { type: String },
+			passwordVersion: { type: Number },
+			passwordDate: { type: Date },
+			loginDate: { type: Date },
+			authenticationDate: { type: Date },
+			// we don't put these in the db, they are just fields for when we create small temporary proxy users
+			// loginId : { type: String },
+			// verificationId: { type: String },
+		}, { collection: this.getCollectionName() });
 		return this.schema;
-	};
+	}
 
 
 	// database init
@@ -91,8 +92,8 @@ class UserModel extends ModelBaseMongoose {
 		jrlog.cdebug("Inside User dbInit");
 
 		// see if admin user exists, if not add it
-		var doc = await this.mongooseModel.findOne({username: "admin"}).exec();
-		if (doc==undefined) {
+		var doc = await this.mongooseModel.findOne({ username: "admin" }).exec();
+		if (!doc) {
 			// create admin object
 			jrlog.cdebug("  Creating admin user");
 			// hash password
@@ -128,7 +129,6 @@ class UserModel extends ModelBaseMongoose {
 		var passwordObjParsed = JSON.parse(this.passwordObj);
 		jrlog.cdebugObj(passwordObjParsed, "passwordObjParsed");
 		var bretv = await jrcrypto.testPassword(passwordPlaintext, passwordObjParsed);
-		//jrlog.debugObj(bretv,"PASS COMPARISON BRETV");
 		return bretv;
 	}
 
@@ -156,7 +156,7 @@ class UserModel extends ModelBaseMongoose {
 
 
 	// test
-	static getPasswordAdminPlaintextDefault() { return DEF_passwordAdminPlaintextDefault; }
+	static getPasswordAdminPlaintextDefault() { return DefPasswordAdminPlaintextDefault; }
 	//---------------------------------------------------------------------------
 
 
@@ -170,12 +170,14 @@ class UserModel extends ModelBaseMongoose {
 		if (!usernameEmail) {
 			return null;
 		}
-		var user = await this.mongooseModel.findOne({$or: [
-			{username: usernameEmail},
-			{email: usernameEmail}
-		]}).exec();
-		jrlog.cdebugObj(user,"in findOneByUsernameEmail");
-		return user;		
+		var user = await this.mongooseModel.findOne({
+			$or: [
+				{ username: usernameEmail },
+				{ email: usernameEmail },
+			],
+		}).exec();
+		jrlog.cdebugObj(user, "in findOneByUsernameEmail");
+		return user;
 	}
 
 
@@ -186,23 +188,23 @@ class UserModel extends ModelBaseMongoose {
 		if (!username) {
 			return null;
 		}
-		var user = await this.mongooseModel.findOne({username: username}).exec();
-		jrlog.cdebugObj(user,"in findOneByUsername");
+		var user = await this.mongooseModel.findOne({ username }).exec();
+		jrlog.cdebugObj(user, "in findOneByUsername");
 		return user;
 	}
 
 	// lookup user by their id
-	static async findOneById(id, flag_updateLoginDate) {
+	static async findOneById(id, flagUpdateLoginDate) {
 		// return null if not found
 		if (!id) {
 			return null;
 		}
 		//
 		var user;
-		if (flag_updateLoginDate) {
-			user = await this.mongooseModel.findOneAndUpdate({_id: id}, {$set:{loginDate:new Date}}).exec();
+		if (flagUpdateLoginDate) {
+			user = await this.mongooseModel.findOneAndUpdate({ _id: id }, { $set: { loginDate: new Date() } }).exec();
 		} else {
-			user = await this.mongooseModel.findOne({_id: id}).exec();
+			user = await this.mongooseModel.findOne({ _id: id }).exec();
 		}
 		//
 		return user;
@@ -215,7 +217,7 @@ class UserModel extends ModelBaseMongoose {
 		}
 		// ask user model to find user by email
 		// return null if not found
-		var user = await this.mongooseModel.findOne({email: email}).exec();
+		var user = await this.mongooseModel.findOne({ email }).exec();
 		return user;
 	}
 	//---------------------------------------------------------------------------
@@ -224,7 +226,7 @@ class UserModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// validate email
-	static async validateEmail(email, flag_mustBeUnique, flag_canBeBlank) {
+	static async validateEmail(email, flagMustBeUnique, flagCanBeBlank) {
 		// return JrResult with error set if error, or blank one on success
 		// ATTN: unfinished
 
@@ -232,24 +234,24 @@ class UserModel extends ModelBaseMongoose {
 		const validator = require("validator");
 
 		if (!email) {
-			if (flag_canBeBlank) {
+			if (flagCanBeBlank) {
 				return JrResult.makeSuccess();
 			}
-			return JrResult.makeNew("EmailInvalid").pushFieldError("email","Email cannot be blank.");
+			return JrResult.makeNew("EmailInvalid").pushFieldError("email", "Email cannot be blank.");
 		}
 
 		// valid syntax?
 		// see https://github.com/chriso/validator.js
 		const isEmailOptions = {};
 		if (!validator.isEmail(email, isEmailOptions)) {
-			return JrResult.makeNew("EmailInvalid").pushFieldError("email","Not a properly formatted email address.");
+			return JrResult.makeNew("EmailInvalid").pushFieldError("email", "Not a properly formatted email address.");
 		}
 
 		// check if used by someone already
-		if (flag_mustBeUnique) {
+		if (flagMustBeUnique) {
 			var user = await this.findOneByEmail(email);
-			if (user!==null) {
-				return JrResult.makeNew("EmailInvalid").pushFieldError("email","Email already in use.");
+			if (user) {
+				return JrResult.makeNew("EmailInvalid").pushFieldError("email", "Email already in use.");
 			}
 		}
 
@@ -259,7 +261,7 @@ class UserModel extends ModelBaseMongoose {
 
 
 	// validate username
-	static async validateUsername(username, flag_mustBeUnique, flag_canBeBlank) {
+	static async validateUsername(username, flagMustBeUnique, flagCanBeBlank) {
 		// return JrResult with error set if error, or blank one on success
 		// ATTN: unfinished
 
@@ -267,16 +269,16 @@ class UserModel extends ModelBaseMongoose {
 		const validator = require("validator");
 
 		if (!username) {
-			if (flag_canBeBlank) {
+			if (flagCanBeBlank) {
 				return JrResult.makeSuccess();
 			}
-			return JrResult.makeNew("UsernameInvalid").pushFieldError("username","Username cannot be blank.");
+			return JrResult.makeNew("UsernameInvalid").pushFieldError("username", "Username cannot be blank.");
 		}
 
 		// valid syntax?
 		// see https://github.com/chriso/validator.js
-		if (!validator.matches(username, DEF_regexUsernamePattern)) {
-			return JrResult.makeNew("UsernameInvalid").pushBiFieldError("username","Not a legal username.", "Not a legal username: "+DEF_regexUsernameExplanation);
+		if (!validator.matches(username, DefRegexUsernamePattern)) {
+			return JrResult.makeNew("UsernameInvalid").pushBiFieldError("username", "Not a legal username.", "Not a legal username: " + DefRegexUsernameExplanation);
 		}
 
 		// check against some blacklisted username
@@ -286,10 +288,10 @@ class UserModel extends ModelBaseMongoose {
 		}
 
 		// check if used by someone already
-		if (flag_mustBeUnique) {
+		if (flagMustBeUnique) {
 			var user = await this.findOneByUsername(username);
-			if (user!==null) {
-				return JrResult.makeNew("UsernameInvalid").pushFieldError("username","Username already in use.");
+			if (user) {
+				return JrResult.makeNew("UsernameInvalid").pushFieldError("username", "Username already in use.");
 			}
 		}
 
@@ -301,25 +303,25 @@ class UserModel extends ModelBaseMongoose {
 		// return true if the str is not allowed for new users
 		// note that his may include usernames or emails that admins are allowed to set up, just not users
 		var errorStr;
-		for (var word of DEF_disallowedUsernameList) {
-			if (word[word.length-1]=="*") {
+		for (var word of DefDisallowedUsernameList) {
+			if (word[word.length - 1] === "*") {
 				// match against it or prefix
-				word = word.substring(0,word.length-1);
+				word = word.substring(0, word.length - 1);
 				if (str.startsWith(word)) {
-					errorStr = "Cannot start with the reserved word '"+word+"'";
+					errorStr = "Cannot start with the reserved word '" + word + "'";
+					break;
+				}
+			} else {
+				if (str === word) {
+					errorStr = "Cannot use the reserved word '" + word + "'";
 					break;
 				}
 			}
-			else {
-				if (str == word) {
-					errorStr = "Cannot use the reserved word '"+word+"'";
-					break;					
-				}
-			}
 		}
+
 		if (errorStr !== undefined) {
 			// error
-			return JrResult.makeNew("UsernameInvalid").pushBiFieldError("username","Invalid username","Invalid username: "+errorStr);
+			return JrResult.makeNew("UsernameInvalid").pushBiFieldError("username", "Invalid username", "Invalid username: " + errorStr);
 		}
 		// success
 		return JrResult.makeSuccess();
@@ -327,24 +329,24 @@ class UserModel extends ModelBaseMongoose {
 
 
 	// validate password
-	static async validatePassword(password, flag_canBeBlank) {
+	static async validatePassword(password, flagCanBeBlank) {
 		// return JrResult with error set if error, or blank one on success
 		// ATTN: unfinished
 
 		// validation helper
 		const validator = require("validator");
-	
+
 		if (!password) {
-			if (flag_canBeBlank) {
-				return JrResult.makeSuccess();;
+			if (flagCanBeBlank) {
+				return JrResult.makeSuccess();
 			}
-			return JrResult.makeNew("PasswordInvalid").pushFieldError("password","Password cannot be blank.");
+			return JrResult.makeNew("PasswordInvalid").pushFieldError("password", "Password cannot be blank.");
 		}
 
 		// valid syntax?
 		// see https://github.com/chriso/validator.js
-		if (!validator.matches(password, DEF_regexPasswordPattern)) {
-			return JrResult.makeNew("PasswordInvalid").pushBiFieldError("password","Not a legal password.", "Not a legal password: "+DEF_regexPasswordExplanation);
+		if (!validator.matches(password, DefRegexPasswordPattern)) {
+			return JrResult.makeNew("PasswordInvalid").pushBiFieldError("password", "Not a legal password.", "Not a legal password: " + DefRegexPasswordExplanation);
 		}
 
 		// it's good
@@ -358,7 +360,8 @@ class UserModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	getMinimalPassportProfile() {
 		// return identifier for passport to track to know what user is logged in
-		// if user is a real db model, then provider is "localUser"; otherwise it can be a minimal proxy for a bridged login or a verification based id, which is more like a pre-account login
+		// if user is a real db model, then provider is "localUser"; otherwise it
+		//  can be a minimal proxy for a bridged login or a verification based id, which is more like a pre-account login
 		var provider;
 		if (this.id) {
 			provider = "localUser";
@@ -369,11 +372,11 @@ class UserModel extends ModelBaseMongoose {
 		}
 		var profile = {
 			// any time we are getting passport profile from a USER, it is local
-			provider: provider,
+			provider,
 			id: this.id,
 			username: this.username,
 			loginId: this.loginId,
-			verificationId: this.verificationId
+			verificationId: this.verificationId,
 		};
 
 		return profile;
@@ -382,7 +385,7 @@ class UserModel extends ModelBaseMongoose {
 
 
 	// create a unique user based on bridged login info
-	static async createUniqueUserFromBridgedLogin(bridgedLoginObj, flag_updateLoginDate) {
+	static async createUniqueUserFromBridgedLogin(bridgedLoginObj, flagUpdateLoginDate) {
 		// this could be tricky because we may have collisions in our desired username, email, etc.
 		var userObj = {
 			username: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.extraData.userName, null),
@@ -392,12 +395,12 @@ class UserModel extends ModelBaseMongoose {
 			passwordDate: null,
 		};
 		// modify or tweak username if its not unique
-		await this.uniqueifyUserObj(userObj, bridgedLoginObj.provider_name+"_"+bridgedLoginObj.provider_id );
+		await this.uniqueifyUserObj(userObj, bridgedLoginObj.providerName + "_" + bridgedLoginObj.providerId);
 		// now create model (this will also add default properties to it)
 		var user = UserModel.createModel(userObj);
 		// set login date to now?
-		if (flag_updateLoginDate) {
-			user.loginDate = new Date;
+		if (flagUpdateLoginDate) {
+			user.loginDate = new Date();
 		}
 		// and save it
 		await user.save();
@@ -421,7 +424,7 @@ class UserModel extends ModelBaseMongoose {
 		}
 		if (!username) {
 			// fall back on default username
-			username = DEF_defaultUsername;
+			username = DefDefaultUsername;
 		}
 
 		// get a unique version of this
@@ -440,21 +443,20 @@ class UserModel extends ModelBaseMongoose {
 		// here we need to ensure it meets our rules
 		const MAXTRIES = 100;
 		var jrResult;
-	
+
 		// part 1 is getting a syntax conforming username, short enough for us to add random suffix
 		username = await this.fixImportedUsernameSyntaxLength(username);
 
 		// remember name so we can add suffix if we need to in order to make unique
 		var baseUsername = username;
-		if (baseUsername.length+1+DEF_randomUsernameRandomSuffixLength > DEF_usernameMaxLength) {
-			baseUsername = baseUsername.substring(0,DEF_usernameMaxLength - (1+DEF_randomUsernameRandomSuffixLength));
+		if (baseUsername.length + 1 + DefRandomUsernameRandomSuffixLength > DefUsernameMaxLength) {
+			baseUsername = baseUsername.substring(0, DefUsernameMaxLength - (1 + DefRandomUsernameRandomSuffixLength));
 		}
 
 		// part 2 will be to add random suffixes if needed, until we get a unique one
 
 		// ok now loop trying to fix unique username by adding suffixes to uniqueify
-		for (var i = 1; i<MAXTRIES; ++i) {
-			// 
+		for (var i = 1; i < MAXTRIES; ++i) {
 			// see if user with username already exists (or if this is base default username we are pretending already exists)
 			jrResult = await this.validateUsername(username, true, false);
 			if (!jrResult.isError()) {
@@ -466,22 +468,22 @@ class UserModel extends ModelBaseMongoose {
 		}
 
 		// we could not find a unique username (!?!?)
-		throw("Could not create unique username.");
+		throw ("Could not create unique username.");
 	}
 
 
 	static async fixImportedUsernameSyntaxLength(username) {
-		// needs to be a valid username 
+		// needs to be a valid username
 		// we don't care if it is unique, but it must be short enough to add random suffix to
 		// we may have to be clever to automate the process of "fixing" an illegal username
 
 		if (!username) {
 			// fall back on default username
-			username = DEF_defaultUsername;
+			username = DefDefaultUsername;
 		}
 
 		// force lowercase?
-		if (DEF_usernameAlwaysLowercase) {
+		if (DefUsernameAlwaysLowercase) {
 			username = username.toLowerCase();
 		}
 
@@ -489,47 +491,46 @@ class UserModel extends ModelBaseMongoose {
 
 		// loop through the username
 		var c;
-		const allowedStartChars = DEF_usernameAllowedStartingCharacters;
-		const allowedChars = DEF_usernameAllowedCharacters;
-		for (var i = 0; i<username.length;++i) {
+		const allowedStartChars = DefUsernameAllowedStartingCharacters;
+		const allowedChars = DefUsernameAllowedCharacters;
+		for (var i = 0; i < username.length; ++i) {
 			c = username.charAt(i);
-			if ((i==0 && DEF_usernameAllowedStartingCharacters.indexOf(c)==-1) || (i>0 && DEF_usernameAllowedCharacters.indexOf(c)==-1) ) {
+			if ((i === 0 && DefUsernameAllowedStartingCharacters.indexOf(c) === -1) || (i > 0 && DefUsernameAllowedCharacters.indexOf(c) === -1)) {
 				// not in our list of allowed characters, so splice it out
-				username = username.substring(0,i) + username.substring(i+1);
+				username = username.substring(0, i) + username.substring(i + 1);
 				// backup i so we look at next char in this position and continue
 				--i;
-				continue;
 			}
 		}
 
 		// fix length
-		if (username.length > DEF_usernameMaxLength) {
+		if (username.length > DefUsernameMaxLength) {
 			// too long
-			username = username.substring(0, DEF_usernameMaxLength);
-		} else if (username.length < DEF_usernameMinLength) {
+			username = username.substring(0, DefUsernameMaxLength);
+		} else if (username.length < DefUsernameMinLength) {
 			// just add random characters
-			username = username + randomUsernameSuffix();
+			username += this.randomUsernameSuffix();
 		}
 
 		// ok let's take an early try at validating it -- IT SHOULD be good.
-		var jrResult;		
+		var jrResult;
 		jrResult = await this.validateUsername(username, false, false);
 		if (!jrResult.isError()) {
 			// good!
 			return username;
 		}
 
-		jrlog.debugObj(jrResult,"username validate result");
+		jrlog.debugObj(jrResult, "username validate result");
 
 		// we got an error, it's not valid syntax.. but we removed all bad characters, corrected length, etc.
-		throw("Failed to fix imported username to comply with username syntax.")
+		throw ("Failed to fix imported username to comply with username syntax.");
 	}
 
 
 	static randomUsernameSuffix() {
 		// just return some random letters to add to a username that has a clash with an existing one
-		var str = jrcrypto.genRandomStringHumanEasy(DEF_randomUsernameRandomSuffixLength);
-		if (DEF_usernameAlwaysLowercase) {
+		var str = jrcrypto.genRandomStringHumanEasy(DefRandomUsernameRandomSuffixLength);
+		if (DefUsernameAlwaysLowercase) {
 			str = str.toLowerCase();
 		}
 		return str;
@@ -543,22 +544,22 @@ class UserModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	static async createUserFromObj(userObj) {
 		// create a new user account
-			var passwordObjForFieldSaving = this.getPasswordObjForFieldSaving(userObj.passwordHashed);
-			// create generic new object
-			var userObjFull = {
-				username: userObj.username,
-				email: userObj.email,
-				// merge in passwordObjForFieldSaving data
-				...passwordObjForFieldSaving,
+		var passwordObjForFieldSaving = this.getPasswordObjForFieldSaving(userObj.passwordHashed);
+		// create generic new object
+		var userObjFull = {
+			username: userObj.username,
+			email: userObj.email,
+			// merge in passwordObjForFieldSaving data
+			...passwordObjForFieldSaving,
 
-			};
+		};
 			// now create model (this will also add default properties to it)
-			var user = UserModel.createModel(userObjFull);
-			// and save it
-			var userdoc = await user.save();
-			//
-			jrlog.cdebugObj(userdoc,"new user");
-			return userdoc;
+		var user = UserModel.createModel(userObjFull);
+		// and save it
+		var userdoc = await user.save();
+		//
+		jrlog.cdebugObj(userdoc, "new user");
+		return userdoc;
 	}
 	//---------------------------------------------------------------------------
 
@@ -568,9 +569,9 @@ class UserModel extends ModelBaseMongoose {
 	static makeJrResultErrorNoUserFromField(key, value) {
 		var jrResult = JrResult.makeNew("UserNotFound");
 		var msgShort = "User not found.";
-		var keylabel = key == "username_email" ? "username or email" : key;
-		var msgLong = "No user found with user "+keylabel+ " matching " + value + ".";
-		jrResult.pushBiFieldError(key,msgShort, msgLong);
+		var keylabel = (key === "usernameEmail") ? "username or email" : key;
+		var msgLong = "No user found with user " + keylabel + " matching " + value + ".";
+		jrResult.pushBiFieldError(key, msgShort, msgLong);
 		return jrResult;
 	}
 	//---------------------------------------------------------------------------
@@ -596,7 +597,7 @@ class UserModel extends ModelBaseMongoose {
 		// option fields
 		var username;
 		var email;
-		//var passwordHashed;
+		var extraData;
 
 		// initial values for the form to present them with
 
@@ -606,16 +607,16 @@ class UserModel extends ModelBaseMongoose {
 		var login = await arserver.getLoggedInLogin(req);
 		if (login) {
 			// bridged login, get their requested (or default) username
-			var extraData = login.getExtraData();
+			extraData = login.getExtraData();
 			if (extraData.username) {
 				username = extraData.username;
 			}
 			if (extraData.email) {
 				email = extraData.email;
 			}
-//			if (extraData.passwordHashed) {
-//				passwordHashed = extraData.passwordHashed;
-//			}
+			//			if (extraData.passwordHashed) {
+			//				passwordHashed = extraData.passwordHashed;
+			//			}
 			if (!username && extraData.realName) {
 				username = extraData.realName;
 			}
@@ -626,20 +627,17 @@ class UserModel extends ModelBaseMongoose {
 
 		// sessioned with a verificationId? if so we could get initial values from that
 		var verification = await arserver.getLoggedInVerification(req);
-		if (verification && verification.type=="newAccountEmail") {
-			if (verification.key == "email") {
+		if (verification && verification.type === "newAccountEmail") {
+			if (verification.key === "email") {
 				email = verification.val;
 			}
-			var extraData = verification.getExtraData();
+			extraData = verification.getExtraData();
 			if (extraData.username) {
 				username = extraData.username;
 			}
 			if (extraData.email) {
 				email = extraData.email;
 			}
-//			if (extraData.passwordHashed) {
-//				passwordHashed = extraData.passwordHashed;
-//			}
 		}
 
 		// store initial values for form in req.body, just as they would be if were were re-presending a failed form
@@ -680,7 +678,6 @@ class UserModel extends ModelBaseMongoose {
 		var successRedirectTo;
 		var flagAllowedUsedExpiredVerifyCode = false;
 
-	
 		// require models
 		const arserver = require("./server");
 		const VerificationModel = require("./verification");
@@ -692,12 +689,12 @@ class UserModel extends ModelBaseMongoose {
 		var verifyCode;
 		//
 		var verifyCodeForm = req.body.verifyCode;
-		var verifyIdSession = arserver.getLoggedInLocalVerificationIdFromSession(req)
+		var verifyIdSession = arserver.getLoggedInLocalVerificationIdFromSession(req);
 		if (verifyCodeForm) {
 			// verification vode was explicitly provided in the form, so get the information from that
-			// and in THIS case we will allow an expired code to be used, since 
+			// and in THIS case we will allow an expired code to be used, since
 			verification = await VerificationModel.findOneByCode(verifyCodeForm);
-			if (verification && verification.getIdAsString() == verifyIdSession) {
+			if (verification && verification.getIdAsString() === verifyIdSession) {
 				// they explicitly provided a verification code, and its the same as we have in session, so we can use it even if its expired
 				flagAllowedUsedExpiredVerifyCode = true;
 			}
@@ -712,7 +709,7 @@ class UserModel extends ModelBaseMongoose {
 		if (verification) {
 			// check if it actually is a verification object RELEVANT to registration
 			var verificationType = verification.getTypestr();
-			if (verificationType != "newAccountEmail") {
+			if (verificationType !== "newAccountEmail") {
 				// not relevant to us, clear it
 				verification = null;
 			}
@@ -725,7 +722,7 @@ class UserModel extends ModelBaseMongoose {
 			}
 		}
 
-	
+
 
 
 		// depending on how we are invoked we may allow for missing fields
@@ -741,14 +738,15 @@ class UserModel extends ModelBaseMongoose {
 		var flagAllowBlankUsername = !requiredFields.includes("username");
 		var flagAllowBlankPassword = !requiredFields.includes("password");
 
-		// ATTN: note that it may be the case that a field is REQUIRED, but does not have to be present on the form if it is present in the verification record (e.g. they have verified their email)
+		// ATTN: note that it may be the case that a field is REQUIRED, but does not have to be present
+		//  on the form if it is present in the verification record (e.g. they have verified their email)
 
 
 		// ---
 		// VALIDATE FIELDS
-	
+
 		// values from form
-		var email =  req.body.email;
+		var email = req.body.email;
 		var username = req.body.username;
 		var password = req.body.password;
 		var passwordHashed = null;
@@ -761,7 +759,7 @@ class UserModel extends ModelBaseMongoose {
 				flagVerifiedEmail = true;
 			} else {
 				// they have provided an email -- if it doesn't match verificaiton email, then the verification is moot
-				if (email != verification.getVerifiedValue("email")) {
+				if (email !== verification.getVerifiedValue("email")) {
 					flagVerifiedEmail = false;
 				} else {
 					flagVerifiedEmail = true;
@@ -775,19 +773,19 @@ class UserModel extends ModelBaseMongoose {
 			}
 		}
 
-	
+
 		// valid email?
 		retvResult = await UserModel.validateEmail(email, true, flagAllowBlankEmail);
 		if (retvResult.isError()) {
 			jrResult.mergeIn(retvResult);
 		}
-	
+
 		// valid username?
 		retvResult = await UserModel.validateUsername(username, true, flagAllowBlankUsername);
 		if (retvResult.isError()) {
 			jrResult.mergeIn(retvResult);
 		}
-	
+
 		// valid password?
 		if (passwordHashed) {
 			// we already have a valid hashed password for them, previously calculated and stored in verification object (and no new password specified), so we'll use that
@@ -806,17 +804,17 @@ class UserModel extends ModelBaseMongoose {
 
 		if (jrResult.isError()) {
 			// error case, we can return now
-			return {jrResult, successRedirectTo};
+			return { jrResult, successRedirectTo };
 		}
 		// ---
 
 
 		// user data object, used in both cases below
 		var extraData = {
-			email: email,
-			username: username,
-			passwordHashed: passwordHashed,
-		}
+			email,
+			username,
+			passwordHashed,
+		};
 		// ATTN: IMPORTANT NOTE
 		// There are 2 cases we need to deal with here
 		// Case 1: We already have verified proof they own this email, because they got here with a verifyCode that proves it (either provided in the form, or in their session)
@@ -855,9 +853,9 @@ class UserModel extends ModelBaseMongoose {
 			}
 		}
 
-	
-	// return tuple with result and suggested succes redirect
-	return {jrResult, successRedirectTo};
+
+		// return tuple with result and suggested succes redirect
+		return { jrResult, successRedirectTo };
 	}
 	//---------------------------------------------------------------------------
 
@@ -878,13 +876,13 @@ class UserModel extends ModelBaseMongoose {
 
 
 
-	
+
 
 	//---------------------------------------------------------------------------
 	// this is the function called when user submits their username and password to create their account
 	// AFTER they have confirmed their email address
 	// it is called from the account route
-	// there is very similar code elsewhere that we would like to combine 
+	// there is very similar code elsewhere that we would like to combine
 	//
 	// ATTN: there is redundant code here; better would be to call the generic UseVerification process with the extra info
 	// IMPORTANT: extraData may contain an email address -- if so it MUST match the one in the verification, otherwise it is an error to complain about
@@ -906,7 +904,7 @@ class UserModel extends ModelBaseMongoose {
 		// success?
 		if (user) {
 			// success
-			jrResult = JrResult.makeSuccess("Your new account with username '"+user.username+"' has been created.");
+			jrResult = JrResult.makeSuccess("Your new account with username '" + user.username + "' has been created.");
 			// mark that it is used
 			await verification.useUpAndSave();
 			// now, if they were sessioned-in with a Login, we want to connect that to the new user
@@ -926,7 +924,7 @@ class UserModel extends ModelBaseMongoose {
 			return jrResult;
 		}
 
-		jrResult = JrResult.makeError("RegistrationError","Failed to create new user account.");
+		jrResult = JrResult.makeError("RegistrationError", "Failed to create new user account.");
 		return jrResult;
 	}
 	//---------------------------------------------------------------------------

@@ -7,7 +7,7 @@
 
 "use strict";
 
-// modules
+// models
 const ModelBaseMongoose = require("./modelBaseMongoose");
 
 
@@ -26,12 +26,14 @@ class FileModel extends ModelBaseMongoose {
 	static buildSchema(mongooser) {
 		this.schema = new mongooser.Schema({
 			...(this.getUniversalSchemaObj()),
-			path: {type: String, required: true},
-			label: {type: String},
-			sizebytes: {type: Number},
-		}, {collection: this.getCollectionName()});
+			path: { type: String, required: true },
+			label: { type: String },
+			sizebytes: { type: Number },
+		}, {
+			collection: this.getCollectionName(),
+		});
 		return this.schema;
-	};
+	}
 
 }
 

@@ -6,7 +6,7 @@
 
 "use strict";
 
-// modules
+// models
 const ModelBaseMongoose = require("./modelBaseMongoose");
 
 
@@ -25,12 +25,11 @@ class OptionModel extends ModelBaseMongoose {
 	static buildSchema(mongooser) {
 		this.schema = new mongooser.Schema({
 			...(this.getUniversalSchemaObj()),
-			key: {type: String},
-			val: {type: String},
-
-		}, {collection: this.getCollectionName()});
+			key: { type: String },
+			val: { type: String },
+		}, { collection: this.getCollectionName() });
 		return this.schema;
-	};
+	}
 
 }
 

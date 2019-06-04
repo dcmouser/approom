@@ -8,14 +8,6 @@
 
 //---------------------------------------------------------------------------
 // modules
-// for password hashing
-var crypto = require("crypto");
-
-// ATTN: move to bcrypt; not yet used
-//var bcrypt = require("bcrypt");
-
-// our helper modules
-const jrlog = require("./jrlog");
 //---------------------------------------------------------------------------
 
 
@@ -56,16 +48,16 @@ function isEmpty(val) {
 
 
 function firstNonEmptyValue(...args) {
-	if (args == undefined || args.length == 0) {
+	if (!args || args.length === 0) {
 		return undefined;
 	}
-    for (var arg of args) {
+	for (var arg of args) {
 		if (arg) {
 			return arg;
-    	}
-    // return last
-    return args[args.length-1];
-    }
+		}
+	}
+	// return last
+	return args[args.length - 1];
 }
 //---------------------------------------------------------------------------
 
@@ -73,8 +65,8 @@ function firstNonEmptyValue(...args) {
 
 //---------------------------------------------------------------------------
 function DateNowPlusMinutes(expirationMinutes) {
-	var expirationDate = new Date;
-	expirationDate.setMinutes( expirationDate.getMinutes() + expirationMinutes );
+	var expirationDate = new Date();
+	expirationDate.setMinutes(expirationDate.getMinutes() + expirationMinutes);
 	return expirationDate;
 }
 //---------------------------------------------------------------------------
@@ -83,7 +75,7 @@ function DateNowPlusMinutes(expirationMinutes) {
 
 //---------------------------------------------------------------------------
 function stringArrayToNiceString(arr) {
-	if (arr === undefined || arr.length==0) {
+	if (!arr || arr.length === 0) {
 		return "";
 	}
 	return arr.toString();
@@ -111,5 +103,5 @@ module.exports = {
 	DateNowPlusMinutes,
 	stringArrayToNiceString,
 	makeClonedObjFromEnumerableProperties,
-	}
+};
 //---------------------------------------------------------------------------
