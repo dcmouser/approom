@@ -21,16 +21,25 @@ class OptionModel extends ModelBaseMongoose {
 		return "options";
 	}
 
+	static getNiceName() {
+		return "Option";
+	}
+
 	// User model mongoose db schema
 	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema({
-			...(this.getUniversalSchemaObj()),
-			key: { type: String },
-			val: { type: String },
-		}, { collection: this.getCollectionName() });
+		this.schema = new mongooser.Schema(this.calcSchemaDefinition(),	{
+			collection: this.getCollectionName(),
+		});
 		return this.schema;
 	}
 
+	static calcSchemaDefinition() {
+		return {
+			...(this.getUniversalSchemaObj()),
+			key: { type: String },
+			val: { type: String },
+		};
+	}
 }
 
 

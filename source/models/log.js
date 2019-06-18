@@ -21,29 +21,27 @@ class LogModel extends ModelBaseMongoose {
 		return "logs";
 	}
 
+	static getNiceName() {
+		return "LogEntry";
+	}
 
 	// User model mongoose db schema
 	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema({
-			...(this.getUniversalSchemaObj()),
-			type: { type: String },
-			message: { type: String },
-			severity: { type: Number },
-		}, {
+		this.schema = new mongooser.Schema(this.calcSchemaDefinition(), {
 			collection: this.getCollectionName(),
 		});
 		return this.schema;
 	}
 
-
-	// we override this base schema because logs need to be MINIMAL
-	static getUniversalSchemaObj() {
-		var obj = {
+	static calcSchemaDefinition() {
+		return {
+			// ...(this.getUniversalSchemaObj()),
 			creationDate: { type: Date },
+			type: { type: String },
+			message: { type: String },
+			severity: { type: Number },
 		};
-		return obj;
 	}
-
 
 
 	// create new obj

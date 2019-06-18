@@ -15,11 +15,13 @@ const httpErrors = require("http-errors");
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
+const csurf = require("csurf");
 const connectMongo = require("connect-mongo");
 const morgan = require("morgan");
 const http = require("http");
 const bodyParser = require("body-parser");
 const https = require("https");
+
 
 // passport authentication stuff
 const passport = require("passport");
@@ -78,7 +80,8 @@ class AppRoomServer {
 
 
 	constructor() {
-		this.valtest = 1;
+		// csrf
+		this.csrfInstance = undefined;
 	}
 
 
@@ -95,6 +98,10 @@ class AppRoomServer {
 		return this.getBaseSubDir("logs");
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
 
 
 	//---------------------------------------------------------------------------
@@ -204,6 +211,17 @@ class AppRoomServer {
 			store: sessionStore,
 		}));
 
+
+		// setup csrf, etc.
+		// see https://github.com/expressjs/csurf
+		this.csrfInstance = csurf({
+			cookie: false,
+			ignoreMethods: [],	// we pass in empty array here because we are not using csurf as middleware and explicitly calling when we want it
+		});
+		// ATTN: we do NOT install it as middleware, we will use it explicitly only when we want it
+		// by calling some support functions we have written
+
+
 		// parse query parameters automatically
 		expressApp.use(express.query());
 
@@ -217,7 +235,6 @@ class AppRoomServer {
 		// save expressApp for easier referencing later
 		this.expressApp = expressApp;
 	}
-
 
 
 
@@ -360,6 +377,14 @@ class AppRoomServer {
 
 		// test stuff
 		this.setupRoute("/membersonly", "membersonly");
+
+		// model-centric
+		this.setupRoute("/app", "app");
+		this.setupRoute("/room", "room");
+
+		// admin
+		this.setupRoute("/admin", "admin");
+
 	}
 
 
@@ -514,7 +539,7 @@ class AppRoomServer {
 				var { user, jrResult } = await LoginModel.processBridgedLoginGetOrCreateUserOrProxy(bridgedLoginObj, req);
 				// if user could not be created, it's an error
 				// add jrResult to session in case we did extra stuff and info to show the user
-				if (jrResult !== undefined) {
+				if (jrResult) {
 					jrResult.addToSession(req);
 				}
 				// otherwise log in the user -- either with a REAL user account, OR if user is a just a namless proxy for the bridged login, with that
@@ -729,7 +754,19 @@ class AppRoomServer {
 		jrhandlebars.setupJrHandlebarHelpers(hbs);
 
 		// parse and make available partials from files
-		jrhandlebars.loadPartialFiles(hbs, this.getBaseSubDir("views/partials"));
+		jrhandlebars.loadPartialFiles(hbs, this.getBaseSubDir("views/partials"), "");
+	}
+
+	getViewPath() {
+		// return absolute path of view files
+		// this is used by crud aid class so it knows how to check for existence of certain view files
+		return this.getBaseSubDir("views");
+	}
+
+	getViewExt() {
+		// return extension of view files with . prefix
+		// this is used by crud aid class so it knows how to check for existence of certain view files
+		return ".hbs";
 	}
 	//---------------------------------------------------------------------------
 
@@ -817,15 +854,17 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	// Event listener for HTTP server "error" event.
 	onErrorEs(listener, expressServer, flagHttps, error) {
+		// called not on 404 errors but other internal errors?
+
 		if (error.syscall !== "listen") {
 			throw error;
 		}
 
 		// ATTN: not clear why this uses different method than OnListeningEs to get port info, etc.
-		var port = listener.address().port;
-		var bind = typeof port === "string"
-			? "Pipe " + port
-			: "Port " + port;
+		var addr = listener.address();
+		var bind = (typeof addr === "string")
+			? "pipe " + addr
+			: "port " + addr.port;
 
 		// handle specific listen errors with friendly messages
 		switch (error.code) {
@@ -999,6 +1038,14 @@ class AppRoomServer {
 	}
 
 
+	divertToLoginPageThenBackToCurrentUrl(req, res) {
+		// redirect them to login page and then back to their currently requested page
+		var failureRelUrl = "/login";
+		var goalRelUrl = req.originalUrl;
+		this.rememberDivertedRelUrlAndGo(req, res, goalRelUrl, failureRelUrl, "You need to login before you can access that page.");
+	}
+
+
 	rememberDivertedRelUrlAndGo(req, res, goalRelUrl, failureRelUrl, msg) {
 		this.rememberDivertedRelUrl(req, res, goalRelUrl, msg);
 		// now redirect
@@ -1103,6 +1150,118 @@ class AppRoomServer {
 	}
 	//---------------------------------------------------------------------------
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	async aclRequireModelAccess(req, res, modelClass, accessTypeStr, modelId) {
+		// return FALSE if we are denying user access
+		// and in that case WE should redirect them or render the output
+		// return TRUE if we should let them continue
+		var access = false;
+		//
+		var user = await this.getLoggedInUser(req);
+
+		// ATTN: TEST - let's just fail them if they are not logged in
+		if (!user) {
+			access = false;
+		} else {
+			access = true;
+		}
+
+		// if we granted them access, just return true
+		if (access) {
+			return true;
+		}
+
+		// deny them access?
+
+		if (!user) {
+			// ok if we denied them access and they are not logged in, make them log in -- after that they may have permission
+			this.divertToLoginPageThenBackToCurrentUrl(req, res);
+		} else {
+			// just tell them they don't have access
+			this.renderAclAccessError(req, res, modelClass, "You do not have permissions to access this resource/page.");
+		}
+
+		return false;
+	}
+
+
+	renderAclAccessError(req, res, modelClass, errorMessage) {
+		var jrError = JrResult.makeError("ACL", errorMessage);
+		// render
+		res.render("acldeny", {
+			jrResult: JrResult.sessionRenderResult(req, res, jrError),
+			crudClassNiceName: modelClass.getNiceName(),
+		});
+	}
+
+	renderAclAccessErrorResult(req, res, modelClass, jrResult) {
+		// render
+		res.render("acldeny", {
+			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
+			crudClassNiceName: modelClass.getNiceName(),
+		});
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// csrf helpers -- so we dont have to install as ever-present middleware
+	makeCsrf(req, res) {
+		// in this case we pass next() function which just returns value passed to it
+		if (req.csrfToken) {
+			// already in req, just return it
+			return req.csrfToken();
+		}
+		return this.csrfInstance(req, res, (err) => {
+			if (err === undefined || err.code === "EBADCSRFTOKEN") {
+				// no error, or csrf bad-token error, which we dont care about since we've just been asked to make one
+				return req.csrfToken();
+			}
+			// pass the error back
+			return err;
+		});
+	}
+
+	testCsrfThrowError(req, res, next) {
+		// let csrf throw the error to next, ONLY if there is an error, otherwise just return and dont call next
+		return this.csrfInstance(req, res, (err) => {
+			if (err) {
+				next(err);
+				return err;
+			}
+			return undefined;
+		});
+	}
+
+	testCsrfNoThrow(req, res) {
+		// just return any error don't call next
+		return this.csrfInstance(req, res, err => err);
+	}
+
+
+	getCsrf() { return this.csrfInstance; }
+	//---------------------------------------------------------------------------
 
 
 

@@ -29,6 +29,12 @@ router.get("/code/:code?", async (req, res, next) => {
 });
 
 router.post(/(code\/.*)?/, async (req, res, next) => {
+	// check required csrf token
+	if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
+		// csrf error, next will have been called with it
+		return;
+	}
+
 	var code = req.body.code;
 	await handleVerifyCode(code, req, res, next);
 });
@@ -36,8 +42,10 @@ router.post(/(code\/.*)?/, async (req, res, next) => {
 
 // we don't know what they want to verify?
 router.get("/", (req, res, next) => {
+
 	res.render("account/verify", {
 		jrResult: JrResult.sessionRenderResult(req, res),
+		csrfToken: arserver.makeCsrf(req, res),
 	});
 });
 //---------------------------------------------------------------------------
@@ -72,6 +80,7 @@ async function handleVerifyCode(code, req, res, next) {
 		res.render("account/verify", {
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 			reqBody: req.body,
+			csrfToken: arserver.makeCsrf(req, res),
 		});
 		return;
 	}

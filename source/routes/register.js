@@ -12,6 +12,7 @@ const express = require("express");
 // models
 const UserModel = require("../models/user");
 const arserver = require("../models/server");
+const RegistrationAid = require("../controllers/registrationaid");
 
 // helpers
 const JrResult = require("../helpers/jrresult");
@@ -26,19 +27,20 @@ const router = express.Router();
 // simple request at register page
 router.get("/", async (req, res, next) => {
 	// they should not already be logged in. if they are send them elsewhere (e.g. to their profile page)
-	if (arserver.sendLoggedInUsersElsewhere(req)) {
+	if (arserver.sendLoggedInUsersElsewhere(req, res)) {
 		return;
 	}
 
 	// initialize req.body with default values for form if we find them in a session field
 	//  (for example if they just verified their new account), similar to as if they had submitted values and we were re-presenting with errors
-	await UserModel.fillReqBodyWithSessionedFieldValues(req);
+	await RegistrationAid.fillReqBodyWithSessionedFieldValues(req);
 
 	// render
 	res.render(getRegisterViewPath(req), {
 		jrResult: JrResult.sessionRenderResult(req, res),
 		reqbody: req.body,
 		flagFullRegistrationForm: getUseFullRegistrationForm(),
+		csrfToken: arserver.makeCsrf(req, res),
 	});
 });
 
@@ -47,18 +49,24 @@ router.get("/", async (req, res, next) => {
 
 
 // user is posting registration form
-router.post("/", async (req, res) => {
+router.post("/", async (req, res, next) => {
 	// ok so user is trying to register with an email (and possibly other info, username, etc)
 	// first thing we can do is check if person is asking for an email address already in use; if so we can error them right away
 	// if not, we generate a special verification object with their registration info and email it to them, in order to defer creation of user and verify email address
 
 	// they should not already be logged in. if they are send them elsewhere (e.g. to their profile page)
-	if (arserver.sendLoggedInUsersElsewhere(req)) {
+	if (arserver.sendLoggedInUsersElsewhere(req, res)) {
+		return;
+	}
+
+	// check required csrf token
+	if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
+		// csrf error, next will have been called with it
 		return;
 	}
 
 	// ok hand off processing of the registration form
-	var { jrResult, successRedirectTo } = await UserModel.processAccountAllInOneForm(req);
+	var { jrResult, successRedirectTo } = await RegistrationAid.processAccountAllInOneForm(req);
 
 	// any errors, re-render form with errors
 	if (jrResult.isError()) {
@@ -66,6 +74,7 @@ router.post("/", async (req, res) => {
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 			reqbody: req.body,
 			flagFullRegistrationForm: getUseFullRegistrationForm(),
+			csrfToken: arserver.makeCsrf(req, res),
 		});
 		return;
 	}

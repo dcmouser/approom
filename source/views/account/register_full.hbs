@@ -19,25 +19,14 @@
           <span class="jrErrorInline">{{jrResult.fields.password}}</span>
       </div>
 
-<!--
-      <div>
-        <label>Verification code:</label>
-        <input type="hidden" name="verifyCode" value="{{reqbody.verifyCode}}" />
-          <span class="jrErrorInline">{{jrResult.fields.verifyCode}}</span>
-      </div>
--->
-
       <input type="hidden" name="verifyCode" value="{{reqbody.verifyCode}}" />
 
       <div>
         <input type="submit" value="Submit" />
       </div>
+
+    <input type="hidden" name="_csrf" value="{{csrfToken}}">
     </form>
 
 
-<ul>
-  <li><a href="/profile">profile</a></li>
-  <li><a href="/register">register</a></li>
-  <li><a href="/login">login</a></li>
-  <li><a href="/logout">logout</a></li>
-</ul>
+

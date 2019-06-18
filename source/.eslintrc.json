@@ -21,8 +21,8 @@
         "mocha"
     ],
     "rules": {
-        "MY CUSTOM OVERRIDES": "",
         "mocha/no-exclusive-tests": "error",
+        "MY CUSTOM ELINT OVERRIDES": "",
         "indent": [2, "tab", { "SwitchCase": 1, "VariableDeclarator": 1 }],
         "quotes": ["error", "double"],
         "max-len": [2, 180, 4, {"ignoreUrls": true}],

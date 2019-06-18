@@ -6,9 +6,11 @@
 "use strict";
 
 
-//---------------------------------------------------------------------------
-// modules
-//---------------------------------------------------------------------------
+// our helper modules
+const fs = require("fs");
+const path = require("path");
+const jrlog = require("./jrlog");
+
 
 
 
@@ -46,22 +48,39 @@ function setupJrHandlebarHelpers(hbs) {
 
 
 //---------------------------------------------------------------------------
-function loadPartialFiles(hbs, partialsDir) {
+function loadPartialFiles(hbs, partialsDir, prefix) {
 	// walk a directory for all files with extensions hbs and register them as partials for handlebars
 	// see https://gist.github.com/benw/3824204
 	// see http://stackoverflow.com/questions/8059914/express-js-hbs-module-register-partials-from-hbs-file
 
-	const fs = require("fs");
 	var filenames = fs.readdirSync(partialsDir);
 
-	filenames.forEach((filename) => {
-		var matches = /^([^.]+).hbs$/.exec(filename);
-		if (!matches) {
-			return;
+	filenames.forEach((name) => {
+		if (name !== ".") {
+			// recurse subdirs
+			var fullPath = path.join(partialsDir, name);
+			if (fs.lstatSync(fullPath).isDirectory()) {
+				// recurse
+				var recursivePrefix = prefix;
+				if (recursivePrefix) {
+					recursivePrefix += "/";
+				}
+				recursivePrefix += name;
+				// add it
+				loadPartialFiles(hbs, fullPath, recursivePrefix);
+			} else {
+				// files
+				var matches = /^([^.]+).hbs$/.exec(name);
+				if (!matches) {
+					return;
+				}
+				var partialName = matches[1];
+				var prefixedPartialName = prefix ? (prefix + "/") + partialName : partialName;
+				var template = fs.readFileSync(fullPath, "utf8");
+				jrlog.cdebugf("Adding handlebar view partial: %s.", prefixedPartialName);
+				hbs.registerPartial(prefixedPartialName, template);
+			}
 		}
-		var name = matches[1];
-		var template = fs.readFileSync(partialsDir + "/" + filename, "utf8");
-		hbs.registerPartial(name, template);
 	});
 }
 //---------------------------------------------------------------------------

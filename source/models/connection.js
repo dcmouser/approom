@@ -21,16 +21,23 @@ class ConnectionModel extends ModelBaseMongoose {
 		return "connections";
 	}
 
+	static getNiceName() {
+		return "Connection";
+	}
 
 	// User model mongoose db schema
 	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema({
-			...(this.getUniversalSchemaObj()),
-			ip: { type: String },
-		}, {
+		this.schema = new mongooser.Schema(this.calcSchemaDefinition(), {
 			collection: this.getCollectionName(),
 		});
 		return this.schema;
+	}
+
+	static calcSchemaDefinition() {
+		return {
+			...(this.getUniversalSchemaObj()),
+			ip: { type: String },
+		};
 	}
 
 }

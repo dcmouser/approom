@@ -32,10 +32,11 @@ const router = express.Router();
 router.get("/", (req, res, next) => {
 	// ATTN: unfinished - if they have just created an account and been redirected here to login (in order to encourage them to remember their password),
 	//  we could try to be a bit nice and pre-fill their username, eg. req.body.usernameEmail
-	//
+
 	// render page
 	res.render("account/login", {
 		jrResult: JrResult.sessionRenderResult(req, res),
+		csrfToken: arserver.makeCsrf(req, res),
 	});
 });
 
@@ -47,10 +48,17 @@ router.post("/", async (req, res, next) => {
 	// our manual passport authentification helper, sends user to /profile on success or /login on failure
 	// we use a custom errorCallback so that we can re-render the login form on error
 
+	// check required csrf token
+	if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
+		// csrf error, next will have been called with it
+		return;
+	}
+
 	await arserver.routePassportAuthenticate("local", req, res, next, "using your password", (breq, bres, jrinfo) => {
 		bres.render("account/login", {
 			reqBody: breq.body,
 			jrResult: JrResult.sessionRenderResult(breq, bres, jrinfo),
+			csrfToken: arserver.makeCsrf(req, res),
 		});
 	});
 });
@@ -96,8 +104,10 @@ router.get("/twitter/auth", async (req, res, next) => {
 //---------------------------------------------------------------------------
 // simple login via email
 router.get("/email", (req, res, next) => {
+
 	res.render("account/login_email", {
 		jrResult: JrResult.sessionRenderResult(req, res),
+		csrfToken: arserver.makeCsrf(req, res),
 	});
 });
 
@@ -107,6 +117,12 @@ router.get("/email", (req, res, next) => {
 router.post("/email", async (req, res, next) => {
 	var message;
 	var jrResult;
+
+	// check required csrf token
+	if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
+		// csrf error, next will have been called with it
+		return;
+	}
 
 	// get email address provides
 	var usernameEmail = req.body.usernameEmail;
@@ -135,6 +151,7 @@ router.post("/email", async (req, res, next) => {
 	res.render("account/login_email", {
 		jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 		reqBody: req.body,
+		csrfToken: arserver.makeCsrf(req, res),
 	});
 });
 //---------------------------------------------------------------------------

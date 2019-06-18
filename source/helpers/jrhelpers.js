@@ -93,8 +93,38 @@ function makeClonedObjFromEnumerableProperties(source) {
 //---------------------------------------------------------------------------
 
 
+//---------------------------------------------------------------------------
+function getFormTypeStrToPastTenseVerb(formTypeStr) {
+	if (formTypeStr === "add") {
+		return "added";
+	}
+	if (formTypeStr === "edit") {
+		return "updated";
+	}
+	if (formTypeStr === "delete") {
+		return "deleted";
+	}
+	return "operation unknown";
+}
+//---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+// see https://github.com/Automattic/mongoose/issues/1959
+function isValidMongooseObjectId(str) {
+	if (typeof str !== "string") {
+		return false;
+	}
+	return str.match(/^[a-f\d]{24}$/i);
+}
+//---------------------------------------------------------------------------
 
 
+
+//---------------------------------------------------------------------------
+function getNiceNowString() {
+	return new Date(Date.now()).toLocaleString();
+}
+//---------------------------------------------------------------------------
 
 
 //---------------------------------------------------------------------------
@@ -103,5 +133,8 @@ module.exports = {
 	DateNowPlusMinutes,
 	stringArrayToNiceString,
 	makeClonedObjFromEnumerableProperties,
+	getFormTypeStrToPastTenseVerb,
+	isValidMongooseObjectId,
+	getNiceNowString,
 };
 //---------------------------------------------------------------------------

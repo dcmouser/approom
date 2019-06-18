@@ -13,7 +13,7 @@
 // OPTIONS
 const programName = "approom";
 const programVersion = "1.0.0";
-const programDate = "5/1/19 - 5/17/19";
+const programDate = "5/1/19 - 6/4/19";
 const programAuthor = "mouser@donationcoder.com";
 const programDescription = "multi-user room-based coordination framework";
 //---------------------------------------------------------------------------

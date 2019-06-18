@@ -9,6 +9,7 @@
 // modules
 const ModelBaseMongoose = require("./modelBaseMongoose");
 const UserModel = require("./user");
+const RegistrationAid = require("../controllers/registrationaid");
 
 // our helper modules
 const jrhelpers = require("../helpers/jrhelpers");
@@ -42,9 +43,20 @@ class VerificationModel extends ModelBaseMongoose {
 		return "verifications";
 	}
 
+	static getNiceName() {
+		return "Verification";
+	}
+
 	// User model mongoose db schema
 	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema({
+		this.schema = new mongooser.Schema(this.calcSchemaDefinition(), {
+			collection: this.getCollectionName(),
+		});
+		return this.schema;
+	}
+
+	static calcSchemaDefinition() {
+		return {
 			...(this.getUniversalSchemaObj()),
 			uniqueCode: { type: String, unique: true, required: true },
 			type: { type: String },
@@ -55,8 +67,7 @@ class VerificationModel extends ModelBaseMongoose {
 			usedDate: { type: Date },
 			expirationDate: { type: Date },
 			extraData: { type: String },
-		}, { collection: this.getCollectionName() });
-		return this.schema;
+		};
 	}
 	//---------------------------------------------------------------------------
 
@@ -68,12 +79,6 @@ class VerificationModel extends ModelBaseMongoose {
 		return this.type;
 	}
 
-	getIdAsString() {
-		if (!this._id) {
-			return "";
-		}
-		return this._id.toString();
-	}
 
 	getUniqueCode() {
 		return this.uniqueCode;
@@ -271,7 +276,7 @@ class VerificationModel extends ModelBaseMongoose {
 		}
 
 		// make sure it's still valid (not used or expired, etc.)
-		var validityResult = verification.isStillValid(false);
+		var validityResult = verification.isStillValid(req);
 		if (validityResult.isError()) {
 			return {
 				jrResult: validityResult,
@@ -282,23 +287,6 @@ class VerificationModel extends ModelBaseMongoose {
 		// ok its not used, and not expired
 		// let's use it up and return success if we can
 		return await verification.useNow(extraValues, req, res);
-	}
-
-
-	isUsed() {
-		if (this.usedDate != null) {
-			return true;
-		}
-		return false;
-	}
-
-
-	isExpired() {
-		// expiration date some minutes from creation date
-		if (this.creationDate > this.expirationDate) {
-			return true;
-		}
-		return false;
 	}
 	//---------------------------------------------------------------------------
 
@@ -331,20 +319,45 @@ class VerificationModel extends ModelBaseMongoose {
 		var jrResult = await arserver.loginUserThroughPassport(req, user);
 		if (!jrResult.isError()) {
 			// success
-			await this.useUpAndSave();
+			await this.useUpAndSave(req, true);
 		}
 
 		return jrResult;
 	}
+	//---------------------------------------------------------------------------
 
 
-	isStillValid(flagAllowedUsedExpiredVerifyCode) {
-		// make sure it's not used
-		if (!flagAllowedUsedExpiredVerifyCode && this.isUsed()) {
-			// already used
-			return JrResult.makeError("VerifcationError", "Verification code (" + this.getUniqueCode() + ") has been used.");
+
+
+	//---------------------------------------------------------------------------
+	isUsed() {
+		if (this.usedDate != null) {
+			return true;
 		}
-		if (!flagAllowedUsedExpiredVerifyCode && this.isExpired()) {
+		return false;
+	}
+
+
+	isExpired() {
+		// expiration date some minutes from creation date
+		if (this.creationDate > this.expirationDate) {
+			return true;
+		}
+		return false;
+	}
+
+
+	isStillValid(req) {
+		// make sure it's not used
+
+		if (this.isUsed()) {
+			// already used
+			// however, for certain verifications we allow reuse
+			if (!this.canUserReuse(req)) {
+				return JrResult.makeError("VerifcationError", "Verification code (" + this.getUniqueCode() + ") has been used.");
+			}
+		}
+		if (this.isExpired()) {
 			// expired
 			return JrResult.makeError("VerifcationError", "Verification code (" + this.getUniqueCode() + ") has expired.");
 		}
@@ -352,6 +365,57 @@ class VerificationModel extends ModelBaseMongoose {
 		return JrResult.makeSuccess();
 	}
 
+
+	saveSessionUse(req) {
+		// add verification id to session so it can be reused
+		const idstr = this.getIdAsString();
+		if (!req.session.verifications) {
+			req.session.verifications = [idstr];
+		}
+		if (req.session.verifications.indexOf(idstr) === -1) {
+			req.session.verifications.push(idstr);
+		}
+	}
+
+	saveSessionUseIfReusable(req) {
+		if (this.allowsUsedReuse) {
+			this.saveSessionUse(req);
+		}
+	}
+
+	forgetSessionUse(req) {
+		const idstr = this.getIdAsString();
+		if (req.session.verifications) {
+			req.session.verifications = req.session.verifications.filter(ele => (ele !== idstr));
+		}
+	}
+
+	canUserReuse(req) {
+		// we could require them to have the verification code in their session
+		const flagRequireSessionOwnership = true;
+		//
+		if (this.allowsUsedReuse() && (!flagRequireSessionOwnership || this.isSessionOwnedByUser(req))) {
+			return true;
+		}
+		return false;
+	}
+
+	allowsUsedReuse() {
+		// certain verification types are valid for REUSE because they prove something that can be used multiple times
+		// for example this is true for new registration email proofs
+		if (this.type === "newAccountEmail") {
+			return true;
+		}
+		return false;
+	}
+
+	isSessionOwnedByUser(req) {
+		// see if this verification is stored in the users session
+		if (req.session && req.session.verifications && req.session.verifications.indexOf(this.getIdAsString()) !== -1) {
+			return true;
+		}
+		return false;
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -393,12 +457,18 @@ class VerificationModel extends ModelBaseMongoose {
 	}
 
 
-	async useUpAndSave() {
+	async useUpAndSave(req, flagForgetFromSession) {
 		// mark use as used
 		this.usedDate = new Date();
 		this.enabled = 0;
 		// save it to mark it as used
 		await this.save();
+		if (flagForgetFromSession) {
+			this.forgetSessionUse(req);
+		} else {
+			// remember it in session; this is useful for multi-step verification, such as creating an account after verifying email addres
+			this.saveSessionUse(req);
+		}
 	}
 	//---------------------------------------------------------------------------
 
@@ -471,9 +541,9 @@ class VerificationModel extends ModelBaseMongoose {
 			// first they signed up when the email wasn't in use, and then later confirmed it, and then tried to access via this verification
 			// we could prevent this case by ensuring we cancel all verifications related to an email once a user confirms/claims that email, but better safe than sorry here
 			// or it means they somehow intercepted someone's verification code that they shouldn't have; regardless it's not important
-			jrResult = JrResult.makeError("VerificationError", "This email already has already been claimed by an existing user account (" + user.getUsername() + ".");
+			jrResult = JrResult.makeError("VerificationError", "This email already has already been claimed by an existing user account (" + user.getUsername() + ").");
 			// use it up since we are done with it at this point
-			await this.useUpAndSave();
+			await this.useUpAndSave(req, true);
 			// return error
 			return { jrResult, successRedirectTo };
 		}
@@ -488,7 +558,7 @@ class VerificationModel extends ModelBaseMongoose {
 
 		// do they NEED full register form?
 		var readyToCreateUser = true;
-		var requiredFields = UserModel.calcRequiredRegistrationFieldsFinal();
+		var requiredFields = RegistrationAid.calcRequiredRegistrationFieldsFinal();
 		if (requiredFields.includes("username") && !username) {
 			readyToCreateUser = false;
 		}
@@ -509,14 +579,13 @@ class VerificationModel extends ModelBaseMongoose {
 
 		if (readyToCreateUser) {
 			// we can go ahead and directly create the user
-			// this is duplicative of code in UserModel.processAccountAllInOneForm
 			var userData = {
 				username,
 				email,
 				passwordHashed,
 				realname,
 			};
-			retvResult = await UserModel.createFullNewUserAccount(req, this, userData);
+			retvResult = await RegistrationAid.createFullNewUserAccount(req, this, userData);
 			if (!retvResult.isError()) {
 				// success creating user, so let them know, log them in and redirect to profile
 				successRedirectTo = "/profile";
@@ -546,7 +615,7 @@ class VerificationModel extends ModelBaseMongoose {
 			// should we use up the verification?
 			if (!jrResult.isError()) {
 				successRedirectTo = "/register";
-				await this.useUpAndSave();
+				await this.useUpAndSave(req, false);
 			}
 		}
 

@@ -27,16 +27,23 @@ class AclModel extends ModelBaseMongoose {
 		return "acl";
 	}
 
+	static getNiceName() {
+		return "ACL";
+	}
 
 	// User model mongoose db schema
 	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema({
-			...(this.getUniversalSchemaObj()),
-			permission: { type: String },
-		}, {
+		this.schema = new mongooser.Schema(this.calcSchemaDefinition(), {
 			collection: this.getCollectionName(),
 		});
 		return this.schema;
+	}
+
+	static calcSchemaDefinition() {
+		return {
+			...(this.getUniversalSchemaObj()),
+			permission: { type: String },
+		};
 	}
 
 }

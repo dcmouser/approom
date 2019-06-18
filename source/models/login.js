@@ -21,14 +21,6 @@ class LoginModel extends ModelBaseMongoose {
 	// global static version info
 	static getVersion() { return 1; }
 
-	// accessors
-	getIdAsString() {
-		if (!this._id) {
-			return "";
-		}
-		return this._id.toString();
-	}
-
 	getUserIdAsString() {
 		if (!this.userId) {
 			return "";
@@ -41,19 +33,29 @@ class LoginModel extends ModelBaseMongoose {
 		return "logins";
 	}
 
+	static getNiceName() {
+		return "Login";
+	}
+
 	// User model mongoose db schema
 	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema({
+		this.schema = new mongooser.Schema(this.calcSchemaDefinition(), {
+			collection: this.getCollectionName(),
+		});
+		return this.schema;
+	}
+
+
+	static calcSchemaDefinition() {
+		return {
 			...(this.getUniversalSchemaObj()),
 			provider: { type: String },
 			providerUserId: { type: String },
 			userId: { type: String },
 			extraData: { type: String },
 			loginDate: { type: Date },
-		}, { collection: this.getCollectionName() });
-		return this.schema;
+		};
 	}
-
 
 	getExtraData() {
 		if (!this.extraData) {

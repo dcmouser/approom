@@ -1,0 +1,13 @@
+<h1>{{headline}}</h1>
+
+	<form action="" method="post">
+
+		{{>crud/appviewprops}}
+
+	   	<div>
+        	<input type="submit" value="DELETE NOW" />
+    	</div>
+
+    	<input type="hidden" name="_id" value="{{obj._id}}">
+    	<input type="hidden" name="_csrf" value="{{csrfToken}}">
+    </form>

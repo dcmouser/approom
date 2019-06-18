@@ -5,11 +5,14 @@
 
 "use strict";
 
+// modules
+const assert = require("assert");
 
 //---------------------------------------------------------------------------
 // modules
 const jrhelpers = require("./jrhelpers");
 //---------------------------------------------------------------------------
+
 
 
 
@@ -128,6 +131,20 @@ class JrResult {
 		this.push("success", msg);
 		return this;
 	}
+
+	setExtraData(key, val) {
+		if (!this.extraData) {
+			this.extraData = [];
+		}
+		this.extraData[key] = val;
+	}
+
+	getExtraData(key, defaultVal) {
+		if (!this.extraData || !(key in this.extraData)) {
+			return defaultVal;
+		}
+		return this.extraData[key];
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -142,9 +159,11 @@ class JrResult {
 			return this;
 		}
 
+		/*
 		if (!(source instanceof JrResult)) {
 			throw ("In JrResult mergeIn with improper source result of class " + (typeof source));
 		}
+		*/
 
 		// for fields, each keyed item should be a string; on the rare occasion we have an entry in both our field and source field with same key, we can append them.
 		if (source.fields) {
@@ -271,9 +290,8 @@ class JrResult {
 	addToSession(req, flagAddToTop) {
 		// addd to session
 		// for consistency we return THIS not the newly merged session info
-		if (!req.session) {
-			throw ("No session defined, can't add result to it.");
-		}
+		assert(req.session, "No session defined, can't add result to it.");
+
 		if (!req.session.jrResult) {
 			// just assign it since there is nothing in session -- but should we ASSIGN it instead?
 			if (false) {
@@ -282,8 +300,11 @@ class JrResult {
 				req.session.jrResult = JrResult.makeClone(this);
 			}
 		} else {
-			// merge it
-			req.session.jrResult.mergeIn(this, flagAddToTop);
+			// merge it -- the problem is that the SESSION version is not a true jrresult object so we have to do it backwards
+			var sjrResult = req.session.jrResult;
+			this.mergeIn(sjrResult, !flagAddToTop);
+			// sjrResult.mergeIn(this, flagAddToTop);
+			req.session.jrResult = this;
 		}
 		return this;
 	}

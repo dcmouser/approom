@@ -307,7 +307,7 @@ class JrConfig {
 			return;
 		}
 		this.queuedCommands.forEach((cmdEntry) => {
-			if (cmdEntry.callback !== undefined) {
+			if (cmdEntry.callback) {
 				cmdEntry.callback(cmdEntry.command, cmdEntry.argv);
 			} else {
 				jrlog.log("Warning: No callback to run for command " + cmdEntry.cmd);

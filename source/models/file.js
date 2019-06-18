@@ -22,17 +22,25 @@ class FileModel extends ModelBaseMongoose {
 		return "files";
 	}
 
+	static getNiceName() {
+		return "File";
+	}
+
 	// User model mongoose db schema
 	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema({
+		this.schema = new mongooser.Schema(this.calcSchemaDefinition(), {
+			collection: this.getCollectionName(),
+		});
+		return this.schema;
+	}
+
+	static calcSchemaDefinition() {
+		return {
 			...(this.getUniversalSchemaObj()),
 			path: { type: String, required: true },
 			label: { type: String },
 			sizebytes: { type: Number },
-		}, {
-			collection: this.getCollectionName(),
-		});
-		return this.schema;
+		};
 	}
 
 }

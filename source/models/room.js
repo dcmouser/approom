@@ -11,6 +11,9 @@
 // models
 const ModelBaseMongoose = require("./modelBaseMongoose");
 
+// our helper modules
+const jrhelpers = require("../helpers/jrhelpers");
+
 
 
 class RoomModel extends ModelBaseMongoose {
@@ -23,16 +26,69 @@ class RoomModel extends ModelBaseMongoose {
 		return "rooms";
 	}
 
+	static getNiceName() {
+		return "Room";
+	}
+
 	// User model mongoose db schema
 	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema({
-			...(this.getUniversalSchemaObj()),
-			label: { type: String },
-			description: { type: String },
-			shortcode: { type: String, unique: true, required: true },
-		}, { collection: this.getCollectionName() });
+		this.schema = new mongooser.Schema(this.calcSchemaDefinition(), {
+			collection: this.getCollectionName(),
+		});
 		return this.schema;
 	}
+
+	static calcSchemaDefinition() {
+		return {
+			...(this.getUniversalSchemaObj()),
+			appid: { type: String, required: true },
+			shortcode: { type: String, unique: true, required: true },
+			label: { type: String },
+			description: { type: String },
+		};
+	}
+
+
+
+
+	//---------------------------------------------------------------------------
+	// crud add/edit
+	static async doAddEditFromFormReturnObj(jrResult, req, res, formTypeStr, obj) {
+		// parse form and extrace validated object properies; return if error
+		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
+
+		// set fields from form and validate
+		obj.appid = req.body.appid;
+		obj.shortcode = req.body.shortcode;
+		obj.label = req.body.label;
+		obj.description = req.body.description;
+
+		// validate fields
+		await this.validateModelFieldUnique(jrResult, "shortcode", obj.shortcode, obj);
+		this.validateModelFieldNotEmpty(jrResult, "label", obj.label);
+		this.validateModelFieldNotEmpty(jrResult, "description", obj.description);
+		// ATTN: TODO appid is not yet validated
+		//
+		// any errors?
+		if (jrResult.isError()) {
+			return null;
+		}
+
+		// validated successfully
+
+		// save it
+		var objdoc = await obj.save();
+
+		// success
+		jrResult.pushSuccess(this.getNiceName() + " " + jrhelpers.getFormTypeStrToPastTenseVerb(formTypeStr) + " on " + jrhelpers.getNiceNowString() + ".");
+
+		// return the saved object
+		return objdoc;
+	}
+	//---------------------------------------------------------------------------
+
+
+
 }
 
 
