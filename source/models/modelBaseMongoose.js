@@ -346,6 +346,19 @@ class ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 
 
+	//---------------------------------------------------------------------------
+	// subclasses can support this for crud add/edit
+	static async calcCrudEditHelperData(req, res, id) {
+		return undefined;
+	}
+
+	// subclasses can support this for crud view
+	static async calcCrudViewHelperData(req, res, id, obj) {
+		return undefined;
+	}
+	//---------------------------------------------------------------------------
+
+
 }
 
 

@@ -19,6 +19,7 @@ class RegistrationAid {
 		var username;
 		var email;
 		var extraData;
+		var jrResult = JrResult.makeNew();
 
 		// initial values for the form to present them with
 
@@ -48,11 +49,13 @@ class RegistrationAid {
 			}
 		}
 
-		// sessioned with a verificationId? if so we could get initial values from that
-		var verification = await arserver.getLoggedInVerification(req);
-		if (verification && verification.type === "newAccountEmail") {
+		// previously sessioned with a verificationId? if so we could get initial values from that
+		var verification = await arserver.getLastSessionedVerification(req);
+		if (verification && verification.isValidNewAccountEmailReady(req)) {
+			// ok we can get their initial registration data from their verification they already verified
 			if (verification.key === "email") {
 				email = verification.val;
+				jrResult.pushSuccess("Your email address has been verified.");
 			}
 			extraData = verification.getExtraData();
 			if (extraData.username) {
@@ -61,6 +64,9 @@ class RegistrationAid {
 			if (extraData.email) {
 				email = extraData.email;
 			}
+		} else {
+			// not relevant for us
+			verification = null;
 		}
 
 		// store initial values for form in req.body, just as they would be if were were re-presending a failed form
@@ -69,6 +75,8 @@ class RegistrationAid {
 		if (verification) {
 			req.body.verifyCode = verification.getUniqueCode();
 		}
+
+		return jrResult;
 	}
 	//---------------------------------------------------------------------------
 
@@ -118,25 +126,15 @@ class RegistrationAid {
 			// and in THIS case we will allow an expired code to be used, since
 			verification = await VerificationModel.findOneByCode(verifyCodeForm);
 		} else {
-			verification = await arserver.getLoggedInVerification(req);
+			verification = await arserver.getLastSessionedVerification(req);
 		}
 		//
 		if (verification) {
-			// check if it actually is a verification object RELEVANT to registration
-			var verificationType = verification.getTypestr();
-			if (verificationType !== "newAccountEmail") {
-				// not relevant to us, clear it
+			if (!verification.isValidNewAccountEmailReady(req)) {
+				// no good, vlear it
 				verification = null;
 			}
 		}
-		// now we need to check if its valid and expired
-		if (verification) {
-			var verificationResult = verification.isStillValid(req);
-			if (verificationResult.isError()) {
-				return verificationResult;
-			}
-		}
-
 
 
 		// depending on how we are invoked we may allow for missing fields

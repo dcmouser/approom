@@ -85,7 +85,6 @@ class UserModel extends ModelBaseMongoose {
 			authenticationDate: { type: Date },
 			// we don't put these in the db, they are just fields for when we create small temporary proxy users
 			// loginId : { type: String },
-			// verificationId: { type: String },
 		};
 	}
 
@@ -370,8 +369,6 @@ class UserModel extends ModelBaseMongoose {
 			provider = "localUser";
 		} else if (this.loginId) {
 			provider = "localLogin";
-		} else if (this.verificationId) {
-			provider = "localVerification";
 		}
 		var profile = {
 			// any time we are getting passport profile from a USER, it is local
@@ -379,7 +376,6 @@ class UserModel extends ModelBaseMongoose {
 			id: this.id,
 			username: this.username,
 			loginId: this.loginId,
-			verificationId: this.verificationId,
 		};
 
 		return profile;

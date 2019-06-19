@@ -88,6 +88,39 @@ class RoomModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 
 
+	//---------------------------------------------------------------------------
+	// crud add/edit form helper data
+	// in case of rooms, this should be the list of APPS that the USER has access to
+	static async calcCrudEditHelperData(req, res, id) {
+		// build app list, pairs of id -> nicename
+		const AppModel = require("./app");
+		const applist = await AppModel.buildSimpleAppListUserTargetable(req);
+
+		// return it
+		return {
+			applist,
+		};
+	}
+
+	// crud helper for view
+	static async calcCrudViewHelperData(req, res, id, obj) {
+		// get nice label of the app it's attached to
+		var applabel;
+		const appid = obj.appid;
+		if (appid) {
+			const AppModel = require("./app");
+			const app = await AppModel.findOneById(appid);
+			if (app) {
+				applabel = app.label;
+			}
+		}
+		return {
+			applabel,
+		};
+	}
+	//---------------------------------------------------------------------------
+
+
 
 }
 

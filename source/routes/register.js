@@ -33,11 +33,12 @@ router.get("/", async (req, res, next) => {
 
 	// initialize req.body with default values for form if we find them in a session field
 	//  (for example if they just verified their new account), similar to as if they had submitted values and we were re-presenting with errors
-	await RegistrationAid.fillReqBodyWithSessionedFieldValues(req);
+	var jrResult = await RegistrationAid.fillReqBodyWithSessionedFieldValues(req);
 
 	// render
-	res.render(getRegisterViewPath(req), {
-		jrResult: JrResult.sessionRenderResult(req, res),
+	var viewpath = await getRegisterViewPath(req);
+	res.render(viewpath, {
+		jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 		reqbody: req.body,
 		flagFullRegistrationForm: getUseFullRegistrationForm(),
 		csrfToken: arserver.makeCsrf(req, res),
@@ -70,7 +71,8 @@ router.post("/", async (req, res, next) => {
 
 	// any errors, re-render form with errors
 	if (jrResult.isError()) {
-		res.render(getRegisterViewPath(req), {
+		var viewpath = await getRegisterViewPath(req);
+		res.render(viewpath, {
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 			reqbody: req.body,
 			flagFullRegistrationForm: getUseFullRegistrationForm(),
@@ -89,13 +91,29 @@ router.post("/", async (req, res, next) => {
 
 //---------------------------------------------------------------------------
 // which register view we render depends on whether this is initial registration, or continuing one after they have verified an email
-function getRegisterViewPath(req) {
-	var renderview;
-	if (!arserver.getLoggedInLocalVerificationIdFromSession(req) && !req.body.verifyCode && !arserver.getLoggedInLocalLoginIdFromSession(req)) {
-		renderview = "account/register_initial";
-	} else {
-		renderview = "account/register_full";
+async function getRegisterViewPath(req) {
+	//
+	var verification;
+	var renderview = "account/register_initial";
+
+	if (req.body.verifyCode) {
+		// first lookup verify code if code provided in form
+		const VerificationModel = require("../models/verification");
+		verification = await VerificationModel.findOneByCode(req.body.verifyCode);
 	}
+	if (!verification) {
+		// not found in form, maybe there is a remembered verification id in ession regarding new account email verified, then show full
+		verification = await arserver.getLastSessionedVerification(req);
+	}
+
+	if (verification) {
+		// let's make sure it is still valid
+		if (verification.isValidNewAccountEmailReady(req)) {
+			// show full form
+			renderview = "account/register_full";
+		}
+	}
+
 	return renderview;
 }
 

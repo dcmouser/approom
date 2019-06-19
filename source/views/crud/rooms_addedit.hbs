@@ -3,7 +3,9 @@
 	<form action="" method="post">
     	<div>
         	<label>Attached App:</label>
-        	<input type="text" name="appid" value="{{reqbody.appid}}" />
+			<select name="appid">
+			{{jrHtmlFormOptionList editHelperData.applist reqbody.appid}}
+			</select>
         	<span class="jrErrorInline">{{jrResult.fields.appid}}</span>
     	</div>
       	<div>

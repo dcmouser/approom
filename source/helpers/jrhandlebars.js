@@ -5,6 +5,8 @@
 
 "use strict";
 
+// modules
+const hbs = require("hbs");
 
 // our helper modules
 const fs = require("fs");
@@ -14,8 +16,11 @@ const jrlog = require("./jrlog");
 
 
 
+
+
+
 //---------------------------------------------------------------------------
-function setupJrHandlebarHelpers(hbs) {
+function setupJrHandlebarHelpers() {
 	// pluralizing helpers
 	hbs.registerHelper("jrPluralize", (number, singular, plural) => {
 		if (number === undefined) {
@@ -28,7 +33,7 @@ function setupJrHandlebarHelpers(hbs) {
 		}
 		return (typeof plural === "string" ? plural : singular + "s");
 	});
-	//
+
 	hbs.registerHelper("jrPluralizeCount", (number, singular, plural) => {
 		if (number === undefined) {
 			number = 0;
@@ -42,13 +47,35 @@ function setupJrHandlebarHelpers(hbs) {
 		}
 		return (typeof plural === "string" ? numberStr + " " + plural : numberStr + " " + singular + "s");
 	});
+
+	// form helper for drop down inputs
+	hbs.registerHelper("jrHtmlFormOptionList", (pairlist, selectedid) => {
+		var rethtml = "";
+		if (pairlist) {
+			var seltext;
+			for (var key in pairlist) {
+				if (key === selectedid) {
+					seltext = " selected";
+				} else {
+					seltext = "";
+				}
+				rethtml += "<option value=\"" + key + "\"" + seltext + ">" + pairlist[key] + "</option>\n";
+			}
+		}
+		return new hbs.SafeString(rethtml);
+	});
+
 }
 //---------------------------------------------------------------------------
 
 
 
+
+
+
+
 //---------------------------------------------------------------------------
-function loadPartialFiles(hbs, partialsDir, prefix) {
+function loadPartialFiles(partialsDir, prefix) {
 	// walk a directory for all files with extensions hbs and register them as partials for handlebars
 	// see https://gist.github.com/benw/3824204
 	// see http://stackoverflow.com/questions/8059914/express-js-hbs-module-register-partials-from-hbs-file
@@ -67,7 +94,7 @@ function loadPartialFiles(hbs, partialsDir, prefix) {
 				}
 				recursivePrefix += name;
 				// add it
-				loadPartialFiles(hbs, fullPath, recursivePrefix);
+				loadPartialFiles(fullPath, recursivePrefix);
 			} else {
 				// files
 				var matches = /^([^.]+).hbs$/.exec(name);

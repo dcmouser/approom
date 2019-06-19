@@ -121,8 +121,8 @@ class LoginModel extends ModelBaseMongoose {
 
 		// is there already a user logged into this section? if so we will bridge the new login bridge to the existing logged in user
 		const arserver = require("./server");
+		const VerificationModel = require("./verification");
 		var existingUserId = arserver.getLoggedInLocalUserIdFromSession(req);
-		var existingVerificationId = arserver.getLoggedInLocalVerificationIdFromSession(req);
 
 		// ok first let's see if we can find an existing bridged login
 		jrlog.cdebugObj(bridgedLoginObj, "Looking for existing bridged login.");
@@ -207,10 +207,6 @@ class LoginModel extends ModelBaseMongoose {
 		//  since that's not important, but WILL be carried around with session data after a user does a bridged login
 		// this is most important if in this function we decide we do want to actually create a full user object here
 		user.loginId = login.getIdAsString();
-
-		// preserve existing verification id?
-		user.verificationId = existingVerificationId;
-
 
 		// now return the associated user we found (or created above)
 		return {

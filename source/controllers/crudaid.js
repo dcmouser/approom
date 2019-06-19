@@ -78,6 +78,9 @@ class CrudAid {
 				return;
 			}
 
+			// any helper data
+			const editHelperData = await modelClass.calcCrudEditHelperData(req, res);
+
 			// render
 			res.render(viewFilePathAdd, {
 				headline: "Add " + modelClass.getNiceName(),
@@ -85,6 +88,7 @@ class CrudAid {
 				crudClassNiceName: modelClass.getNiceName(),
 				csrfToken: arserver.makeCsrf(req, res),
 				reqbody,
+				editHelperData,
 			});
 		});
 
@@ -128,6 +132,9 @@ class CrudAid {
 				}
 			}
 
+			// any helper data
+			const editHelperData = await modelClass.calcCrudEditHelperData(req, res);
+
 			// re-present form for another add?
 			res.render(viewFilePathAdd, {
 				headline: "Add " + modelClass.getNiceName(),
@@ -135,6 +142,7 @@ class CrudAid {
 				crudClassNiceName: modelClass.getNiceName(),
 				csrfToken: arserver.makeCsrf(req, res),
 				reqbody,
+				editHelperData,
 			});
 		});
 		//---------------------------------------------------------------------------
@@ -158,6 +166,9 @@ class CrudAid {
 			// put object fields in body, for view form
 			var reqbody = obj.modelObjPropertyCopy(true);
 
+			// any helper data
+			const editHelperData = await modelClass.calcCrudEditHelperData(req, res, id);
+
 			// render
 			res.render(viewFilePathEdit, {
 				headline: "Edit " + modelClass.getNiceName() + " #" + id,
@@ -165,6 +176,7 @@ class CrudAid {
 				crudClassNiceName: modelClass.getNiceName(),
 				csrfToken: arserver.makeCsrf(req, res),
 				reqbody,
+				editHelperData,
 			});
 		});
 
@@ -215,6 +227,9 @@ class CrudAid {
 				}
 			}
 
+			// any helper data
+			const editHelperData = await modelClass.calcCrudEditHelperData(req, res, id);
+
 			// render -- just like original edit
 			res.render(viewFilePathEdit, {
 				headline: "Edit " + modelClass.getNiceName() + " #" + id,
@@ -222,6 +237,7 @@ class CrudAid {
 				crudClassNiceName: modelClass.getNiceName(),
 				csrfToken: arserver.makeCsrf(req, res),
 				reqbody,
+				editHelperData,
 			});
 		});
 		//---------------------------------------------------------------------------
@@ -242,12 +258,16 @@ class CrudAid {
 				return;
 			}
 
+			// any helper data
+			const viewHelperData = await modelClass.calcCrudViewHelperData(req, res, id, obj);
+
 			// render
 			res.render(viewFilePathView, {
 				headline: "View " + modelClass.getNiceName() + " #" + id,
 				jrResult: JrResult.sessionRenderResult(req, res),
 				crudClassNiceName: modelClass.getNiceName(),
 				obj,
+				viewHelperData,
 			});
 		});
 		//---------------------------------------------------------------------------

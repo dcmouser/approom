@@ -88,7 +88,25 @@ class AppModel extends ModelBaseMongoose {
 	}
 	//---------------------------------------------------------------------------
 
+	//---------------------------------------------------------------------------
+	static async buildSimpleAppListUserTargetable(req) {
+		// build app list, pairs of id -> nicename, that are targetable (ie user can add rooms to) to current logged in user
+		const arserver = require("../models/server");
+		const userid = arserver.getLoggedInLocalLoginIdFromSession(req);
+		var applist = await this.buildSimpleAppList();
+		return applist;
+	}
 
+	// see http://thecodebarbarian.com/whats-new-in-mongoose-53-async-iterators.html
+	static async buildSimpleAppList() {
+		var applist = [];
+		const docs = await this.mongooseModel.find().select("_id label");
+		for (const doc of docs) {
+			applist[doc._id] = doc.label;
+		}
+		return applist;
+	}
+	//---------------------------------------------------------------------------
 
 
 }

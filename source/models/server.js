@@ -569,9 +569,7 @@ class AppRoomServer {
 		if (provider === "localLogin") {
 			return passportUser.loginId;
 		}
-		if (provider === "localVerification") {
-			return passportUser.verificationId;
-		}
+
 		throw ("Unknown provider requested in getLoggedInPassportUserOfProvider");
 	}
 
@@ -600,16 +598,6 @@ class AppRoomServer {
 		return login;
 	}
 
-	async getLoggedInVerification(req) {
-		var verificationId = this.getLoggedInLocalVerificationIdFromSession(req);
-		if (!verificationId) {
-			return null;
-		}
-		const VerificationModel = require("./verification");
-		var verification = await VerificationModel.findOneById(verificationId);
-		return verification;
-	}
-
 
 	// helper function to get logged in local User model id
 	getLoggedInLocalUserIdFromSession(req) {
@@ -620,13 +608,18 @@ class AppRoomServer {
 	getLoggedInLocalLoginIdFromSession(req) {
 		return this.getLoggedInPassportUserOfProvider(req, "localLogin");
 	}
-
-	// helper function to get logged in local Login model id
-	getLoggedInLocalVerificationIdFromSession(req) {
-		return this.getLoggedInPassportUserOfProvider(req, "localVerification");
-	}
 	//---------------------------------------------------------------------------
 
+
+
+
+	//---------------------------------------------------------------------------
+	// just shortcuts to verifcationModel statics
+	async getLastSessionedVerification(req) {
+		const VerifcationModel = require("./verification");
+		return await VerifcationModel.getLastSessionedVerification(req);
+	}
+	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
@@ -748,13 +741,12 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	setupViewTemplateExtras() {
 		// handlebar stuff
-		const hbs = require("hbs");
 
 		// create general purpose handlebar helper functions we can call
-		jrhandlebars.setupJrHandlebarHelpers(hbs);
+		jrhandlebars.setupJrHandlebarHelpers();
 
 		// parse and make available partials from files
-		jrhandlebars.loadPartialFiles(hbs, this.getBaseSubDir("views/partials"), "");
+		jrhandlebars.loadPartialFiles(this.getBaseSubDir("views/partials"), "");
 	}
 
 	getViewPath() {

@@ -293,38 +293,6 @@ class VerificationModel extends ModelBaseMongoose {
 
 
 
-	//---------------------------------------------------------------------------
-	async loginVerificationProxyUserViaVerification(req, res) {
-		// this is the analogy of the Login proxy login
-		// create a minimal proxy user that points to us
-		// and then log them in with it
-		const arserver = require("./server");
-
-		var user = new UserModel();
-		user.verificationId = this.getIdAsString();
-		user.loginId = arserver.getLoggedInLocalLoginIdFromSession(req);
-		//
-		var jrResult = await this.loginUserViaVerification(req, res, user);
-		if (!jrResult.isError()) {
-			jrResult.pushSuccess("Your email has been verified; you can now complete your account creation.");
-		}
-		return jrResult;
-	}
-
-
-
-	async loginUserViaVerification(req, res, user) {
-		// this can happen via a onetime email login verification, etc.
-		const arserver = require("./server");
-		var jrResult = await arserver.loginUserThroughPassport(req, user);
-		if (!jrResult.isError()) {
-			// success
-			await this.useUpAndSave(req, true);
-		}
-
-		return jrResult;
-	}
-	//---------------------------------------------------------------------------
 
 
 
@@ -354,7 +322,7 @@ class VerificationModel extends ModelBaseMongoose {
 			// already used
 			// however, for certain verifications we allow reuse
 			if (!this.canUserReuse(req)) {
-				return JrResult.makeError("VerifcationError", "Verification code (" + this.getUniqueCode() + ") has been used.");
+				return JrResult.makeError("VerifcationError", "Verification code (" + this.getUniqueCode() + ") has already been used up.");
 			}
 		}
 		if (this.isExpired()) {
@@ -366,35 +334,18 @@ class VerificationModel extends ModelBaseMongoose {
 	}
 
 
-	saveSessionUse(req) {
-		// add verification id to session so it can be reused
-		const idstr = this.getIdAsString();
-		if (!req.session.verifications) {
-			req.session.verifications = [idstr];
-		}
-		if (req.session.verifications.indexOf(idstr) === -1) {
-			req.session.verifications.push(idstr);
-		}
-	}
-
 	saveSessionUseIfReusable(req) {
 		if (this.allowsUsedReuse) {
 			this.saveSessionUse(req);
 		}
 	}
 
-	forgetSessionUse(req) {
-		const idstr = this.getIdAsString();
-		if (req.session.verifications) {
-			req.session.verifications = req.session.verifications.filter(ele => (ele !== idstr));
-		}
-	}
 
 	canUserReuse(req) {
 		// we could require them to have the verification code in their session
 		const flagRequireSessionOwnership = true;
 		//
-		if (this.allowsUsedReuse() && (!flagRequireSessionOwnership || this.isSessionOwnedByUser(req))) {
+		if (this.allowsUsedReuse() && (!flagRequireSessionOwnership || this.isVerifiedInSession(req))) {
 			return true;
 		}
 		return false;
@@ -408,19 +359,67 @@ class VerificationModel extends ModelBaseMongoose {
 		}
 		return false;
 	}
+	//---------------------------------------------------------------------------
 
-	isSessionOwnedByUser(req) {
+
+
+	//---------------------------------------------------------------------------
+	saveSessionUse(req) {
+		// add verification id to session so it can be reused
+		const idstr = this.getIdAsString();
+		req.session.lastVerificationId = idstr;
+		req.session.lastVerificationDate = new Date();
+	}
+
+	forgetSessionUse(req) {
+		// forget last verification id
+		delete req.session.lastVerificationId;
+		delete req.session.lastVerificationDate;
+	}
+
+	isVerifiedInSession(req) {
 		// see if this verification is stored in the users session
-		if (req.session && req.session.verifications && req.session.verifications.indexOf(this.getIdAsString()) !== -1) {
+		const idstr = this.getIdAsString();
+		if (req.session.lastVerificationId === idstr) {
 			return true;
 		}
 		return false;
+	}
+
+	//
+
+	static getLastSessionedVerificationId(req) {
+		return req.session.lastVerificationId;
+	}
+
+	static async getLastSessionedVerification(req) {
+		const verificationId = this.getLastSessionedVerificationId(req);
+		if (!verificationId) {
+			return undefined;
+		}
+		var verification = await this.findOneById(verificationId);
+		return verification;
 	}
 	//---------------------------------------------------------------------------
 
 
 
 
+	//---------------------------------------------------------------------------
+	isValidNewAccountEmailReady(req) {
+		var verificationType = this.getTypestr();
+		if (verificationType !== "newAccountEmail") {
+			return false;
+		}
+		// now we need to check if its valid and expired
+		var verificationResult = this.isStillValid(req);
+		if (verificationResult.isError()) {
+			return false;
+		}
+		// it's good
+		return true;
+	}
+	//---------------------------------------------------------------------------
 
 
 
@@ -469,6 +468,7 @@ class VerificationModel extends ModelBaseMongoose {
 			// remember it in session; this is useful for multi-step verification, such as creating an account after verifying email addres
 			this.saveSessionUse(req);
 		}
+		return JrResult.makeSuccess();
 	}
 	//---------------------------------------------------------------------------
 
@@ -489,7 +489,7 @@ class VerificationModel extends ModelBaseMongoose {
 			jrResult = JrResult.makeError("VerificationError", "Unknown user in useNowOneTimeLogin.");
 		} else {
 			// do the work of logging them in using this verification (addes to passport session, uses up verification model, etc.)
-			jrResult = await this.loginUserViaVerification(req, res, user);
+			jrResult = this.useUpAndSave(req, true);
 			//
 			if (!jrResult.isError()) {
 				jrResult.pushSuccess("You have successfully logged in using your one-time login code.");
@@ -589,7 +589,7 @@ class VerificationModel extends ModelBaseMongoose {
 			if (!retvResult.isError()) {
 				// success creating user, so let them know, log them in and redirect to profile
 				successRedirectTo = "/profile";
-				jrResult = JrResult.makeSuccess("Your email has been verified.");
+				jrResult = JrResult.makeSuccess("Your email address has been verified.");
 				jrResult.mergeIn(retvResult);
 				// they may have been auto-logged-in
 				if (arserver.getLoggedInLocalUserIdFromSession(req)) {
@@ -611,11 +611,13 @@ class VerificationModel extends ModelBaseMongoose {
 			// with session data available for us to help facilitate a full account creation form filling
 			// in other words, this simply helps us remember that the session user has verified their email address so we can use up the verification token, even though we
 			//  haven't yet created their new account, and are deferring that until we gather more info
-			jrResult = await this.loginVerificationProxyUserViaVerification(req, res);
+			jrResult = await this.useUpAndSave(req, false);
 			// should we use up the verification?
 			if (!jrResult.isError()) {
 				successRedirectTo = "/register";
-				await this.useUpAndSave(req, false);
+				// we don't push this success message into session, BECAUSE we are redirecting them to a page that will say it
+				// jrResult = jrResult.pushSuccess("Your email address has been verified..");
+				// await this.useUpAndSave(req, false);
 			}
 		}
 
