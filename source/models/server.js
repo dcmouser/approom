@@ -166,20 +166,73 @@ class AppRoomServer {
 	setupExpress() {
 		// create this.express
 		var expressApp = express();
+		// save expressApp for easier referencing later
+		this.expressApp = expressApp;
 
+		// view and template stuff
+		this.setupExpressViews(expressApp);
+
+		// setup logging stuff
+		this.setupExpressLogging(expressApp);
+
+		// setup misc., parsers, etc.
+		this.setupExpressMiscParsers(expressApp);
+
+		// session, cookies, etc.
+		this.setupExpressSessionCookieStuff(expressApp);
+
+		// security stuff
+		this.setupExpressSecurity(expressApp);
+
+		// setup static file and bootstrap, jquery, etc.
+		this.setupExpressStatics(expressApp);
+
+		// any custom middleware?
+		this.setupExpressCustomMiddleware(expressApp);
+
+		// passport login system
+		this.setupExpressPassport(expressApp);
+
+		// routes
+		this.setupExpressRoutes(expressApp);
+
+		// fallback error handlers
+		this.setupExpressErrorHandlers(expressApp);
+	}
+
+
+	setupExpressViews(expressApp) {
 		// view file engine setup
 		expressApp.set("views", this.getBaseSubDir("views"));
 
 		// handlebar template ending
 		expressApp.set("view engine", "hbs");
+	}
 
-		// setup logging stuff
-		this.setupExpressLogging(expressApp);
 
-		// other stuff?
+	setupExpressLogging(expressApp) {
+		// logging system for express httpd server - see https://github.com/expressjs/morgan
+		// by default this is displaying to screen
+		// see https://github.com/expressjs/morgan
+		const morganMode = "combined";
+		const morganOutputAbsoluteFilePath = jrlog.calcLogFilePath("access");
+		var morganOutput = {
+			stream: fs.createWriteStream(morganOutputAbsoluteFilePath, { flags: "a" }),
+		};
+		expressApp.use(morgan(morganMode, morganOutput));
+	}
+
+
+	setupExpressMiscParsers(expressApp) {
+		// misc stuff
 		expressApp.use(express.json());
 		expressApp.use(bodyParser.urlencoded({ extended: true }));
+		// parse query parameters automatically
+		expressApp.use(express.query());
+	}
 
+
+	setupExpressSessionCookieStuff(expressApp) {
 		// cookie support
 		expressApp.use(cookieParser());
 
@@ -210,8 +263,10 @@ class AppRoomServer {
 			saveUninitialized: false,
 			store: sessionStore,
 		}));
+	}
 
 
+	setupExpressSecurity(expressApp) {
 		// setup csrf, etc.
 		// see https://github.com/expressjs/csurf
 		this.csrfInstance = csurf({
@@ -220,11 +275,10 @@ class AppRoomServer {
 		});
 		// ATTN: we do NOT install it as middleware, we will use it explicitly only when we want it
 		// by calling some support functions we have written
+	}
 
 
-		// parse query parameters automatically
-		expressApp.use(express.query());
-
+	setupExpressStatics(expressApp) {
 		// static resources serving
 		// setup a virtual path that looks like it is at staticUrl and it is served from staticAbsoluteDir
 		const staticAbsoluteDir = this.getBaseSubDir("static");
@@ -232,29 +286,22 @@ class AppRoomServer {
 		expressApp.use(staticUrl, express.static(staticAbsoluteDir));
 		jrlog.cdebugf("Serving static files from '%s' at '%s", staticAbsoluteDir, staticUrl);
 
-		// save expressApp for easier referencing later
-		this.expressApp = expressApp;
+		// setup bootstrap, jquery, etc.
+		const jsurl = staticUrl + "/js";
+		const cssurl = staticUrl + "/css";
+		const nodemodulespath = path.join(__dirname, "..", "node_modules");
+		expressApp.use(jsurl + "/bootstrap", express.static(path.join(nodemodulespath, "bootstrap", "dist", "js")));
+		expressApp.use(cssurl + "/bootstrap", express.static(path.join(nodemodulespath, "bootstrap", "dist", "css")));
+		expressApp.use(jsurl + "/jquery", express.static(path.join(nodemodulespath, "jquery", "dist")));
 	}
+	//---------------------------------------------------------------------------
 
 
 
-
-	setupExpressLogging(expressApp) {
-		// logging system for express httpd server - see https://github.com/expressjs/morgan
-		// by default this is displaying to screen
-		// see https://github.com/expressjs/morgan
-		const morganMode = "combined";
-		const morganOutputAbsoluteFilePath = jrlog.calcLogFilePath("access");
-		var morganOutput = {
-			stream: fs.createWriteStream(morganOutputAbsoluteFilePath, { flags: "a" }),
-		};
-		expressApp.use(morgan(morganMode, morganOutput));
-	}
-
-
-	setupExpressErrorHandlers() {
+	//---------------------------------------------------------------------------
+	setupExpressErrorHandlers(expressApp) {
 		// catch 404 and forward to error handler
-		this.expressApp.use((req, res, next) => {
+		expressApp.use((req, res, next) => {
 			// so i think what this says is that if we get to this use handler,
 			//  nothing else has caught it, so WE push on a 404 error for the next handler
 			next(httpErrors(404));
@@ -262,7 +309,7 @@ class AppRoomServer {
 
 		// and then this is the fall through NEXT handler, which gets called when an error is unhandled by previous use() or pushed on with next(httperrors())
 		// error handler
-		this.expressApp.use((err, req, res, next) => {
+		expressApp.use((err, req, res, next) => {
 			// set locals, only providing error in development
 			res.locals.message = err.message;
 			res.locals.error = req.app.get("env") === "development" ? err : {};
@@ -275,147 +322,89 @@ class AppRoomServer {
 	}
 
 
-	setupExpressCustomMiddleware() {
+	setupExpressCustomMiddleware(expressApp) {
 		// setup any custom middleware
 
 		// see our documentation in JrResult, we have decided to not use automatic injection of JrResult data
 		// auto inject into render any saves session jrResult
-		// this.expressApp.use(JrResult.expressMiddlewareInjectSessionResult());
-	}
-
-
-
-
-
-	createExpressServersAndListen() {
-		// create server
-		// see https://timonweb.com/posts/running-expressjs-server-over-https/
-
-		if (this.getOptionHttps()) {
-			// https server
-			const options = {
-				key: fs.readFileSync(this.getOptionHttpsKey()),
-				cert: fs.readFileSync(this.getOptionHttpsCert()),
-			};
-			const port = this.getOptionHttpsPort();
-			this.createOneExpressServerAndListen(true, port, options);
-		}
-
-		if (this.getOptionHttp()) {
-			// http server
-			const options = {};
-			const port = this.getOptionHttpPort();
-			this.createOneExpressServerAndListen(false, port, options);
-		}
-
-	}
-
-
-
-	createOneExpressServerAndListen(flagHttps, port, options) {
-		// create an http or https server and listen
-		var expressServer;
-
-		var normalizedPort = this.normalizePort(port);
-
-		if (flagHttps) {
-			expressServer = https.createServer(options, this.expressApp);
-		} else {
-			expressServer = http.createServer(options, this.expressApp);
-		}
-
-		// start listening
-		var listener = expressServer.listen(normalizedPort);
-
-		// add event handlers (after server is listening)
-		expressServer.on("error", (...args) => { this.onErrorEs(listener, expressServer, flagHttps, ...args); });
-		expressServer.on("listening", (...args) => { this.onListeningEs(listener, expressServer, flagHttps, ...args); });
-	}
-
-
-
-	normalizePort(portval) {
-		// from nodejs express builder suggested code
-		var port = parseInt(portval, 10);
-		if (Number.isNaN(port)) {
-			// named pipe
-			return portval;
-		}
-		if (port >= 0) {
-			// port number
-			return port;
-		}
-		return false;
+		// expressApp.use(JrResult.expressMiddlewareInjectSessionResult());
 	}
 	//---------------------------------------------------------------------------
 
 
 
 
-
-
 	//---------------------------------------------------------------------------
-	setupExpressRoutes() {
+	setupExpressRoutes(expressApp) {
 		// add routes to express app
 
 		// home page
-		this.setupRoute("/", "index");
+		this.setupRoute(expressApp, "/", "index");
 
 		// register/signup
-		this.setupRoute("/register", "register");
+		this.setupRoute(expressApp, "/register", "register");
 
 		// login
-		this.setupRoute("/login", "login");
+		this.setupRoute(expressApp, "/login", "login");
 		// logout
-		this.setupRoute("/logout", "logout");
+		this.setupRoute(expressApp, "/logout", "logout");
 
 		// verifications
-		this.setupRoute("/verify", "verify");
+		this.setupRoute(expressApp, "/verify", "verify");
 
 		// profile
-		this.setupRoute("/profile", "profile");
+		this.setupRoute(expressApp, "/profile", "profile");
 
 		// test stuff
-		this.setupRoute("/membersonly", "membersonly");
+		this.setupRoute(expressApp, "/membersonly", "membersonly");
 
-		// model-centric
-		this.setupRoute("/app", "app");
-		this.setupRoute("/room", "room");
+		// crud stuff
+		this.setupRouteGenericCrud(expressApp, "/admin/app", AppModel);
+		this.setupRouteGenericCrud(expressApp, "/admin/room", RoomModel);
+		this.setupRouteGenericCrud(expressApp, "/admin/user", UserModel);
+		this.setupRouteGenericCrud(expressApp, "/admin/bridge", LoginModel);
 
 		// admin
-		this.setupRoute("/admin", "admin");
+		this.setupRoute(expressApp, "/admin", "admin");
 
 	}
 
 
-	setupRoute(urlPath, routeFilename) {
-		this.expressApp.use(urlPath, require("../routes/" + routeFilename));
+	setupRoute(expressApp, urlPath, routeFilename) {
+		var route = require("../routes/" + routeFilename);
+
+		// ok there are two ways that our route files can be written
+		// the first is by exporting a setupRouter function, in which case we call it with urlPath and it returns the router
+		// the older method just exports default router
+		//
+		if (route.setupRouter) {
+			var expressRouter = route.setupRouter(urlPath);
+			expressApp.use(urlPath, expressRouter);
+		} else {
+			expressApp.use(urlPath, route);
+		}
+	}
+
+
+	setupRouteGenericCrud(expressApp, urlPath, modelClass) {
+		// function to set up crud paths for a model
+		const CrudAid = require("../controllers/crudaid");
+		// create router using express
+		const router = express.Router();
+		// setup paths on it
+		CrudAid.setupRouter(router, modelClass, urlPath);
+		// register it
+		expressApp.use(urlPath, router);
+		// now return the router for further work
+		return router;
 	}
 	//---------------------------------------------------------------------------
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	//---------------------------------------------------------------------------
-	setupExpressPassport() {
+	setupExpressPassport(expressApp) {
 		// setup passport module for login authentication, etc.
 
 		// provide callback function to help passport serialize a user
@@ -450,8 +439,8 @@ class AppRoomServer {
 		this.setupPassportStrategies();
 
 		// hand passport off to express
-		this.expressApp.use(passport.initialize());
-		this.expressApp.use(passport.session());
+		expressApp.use(passport.initialize());
+		expressApp.use(passport.session());
 	}
 
 
@@ -555,6 +544,79 @@ class AppRoomServer {
 		));
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+	
+	//---------------------------------------------------------------------------
+	createExpressServersAndListen() {
+		// create server
+		// see https://timonweb.com/posts/running-expressjs-server-over-https/
+
+		if (this.getOptionHttps()) {
+			// https server
+			const options = {
+				key: fs.readFileSync(this.getOptionHttpsKey()),
+				cert: fs.readFileSync(this.getOptionHttpsCert()),
+			};
+			const port = this.getOptionHttpsPort();
+			this.createOneExpressServerAndListen(true, port, options);
+		}
+
+		if (this.getOptionHttp()) {
+			// http server
+			const options = {};
+			const port = this.getOptionHttpPort();
+			this.createOneExpressServerAndListen(false, port, options);
+		}
+
+	}
+
+
+
+	createOneExpressServerAndListen(flagHttps, port, options) {
+		// create an http or https server and listen
+		var expressServer;
+
+		var normalizedPort = this.normalizePort(port);
+
+		if (flagHttps) {
+			expressServer = https.createServer(options, this.expressApp);
+		} else {
+			expressServer = http.createServer(options, this.expressApp);
+		}
+
+		// start listening
+		var listener = expressServer.listen(normalizedPort);
+
+		// add event handlers (after server is listening)
+		expressServer.on("error", (...args) => { this.onErrorEs(listener, expressServer, flagHttps, ...args); });
+		expressServer.on("listening", (...args) => { this.onListeningEs(listener, expressServer, flagHttps, ...args); });
+	}
+
+
+
+	normalizePort(portval) {
+		// from nodejs express builder suggested code
+		var port = parseInt(portval, 10);
+		if (Number.isNaN(port)) {
+			// named pipe
+			return portval;
+		}
+		if (port >= 0) {
+			// port number
+			return port;
+		}
+		return false;
+	}
+	//---------------------------------------------------------------------------
+
+
 
 
 	//---------------------------------------------------------------------------
@@ -898,16 +960,11 @@ class AppRoomServer {
 
 		// setup express stuff
 		this.setupExpress();
-		this.setupExpressCustomMiddleware();
-		this.setupExpressPassport();
-		this.setupExpressRoutes();
-		this.setupExpressErrorHandlers();
 
-
-		// view/template stuff
+		// view/template extra stuff
 		this.setupViewTemplateExtras();
 
-		// other stuff
+		// other helper stuff
 		await this.setupMailer();
 
 		// now make the express servers (http AND/OR https)
@@ -1000,11 +1057,12 @@ class AppRoomServer {
 		// create a new log entry and save it to the log
 
 		// ATTN: should we async and await here or let it just run?
-		var log = await LogModel.createModel({
+		var log = LogModel.createModel({
 			type,
 			message,
 			severity,
-		}).save();
+		});
+		await log.dbSave();
 
 		// also log it using our normal system that makes us log to file?
 		jrlog.dblog(type, message, severity);
@@ -1015,6 +1073,12 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
+	async requireLoggedIn(req, res, goalRelUrl) {
+		var failureRelUrl = "/login";
+		var user = await this.getLoggedInUser(req);
+		return this.requireUserIsLoggedIn(req, res, user, goalRelUrl, failureRelUrl);
+	}
+
 	requireUserIsLoggedIn(req, res, user, goalRelUrl, failureRelUrl) {
 		// if user fails permission, remember the goalRelUrl in session and temporarily redirect to failureRelUrl and return false
 		// otherwise return true
@@ -1025,6 +1089,9 @@ class AppRoomServer {
 			this.rememberDivertedRelUrlAndGo(req, res, goalRelUrl, failureRelUrl, "You need to log in before you can access that page.");
 			return false;
 		}
+
+		// they are good, so forget any previously remembered login diversions
+		this.forgetLoginDiversions(req);
 
 		return true;
 	}

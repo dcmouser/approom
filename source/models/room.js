@@ -77,7 +77,7 @@ class RoomModel extends ModelBaseMongoose {
 		// validated successfully
 
 		// save it
-		var objdoc = await obj.save();
+		var objdoc = await obj.dbSave();
 
 		// success
 		jrResult.pushSuccess(this.getNiceName() + " " + jrhelpers.getFormTypeStrToPastTenseVerb(formTypeStr) + " on " + jrhelpers.getNiceNowString() + ".");
@@ -111,7 +111,7 @@ class RoomModel extends ModelBaseMongoose {
 			const AppModel = require("./app");
 			const app = await AppModel.findOneById(appid);
 			if (app) {
-				applabel = app.label;
+				applabel = app.name + " - " + app.label;
 			}
 		}
 		return {

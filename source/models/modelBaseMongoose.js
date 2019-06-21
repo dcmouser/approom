@@ -18,6 +18,28 @@ class ModelBaseMongoose {
 	// static class properties
 	// this.mongooseModel
 
+
+	static getUniversalSchemaObj() {
+		// some base schema properties for ALL models
+		// this helps us keep track of some basic stuff for everything
+		var obj = {
+			version: { type: Number },
+			creationDate: { type: Date },
+			modificationDate: { type: Date },
+			enabled: { type: Number },
+		};
+		return obj;
+	}
+
+
+	static getCrudListHeaders() {
+		// function to help admin of db crud listing
+		var headers = [
+		];
+		return headers;
+	}
+
+
 	static async setupModelSchema(mongooser) {
 
 		// we only do this IF it"s not yet been done
@@ -74,7 +96,16 @@ class ModelBaseMongoose {
 	}
 
 
+	async dbSave() {
+		// simple wrapper (for now) around mongoose model save
+		// this should always be used instead of superclass save() function
+		return await this.save();
+	}
+	//---------------------------------------------------------------------------
 
+
+
+	//---------------------------------------------------------------------------
 	// create new obj
 	static createModel(inobj) {
 		var obj = {
@@ -92,6 +123,7 @@ class ModelBaseMongoose {
 	static calcSchemaDefinition() {
 		return {};
 	}
+
 
 
 	getModelObjPropertyList() {
@@ -255,19 +287,6 @@ class ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static getUniversalSchemaObj() {
-		// some base schema properties for ALL models
-		// this helps us keep track of some basic stuff for everything
-		var obj = {
-			version: { type: Number },
-			creationDate: { type: Date },
-			modificationDate: { type: Date },
-			enabled: { type: Number },
-		};
-		return obj;
-	}
-
-
 	// accessor for all derived models
 	getIdAsString() {
 		if (!this._id) {
@@ -347,19 +366,73 @@ class ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	// subclasses can support this for crud add/edit
+	// subclasses can subclass this for crud add/edit
 	static async calcCrudEditHelperData(req, res, id) {
 		return undefined;
 	}
 
-	// subclasses can support this for crud view
+	// subclasses can subclass this for crud view
 	static async calcCrudViewHelperData(req, res, id, obj) {
 		return undefined;
+	}
+
+	// subclasses can subclass this list grid helper
+	static async calcCrudListHelperData(req, res, baseUrl) {
+		// schema for obj
+		var gridSchema = this.calcSchemaDefinition();
+		gridSchema._id = { type: "id" };
+		//
+		// headers for list grid
+		var gridHeaders = [];
+
+		// options for filter construction
+		var filterOptions = {
+			defaultPageSize: 10,
+			minPageSize: 1,
+			maxPageSize: 100,
+			defaultSortField: "_id",
+			defaultSortDir: "asc",
+			protectedFields: [],
+			alwaysFilter: [],
+		};
+
+		const jrFindFilter = require("../helpers/jrfindfilter");
+		var { query, queryOptions, queryUrlData } = jrFindFilter.buildMongooseQueryFromReq(filterOptions, gridSchema, req);
+
+		var queryProjection = "";
+
+		// fetch the array of items to be displayed in grid
+		// see https://thecodebarbarian.com/how-find-works-in-mongoose
+		var gridItems = await this.mongooseModel.find(query, queryProjection, queryOptions).exec();
+		// ATTN: TODO is there a more efficient way to get total count of results for pager?
+		var isQueryEmpty = ((Object.keys(query)).length === 0);
+		if (isQueryEmpty) {
+			queryUrlData.resultCount = await this.mongooseModel.countDocuments();
+		} else {
+			queryUrlData.resultCount = await this.mongooseModel.countDocuments(query).exec();
+		}
+		// store other stuff in queryUrl data to aid in making urls for pager and grid links, etc.
+		queryUrlData.baseUrl = baseUrl;
+		queryUrlData.tableId = this.getCollectionName();
+
+		// return constructed object
+		return {
+			gridSchema,
+			gridHeaders,
+			query,
+			queryOptions,
+			queryUrlData,
+			gridItems,
+		};
 	}
 	//---------------------------------------------------------------------------
 
 
 }
+
+
+
+
 
 
 // export the class as the sole export

@@ -1,12 +1,19 @@
 /* showing a block with messages or errors inside */
 .jrResultList {
-  padding: 10px;
-  margin: 0px;
-  color: white;
-  padding-top: 1px;
-  padding-bottom: 1px;
+  padding: 15px;
   margin-top: 0px;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
+  color: white;
+}
+
+.jrResultList ul {
+  padding: 10px;
+  margin: 0;
+  margin-left: 20px;
+}
+.jrResultList li {
+  padding: 0;
+  margin: 0;
 }
 
 

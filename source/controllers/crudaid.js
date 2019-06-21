@@ -35,11 +35,16 @@ class CrudAid {
 				return;
 			}
 
+			// any helper data
+			const listHelperData = await modelClass.calcCrudListHelperData(req, res, baseCrudUrl);
+
 			// render
 			res.render(viewFilePathIndex, {
+				headline: "List " + modelClass.getNiceName() + "s",
 				jrResult: JrResult.sessionRenderResult(req, res),
 				crudClassNiceName: modelClass.getNiceName(),
 				csrfToken: arserver.makeCsrf(req, res),
+				listHelperData,
 			});
 		});
 		//---------------------------------------------------------------------------
@@ -322,6 +327,7 @@ class CrudAid {
 				// success, redirect
 				jrResult.addToSession(req);
 				res.redirect(baseCrudUrl);
+				return;
 			}
 
 			// failed, present them with delete page like view?

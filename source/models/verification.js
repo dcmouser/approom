@@ -149,7 +149,7 @@ class VerificationModel extends ModelBaseMongoose {
 				// generate a hopefully unique code
 				verification.uniqueCode = await this.generateUniqueCode();
 				// try to save it
-				verificationdoc = await verification.save();
+				verificationdoc = await verification.dbSave();
 				// success
 				break;
 			} catch (err) {
@@ -461,7 +461,7 @@ class VerificationModel extends ModelBaseMongoose {
 		this.usedDate = new Date();
 		this.enabled = 0;
 		// save it to mark it as used
-		await this.save();
+		await this.dbSave();
 		if (flagForgetFromSession) {
 			this.forgetSessionUse(req);
 		} else {

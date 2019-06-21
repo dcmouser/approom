@@ -113,7 +113,7 @@ class UserModel extends ModelBaseMongoose {
 			// now create model (this will also add default properties to it)
 			var user = UserModel.createModel(userAdminObj);
 			// and save it
-			var userdoc = await user.save();
+			var userdoc = await user.dbSave();
 			//
 			jrlog.cdebugObj(userdoc, "  userAdmin");
 		} else {
@@ -402,7 +402,7 @@ class UserModel extends ModelBaseMongoose {
 			user.loginDate = new Date();
 		}
 		// and save it
-		await user.save();
+		await user.dbSave();
 		//
 		return user;
 	}
@@ -555,7 +555,7 @@ class UserModel extends ModelBaseMongoose {
 			// now create model (this will also add default properties to it)
 		var user = UserModel.createModel(userObjFull);
 		// and save it
-		var userdoc = await user.save();
+		var userdoc = await user.dbSave();
 		//
 		jrlog.cdebugObj(userdoc, "new user");
 		return userdoc;

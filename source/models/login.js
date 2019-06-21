@@ -34,7 +34,7 @@ class LoginModel extends ModelBaseMongoose {
 	}
 
 	static getNiceName() {
-		return "Login";
+		return "Bridged Login";
 	}
 
 	// User model mongoose db schema
@@ -182,7 +182,7 @@ class LoginModel extends ModelBaseMongoose {
 			};
 			// create model (this will also add default properties to it)
 			login = this.createModel(loginObj);
-			await login.save();
+			await login.dbSave();
 			eventNewlyLinked = true;
 		} else {
 			// login already existed -- but did it have the right userId already?
@@ -192,7 +192,7 @@ class LoginModel extends ModelBaseMongoose {
 				// but is it possible for us to get here with login.userId with a real user?
 				//  i think the only way would be if the user was not actually found; that would be the only way to make a new user with a different id and get to here.
 				login.userId = userId;
-				await login.save();
+				await login.dbSave();
 				eventNewlyLinked = true;
 			}
 		}
@@ -250,7 +250,7 @@ class LoginModel extends ModelBaseMongoose {
 
 		// connect them!
 		login.userId = user.getIdAsString();
-		await login.save();
+		await login.dbSave();
 		var jrResult = JrResult.makeSuccess("Connected your " + login.provider + " login with this user account.");
 		return jrResult;
 	}

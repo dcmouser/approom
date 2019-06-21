@@ -31,13 +31,6 @@ router.get("/", async (req, res, next) => {
 		return;
 	}
 
-	// ATTN: test
-	// jrlog.debugObj(user, "User in members");
-	// var jrResult = JrResult.makeSuccess("Welcome, "+user.getUsername()+"!");
-
-	// ignore any previous login diversions
-	arserver.forgetLoginDiversions(req);
-
 	res.render("user/membersonly", {
 		// jrResult: JrResult.sessionRenderResult(req, res, jrResult, true),
 		jrResult: JrResult.sessionRenderResult(req, res),

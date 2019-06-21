@@ -31,13 +31,6 @@ class AppModel extends ModelBaseMongoose {
 		return "App";
 	}
 
-	// User model mongoose db schema
-	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema(this.calcSchemaDefinition(), {
-			collection: this.getCollectionName(),
-		});
-		return this.schema;
-	}
 
 	static calcSchemaDefinition() {
 		return {
@@ -49,7 +42,26 @@ class AppModel extends ModelBaseMongoose {
 		};
 	}
 
+	static getCrudListHeaders() {
+		// function to help admin of db crud listing
+		var headers = [
+			super.getCrudListHeaders(),
+		];
+		return headers;
+	}
+	//---------------------------------------------------------------------------
 
+
+
+	//---------------------------------------------------------------------------
+	// User model mongoose db schema
+	static buildSchema(mongooser) {
+		this.schema = new mongooser.Schema(this.calcSchemaDefinition(), {
+			collection: this.getCollectionName(),
+		});
+		return this.schema;
+	}
+	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
@@ -78,7 +90,7 @@ class AppModel extends ModelBaseMongoose {
 		// validated successfully
 
 		// save it
-		var objdoc = await obj.save();
+		var objdoc = await obj.dbSave();
 
 		// success
 		jrResult.pushSuccess(this.getNiceName() + " " + jrhelpers.getFormTypeStrToPastTenseVerb(formTypeStr) + " on " + jrhelpers.getNiceNowString() + ".");
@@ -100,9 +112,9 @@ class AppModel extends ModelBaseMongoose {
 	// see http://thecodebarbarian.com/whats-new-in-mongoose-53-async-iterators.html
 	static async buildSimpleAppList() {
 		var applist = [];
-		const docs = await this.mongooseModel.find().select("_id label");
+		const docs = await this.mongooseModel.find().select("_id name label");
 		for (const doc of docs) {
-			applist[doc._id] = doc.label;
+			applist[doc._id] = doc.name + " - " + doc.label;
 		}
 		return applist;
 	}

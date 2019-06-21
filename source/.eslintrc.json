@@ -54,6 +54,7 @@
         "no-await-in-loop": 0,
         "no-return-await": 0,
         "no-restricted-syntax": ["error", "LabeledStatement", "WithStatement"],
-        "guard-for-in": 0
+        "guard-for-in": 0,
+        "no-loop-func": 0
     }
 }
