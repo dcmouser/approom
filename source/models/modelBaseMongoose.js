@@ -389,7 +389,7 @@ class ModelBaseMongoose {
 		var filterOptions = {
 			defaultPageSize: 10,
 			minPageSize: 1,
-			maxPageSize: 100,
+			maxPageSize: 1000,
 			defaultSortField: "_id",
 			defaultSortDir: "asc",
 			protectedFields: [],

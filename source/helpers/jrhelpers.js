@@ -120,11 +120,16 @@ function isValidMongooseObjectId(str) {
 
 
 
+
+
 //---------------------------------------------------------------------------
 function getNiceNowString() {
 	return new Date(Date.now()).toLocaleString();
 }
 //---------------------------------------------------------------------------
+
+
+
 
 
 //---------------------------------------------------------------------------
@@ -180,180 +185,7 @@ function reqPrefixedValueArray(req, prefix, keyList) {
 //---------------------------------------------------------------------------
 
 
-//---------------------------------------------------------------------------
-function convertReqQueryStringToAMongooseFindFilter(fkey, fieldSchema, querystr) {
-	// user types a filter for a field (db column) as a string;
-	// here we convert it into something suitable for a mongoose find query obj
-	const schemaType = fieldSchema.type;
-	let key, retQuery;
 
-	if (schemaType === Number) {
-		// it's a numeric column
-		// filter rules:
-		//   user can use operators > < ! =
-		retQuery = convertReqQueryStringToAMongooseFindFilterNumber(fkey, schemaType, querystr);
-	} else if (schemaType === String) {
-		// it's a string column
-		// filter rules:
-		//   if enclosed in double quotes, it should be an exact search
-		//   if not, it should be a wildcard LIKE type search (we wil have to use regex)
-		//   if surrounded by / / then it is an explicit regex
-		retQuery = convertReqQueryStringToAMongooseFindFilterString(fkey, schemaType, querystr);
-	} else if (schemaType === Date) {
-		// it's a date column
-		// filter rules:
-		//  similar to numeric column, but with values specified as DATES YYYY.MM.DD
-		retQuery = convertReqQueryStringToAMongooseFindFilterDate(fkey, schemaType, querystr);
-	} else if (schemaType === "id") {
-		// exact match
-		if (isValidMongooseObjectId(querystr)) {
-			retQuery = querystr;
-		} else {
-			retQuery = undefined;
-		}
-	} else {
-		throw ("Unknown filter field type: " + schemaType.toString());
-	}
-
-	return retQuery;
-}
-
-
-// private helpers
-
-function convertReqQueryStringToAMongooseFindFilterNumber(fkey, schemaType, querystr) {
-	//
-	const operators = {
-		"<": "$lt",
-		">": "$gt",
-		"<=": "$lte",
-		">=": "$gte",
-		"=": "$eq",
-		"==": "$eq",
-		"!=": "$ne",
-		"!==": "$ne",
-		"!<": "$gte",
-		"!>": "$lte",
-		"!<=": "$gt",
-		"!>=": "$lt",
-	};
-
-	var retv = {};
-
-	// first split into comma separated values -- these are ORs
-	var orParts = querystr.split(",");
-	var valPat = "[+-]{0,1}\\d+";
-	var opChars = "\<\>=\!";
-	var opRegex = new RegExp("\\s*([" + opChars + "]+)\\s*(" + valPat + ")\\s*");
-	var valRegex = new RegExp("\\s*(" + valPat + ")\\s*");
-	var mongoOp, opVal, opValNumeric;
-	var oneCondition;
-	var orSet = [];
-
-	orParts.forEach((str) => {
-		var andSet = [];
-		// operator expressions
-		str = str.replace(opRegex, (foundstr, g1, g2) => {
-			mongoOp = operators[g1];
-			if (mongoOp) {
-				opVal = g2;
-				opValNumeric = Number(opVal);
-				oneCondition = {};
-				oneCondition[mongoOp] = opValNumeric;
-				var obj = {};
-				obj[fkey] = oneCondition;
-				andSet.push(obj);
-			}
-			// return "" to replace it with empty
-			return "";
-		});
-		// standalone values
-		str = str.replace(valRegex, (foundstr, g2) => {
-			mongoOp = "$eq";
-			opVal = g2;
-			opValNumeric = Number(opVal);
-			oneCondition = {};
-			oneCondition[mongoOp] = opValNumeric;
-			var obj = {};
-			obj[fkey] = oneCondition;
-			andSet.push(obj);
-			// return "" to replace it with empty
-			return "";
-		});
-		if (andSet.length === 0) {
-			// do nothing
-		} else if (andSet.length === 1) {
-			orSet.push(andSet[0]);
-		} else {
-			var andObj = {
-				$and: andSet,
-			};
-			orSet.push(andObj);
-		}
-	});
-
-	if (orSet.length === 0) {
-		return undefined;
-	}
-	if (orSet.length === 1) {
-		return orSet[0];
-	}
-
-	var orObj = {
-		$or: orSet,
-	};
-	return orObj;
-}
-
-function convertReqQueryStringToAMongooseFindFilterString(fkey, schemaType, querystr) {
-	// first let's see if its an explicit regex
-	var regex, regexMatch;
-	var retv;
-	regex = /^\/(.+)\/(.*)$/;
-	regexMatch = querystr.match(regex);
-	if (regexMatch) {
-		var regexMain = regexMatch[1];
-		var regexOptions = regexMatch[2];
-		try {
-			retv = new RegExp(regexMain, regexOptions);
-		} catch (error) {
-			// illegal regex error
-			return undefined;
-		}
-		return {
-			$regex: retv,
-		};
-	}
-
-	regex = /^"(.*)"$/;
-	regexMatch = querystr.match(regex);
-	if (regexMatch) {
-		// EXACT string match
-		var exactString = regexMatch[1];
-		return exactString;
-	}
-
-	// otherwise we want a LIKE type string
-
-	// create a regex that allows wild characters on left or right, by ESCAPING string
-	var queryStrEscaped = regexEscapeStr(querystr);
-	try {
-		retv = new RegExp(queryStrEscaped, "im");
-	} catch (err) {
-		// illegal regex error
-		return undefined;
-	}
-	return {
-		$regex: retv,
-	};
-}
-
-
-
-function convertReqQueryStringToAMongooseFindFilterDate(fkey, schemaType, querystr) {
-	return undefined;
-}
-//---------------------------------------------------------------------------
 
 
 
@@ -363,7 +195,15 @@ function regexEscapeStr(str) {
 	str = str.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
 	return str;
 }
+
+function makeSafeForFormInput(str) {
+	return str.replace(/"/g, "&quot;");
+}
 //---------------------------------------------------------------------------
+
+
+
+
 
 
 
@@ -378,7 +218,6 @@ module.exports = {
 	isValidMongooseObjectId,
 	getNiceNowString,
 	reqVal, reqValAsInt, reqValFromList, reqPrefixedValueArray,
-	convertReqQueryStringToAMongooseFindFilter,
-	regexEscapeStr,
+	regexEscapeStr, makeSafeForFormInput,
 };
 //---------------------------------------------------------------------------
