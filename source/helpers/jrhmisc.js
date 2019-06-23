@@ -69,9 +69,44 @@ function jrHtmlFormOptionList(pairlist, selectedid) {
 
 
 
+
+
+
+
+//---------------------------------------------------------------------------
+function jrBootstrapCollapseBox(title, body, footer) {
+
+	if (!(body instanceof String)) {
+		body = "<pre>" + JSON.stringify(body, null, "  ") + "</pre>";
+	}
+
+	var rethtml = `
+	<div class="card" style="padding: 5px; margin: 5px;">
+			<div class="card-heading">
+				<h4 class="card-title">
+				<a data-toggle="collapse" href="#collapse1">&gt; ${title}</a>
+				</h4>
+			</div>
+			<div id="collapse1" class="card-collapse collapse">
+				<div class="card-body">${body}</div>
+				<div class="card-footer">${footer}</div>
+			</div>
+	</div>
+	`;
+
+	return rethtml;
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
 //---------------------------------------------------------------------------
 module.exports = {
 	jrPluralize, jrPluralizeCount,
 	jrHtmlFormOptionList,
+	jrBootstrapCollapseBox,
 };
 //---------------------------------------------------------------------------

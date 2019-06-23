@@ -197,14 +197,16 @@ function convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, qu
 	};
 
 	// eslint-disable-next-line no-useless-escape
-	var opChars = "=\!";
+	var opChars = "=!";
 
+
+	// eslint-disable-next-line no-useless-escape
 	if (numberSubType === "string") {
-		valPat = "[^=\!]+";
+		valPat = "[^=!]+";
 		mongoValFunc = function mvf(strVal) { return convertReqQueryStringToAMongooseFindFilterMongoStrCmp(strVal); };
 	} else if (numberSubType === "idstring") {
-		valPat = "[^=\!]+";
-		mongoValFunc = function mvf(strVal) { 
+		valPat = "[^=!]+";
+		mongoValFunc = function mvf(strVal) {
 			if (jrhelpers.isValidMongooseObjectId(strVal)) {
 				return strVal;
 			}

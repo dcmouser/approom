@@ -8,6 +8,7 @@
 
 // our helper modules
 const jrhelpers = require("./jrhelpers");
+const jrhmisc = require("./jrhmisc");
 
 
 
@@ -54,6 +55,10 @@ function jrGridList(listHelperData) {
 	rethtml += `
 	</form>
 	`;
+
+	// debug stuff
+	rethtml += "\n<br/><hr/>\n" + jrhmisc.jrBootstrapCollapseBox("Table Debug", listHelperData, "");
+
 
 	// return it as raw html
 	return rethtml;
