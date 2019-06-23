@@ -33,6 +33,13 @@ function jrGridList(listHelperData) {
 
 	var pagerHtml = jrGridListPager(queryUrlData);
 
+	// ADD link
+	var addUrl = queryUrlData.baseUrl + "/add";
+	var addLabel = listHelperData.modelClass.getNiceName();
+	rethtml += `
+		<div class="float-right"><h4><a href="${addUrl}">Add ${addLabel}</a></h4></div>
+	`;
+
 	// add pager at top
 	if (false) {
 		rethtml += pagerHtml;

@@ -448,8 +448,9 @@ class ModelBaseMongoose {
 		queryUrlData.baseUrl = baseUrl;
 		queryUrlData.tableId = this.getCollectionName();
 
-		// return constructed object
+		// return constructed object -- this is listHelperData in template
 		return {
+			modelClass: this,
 			gridSchema,
 			gridHeaders,
 			query,
