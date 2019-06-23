@@ -5,6 +5,8 @@
 
 "use strict";
 
+// modules
+const mongoose = require("mongoose");
 
 // our helper modules
 const jrlog = require("../helpers/jrlog");
@@ -130,7 +132,7 @@ function convertReqQueryStringToAMongooseFindFilter(fkey, fieldSchema, querystr,
 	// Strings enclosed in // are treated as regular expression searches
 	// Note that the and/or operators are not smart about being in quotes, which means that you simply CANNOT search for something with " and " or " or "" in it or commas
 	//
-	// Additionally you can use the constant "undefined" or "null" (not in quotes) to search for undefined value, or !null to search for values that are NOT undefined or null
+	// Additionally you can use the constant "null" or "undefined" (not in quotes) to search for undefined value, or !null to search for values that are NOT undefined or null
 
 	if (schemaType === Number) {
 		// it's a numeric column
@@ -149,7 +151,7 @@ function convertReqQueryStringToAMongooseFindFilter(fkey, fieldSchema, querystr,
 		// filter rules:
 		//  similar to numeric column
 		retQuery = convertReqQueryStringToAMongooseFindFilterNumeric(fkey, schemaType, querystr, "date", jrResult);
-	} else if (schemaType === "id") {
+	} else if (schemaType === mongoose.Schema.ObjectId) {
 		// exact match
 		retQuery = convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, querystr, "idstring", jrResult);
 	} else {
@@ -197,16 +199,34 @@ function convertReqQueryStringToAMongooseFindFilterNumeric(fkey, schemaType, que
 			return num;
 		};
 	} else if (subType === "date") {
-		valPat = "\\d+";
+		// eslint-disable-next-line no-useless-escape
+		valPat = "[\\d/\\.\\-]+";
 		mongoValFunc = function mvf(strVal, jrResulti) {
-			var num = Number(strVal);
-			if (Number.isNaN(num)) {
-				jrResult.pushError("Search filter error: Not a valid number for date (days old) comparison: " + strVal);
-				num = undefined;
+			var dateVal;
+			// is it a pure number
+			if (strVal.match(/^[\d]+$/)) {
+				var num = Number(strVal);
+				if (Number.isNaN(num)) {
+					jrResult.pushError("Search filter error: Not a valid number for date (days old) comparison: " + strVal);
+					num = undefined;
+				} else {
+					dateVal = new Date();
+					dateVal.setDate(dateVal.getDate() - num);
+				}
+			} else {
+				// try to parse as a date
+				try {
+					dateVal = new Date(strVal);
+				} catch (err) {
+					// doesn't throw an exception just drops through with invalid date
+				}
+				// check for invalid date
+				if (Number.isNaN(dateVal.getTime())) {
+					jrResult.pushError("Search filter error: Date filters should use numbers to indicate how many days in past, or date format YYYY-MM-DD.  Syntax error at: " + strVal);
+				}
 			}
-			var d = new Date();
-			d.setDate(d.getDate() - num);
-			return d;
+
+			return dateVal;
 		};
 	} else {
 		jrResult.pushError("Search filter error: Unknown numeric subtype in convertReqQueryStringToAMongooseFindFilterNumeric: " + subType);
@@ -240,7 +260,7 @@ function convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, qu
 	// eslint-disable-next-line no-useless-escape
 	if (subType === "string") {
 		valPat = "[^=!]+";
-		mongoValFunc = function mvf(strVal, jrResulti) { 
+		mongoValFunc = function mvf(strVal, jrResulti) {
 			return convertReqQueryStringToAMongooseFindFilterMongoStrCmp(strVal, jrResult);
 		};
 	} else if (subType === "idstring") {
@@ -314,7 +334,8 @@ function convertReqQueryStringToAMongooseFindFilterMongoStrCmp(strVal, jrResult)
 function convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaType, querystr, operators, opChars, valPat, mongoValFunc, standaloneOpString, jrResult) {
 	var opRegex = new RegExp("\\s*([" + opChars + "]+)\\s*(" + valPat + ")\\s*");
 	var valRegex = new RegExp("\\s*(" + valPat + ")\\s*");
-	var nullRegex = /([!=]*)\s*\bnull\b/;
+	// var nullRegex = /([!=]*)\s*\bnull\b/;
+	var nullRegex = /([!=]*)\s*\b(null|undefined)\b/;
 	//
 	var mongoOp, opVal, opValm;
 	var oneCondition;
@@ -414,7 +435,7 @@ function convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(fke
 	var opValm;
 
 	// this is a bit messy, but we need to handle null carefully and weirdly
-	if (opVal === "null") {
+	if (opVal === "null" || opVal === "undefined") {
 		opValm = null;
 		if (!mongoOp) {
 			mongoOp = "$eq";
@@ -423,7 +444,7 @@ function convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(fke
 		} else if (mongoOp !== "$eq") {
 			jrResult.pushError("Search filter syntax error: Bad operator for use with null");
 		}
-	} else if (opVal === "!null") {
+	} else if (opVal === "!null" || opVal === "!undefined") {
 		opValm = null;
 		if (!mongoOp) {
 			mongoOp = "$ne";

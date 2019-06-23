@@ -35,8 +35,7 @@ class LogModel extends ModelBaseMongoose {
 
 	static calcSchemaDefinition() {
 		return {
-			// ...(this.getUniversalSchemaObj()),
-			creationDate: { type: Date },
+			...(this.getUniversalSchemaObjMinimal()),
 			type: { type: String },
 			message: { type: String },
 			severity: { type: Number },

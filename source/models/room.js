@@ -8,6 +8,9 @@
 
 "use strict";
 
+// modules
+const mongoose = require("mongoose");
+
 // models
 const ModelBaseMongoose = require("./modelBaseMongoose");
 
@@ -41,7 +44,8 @@ class RoomModel extends ModelBaseMongoose {
 	static calcSchemaDefinition() {
 		return {
 			...(this.getUniversalSchemaObj()),
-			appid: { type: String, required: true },
+			// appid: { type: String, required: true },
+			appid: { type: mongoose.Schema.ObjectId, required: true },
 			shortcode: { type: String, unique: true, required: true },
 			label: { type: String },
 			description: { type: String },

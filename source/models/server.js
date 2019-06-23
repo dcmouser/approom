@@ -55,6 +55,7 @@ const UserModel = require("./user");
 const LoginModel = require("./login");
 const LogModel = require("./log");
 const OptionModel = require("./option");
+const VerificationModel = require("./verification");
 
 // ATTN: circular reference problem? so we require this only when we need it below
 // const VerificationModel = require("./verification");
@@ -363,6 +364,8 @@ class AppRoomServer {
 		this.setupRouteGenericCrud(expressApp, "/admin/room", RoomModel);
 		this.setupRouteGenericCrud(expressApp, "/admin/user", UserModel);
 		this.setupRouteGenericCrud(expressApp, "/admin/bridge", LoginModel);
+		this.setupRouteGenericCrud(expressApp, "/admin/verification", VerificationModel);
+		this.setupRouteGenericCrud(expressApp, "/admin/log", LogModel);
 
 		// admin
 		this.setupRoute(expressApp, "/admin", "admin");

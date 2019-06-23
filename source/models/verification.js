@@ -7,6 +7,9 @@
 "use strict";
 
 // modules
+const mongoose = require("mongoose");
+
+// modules
 const ModelBaseMongoose = require("./modelBaseMongoose");
 const UserModel = require("./user");
 const RegistrationAid = require("../controllers/registrationaid");
@@ -62,8 +65,10 @@ class VerificationModel extends ModelBaseMongoose {
 			type: { type: String },
 			key: { type: String },
 			val: { type: String },
-			userId: { type: String },
-			loginId: { type: String },
+			// userId: { type: String },
+			// loginId: { type: String },
+			userId: { type: mongoose.Schema.ObjectId },
+			loginId: { type: mongoose.Schema.ObjectId },
 			usedDate: { type: Date },
 			expirationDate: { type: Date },
 			extraData: { type: String },

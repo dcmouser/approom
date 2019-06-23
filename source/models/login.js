@@ -6,6 +6,9 @@
 
 "use strict";
 
+// modules
+const mongoose = require("mongoose");
+
 // models
 const ModelBaseMongoose = require("./modelBaseMongoose");
 const UserModel = require("./user");
@@ -51,7 +54,8 @@ class LoginModel extends ModelBaseMongoose {
 			...(this.getUniversalSchemaObj()),
 			provider: { type: String },
 			providerUserId: { type: String },
-			userId: { type: String },
+			// userId: { type: String },
+			userId: { type: mongoose.Schema.ObjectId, required: true },
 			extraData: { type: String },
 			loginDate: { type: Date },
 		};

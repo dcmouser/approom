@@ -6,10 +6,14 @@
 
 "use strict";
 
+// modules
+const mongoose = require("mongoose");
+
 // our helper modules
 const jrlog = require("../helpers/jrlog");
 const jrhelpers = require("../helpers/jrhelpers");
 const JrResult = require("../helpers/jrresult");
+
 
 
 
@@ -23,10 +27,20 @@ class ModelBaseMongoose {
 		// some base schema properties for ALL models
 		// this helps us keep track of some basic stuff for everything
 		var obj = {
+			_id: { type: mongoose.Schema.ObjectId, auto: true },
 			version: { type: Number },
 			creationDate: { type: Date },
 			modificationDate: { type: Date },
 			enabled: { type: Number },
+		};
+		return obj;
+	}
+
+	static getUniversalSchemaObjMinimal() {
+		// used by log and other minimal models?
+		var obj = {
+			_id: { type: mongoose.Schema.ObjectId, auto: true },
+			creationDate: { type: Date },
 		};
 		return obj;
 	}
@@ -382,8 +396,13 @@ class ModelBaseMongoose {
 
 		// schema for obj
 		var gridSchema = this.calcSchemaDefinition();
-		gridSchema._id = { type: "id" };
-		//
+
+		// force add the invisible id field to schema for display
+		// we shouldn't have to do this anymore, we found out had to add it to the model schema
+		if (false) {
+			gridSchema._id = { type: "id" };
+		}
+
 		// headers for list grid
 		var gridHeaders = [];
 
@@ -408,6 +427,10 @@ class ModelBaseMongoose {
 		var gridItems;
 
 		try {
+			// Set the lean option to speed up retrieving of results, since we only need for read-only display here; see https://mongoosejs.com/docs/tutorials/lean.html
+			// Note that if we wanted to call methods on the model class we couldn't do this, as it returns results as plain generic objects
+			queryOptions.lean = true;
+			//
 			gridItems = await this.mongooseModel.find(query, queryProjection, queryOptions).exec();
 			// ATTN: TODO is there a more efficient way to get total count of results for pager?
 			var isQueryEmpty = ((Object.keys(query)).length === 0);
