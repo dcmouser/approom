@@ -377,7 +377,9 @@ class ModelBaseMongoose {
 	}
 
 	// subclasses can subclass this list grid helper
-	static async calcCrudListHelperData(req, res, baseUrl) {
+	static async calcCrudListHelperData(req, res, baseUrl, jrResult) {
+		// perform a find filter and create table grid
+
 		// schema for obj
 		var gridSchema = this.calcSchemaDefinition();
 		gridSchema._id = { type: "id" };
@@ -397,19 +399,27 @@ class ModelBaseMongoose {
 		};
 
 		const jrFindFilter = require("../helpers/jrfindfilter");
-		var { query, queryOptions, queryUrlData } = jrFindFilter.buildMongooseQueryFromReq(filterOptions, gridSchema, req);
+		var { query, queryOptions, queryUrlData } = jrFindFilter.buildMongooseQueryFromReq(filterOptions, gridSchema, req, jrResult);
 
 		var queryProjection = "";
 
 		// fetch the array of items to be displayed in grid
 		// see https://thecodebarbarian.com/how-find-works-in-mongoose
-		var gridItems = await this.mongooseModel.find(query, queryProjection, queryOptions).exec();
-		// ATTN: TODO is there a more efficient way to get total count of results for pager?
-		var isQueryEmpty = ((Object.keys(query)).length === 0);
-		if (isQueryEmpty) {
-			queryUrlData.resultCount = await this.mongooseModel.countDocuments();
-		} else {
-			queryUrlData.resultCount = await this.mongooseModel.countDocuments(query).exec();
+		var gridItems;
+
+		try {
+			gridItems = await this.mongooseModel.find(query, queryProjection, queryOptions).exec();
+			// ATTN: TODO is there a more efficient way to get total count of results for pager?
+			var isQueryEmpty = ((Object.keys(query)).length === 0);
+			if (isQueryEmpty) {
+				queryUrlData.resultCount = await this.mongooseModel.countDocuments();
+			} else {
+				queryUrlData.resultCount = await this.mongooseModel.countDocuments(query).exec();
+			}
+		} catch (err) {
+			jrResult.pushError("Error executing find filter: " + JSON.stringify(query, null, " "));
+			gridItems = [];
+			queryUrlData.resultCount = 0;
 		}
 		// store other stuff in queryUrl data to aid in making urls for pager and grid links, etc.
 		queryUrlData.baseUrl = baseUrl;

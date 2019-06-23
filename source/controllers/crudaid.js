@@ -35,13 +35,15 @@ class CrudAid {
 				return;
 			}
 
+			var jrResult = JrResult.makeNew();
+
 			// any helper data
-			const listHelperData = await modelClass.calcCrudListHelperData(req, res, baseCrudUrl);
+			const listHelperData = await modelClass.calcCrudListHelperData(req, res, baseCrudUrl, jrResult);
 
 			// render
 			res.render(viewFilePathIndex, {
 				headline: "List " + modelClass.getNiceName() + "s",
-				jrResult: JrResult.sessionRenderResult(req, res),
+				jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 				crudClassNiceName: modelClass.getNiceName(),
 				csrfToken: arserver.makeCsrf(req, res),
 				listHelperData,
