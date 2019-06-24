@@ -16,6 +16,7 @@ const ModelBaseMongoose = require("./modelBaseMongoose");
 
 // our helper modules
 const jrhelpers = require("../helpers/jrhelpers");
+const jrhmisc = require("../helpers/jrhmisc");
 
 
 
@@ -63,6 +64,18 @@ class RoomModel extends ModelBaseMongoose {
 			...(this.getBaseSchemaDefinitionExtra()),
 			appid: {
 				label: "App Id",
+				valueFunctions: {
+					viewDelete: (obj, helperData) => {
+						var appLabel = helperData.appLabel;
+						var rethtml = `${appLabel} (#${obj.appid})`;
+						return rethtml;
+					},
+					addEdit: (obj, helperData) => {
+						var appid = obj ? obj.appid : null;
+						var rethtml = jrhmisc.jrHtmlFormOptionListSelect("appid", helperData.applist, appid);
+						return rethtml;
+					},
+				},
 			},
 			shortcode: {
 				label: "Shortcode",
@@ -122,7 +135,7 @@ class RoomModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	// crud add/edit form helper data
 	// in case of rooms, this should be the list of APPS that the USER has access to
-	static async calcCrudEditHelperData(req, res, id) {
+	static async calcCrudAddEditHelperData(req, res, id) {
 		// build app list, pairs of id -> nicename
 		const AppModel = require("./app");
 		const applist = await AppModel.buildSimpleAppListUserTargetable(req);
@@ -134,19 +147,19 @@ class RoomModel extends ModelBaseMongoose {
 	}
 
 	// crud helper for view
-	static async calcCrudViewHelperData(req, res, id, obj) {
+	static async calcCrudViewDeleteHelperData(req, res, id, obj) {
 		// get nice label of the app it's attached to
-		var applabel;
+		var appLabel;
 		const appid = obj.appid;
 		if (appid) {
 			const AppModel = require("./app");
 			const app = await AppModel.findOneById(appid);
 			if (app) {
-				applabel = app.name + " - " + app.label;
+				appLabel = app.name + " - " + app.label;
 			}
 		}
 		return {
-			applabel,
+			appLabel,
 		};
 	}
 	//---------------------------------------------------------------------------

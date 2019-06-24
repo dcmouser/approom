@@ -48,18 +48,22 @@ class ModelBaseMongoose {
 		return {
 			_id: {
 				label: "Id",
+				hide: ["addEdit"],
 			},
 			version: {
 				label: "Version",
+				hide: ["addEdit"],
 			},
 			creationDate: {
 				label: "Date created",
+				hide: ["addEdit"],
 			},
 			modificationDate: {
 				label: "Date modified",
+				hide: ["addEdit"],
 			},
 			disabled: {
-				label: "Disabled",
+				label: "Is disabled?",
 				choices: {
 					0: "enabled",
 					1: "disabled",
@@ -90,9 +94,11 @@ class ModelBaseMongoose {
 		return {
 			_id: {
 				label: "Id",
+				hide: ["addEdit"],
 			},
 			creationDate: {
 				label: "Date created",
+				hide: ["addEdit"],
 			},
 		};
 	}
@@ -127,7 +133,7 @@ class ModelBaseMongoose {
 			version: this.getVersion(),
 			creationDate: new Date(),
 			modificationDate: null,
-			enabled: 1,
+			disabled: 0,
 			...inobj,
 		};
 		var model = new this.mongooseModel(obj);
@@ -228,12 +234,20 @@ class ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// ATTN: TODO -- cache the schema definition and extras
-	static getSchemaExtraFieldVal(key, field, defaultVal) {
+	static getSchemaExtraFieldVal(fieldName, key, defaultVal) {
 		var modelSchemaExtra = this.getSchemaDefinitionExtra();
-		if (modelSchemaExtra[key] && modelSchemaExtra[key][field]) {
-			return modelSchemaExtra[key][field];
+		if (modelSchemaExtra[fieldName] && modelSchemaExtra[fieldName][key]) {
+			return modelSchemaExtra[fieldName][key];
 		}
 		return defaultVal;
+	}
+
+	static getSchemaExtraFieldValueFunction(fieldName, valueFunctionType) {
+		var modelSchemaExtra = this.getSchemaDefinitionExtra();
+		if (modelSchemaExtra[fieldName] && modelSchemaExtra[fieldName].valueFunctions && modelSchemaExtra[fieldName].valueFunctions[valueFunctionType]) {
+			return modelSchemaExtra[fieldName].valueFunctions[valueFunctionType];
+		}
+		return undefined;
 	}
 	//---------------------------------------------------------------------------
 
@@ -473,12 +487,12 @@ class ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// subclasses can subclass this for crud add/edit
-	static async calcCrudEditHelperData(req, res, id) {
+	static async calcCrudAddEditHelperData(req, res, id) {
 		return undefined;
 	}
 
 	// subclasses can subclass this for crud view
-	static async calcCrudViewHelperData(req, res, id, obj) {
+	static async calcCrudViewDeleteHelperData(req, res, id, obj) {
 		return undefined;
 	}
 
@@ -550,6 +564,11 @@ class ModelBaseMongoose {
 			queryUrlData,
 			gridItems,
 		};
+	}
+
+
+	static async calcCrudStatsHelperData(req, res) {
+		return undefined;
 	}
 	//---------------------------------------------------------------------------
 

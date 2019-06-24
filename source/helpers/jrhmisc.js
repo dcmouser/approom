@@ -43,11 +43,21 @@ function jrPluralize(number, singular, plural) {
 
 
 //---------------------------------------------------------------------------
+function jrHtmlFormOptionListSelect(selectName, pairlist, selectedid) {
+	var appHtmlList = jrHtmlFormOptionList(pairlist, selectedid);
+	var rethtml = `
+	<select name="${selectName}">
+		${appHtmlList}
+	</select>
+	`;
+	return rethtml;
+}
+
 function jrHtmlFormOptionList(pairlist, selectedid) {
 	var rethtml = "";
 	var foundId = false;
 	// cast id to a string
-	selectedid = selectedid.toString();
+	selectedid = (selectedid === null || selectedid === undefined) ? "" : selectedid.toString();
 	// now find it in list
 	if (pairlist) {
 		var seltext;
@@ -66,6 +76,20 @@ function jrHtmlFormOptionList(pairlist, selectedid) {
 		rethtml = "<option value=\"" + selectedid + "\" selected> UNKNOWN VALUE (#" + selectedid + ")</option>\n" + rethtml;
 	}
 	return rethtml;
+}
+
+
+function jrHtmlNiceOptionFromList(pairlist, selectedid, defaultVal) {
+	// blank, nothing we can do
+	if (selectedid === null || selectedid === undefined || selectedid === "") {
+		return defaultVal;
+	}
+	var label = pairlist[selectedid];
+	if (label === undefined) {
+		return defaultVal;
+	}
+
+	return label;
 }
 //---------------------------------------------------------------------------
 
@@ -109,7 +133,7 @@ function jrBootstrapCollapseBox(title, body, footer) {
 //---------------------------------------------------------------------------
 module.exports = {
 	jrPluralize, jrPluralizeCount,
-	jrHtmlFormOptionList,
+	jrHtmlFormOptionListSelect, jrHtmlFormOptionList, jrHtmlNiceOptionFromList, 
 	jrBootstrapCollapseBox,
 };
 //---------------------------------------------------------------------------
