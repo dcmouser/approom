@@ -8,17 +8,19 @@
 
 "use strict";
 
+// our helper modules
+const jrhelpers = require("../helpers/jrhelpers");
+
 // models
 const ModelBaseMongoose = require("./modelBaseMongoose");
 
-// our helper modules
-const jrlog = require("../helpers/jrlog");
-const JrResult = require("../helpers/jrresult");
-const jrhelpers = require("../helpers/jrhelpers");
+
+
 
 
 class AppModel extends ModelBaseMongoose {
 
+	//---------------------------------------------------------------------------
 	// global static version info
 	static getVersion() { return 1; }
 
@@ -27,41 +29,61 @@ class AppModel extends ModelBaseMongoose {
 		return "apps";
 	}
 
+	// nice name for display
 	static getNiceName() {
 		return "App";
 	}
+	//---------------------------------------------------------------------------
 
 
-	static calcSchemaDefinition() {
+	//---------------------------------------------------------------------------
+	static getSchemaDefinition() {
 		return {
-			...(this.getUniversalSchemaObj()),
-			shortcode: { type: String, unique: true, required: true },
-			name: { type: String, unique: true, required: true },
-			label: { type: String },
-			description: { type: String },
+			...(this.getBaseSchemaDefinition()),
+			shortcode: {
+				type: String,
+				unique: true,
+				required: true,
+			},
+			name: {
+				type: String,
+				unique: true,
+				required: true,
+			},
+			label: {
+				type: String,
+			},
+			description: {
+				type: String,
+			},
 		};
 	}
 
-	static getCrudListHeaders() {
-		// function to help admin of db crud listing
-		var headers = [
-			super.getCrudListHeaders(),
-		];
-		return headers;
+	static getSchemaDefinitionExtra() {
+		return {
+			...(this.getBaseSchemaDefinitionExtra()),
+			shortcode: {
+				label: "Shortcode",
+			},
+			name: {
+				label: "Name",
+			},
+			label: {
+				label: "Label",
+			},
+			description: {
+				label: "Description",
+			},
+		};
 	}
 	//---------------------------------------------------------------------------
 
 
 
-	//---------------------------------------------------------------------------
-	// User model mongoose db schema
-	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema(this.calcSchemaDefinition(), {
-			collection: this.getCollectionName(),
-		});
-		return this.schema;
-	}
-	//---------------------------------------------------------------------------
+
+
+
+
 
 
 	//---------------------------------------------------------------------------
@@ -103,7 +125,7 @@ class AppModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	static async buildSimpleAppListUserTargetable(req) {
 		// build app list, pairs of id -> nicename, that are targetable (ie user can add rooms to) to current logged in user
-		const arserver = require("../models/server");
+		const arserver = require("../controllers/server");
 		const userid = arserver.getLoggedInLocalLoginIdFromSession(req);
 		var applist = await this.buildSimpleAppList();
 		return applist;

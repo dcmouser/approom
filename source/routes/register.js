@@ -11,7 +11,7 @@ const express = require("express");
 
 // models
 const UserModel = require("../models/user");
-const arserver = require("../models/server");
+const arserver = require("../controllers/server");
 const RegistrationAid = require("../controllers/registrationaid");
 
 // helpers

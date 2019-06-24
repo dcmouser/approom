@@ -11,7 +11,7 @@ const jrhelpers = require("../helpers/jrhelpers");
 const JrResult = require("../helpers/jrresult");
 
 // models
-const arserver = require("../models/server");
+const arserver = require("./server");
 const AppModel = require("../models/app");
 const RoomModel = require("../models/room");
 

@@ -46,6 +46,7 @@ const DefDisallowedUsernameList = ["admin*", "root", "guest", "user", "moderator
 
 class UserModel extends ModelBaseMongoose {
 
+	//---------------------------------------------------------------------------
 	// global static version info
 	static getVersion() { return 1; }
 
@@ -54,41 +55,99 @@ class UserModel extends ModelBaseMongoose {
 		return "users";
 	}
 
+	// nice name for display
 	static getNiceName() {
 		return "User";
 	}
+	//---------------------------------------------------------------------------
 
 
-	getUsername() {
-		return this.username;
-	}
 
-
-	// User model mongoose db schema
-	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema(this.calcSchemaDefinition(), {
-			collection: this.getCollectionName(),
-		});
-		return this.schema;
-	}
-
-	static calcSchemaDefinition() {
+	//---------------------------------------------------------------------------
+	static getSchemaDefinition() {
 		return {
-			...(this.getUniversalSchemaObj()),
-			username: { type: String, unique: true, required: true },
-			realname: { type: String },
-			email: { type: String },
-			passwordObj: { type: String },
-			passwordVersion: { type: Number },
-			passwordDate: { type: Date },
-			loginDate: { type: Date },
-			authenticationDate: { type: Date },
-			// we don't put these in the db, they are just fields for when we create small temporary proxy users
-			// loginId : { type: String },
+			...(this.getBaseSchemaDefinition()),
+			username: {
+				type: String,
+				unique: true,
+				required: true,
+				jr: {
+					label: "Username",
+				},
+			},
+			realname: {
+				type: String,
+				jr: {
+					label: "Real name",
+				},
+			},
+			email: {
+				type: String,
+				jr: {
+					label: "Email",
+				},
+			},
+			passwordObj: {
+				type: String,
+				jr: {
+					label: "Password",
+				},
+			},
+			passwordVersion: {
+				type: Number,
+				jr: {
+					label: "Password version",
+				},
+			},
+			passwordDate: {
+				type: Date,
+				jr: {
+					label: "Date password was last changed/set",
+				},
+			},
+			loginDate: {
+				type: Date,
+				jr: {
+					label: "Date user last logged in",
+				},
+			},
+			// additional fields we may add dynamically for in-memory use, but not saved to db
+			// loginId : { type: ObjectId },
 		};
 	}
 
+	static getSchemaDefinitionExtra() {
+		return {
+			...(this.getBaseSchemaDefinitionExtra()),
+			username: {
+				label: "Username",
+			},
+			realname: {
+				label: "Real name",
+			},
+			email: {
+				label: "Email",
+			},
+			passwordObj: {
+				label: "Password",
+				format: "password",
+			},
+			passwordVersion: {
+				label: "Password version",
+			},
+			passwordDate: {
+				label: "Date password set/modified",
+			},
+			loginDate: {
+				label: "Date of last login",
+			},
+		};
+	}
+	//---------------------------------------------------------------------------
 
+
+
+	//---------------------------------------------------------------------------
 	// database init
 	static async dbInit(mongooser) {
 		jrlog.cdebug("Inside User dbInit");
@@ -121,6 +180,18 @@ class UserModel extends ModelBaseMongoose {
 		}
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+	//---------------------------------------------------------------------------
+	// accessors
+	getUsername() {
+		return this.username;
+	}
+	//---------------------------------------------------------------------------
+
+
 
 
 

@@ -10,7 +10,7 @@
 const express = require("express");
 
 // models
-const arserver = require("../models/server");
+const arserver = require("../controllers/server");
 
 // helpers
 const JrResult = require("../helpers/jrresult");

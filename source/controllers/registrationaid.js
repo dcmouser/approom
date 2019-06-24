@@ -24,7 +24,7 @@ class RegistrationAid {
 		// initial values for the form to present them with
 
 		// require models
-		const arserver = require("../models/server");
+		const arserver = require("./server");
 		const UserModel = require("../models/user");
 
 		// ok now let's check if they are sessioned with a LoginId; if so we might get initial values from that
@@ -112,7 +112,7 @@ class RegistrationAid {
 		var successRedirectTo;
 
 		// require models
-		const arserver = require("../models/server");
+		const arserver = require("../controllers/server");
 		const VerificationModel = require("../models/verification");
 		const UserModel = require("../models/user");
 
@@ -307,7 +307,7 @@ class RegistrationAid {
 		var flagLogInUserAfterAccountCreate = true;
 
 		// require models
-		const arserver = require("../models/server");
+		const arserver = require("../controllers/server");
 		const LoginModel = require("../models/login");
 		const UserModel = require("../models/user");
 

@@ -18,7 +18,7 @@ const jrlog = require("../helpers/jrlog");
 // our models
 const UserModel = require("../models/user");
 const VerificationModel = require("../models/verification");
-const arserver = require("../models/server");
+const arserver = require("../controllers/server");
 
 
 // init

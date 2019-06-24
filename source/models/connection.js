@@ -13,6 +13,7 @@ const ModelBaseMongoose = require("./modelBaseMongoose");
 
 class ConnectionModel extends ModelBaseMongoose {
 
+	//---------------------------------------------------------------------------
 	// global static version info
 	static getVersion() { return 1; }
 
@@ -24,21 +25,29 @@ class ConnectionModel extends ModelBaseMongoose {
 	static getNiceName() {
 		return "Connection";
 	}
+	//---------------------------------------------------------------------------
 
-	// User model mongoose db schema
-	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema(this.calcSchemaDefinition(), {
-			collection: this.getCollectionName(),
-		});
-		return this.schema;
-	}
 
-	static calcSchemaDefinition() {
+	//---------------------------------------------------------------------------
+	static getSchemaDefinition() {
 		return {
-			...(this.getUniversalSchemaObj()),
-			ip: { type: String },
+			...(this.getBaseSchemaDefinition()),
+			ip: {
+				type: String,
+			},
 		};
 	}
+
+	static getSchemaDefinitionExtra() {
+		return {
+			...(this.getBaseSchemaDefinitionExtra()),
+			ip: {
+				label: "IP",
+			},
+		};
+	}
+	//---------------------------------------------------------------------------
+
 
 }
 

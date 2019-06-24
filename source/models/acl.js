@@ -19,6 +19,7 @@ const ModelBaseMongoose = require("./modelBaseMongoose");
 
 class AclModel extends ModelBaseMongoose {
 
+	//---------------------------------------------------------------------------
 	// global static version info
 	static getVersion() { return 1; }
 
@@ -30,21 +31,29 @@ class AclModel extends ModelBaseMongoose {
 	static getNiceName() {
 		return "ACL";
 	}
+	//---------------------------------------------------------------------------
 
-	// User model mongoose db schema
-	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema(this.calcSchemaDefinition(), {
-			collection: this.getCollectionName(),
-		});
-		return this.schema;
-	}
 
-	static calcSchemaDefinition() {
+
+	//---------------------------------------------------------------------------
+	static getSchemaDefinition() {
 		return {
-			...(this.getUniversalSchemaObj()),
-			permission: { type: String },
+			...(this.getBaseSchemaDefinition()),
+			permission: {
+				type: String,
+			},
 		};
 	}
+
+	static getSchemaDefinitionExtra() {
+		return {
+			...(this.getBaseSchemaDefinitionExtra()),
+			permission: {
+				label: "Permission",
+			},
+		};
+	}
+	//---------------------------------------------------------------------------
 
 }
 

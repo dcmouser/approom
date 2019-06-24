@@ -13,7 +13,7 @@ const JrResult = require("../helpers/jrresult");
 const jrlog = require("../helpers/jrlog");
 
 // models
-const arserver = require("../models/server");
+const arserver = require("../controllers/server");
 
 // init
 const router = express.Router();

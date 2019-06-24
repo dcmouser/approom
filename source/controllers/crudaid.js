@@ -10,12 +10,15 @@
 const fs = require("fs");
 const path = require("path");
 
+// modules
+const hbs = require("hbs");
+
 // helpers
 const JrResult = require("../helpers/jrresult");
 const jrLog = require("../helpers/jrlog");
 
 // models
-const arserver = require("../models/server");
+const arserver = require("./server");
 
 
 
@@ -28,7 +31,7 @@ class CrudAid {
 
 		//---------------------------------------------------------------------------
 		// list
-		const viewFilePathIndex = this.calcViewFile("list", modelClass);
+		const viewFilePathList = this.calcViewFile("list", modelClass);
 		router.get("/", async (req, res, next) => {
 			// acl test
 			if (!await arserver.aclRequireModelAccess(req, res, modelClass, "list")) {
@@ -41,12 +44,13 @@ class CrudAid {
 			const listHelperData = await modelClass.calcCrudListHelperData(req, res, baseCrudUrl, jrResult);
 
 			// render
-			res.render(viewFilePathIndex, {
+			res.render(viewFilePathList, {
 				headline: "List " + modelClass.getNiceName() + "s",
 				jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 				crudClassNiceName: modelClass.getNiceName(),
 				csrfToken: arserver.makeCsrf(req, res),
 				listHelperData,
+				baseCrudUrl,
 			});
 		});
 		//---------------------------------------------------------------------------
@@ -88,6 +92,12 @@ class CrudAid {
 			// any helper data
 			const editHelperData = await modelClass.calcCrudEditHelperData(req, res);
 
+			// generic main html for page (add form)
+			var genericMainHtml;
+			if (this.isViewPathGeneric(viewFilePathAdd)) {
+				genericMainHtml = this.buildGenericMainHtml(modelClass, null, jrResult, "add");
+			}
+
 			// render
 			res.render(viewFilePathAdd, {
 				headline: "Add " + modelClass.getNiceName(),
@@ -96,6 +106,9 @@ class CrudAid {
 				csrfToken: arserver.makeCsrf(req, res),
 				reqbody,
 				editHelperData,
+				genericMainHtml,
+				baseCrudUrl,
+				crudAdd: true,
 			});
 		});
 
@@ -142,6 +155,12 @@ class CrudAid {
 			// any helper data
 			const editHelperData = await modelClass.calcCrudEditHelperData(req, res);
 
+			// generic main html for page (add form)
+			var genericMainHtml;
+			if (this.isViewPathGeneric(viewFilePathAdd)) {
+				genericMainHtml = this.buildGenericMainHtml(modelClass, null, jrResult, "add");
+			}
+
 			// re-present form for another add?
 			res.render(viewFilePathAdd, {
 				headline: "Add " + modelClass.getNiceName(),
@@ -150,6 +169,9 @@ class CrudAid {
 				csrfToken: arserver.makeCsrf(req, res),
 				reqbody,
 				editHelperData,
+				genericMainHtml,
+				baseCrudUrl,
+				crudAdd: true,
 			});
 		});
 		//---------------------------------------------------------------------------
@@ -176,6 +198,12 @@ class CrudAid {
 			// any helper data
 			const editHelperData = await modelClass.calcCrudEditHelperData(req, res, id);
 
+			// generic main html for page (edit form)
+			var genericMainHtml;
+			if (this.isViewPathGeneric(viewFilePathEdit)) {
+				genericMainHtml = this.buildGenericMainHtml(modelClass, reqbody, jrResult, "edit");
+			}
+
 			// render
 			res.render(viewFilePathEdit, {
 				headline: "Edit " + modelClass.getNiceName() + " #" + id,
@@ -184,6 +212,8 @@ class CrudAid {
 				csrfToken: arserver.makeCsrf(req, res),
 				reqbody,
 				editHelperData,
+				genericMainHtml,
+				baseCrudUrl,
 			});
 		});
 
@@ -237,6 +267,12 @@ class CrudAid {
 			// any helper data
 			const editHelperData = await modelClass.calcCrudEditHelperData(req, res, id);
 
+			// generic main html for page (edit form)
+			var genericMainHtml;
+			if (this.isViewPathGeneric(viewFilePathEdit)) {
+				genericMainHtml = this.buildGenericMainHtml(modelClass, reqbody, jrResult, "edit");
+			}
+
 			// render -- just like original edit
 			res.render(viewFilePathEdit, {
 				headline: "Edit " + modelClass.getNiceName() + " #" + id,
@@ -245,6 +281,8 @@ class CrudAid {
 				csrfToken: arserver.makeCsrf(req, res),
 				reqbody,
 				editHelperData,
+				genericMainHtml,
+				baseCrudUrl,
 			});
 		});
 		//---------------------------------------------------------------------------
@@ -253,7 +291,7 @@ class CrudAid {
 
 		//---------------------------------------------------------------------------
 		// view (get)
-		const viewFilePathView = this.calcViewFile("view", modelClass);
+		const viewFilePathView = this.calcViewFile("viewdelete", modelClass);
 		router.get("/view/:id", async (req, res, next) => {
 			// get id from get param
 			var jrResult = JrResult.makeNew();
@@ -268,6 +306,12 @@ class CrudAid {
 			// any helper data
 			const viewHelperData = await modelClass.calcCrudViewHelperData(req, res, id, obj);
 
+			// generic main html for page (view form)
+			var genericMainHtml;
+			if (this.isViewPathGeneric(viewFilePathView)) {
+				genericMainHtml = this.buildGenericMainHtml(modelClass, obj, jrResult, "view");
+			}
+
 			// render
 			res.render(viewFilePathView, {
 				headline: "View " + modelClass.getNiceName() + " #" + id,
@@ -275,6 +319,9 @@ class CrudAid {
 				crudClassNiceName: modelClass.getNiceName(),
 				obj,
 				viewHelperData,
+				genericMainHtml,
+				crudDelete: false,
+				baseCrudUrl,
 			});
 		});
 		//---------------------------------------------------------------------------
@@ -283,7 +330,7 @@ class CrudAid {
 
 		//---------------------------------------------------------------------------
 		// delete (get)
-		const viewFilePathDelete = this.calcViewFile("delete", modelClass);
+		const viewFilePathDelete = this.calcViewFile("viewdelete", modelClass);
 		router.get("/delete/:id", async (req, res, next) => {
 			var jrResult = JrResult.makeNew();
 			// get id from get param
@@ -295,6 +342,12 @@ class CrudAid {
 				return;
 			}
 
+			// generic main html for page (delete form)
+			var genericMainHtml;
+			if (this.isViewPathGeneric(viewFilePathDelete)) {
+				genericMainHtml = this.buildGenericMainHtml(modelClass, obj, jrResult, "delete");
+			}
+
 			// render
 			res.render(viewFilePathDelete, {
 				headline: "Delete " + modelClass.getNiceName() + " #" + id,
@@ -302,6 +355,9 @@ class CrudAid {
 				crudClassNiceName: modelClass.getNiceName(),
 				csrfToken: arserver.makeCsrf(req, res),
 				obj,
+				genericMainHtml,
+				crudDelete: true,
+				baseCrudUrl,
 			});
 		});
 
@@ -332,12 +388,21 @@ class CrudAid {
 				return;
 			}
 
+			// generic main html for page (delete form)
+			var genericMainHtml;
+			if (this.isViewPathGeneric(viewFilePathDelete)) {
+				genericMainHtml = this.buildGenericMainHtml(modelClass, obj, jrResult, "delete");
+			}
+
 			// failed, present them with delete page like view?
 			res.render(viewFilePathDelete, {
 				headline: "Delete " + modelClass.getNiceName() + " #" + id,
 				jrResult: JrResult.sessionRenderResult(req, res),
 				crudClassNiceName: modelClass.getNiceName(),
 				obj,
+				genericMainHtml,
+				crudDelete: true,
+				baseCrudUrl,
 			});
 		});
 		//---------------------------------------------------------------------------
@@ -353,11 +418,19 @@ class CrudAid {
 				return;
 			}
 
+			// generic main html for page (delete form)
+			var genericMainHtml;
+			if (this.isViewPathGeneric(viewFilePathStats)) {
+				genericMainHtml = this.buildGenericMainHtml(modelClass, null, null, "stats");
+			}
+
 			// render
 			res.render(viewFilePathStats, {
 				jrResult: JrResult.sessionRenderResult(req, res),
 				crudClassNiceName: modelClass.getNiceName(),
 				csrfToken: arserver.makeCsrf(req, res),
+				genericMainHtml,
+				baseCrudUrl,
 			});
 		});
 		//---------------------------------------------------------------------------
@@ -376,15 +449,146 @@ class CrudAid {
 	static calcViewFile(subview, modelClass) {
 		var fname = path.join("crud", subview);
 		var fnameModelSpecific = path.join("crud", modelClass.getCollectionName() + "_" + subview);
+		var fnameModelGeneric = path.join("crud", "generic_" + subview);
 		// try to find model specific version
 		var fpath = path.join(arserver.getViewPath(), fnameModelSpecific + arserver.getViewExt());
 		// jrLog.debug("ATTN: looking for " + fpath);
 		if (fs.existsSync(fpath)) {
 			return fnameModelSpecific;
 		}
-		return fname;
+		return fnameModelGeneric;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	static isViewPathGeneric(viewPath) {
+		return (viewPath.indexOf("generic_") !== -1);
+	}
+
+	static buildGenericMainHtml(modelClass, obj, jrResult, crudSubType) {
+		var rethtml;
+
+		if (crudSubType === "add" || crudSubType === "edit") {
+			// build form html for adding or editing
+			rethtml = this.buildGenericMainHtmlAddEdit(modelClass, obj, jrResult);
+		} else if (crudSubType === "delete" || crudSubType === "view") {
+			// build form html for viewing
+			rethtml = this.buildGenericMainHtmlViewDelete(modelClass, obj, jrResult);
+		} else if (crudSubType === "stats") {
+			// show stats
+			rethtml = this.buildGenericMainHtmlStats(modelClass, obj, jrResult);
+		} else {
+			throw ("Illegal subtype (" + crudSubType + ") in buildGenericMainHtml.");
+		}
+
+		// we need to wrap return as hbs.SafeString in order to include raw html
+		return new hbs.SafeString(rethtml);
+	}
+
+	static buildGenericMainHtmlAddEdit(modelClass, obj, jrResult) {
+		var rethtml = "";
+
+		// start table
+		rethtml += `
+		<div class="table-responsive">
+		<table class="table table-striped w-auto table-bordered">
+		`;
+
+		// schema for obj
+		var modelSchemaExtra = modelClass.getSchemaDefinitionExtra();
+		var schemaKeys = Object.keys(modelSchemaExtra);
+		var val;
+		var err;
+		schemaKeys.forEach((key) => {
+			if (key === "_id") {
+				// dont display ID field in add/edit forms
+				return;
+			}
+			var label = modelClass.getSchemaExtraFieldVal(key, "label", key);
+			if (obj) {
+				if (obj[key] === null || obj[key] === undefined) {
+					val = "";
+				} else {
+					val = obj[key].toString();
+				}
+			} else {
+				val = "";
+			}
+			if (jrResult && jrResult.fields && jrResult.fields[key]) {
+				err = jrResult.fields[key];
+			} else {
+				err = "";
+			}
+			rethtml += `
+			<tr>
+        		<td>${label}</td>
+   	   			<td><input type="text" name="${key}" value="${val}" size="80"/> <span class="jrErrorInline">${err}</span> </td>
+			</tr>
+			`;
+		});
+
+		// end table
+		rethtml += `
+		</table>
+		</div>
+		`;
+
+		return rethtml;
+	}
+
+
+	static buildGenericMainHtmlViewDelete(modelClass, obj, jrResult) {
+		var rethtml = "";
+
+		// start table
+		rethtml += `
+		<div class="table-responsive">
+		<table class="table table-striped w-auto table-bordered">
+		`;
+
+		// schema for obj
+		var modelSchemaExtra = modelClass.getSchemaDefinitionExtra();
+		var schemaKeys = Object.keys(modelSchemaExtra);
+		var val;
+		schemaKeys.forEach((key) => {
+			var label = modelClass.getSchemaExtraFieldVal(key, "label", key);
+			if (key !== "_id") {
+				if (obj) {
+					if (obj[key] === null || obj[key] === undefined) {
+						val = "";
+					} else {
+						val = obj[key].toString();
+					}
+				} else {
+					val = "";
+				}
+				rethtml += `
+				<tr>
+	        		<td><strong>${label}</strong></td>
+    	   			<td>${val}</td>
+      			</tr>
+				`;
+			}
+		});
+
+		// end table
+		rethtml += `
+		</table>
+		</div>
+		`;
+
+		return rethtml;
+	}
+
+	static buildGenericMainHtmlStats(modelClass, obj, jrResult) {
+		var rethtml;
+		rethtml = "<div>stats</div>";
+		return rethtml;
+	}
+	//---------------------------------------------------------------------------
+
 
 
 }

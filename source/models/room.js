@@ -21,6 +21,7 @@ const jrhelpers = require("../helpers/jrhelpers");
 
 class RoomModel extends ModelBaseMongoose {
 
+	//---------------------------------------------------------------------------
 	// global static version info
 	static getVersion() { return 1; }
 
@@ -32,25 +33,51 @@ class RoomModel extends ModelBaseMongoose {
 	static getNiceName() {
 		return "Room";
 	}
+	//---------------------------------------------------------------------------
 
-	// User model mongoose db schema
-	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema(this.calcSchemaDefinition(), {
-			collection: this.getCollectionName(),
-		});
-		return this.schema;
-	}
 
-	static calcSchemaDefinition() {
+	//---------------------------------------------------------------------------
+	static getSchemaDefinition() {
 		return {
-			...(this.getUniversalSchemaObj()),
-			// appid: { type: String, required: true },
-			appid: { type: mongoose.Schema.ObjectId, required: true },
-			shortcode: { type: String, unique: true, required: true },
-			label: { type: String },
-			description: { type: String },
+			...(this.getBaseSchemaDefinition()),
+			appid: {
+				type: mongoose.Schema.ObjectId,
+				required: true,
+			},
+			shortcode: {
+				type: String,
+				unique: true,
+				required: true,
+			},
+			label: {
+				type: String,
+			},
+			description: {
+				type: String,
+			},
 		};
 	}
+
+	static getSchemaDefinitionExtra() {
+		return {
+			...(this.getBaseSchemaDefinitionExtra()),
+			appid: {
+				label: "App Id",
+			},
+			shortcode: {
+				label: "Shortcode",
+			},
+			label: {
+				label: "Label",
+			},
+			description: {
+				label: "Description",
+			},
+		};
+	}
+	//---------------------------------------------------------------------------
+
+
 
 
 

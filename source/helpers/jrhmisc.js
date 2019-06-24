@@ -46,6 +46,9 @@ function jrPluralize(number, singular, plural) {
 function jrHtmlFormOptionList(pairlist, selectedid) {
 	var rethtml = "";
 	var foundId = false;
+	// cast id to a string
+	selectedid = selectedid.toString();
+	// now find it in list
 	if (pairlist) {
 		var seltext;
 		for (var key in pairlist) {

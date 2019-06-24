@@ -13,6 +13,7 @@ const ModelBaseMongoose = require("./modelBaseMongoose");
 
 class LogModel extends ModelBaseMongoose {
 
+	//---------------------------------------------------------------------------
 	// global static version info
 	static getVersion() { return 1; }
 
@@ -24,34 +25,51 @@ class LogModel extends ModelBaseMongoose {
 	static getNiceName() {
 		return "LogEntry";
 	}
+	//---------------------------------------------------------------------------
 
-	// User model mongoose db schema
-	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema(this.calcSchemaDefinition(), {
-			collection: this.getCollectionName(),
-		});
-		return this.schema;
-	}
 
-	static calcSchemaDefinition() {
+	//---------------------------------------------------------------------------
+	static getSchemaDefinition() {
 		return {
-			...(this.getUniversalSchemaObjMinimal()),
-			type: { type: String },
-			message: { type: String },
-			severity: { type: Number },
+			...(this.getBaseSchemaDefinitionMinimal()),
+			type: {
+				type: String,
+			},
+			message: {
+				type: String,
+			},
+			severity: {
+				type: Number,
+			},
 		};
 	}
 
+	static getSchemaDefinitionExtra() {
+		return {
+			...(this.getBaseSchemaDefinitionMinimalExtra()),
+			type: {
+				label: "Type",
+			},
+			message: {
+				label: "Message",
+			},
+			severity: {
+				label: "Severity",
+			},
+		};
+	}
+	//---------------------------------------------------------------------------
 
+
+
+
+
+	//---------------------------------------------------------------------------
 	// create new obj
 	static createModel(inobj) {
-		var obj = {
-			creationDate: new Date(),
-			...inobj,
-		};
-		var model = new this.mongooseModel(obj);
-		return model;
+		return this.createModelMinimal(inobj);
 	}
+	//---------------------------------------------------------------------------
 
 
 }

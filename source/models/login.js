@@ -21,15 +21,9 @@ const JrResult = require("../helpers/jrresult");
 
 class LoginModel extends ModelBaseMongoose {
 
+	//---------------------------------------------------------------------------
 	// global static version info
 	static getVersion() { return 1; }
-
-	getUserIdAsString() {
-		if (!this.userId) {
-			return "";
-		}
-		return this.userId.toString();
-	}
 
 	// collection name for this model
 	static getCollectionName() {
@@ -39,26 +33,65 @@ class LoginModel extends ModelBaseMongoose {
 	static getNiceName() {
 		return "Bridged Login";
 	}
+	//---------------------------------------------------------------------------
 
-	// User model mongoose db schema
-	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema(this.calcSchemaDefinition(), {
-			collection: this.getCollectionName(),
-		});
-		return this.schema;
+
+	//---------------------------------------------------------------------------
+	static getSchemaDefinition() {
+		return {
+			...(this.getBaseSchemaDefinition()),
+			provider: {
+				type: String,
+			},
+			providerUserId: {
+				type: String,
+			},
+			userId: {
+				type: mongoose.Schema.ObjectId,
+				required: true,
+			},
+			extraData: {
+				type: String,
+			},
+			loginDate: {
+				type: Date,
+			},
+		};
 	}
 
-
-	static calcSchemaDefinition() {
+	static getSchemaDefinitionExtra() {
 		return {
-			...(this.getUniversalSchemaObj()),
-			provider: { type: String },
-			providerUserId: { type: String },
-			// userId: { type: String },
-			userId: { type: mongoose.Schema.ObjectId, required: true },
-			extraData: { type: String },
-			loginDate: { type: Date },
+			...(this.getBaseSchemaDefinitionExtra()),
+			provider: {
+				label: "3rd party provider",
+			},
+			providerUserId: {
+				label: "User id on provider network",
+			},
+			userId: {
+				label: "Local user id",
+			},
+			extraData: {
+				label: "Extra user data",
+			},
+			loginDate: {
+				label: "Date of last login",
+			},
 		};
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// accessors
+	getUserIdAsString() {
+		if (!this.userId) {
+			return "";
+		}
+		return this.userId.toString();
 	}
 
 	getExtraData() {
@@ -67,8 +100,10 @@ class LoginModel extends ModelBaseMongoose {
 		}
 		return JSON.parse(this.extraData);
 	}
+	//---------------------------------------------------------------------------
 
 
+	//---------------------------------------------------------------------------
 	// lookup user by their id
 	static async findOneByProviderInfo(provider, providerUserId, flagUpdateLoginDate) {
 		// return null if not found
@@ -96,6 +131,9 @@ class LoginModel extends ModelBaseMongoose {
 		var login = await this.mongooseModel.findOne({ _id: id }).exec();
 		return login;
 	}
+	//---------------------------------------------------------------------------
+
+
 
 	static async processBridgedLoginGetOrCreateUserOrProxy(bridgedLoginObj, req) {
 		// a successful bridged login has happened.
@@ -124,7 +162,7 @@ class LoginModel extends ModelBaseMongoose {
 
 
 		// is there already a user logged into this section? if so we will bridge the new login bridge to the existing logged in user
-		const arserver = require("./server");
+		const arserver = require("../controllers/server");
 		const VerificationModel = require("./verification");
 		var existingUserId = arserver.getLoggedInLocalUserIdFromSession(req);
 

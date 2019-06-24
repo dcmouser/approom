@@ -14,6 +14,7 @@ const ModelBaseMongoose = require("./modelBaseMongoose");
 
 class FileModel extends ModelBaseMongoose {
 
+	//---------------------------------------------------------------------------
 	// global static version info
 	static getVersion() { return 1; }
 
@@ -25,23 +26,41 @@ class FileModel extends ModelBaseMongoose {
 	static getNiceName() {
 		return "File";
 	}
+	//---------------------------------------------------------------------------
 
-	// User model mongoose db schema
-	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema(this.calcSchemaDefinition(), {
-			collection: this.getCollectionName(),
-		});
-		return this.schema;
-	}
 
-	static calcSchemaDefinition() {
+	//---------------------------------------------------------------------------
+	static getSchemaDefinition() {
 		return {
-			...(this.getUniversalSchemaObj()),
-			path: { type: String, required: true },
-			label: { type: String },
-			sizebytes: { type: Number },
+			...(this.getBaseSchemaDefinition()),
+			path: {
+				type: String,
+				required: true,
+			},
+			label: {
+				type: String,
+			},
+			sizeInBytes: {
+				type: Number,
+			},
 		};
 	}
+
+	static getSchemaDefinitionExtra() {
+		return {
+			...(this.getBaseSchemaDefinitionExtra()),
+			path: {
+				label: "Path",
+			},
+			label: {
+				label: "Label",
+			},
+			sizeInBytes: {
+				label: "Size in bytes",
+			},
+		};
+	}
+	//---------------------------------------------------------------------------
 
 }
 

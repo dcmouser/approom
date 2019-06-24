@@ -49,32 +49,80 @@ class VerificationModel extends ModelBaseMongoose {
 	static getNiceName() {
 		return "Verification";
 	}
+	//---------------------------------------------------------------------------
 
-	// User model mongoose db schema
-	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema(this.calcSchemaDefinition(), {
-			collection: this.getCollectionName(),
-		});
-		return this.schema;
+
+	//---------------------------------------------------------------------------
+	static getSchemaDefinition() {
+		return {
+			...(this.getBaseSchemaDefinition()),
+			uniqueCode: {
+				type: String,
+				unique: true,
+				required: true,
+			},
+			type: {
+				type: String,
+			},
+			key: {
+				type: String,
+			},
+			val: {
+				type: String,
+			},
+			userId: {
+				type: mongoose.Schema.ObjectId,
+			},
+			loginId: {
+				type: mongoose.Schema.ObjectId,
+			},
+			usedDate: {
+				type: Date,
+			},
+			expirationDate: {
+				type: Date,
+			},
+			extraData: {
+				type: String,
+			},
+		};
 	}
 
-	static calcSchemaDefinition() {
+	static getSchemaDefinitionExtra() {
 		return {
-			...(this.getUniversalSchemaObj()),
-			uniqueCode: { type: String, unique: true, required: true },
-			type: { type: String },
-			key: { type: String },
-			val: { type: String },
-			// userId: { type: String },
-			// loginId: { type: String },
-			userId: { type: mongoose.Schema.ObjectId },
-			loginId: { type: mongoose.Schema.ObjectId },
-			usedDate: { type: Date },
-			expirationDate: { type: Date },
-			extraData: { type: String },
+			...(this.getBaseSchemaDefinitionExtra()),
+			uniqueCode: {
+				label: "Unique code",
+			},
+			type: {
+				label: "Type",
+			},
+			key: {
+				label: "Key",
+			},
+			val: {
+				label: "Val",
+			},
+			userId: {
+				label: "User Id",
+			},
+			loginId: {
+				label: "Login Id",
+			},
+			usedDate: {
+				label: "Date used",
+			},
+			expirationDate: {
+				label: "Date expired",
+			},
+			extraData: {
+				label: "Extra data",
+			},
 		};
 	}
 	//---------------------------------------------------------------------------
+
+
 
 
 	//---------------------------------------------------------------------------
@@ -83,7 +131,6 @@ class VerificationModel extends ModelBaseMongoose {
 	getTypestr() {
 		return this.type;
 	}
-
 
 	getUniqueCode() {
 		return this.uniqueCode;
@@ -111,6 +158,7 @@ class VerificationModel extends ModelBaseMongoose {
 		return undefined;
 	}
 	//---------------------------------------------------------------------------
+
 
 
 	//---------------------------------------------------------------------------
@@ -223,7 +271,7 @@ class VerificationModel extends ModelBaseMongoose {
 		if (!baseUrl) {
 			baseUrl = "verify";
 		}
-		const arserver = require("./server");
+		const arserver = require("../controllers/server");
 		return arserver.calcAbsoluteSiteUrlPreferHttps(baseUrl + "/code/" + this.uniqueCode);
 	}
 	//---------------------------------------------------------------------------
@@ -248,7 +296,7 @@ class VerificationModel extends ModelBaseMongoose {
 		mailobj.to = emailAddress;
 		//
 		// require here to avoid circular reference problem
-		const arserver = require("./server");
+		const arserver = require("../controllers/server");
 		var retv = await arserver.sendMail(mailobj);
 		//
 		return retv;
@@ -464,7 +512,7 @@ class VerificationModel extends ModelBaseMongoose {
 	async useUpAndSave(req, flagForgetFromSession) {
 		// mark use as used
 		this.usedDate = new Date();
-		this.enabled = 0;
+		this.disabled = 0;
 		// save it to mark it as used
 		await this.dbSave();
 		if (flagForgetFromSession) {
@@ -528,7 +576,7 @@ class VerificationModel extends ModelBaseMongoose {
 		var retvResult;
 
 		// models
-		const arserver = require("./server");
+		const arserver = require("../controllers/server");
 
 		// data from extraData
 		var extraData = JSON.parse(this.extraData);

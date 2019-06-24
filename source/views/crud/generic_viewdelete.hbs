@@ -1,0 +1,27 @@
+<h1>{{headline}}</h1>
+
+	<form action="" method="post">
+
+		{{genericMainHtml}}
+
+		<nav>
+			<ul class="pagination">
+				<li class="page-item"><a href="{{baseCrudUrl}}/edit/{{obj._id}}" class="page-link">Edit</a></li>
+				{{#if crudDelete}}
+				{{else}}
+				<li class="page-item"><a href="{{baseCrudUrl}}/delete/{{obj._id}}" class="page-link">Delete</a></li>
+				{{/if}}
+				<li class="page-item"><a href="{{baseCrudUrl}}" class="page-link">List All</a></li>
+			</ul>
+		</nav>
+
+		{{#if crudDelete}}
+		<hr/>
+	   	<div>
+        	<input type="submit" value="DELETE NOW" />
+    	</div>
+		{{/if}}
+
+    	<input type="hidden" name="_id" value="{{obj._id}}">
+    	<input type="hidden" name="_csrf" value="{{csrfToken}}">
+    </form>

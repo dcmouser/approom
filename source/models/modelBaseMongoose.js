@@ -19,41 +19,149 @@ const JrResult = require("../helpers/jrresult");
 
 class ModelBaseMongoose {
 
-	// static class properties
-	// this.mongooseModel
-
-
-	static getUniversalSchemaObj() {
+	//---------------------------------------------------------------------------
+	static getBaseSchemaDefinition() {
 		// some base schema properties for ALL models
 		// this helps us keep track of some basic stuff for everything
-		var obj = {
-			_id: { type: mongoose.Schema.ObjectId, auto: true },
-			version: { type: Number },
-			creationDate: { type: Date },
-			modificationDate: { type: Date },
-			enabled: { type: Number },
+		return {
+			_id: {
+				type: mongoose.Schema.ObjectId,
+				auto: true,
+			},
+			version: {
+				type: Number,
+			},
+			creationDate: {
+				type: Date,
+			},
+			modificationDate: {
+				type: Date,
+			},
+			disabled: {
+				type: Number,
+			},
 		};
-		return obj;
 	}
 
-	static getUniversalSchemaObjMinimal() {
+	static getBaseSchemaDefinitionExtra() {
+		// extra info for schema field to aid display in our code
+		return {
+			_id: {
+				label: "Id",
+			},
+			version: {
+				label: "Version",
+			},
+			creationDate: {
+				label: "Date created",
+			},
+			modificationDate: {
+				label: "Date modified",
+			},
+			disabled: {
+				label: "Disabled",
+				choices: {
+					0: "enabled",
+					1: "disabled",
+					2: "deleted",
+				},
+			},
+		};
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	static getBaseSchemaDefinitionMinimal() {
 		// used by log and other minimal models?
-		var obj = {
-			_id: { type: mongoose.Schema.ObjectId, auto: true },
-			creationDate: { type: Date },
+		return {
+			_id: {
+				type: mongoose.Schema.ObjectId,
+				auto: true,
+			},
+			creationDate: {
+				type: Date,
+			},
 		};
-		return obj;
+	}
+
+	static getBaseSchemaDefinitionMinimalExtra() {
+		// extra info for schema field to aid display in our code
+		return {
+			_id: {
+				label: "Id",
+			},
+			creationDate: {
+				label: "Date created",
+			},
+		};
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	// User model mongoose db schema
+	static buildSchema(mongooser) {
+		this.schema = new mongooser.Schema(this.getSchemaDefinition(), {
+			collection: this.getCollectionName(),
+		});
+		return this.schema;
 	}
 
 
-	static getCrudListHeaders() {
-		// function to help admin of db crud listing
-		var headers = [
-		];
-		return headers;
+	// subbclasses implement this
+	static getSchemaDefinition() {
+		return {};
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// create new obj
+	static createModel(inobj) {
+		var obj = {
+			version: this.getVersion(),
+			creationDate: new Date(),
+			modificationDate: null,
+			enabled: 1,
+			...inobj,
+		};
+		var model = new this.mongooseModel(obj);
+		return model;
 	}
 
 
+	// create new obj -- used by classes which are super minimal (LogModel)
+	static createModelMinimal(inobj) {
+		var obj = {
+			creationDate: new Date(),
+			...inobj,
+		};
+		var model = new this.mongooseModel(obj);
+		return model;
+	}
+
+
+	// cacheable list of schema keys
+	// ATTN: TODO - this is messy and confusing, fix it
+	getModelObjPropertyList() {
+		// cached value
+		if (this.constructor.modelPropertyList) {
+			return this.constructor.modelPropertyList;
+		}
+		var propkeys = Object.keys(this.constructor.getSchemaDefinition());
+		return propkeys;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+	//---------------------------------------------------------------------------
 	static async setupModelSchema(mongooser) {
 
 		// we only do this IF it"s not yet been done
@@ -68,7 +176,7 @@ class ModelBaseMongoose {
 		this.modelSchema = this.buildSchema(mongooser);
 
 		// this is an attempt to cache this information but it doesn't seem to work
-		this.modelPropertyList = Object.keys(this.calcSchemaDefinition());
+		this.modelPropertyList = Object.keys(this.getSchemaDefinition());
 
 		// 5/8/19 trying to tie our model class to the mongoose model
 		// see https://mongoosejs.com/docs/advanced_schemas.html
@@ -118,36 +226,20 @@ class ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 
 
-
 	//---------------------------------------------------------------------------
-	// create new obj
-	static createModel(inobj) {
-		var obj = {
-			version: this.getVersion(),
-			creationDate: new Date(),
-			modificationDate: null,
-			enabled: 1,
-			...inobj,
-		};
-		var model = new this.mongooseModel(obj);
-		return model;
-	}
-
-
-	static calcSchemaDefinition() {
-		return {};
-	}
-
-
-
-	getModelObjPropertyList() {
-		// cached value
-		if (this.constructor.modelPropertyList) {
-			return this.constructor.modelPropertyList;
+	// ATTN: TODO -- cache the schema definition and extras
+	static getSchemaExtraFieldVal(key, field, defaultVal) {
+		var modelSchemaExtra = this.getSchemaDefinitionExtra();
+		if (modelSchemaExtra[key] && modelSchemaExtra[key][field]) {
+			return modelSchemaExtra[key][field];
 		}
-		var propkeys = Object.keys(this.constructor.calcSchemaDefinition());
-		return propkeys;
+		return defaultVal;
 	}
+	//---------------------------------------------------------------------------
+
+
+
+
 
 	//---------------------------------------------------------------------------
 	// subclasses implement this
@@ -273,7 +365,7 @@ class ModelBaseMongoose {
 		this.validateId(jrResult, id);
 
 		// models
-		const arserver = require("../models/server");
+		const arserver = require("../controllers/server");
 
 		if (!jrResult.isError()) {
 			// acl test
@@ -395,7 +487,7 @@ class ModelBaseMongoose {
 		// perform a find filter and create table grid
 
 		// schema for obj
-		var gridSchema = this.calcSchemaDefinition();
+		var gridSchema = this.getSchemaDefinition();
 
 		// force add the invisible id field to schema for display
 		// we shouldn't have to do this anymore, we found out had to add it to the model schema

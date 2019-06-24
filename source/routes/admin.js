@@ -15,7 +15,7 @@ const jrlog = require("../helpers/jrlog");
 const AdminAid = require("../controllers/adminaid");
 
 // models
-const arserver = require("../models/server");
+const arserver = require("../controllers/server");
 
 // init
 const router = express.Router();

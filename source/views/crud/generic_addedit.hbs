@@ -1,0 +1,29 @@
+<h1>{{ headline }}</h1>
+
+	<form action="" method="post">
+
+		{{genericMainHtml}}
+	
+	
+		{{#if crudAdd}}
+		{{else}}
+		<nav>
+			<ul class="pagination">
+				<li class="page-item"><a href="{{baseCrudUrl}}/view/{{reqbody._id}}" class="page-link">View</a></li>
+				<li class="page-item"><a href="{{baseCrudUrl}}/delete/{{reqbody._id}}" class="page-link">Delete</a></li>
+				<li class="page-item"><a href="{{baseCrudUrl}}" class="page-link">List All</a></li>
+			</ul>
+		</nav>
+		<hr/>
+		{{/if}}
+
+
+	   	<div>
+        	<input type="submit" value="Submit" />
+    	</div>
+
+    	<input type="hidden" name="_id" value="{{reqbody._id}}">
+    	<input type="hidden" name="_csrf" value="{{csrfToken}}">
+
+    </form>
+

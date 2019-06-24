@@ -46,19 +46,18 @@ const jrhandlebars = require("../helpers/jrhandlebars");
 const arGlobals = require("../approomglobals");
 
 // model imports
-const AclModel = require("./acl");
-const AppModel = require("./app");
-const ConnectionModel = require("./connection");
-const FileModel = require("./file");
-const RoomModel = require("./room");
-const UserModel = require("./user");
-const LoginModel = require("./login");
-const LogModel = require("./log");
-const OptionModel = require("./option");
-const VerificationModel = require("./verification");
+const AclModel = require("../models/acl");
+const AppModel = require("../models/app");
+const ConnectionModel = require("../models/connection");
+const FileModel = require("../models/file");
+const RoomModel = require("../models/room");
+const UserModel = require("../models/user");
+const LoginModel = require("../models/login");
+const LogModel = require("../models/log");
+const OptionModel = require("../models/option");
+const VerificationModel = require("../models/verification");
 
-// ATTN: circular reference problem? so we require this only when we need it below
-// const VerificationModel = require("./verification");
+// ATTN: circular reference problem? so we require this only when we need it below?
 // may have to do this with other models that also bring in require("server")
 
 
@@ -66,9 +65,13 @@ const VerificationModel = require("./verification");
 
 class AppRoomServer {
 
-	// global static version info
-	static getVersion() { return 1; }
 
+	//---------------------------------------------------------------------------
+	// constructor
+	constructor() {
+		// csrf
+		this.csrfInstance = undefined;
+	}
 
 	// global singleton request
 	static getSingleton(...args) {
@@ -78,15 +81,15 @@ class AppRoomServer {
 		}
 		return this.globalSingleton;
 	}
+	//---------------------------------------------------------------------------
 
 
-	constructor() {
-		// csrf
-		this.csrfInstance = undefined;
-	}
+
 
 
 	//---------------------------------------------------------------------------
+	// accessors
+	//
 	getBaseDir() {
 		return path.resolve(__dirname, "..");
 	}
@@ -98,6 +101,28 @@ class AppRoomServer {
 	getLogDir() {
 		return this.getBaseSubDir("logs");
 	}
+	//---------------------------------------------------------------------------
+
+	//---------------------------------------------------------------------------
+	// getting options via jrconfig
+	//
+	getOptionDbUrl() { return jrconfig.get("server:DB_URL"); }
+
+	getOptionHttp() { return jrconfig.get("server:HTTP"); }
+
+	getOptionHttpPort() { return jrconfig.get("server:HTTP_PORT"); }
+
+	getOptionHttps() { return jrconfig.get("server:HTTPS"); }
+
+	getOptionHttpsKey() { return jrconfig.get("server:HTTPS_KEY"); }
+
+	getOptionHttpsCert() { return jrconfig.get("server:HTTPS_CERT"); }
+
+	getOptionHttpsPort() { return jrconfig.get("server:HTTPS_PORT"); }
+
+	getOptionSiteDomain() { return jrconfig.get("server:SITE_DOMAIN"); }
+
+	getOptionDebugEnabled() { return jrconfig.getDefault("DEBUG", false); }
 	//---------------------------------------------------------------------------
 
 
@@ -139,27 +164,6 @@ class AppRoomServer {
 
 
 
-	//---------------------------------------------------------------------------
-	// getting options via jrconfig
-	//
-	getOptionDbUrl() { return jrconfig.get("server:DB_URL"); }
-
-	getOptionHttp() { return jrconfig.get("server:HTTP"); }
-
-	getOptionHttpPort() { return jrconfig.get("server:HTTP_PORT"); }
-
-	getOptionHttps() { return jrconfig.get("server:HTTPS"); }
-
-	getOptionHttpsKey() { return jrconfig.get("server:HTTPS_KEY"); }
-
-	getOptionHttpsCert() { return jrconfig.get("server:HTTPS_CERT"); }
-
-	getOptionHttpsPort() { return jrconfig.get("server:HTTPS_PORT"); }
-
-	getOptionSiteDomain() { return jrconfig.get("server:SITE_DOMAIN"); }
-
-	getOptionDebugEnabled() { return jrconfig.getDefault("DEBUG", false); }
-	//---------------------------------------------------------------------------
 
 
 
@@ -369,7 +373,6 @@ class AppRoomServer {
 
 		// admin
 		this.setupRoute(expressApp, "/admin", "admin");
-
 	}
 
 
@@ -452,7 +455,6 @@ class AppRoomServer {
 		this.setupPassportStrategyLocal();
 		this.setupPassportStrategyFacebook();
 	}
-
 
 
 	setupPassportStrategyLocal() {
@@ -555,7 +557,7 @@ class AppRoomServer {
 
 
 
-	
+
 	//---------------------------------------------------------------------------
 	createExpressServersAndListen() {
 		// create server
@@ -681,8 +683,7 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	// just shortcuts to verifcationModel statics
 	async getLastSessionedVerification(req) {
-		const VerifcationModel = require("./verification");
-		return await VerifcationModel.getLastSessionedVerification(req);
+		return await VerificationModel.getLastSessionedVerification(req);
 	}
 	//---------------------------------------------------------------------------
 
@@ -722,7 +723,6 @@ class AppRoomServer {
 
 		return url;
 	}
-
 	//---------------------------------------------------------------------------
 
 
@@ -854,7 +854,6 @@ class AppRoomServer {
 	}
 
 
-
 	getMailTransport() {
 		// return previously created transport
 		return this.mailTransport;
@@ -983,9 +982,6 @@ class AppRoomServer {
 	async createAndConnectToDatabase() {
 		// setup database stuff (create and connect to models -- callable whether db is already created or not)
 		var bretv = false;
-
-		// try moving this here
-		const VerificationModel = require("./verification");
 
 		try {
 			// connect to db
@@ -1324,9 +1320,6 @@ class AppRoomServer {
 
 	getCsrf() { return this.csrfInstance; }
 	//---------------------------------------------------------------------------
-
-
-
 
 
 

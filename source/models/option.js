@@ -13,6 +13,7 @@ const ModelBaseMongoose = require("./modelBaseMongoose");
 
 class OptionModel extends ModelBaseMongoose {
 
+	//---------------------------------------------------------------------------
 	// global static version info
 	static getVersion() { return 1; }
 
@@ -24,22 +25,37 @@ class OptionModel extends ModelBaseMongoose {
 	static getNiceName() {
 		return "Option";
 	}
+	//---------------------------------------------------------------------------
 
-	// User model mongoose db schema
-	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema(this.calcSchemaDefinition(),	{
-			collection: this.getCollectionName(),
-		});
-		return this.schema;
-	}
 
-	static calcSchemaDefinition() {
+
+	//---------------------------------------------------------------------------
+	static getSchemaDefinition() {
 		return {
-			...(this.getUniversalSchemaObj()),
-			key: { type: String },
-			val: { type: String },
+			...(this.getBaseSchemaDefinition()),
+			key: {
+				type: String,
+			},
+			val: {
+				type: String,
+			},
 		};
 	}
+
+	static getSchemaDefinitionExtra() {
+		return {
+			...(this.getBaseSchemaDefinitionExtra()),
+			key: {
+				label: "Key",
+			},
+			val: {
+				label: "Value",
+			},
+		};
+	}
+	//---------------------------------------------------------------------------
+
+
 }
 
 
