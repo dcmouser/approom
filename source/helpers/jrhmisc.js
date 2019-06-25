@@ -133,7 +133,7 @@ function jrBootstrapCollapseBox(title, body, footer) {
 //---------------------------------------------------------------------------
 module.exports = {
 	jrPluralize, jrPluralizeCount,
-	jrHtmlFormOptionListSelect, jrHtmlFormOptionList, jrHtmlNiceOptionFromList, 
+	jrHtmlFormOptionListSelect, jrHtmlFormOptionList, jrHtmlNiceOptionFromList,
 	jrBootstrapCollapseBox,
 };
 //---------------------------------------------------------------------------

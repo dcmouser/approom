@@ -208,7 +208,7 @@ class CrudAid {
 			// render
 			res.render(viewFilePathEdit, {
 				headline: "Edit " + modelClass.getNiceName() + " #" + id,
-				jrResult: JrResult.sessionRenderResult(req, res),
+				jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 				crudClassNiceName: modelClass.getNiceName(),
 				csrfToken: arserver.makeCsrf(req, res),
 				reqbody,
@@ -316,7 +316,7 @@ class CrudAid {
 			// render
 			res.render(viewFilePathView, {
 				headline: "View " + modelClass.getNiceName() + " #" + id,
-				jrResult: JrResult.sessionRenderResult(req, res),
+				jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 				crudClassNiceName: modelClass.getNiceName(),
 				obj,
 				helperData,
@@ -355,7 +355,7 @@ class CrudAid {
 			// render
 			res.render(viewFilePathDelete, {
 				headline: "Delete " + modelClass.getNiceName() + " #" + id,
-				jrResult: JrResult.sessionRenderResult(req, res),
+				jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 				crudClassNiceName: modelClass.getNiceName(),
 				csrfToken: arserver.makeCsrf(req, res),
 				obj,
@@ -384,10 +384,17 @@ class CrudAid {
 				return;
 			}
 
+			// object id for display.
+			var objid = obj.getIdAsString();
+
 			// process delete
 			obj.doDelete(jrResult);
+
+			// on success redirect to listview
 			if (!jrResult.isError()) {
-				// success, redirect
+				// success
+				jrResult.pushSuccess(modelClass.getNiceName() + " #" + objid + " has been deleted.");
+				// redirect
 				jrResult.addToSession(req);
 				res.redirect(baseCrudUrl);
 				return;
@@ -405,7 +412,7 @@ class CrudAid {
 			// failed, present them with delete page like view?
 			res.render(viewFilePathDelete, {
 				headline: "Delete " + modelClass.getNiceName() + " #" + id,
-				jrResult: JrResult.sessionRenderResult(req, res),
+				jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 				crudClassNiceName: modelClass.getNiceName(),
 				obj,
 				genericMainHtml,
@@ -515,7 +522,7 @@ class CrudAid {
 		var err;
 		schemaKeys.forEach((fieldName) => {
 			hideList = modelClass.getSchemaExtraFieldVal(fieldName, "hide", undefined);
-			if (hideList && hideList.indexOf("addEdit") !== -1) {
+			if (hideList && hideList.indexOf("edit") !== -1) {
 				return;
 			}
 
@@ -530,7 +537,7 @@ class CrudAid {
 
 			// now value
 			valHtml = undefined;
-			valfunc = modelClass.getSchemaExtraFieldValueFunction(fieldName, "addEdit");
+			valfunc = modelClass.getSchemaExtraFieldValueFunction(fieldName, "edit");
 			if (valfunc) {
 				// ok we have a custom function to call to get html to show for value
 				valHtml = valfunc(obj, helperData);
@@ -588,9 +595,10 @@ class CrudAid {
 		var modelSchemaExtra = modelClass.getSchemaDefinitionExtra();
 		var schemaKeys = Object.keys(modelSchemaExtra);
 		var val, valHtml, label, valfunc, hideList, choices;
+		var crudLink;
 		schemaKeys.forEach((fieldName) => {
 			hideList = modelClass.getSchemaExtraFieldVal(fieldName, "hide", undefined);
-			if (hideList && hideList.indexOf("viewDelete") !== -1) {
+			if (hideList && hideList.indexOf("view") !== -1) {
 				return;
 			}
 
@@ -599,7 +607,7 @@ class CrudAid {
 
 			// now value
 			valHtml = undefined;
-			valfunc = modelClass.getSchemaExtraFieldValueFunction(fieldName, "viewDelete");
+			valfunc = modelClass.getSchemaExtraFieldValueFunction(fieldName, "view");
 			if (valfunc) {
 				// ok we have a custom function to call to get html to show for value
 				valHtml = valfunc(obj, helperData);
@@ -614,11 +622,21 @@ class CrudAid {
 				} else {
 					val = obj[fieldName];
 				}
-				// is it multiple choice type?
-				choices = modelClass.getSchemaExtraFieldVal(fieldName, "choices", null);
-				if (choices) {
-					valHtml = this.buildChoiceHtmlForViewDelete(choices, val);
-				} else {
+				//
+				// is it a crud link?
+				crudLink = modelClass.getSchemaExtraFieldVal(fieldName, "crudLink");
+				if (crudLink) {
+					// is it crud link?
+					valHtml = `<a href="${crudLink}/view/${val}">${val}</a>`;
+				}
+				if (valHtml === undefined) {
+					// is it multiple choice type?
+					choices = modelClass.getSchemaExtraFieldVal(fieldName, "choices", null);
+					if (choices) {
+						valHtml = this.buildChoiceHtmlForViewDelete(choices, val);
+					}
+				}
+				if (valHtml === undefined) {
 					// default is just the value
 					valHtml = val.toString();
 				}

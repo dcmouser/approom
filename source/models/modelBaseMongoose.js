@@ -48,26 +48,26 @@ class ModelBaseMongoose {
 		return {
 			_id: {
 				label: "Id",
-				hide: ["addEdit"],
+				hide: ["edit"],
 			},
 			version: {
 				label: "Version",
-				hide: ["addEdit"],
+				hide: ["edit"],
 			},
 			creationDate: {
 				label: "Date created",
-				hide: ["addEdit"],
+				hide: ["edit"],
 			},
 			modificationDate: {
 				label: "Date modified",
-				hide: ["addEdit"],
+				hide: ["edit"],
 			},
 			disabled: {
 				label: "Is disabled?",
 				choices: {
-					0: "enabled",
-					1: "disabled",
-					2: "deleted",
+					0: "Enabled",
+					1: "Disabled",
+					2: "Deleted",
 				},
 			},
 		};
@@ -75,34 +75,6 @@ class ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 
 
-	//---------------------------------------------------------------------------
-	static getBaseSchemaDefinitionMinimal() {
-		// used by log and other minimal models?
-		return {
-			_id: {
-				type: mongoose.Schema.ObjectId,
-				auto: true,
-			},
-			creationDate: {
-				type: Date,
-			},
-		};
-	}
-
-	static getBaseSchemaDefinitionMinimalExtra() {
-		// extra info for schema field to aid display in our code
-		return {
-			_id: {
-				label: "Id",
-				hide: ["addEdit"],
-			},
-			creationDate: {
-				label: "Date created",
-				hide: ["addEdit"],
-			},
-		};
-	}
-	//---------------------------------------------------------------------------
 
 
 
@@ -123,7 +95,44 @@ class ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 
 
+	//---------------------------------------------------------------------------
+	// ATTN: TODO -- cache the schema definition and extras
+	static getSchemaExtraFieldVal(fieldName, key, defaultVal) {
+		var modelSchemaExtra = this.getSchemaDefinitionExtra();
+		if (modelSchemaExtra[fieldName] && modelSchemaExtra[fieldName][key]) {
+			return modelSchemaExtra[fieldName][key];
+		}
+		return defaultVal;
+	}
 
+	static getSchemaExtraFieldValueFunction(fieldName, valueFunctionType) {
+		var modelSchemaExtra = this.getSchemaDefinitionExtra();
+		if (modelSchemaExtra[fieldName] && modelSchemaExtra[fieldName].valueFunctions && modelSchemaExtra[fieldName].valueFunctions[valueFunctionType]) {
+			return modelSchemaExtra[fieldName].valueFunctions[valueFunctionType];
+		}
+		return undefined;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	static setCrudBaseUrl(urlPath) {
+		this.crudBaseUrl = urlPath;
+	}
+
+	static getCrudUrlBase(suburl, id) {
+		// return url for crud access, adding suburl and id
+		var url = this.crudBaseUrl;
+		if (suburl) {
+			url += "/" + suburl;
+		}
+		if (id) {
+			url += "/" + id.toString();
+		}
+		return url;
+	}
+	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
@@ -139,18 +148,6 @@ class ModelBaseMongoose {
 		var model = new this.mongooseModel(obj);
 		return model;
 	}
-
-
-	// create new obj -- used by classes which are super minimal (LogModel)
-	static createModelMinimal(inobj) {
-		var obj = {
-			creationDate: new Date(),
-			...inobj,
-		};
-		var model = new this.mongooseModel(obj);
-		return model;
-	}
-
 
 	// cacheable list of schema keys
 	// ATTN: TODO - this is messy and confusing, fix it
@@ -232,24 +229,7 @@ class ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 
 
-	//---------------------------------------------------------------------------
-	// ATTN: TODO -- cache the schema definition and extras
-	static getSchemaExtraFieldVal(fieldName, key, defaultVal) {
-		var modelSchemaExtra = this.getSchemaDefinitionExtra();
-		if (modelSchemaExtra[fieldName] && modelSchemaExtra[fieldName][key]) {
-			return modelSchemaExtra[fieldName][key];
-		}
-		return defaultVal;
-	}
 
-	static getSchemaExtraFieldValueFunction(fieldName, valueFunctionType) {
-		var modelSchemaExtra = this.getSchemaDefinitionExtra();
-		if (modelSchemaExtra[fieldName] && modelSchemaExtra[fieldName].valueFunctions && modelSchemaExtra[fieldName].valueFunctions[valueFunctionType]) {
-			return modelSchemaExtra[fieldName].valueFunctions[valueFunctionType];
-		}
-		return undefined;
-	}
-	//---------------------------------------------------------------------------
 
 
 

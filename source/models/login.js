@@ -70,6 +70,7 @@ class LoginModel extends ModelBaseMongoose {
 			},
 			userId: {
 				label: "Local user id",
+				crudLink: UserModel.getCrudUrlBase(),
 			},
 			extraData: {
 				label: "Extra user data",

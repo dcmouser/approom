@@ -161,7 +161,7 @@ class RegistrationAid {
 		var email = req.body.email;
 		var username = req.body.username;
 		var password = req.body.password;
-		var passwordHashed = null;
+		var passwordHashed; // defaults to undefined
 		var flagVerifiedEmail = false;
 
 		// blank values can assume verification values

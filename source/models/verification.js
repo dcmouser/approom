@@ -12,6 +12,9 @@ const mongoose = require("mongoose");
 // modules
 const ModelBaseMongoose = require("./modelBaseMongoose");
 const UserModel = require("./user");
+const LoginModel = require("./login");
+
+// controllers
 const RegistrationAid = require("../controllers/registrationaid");
 
 // our helper modules
@@ -105,9 +108,11 @@ class VerificationModel extends ModelBaseMongoose {
 			},
 			userId: {
 				label: "User Id",
+				crudLink: UserModel.getCrudUrlBase(),
 			},
 			loginId: {
 				label: "Login Id",
+				crudLink: LoginModel.getCrudUrlBase(),
 			},
 			usedDate: {
 				label: "Date used",
@@ -117,6 +122,7 @@ class VerificationModel extends ModelBaseMongoose {
 			},
 			extraData: {
 				label: "Extra data",
+				hide: ["edit"],
 			},
 		};
 	}

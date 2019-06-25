@@ -60,22 +60,31 @@ class RoomModel extends ModelBaseMongoose {
 	}
 
 	static getSchemaDefinitionExtra() {
+		const AppModel = require("./app");
 		return {
 			...(this.getBaseSchemaDefinitionExtra()),
 			appid: {
 				label: "App Id",
 				valueFunctions: {
-					viewDelete: (obj, helperData) => {
+					view: (obj, helperData) => {
+						var viewUrl = AppModel.getCrudUrlBase("view", obj.appid);
 						var appLabel = helperData.appLabel;
-						var rethtml = `${appLabel} (#${obj.appid})`;
+						var rethtml = `${appLabel} (<a href="${viewUrl}">#${obj.appid}</a>)`;
 						return rethtml;
 					},
-					addEdit: (obj, helperData) => {
+					edit: (obj, helperData) => {
 						var appid = obj ? obj.appid : null;
 						var rethtml = jrhmisc.jrHtmlFormOptionListSelect("appid", helperData.applist, appid);
 						return rethtml;
 					},
+					list: (obj, helperData) => {
+						var viewUrl = AppModel.getCrudUrlBase("view", obj.appid);
+						var rethtml = `<a href="${viewUrl}">${obj.appid}</a>`;
+						return rethtml;
+					},
 				},
+				// alternative generic way to have crud pages link to this val
+				// crudLink: AppModel.getCrudUrlBase(),
 			},
 			shortcode: {
 				label: "Shortcode",

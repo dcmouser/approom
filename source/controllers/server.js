@@ -364,12 +364,17 @@ class AppRoomServer {
 		this.setupRoute(expressApp, "/membersonly", "membersonly");
 
 		// crud stuff
-		this.setupRouteGenericCrud(expressApp, "/admin/app", AppModel);
-		this.setupRouteGenericCrud(expressApp, "/admin/room", RoomModel);
-		this.setupRouteGenericCrud(expressApp, "/admin/user", UserModel);
-		this.setupRouteGenericCrud(expressApp, "/admin/bridge", LoginModel);
-		this.setupRouteGenericCrud(expressApp, "/admin/verification", VerificationModel);
-		this.setupRouteGenericCrud(expressApp, "/admin/log", LogModel);
+		var crudUrlBase = "/admin";
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/app", AppModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/room", RoomModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/user", UserModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/bridge", LoginModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/verification", VerificationModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/connection", ConnectionModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/file", FileModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/acl", AclModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/option", OptionModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/log", LogModel);
 
 		// admin
 		this.setupRoute(expressApp, "/admin", "admin");
@@ -401,6 +406,8 @@ class AppRoomServer {
 		CrudAid.setupRouter(router, modelClass, urlPath);
 		// register it
 		expressApp.use(urlPath, router);
+		// let app model know about its crud path
+		modelClass.setCrudBaseUrl(urlPath);
 		// now return the router for further work
 		return router;
 	}

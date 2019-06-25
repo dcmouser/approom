@@ -7,11 +7,11 @@
 "use strict";
 
 // models
-const ModelBaseMongoose = require("./modelBaseMongoose");
+const ModelBaseMongooseMinimal = require("./modelBaseMongooseMinimal");
 
 
 
-class LogModel extends ModelBaseMongoose {
+class LogModel extends ModelBaseMongooseMinimal {
 
 	//---------------------------------------------------------------------------
 	// global static version info
@@ -31,7 +31,7 @@ class LogModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	static getSchemaDefinition() {
 		return {
-			...(this.getBaseSchemaDefinitionMinimal()),
+			...(this.getBaseSchemaDefinition()),
 			type: {
 				type: String,
 			},
@@ -46,7 +46,7 @@ class LogModel extends ModelBaseMongoose {
 
 	static getSchemaDefinitionExtra() {
 		return {
-			...(this.getBaseSchemaDefinitionMinimalExtra()),
+			...(this.getBaseSchemaDefinitionExtra()),
 			type: {
 				label: "Type",
 			},
@@ -61,15 +61,6 @@ class LogModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 
 
-
-
-
-	//---------------------------------------------------------------------------
-	// create new obj
-	static createModel(inobj) {
-		return this.createModelMinimal(inobj);
-	}
-	//---------------------------------------------------------------------------
 
 
 }

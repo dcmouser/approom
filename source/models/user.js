@@ -131,11 +131,11 @@ class UserModel extends ModelBaseMongoose {
 			passwordObj: {
 				label: "Password",
 				format: "password",
-				hide: ["addEdit"],
+				hide: ["edit"],
 			},
 			passwordVersion: {
 				label: "Password version",
-				hide: ["addEdit"],
+				hide: ["edit"],
 			},
 			passwordDate: {
 				label: "Date password set/modified",

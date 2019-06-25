@@ -346,7 +346,18 @@ function jrGridListTableData(listHelperData, queryUrlData) {
 	var gridSchema = listHelperData.gridSchema;
 	var headerKeys = calcHeaderKeysNicely(gridSchema);
 	const gridItems = listHelperData.gridItems;
-	var val;
+
+	// cache header field custom display hints
+	var valFuncList = {};
+	var valfunc;
+	headerKeys.forEach((key) => {
+		valfunc = listHelperData.modelClass.getSchemaExtraFieldValueFunction(key, "list");
+		if (valfunc) {
+			valFuncList[key] = valfunc;
+		}
+	});
+
+	var val, valDisplay, crudLink;
 	var item;
 	var numItems = gridItems.length;
 	for (var i = 0; i < numItems; i += 1) {
@@ -371,14 +382,25 @@ function jrGridListTableData(listHelperData, queryUrlData) {
 				`;
 			} else {
 				val = item[key];
+				if (valFuncList[key]) {
+					// use custom value resolving callback function
+					valDisplay = valFuncList[key](item);
+				} else {
+					crudLink = listHelperData.modelClass.getSchemaExtraFieldVal(key, "crudLink");
+					if (crudLink) {
+						valDisplay = `<a href="${crudLink}/view/${val}">${val}</a>`;
+					} else {
+						valDisplay = val;
+					}
+				}
 				if (key === "_id") {
 					var url = queryUrlData.baseUrl + "/view/" + val;
 					rethtml += `
-						<td scope="col"> <a href="${url}">${val}</a> </td>
+						<td scope="col"> <a href="${url}">${valDisplay}</a> </td>
 					`;
 				} else {
 					rethtml += `
-						<td scope="col"> ${val} </td>
+						<td scope="col"> ${valDisplay} </td>
 					`;
 				}
 			}
