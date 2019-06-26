@@ -221,9 +221,26 @@ class ModelBaseMongoose {
 	}
 
 
-	async dbSave() {
+	async dbSave(jrResult) {
 		// simple wrapper (for now) around mongoose model save
 		// this should always be used instead of superclass save() function
+
+		if (jrResult) {
+			// save and catch exception
+			var retv;
+			try {
+				retv = await this.save();
+			} catch (err) {
+				jrResult.pushError("Failed to save " + this.getmodelClass().getNiceName() + ". " + err.toString());
+				return null;
+			}
+			// success
+			// jrResult.pushSuccess(this.getNiceName() + " " + jrhelpers.getFormTypeStrToPastTenseVerb(formTypeStr) + " on " + jrhelpers.getNiceNowString() + ".");
+			jrResult.pushSuccess(this.getmodelClass().getNiceName() + " saved on " + jrhelpers.getNiceNowString() + ".");
+			return retv;
+		}
+
+		// save and let it throw error
 		return await this.save();
 	}
 	//---------------------------------------------------------------------------
@@ -312,6 +329,39 @@ class ModelBaseMongoose {
 	}
 
 
+	static async validateGetObjByIdDoAcl(user, jrResult, req, res, val, aclTestName) {
+		// validate id
+		var obj;
+		var id = this.validateModelFieldId(jrResult, val);
+
+		// models
+		const arserver = require("../controllers/server");
+
+		if (!jrResult.isError()) {
+			// acl test
+			if (!await arserver.aclRequireModelAccess(user, req, res, this, aclTestName, id)) {
+				return null;
+			}
+			// get object being edited
+			obj = await this.findOneById(id);
+			if (!obj) {
+				jrResult.pushError("Could not find " + this.getNiceName() + " with that Id.");
+			}
+		}
+		//
+		if (jrResult.isError()) {
+			arserver.renderAclAccessErrorResult(req, res, this, jrResult);
+			return null;
+		}
+		return obj;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	// validate.  push error to jrResult on error, return good value on success
+
 	static async validateModelFieldUnique(jrResult, key, val, existingModel) {
 		if (!val) {
 			jrResult.pushFieldError(key, "Value for " + key + " cannot be blank.");
@@ -334,50 +384,49 @@ class ModelBaseMongoose {
 		if (clashObj) {
 			// error
 			jrResult.pushFieldError(key, "Duplicate " + key + " entry found for another " + this.getNiceName());
-			return clashObj;
+			// doesnt matter what we return?
+			return null;
 		}
 
-		return null;
+		return val;
 	}
 
 	static validateModelFieldNotEmpty(jrResult, key, val) {
 		if (!val) {
 			jrResult.pushFieldError(key, "Value for " + key + " cannot be blank.");
-		}
-	}
-
-	static validateId(jrResult, id) {
-		if (!jrhelpers.isValidMongooseObjectId(id)) {
-			jrResult.pushError("No valid id specified.");
-		}
-	}
-
-
-	static async validateGetObjByIdDoAcl(jrResult, req, res, id, aclTestName) {
-		// validate id
-		var obj;
-		this.validateId(jrResult, id);
-
-		// models
-		const arserver = require("../controllers/server");
-
-		if (!jrResult.isError()) {
-			// acl test
-			if (!await arserver.aclRequireModelAccess(req, res, this, aclTestName, id)) {
-				return null;
-			}
-			// get object being edited
-			obj = await this.findOneById(id);
-			if (!obj) {
-				jrResult.pushError("Could not find " + this.getNiceName() + " with that Id.");
-			}
-		}
-		//
-		if (jrResult.isError()) {
-			arserver.renderAclAccessErrorResult(req, res, this, jrResult);
 			return null;
 		}
-		return obj;
+		return val;
+	}
+
+	static validateModelFielDisbled(jrResult, key, val) {
+		if (!Number.isNaN(val)) {
+			val = parseInt(val, 10);
+		}
+		if (Number.isNaN(val) || val < 0) {
+			jrResult.pushFieldError(key, "Value for " + key + " is mandatory and must be an integer great or equal to  0");
+			return null;
+		}
+		return val;
+	}
+
+	static validateModelFieldId(jrResult, val) {
+		if (!jrhelpers.isValidMongooseObjectId(val)) {
+			jrResult.pushError("No valid id specified.");
+			return null;
+		}
+		return val;
+	}
+
+	static async validateModelFieldAppId(jrResult, key, val, user) {
+		const AppModel = require("./app");
+		const appIds = await AppModel.buildSimpleAppIdListUserTargetable(user);
+		if (!appIds || appIds.indexOf(val) === -1) {
+			jrResult.pushError("The specified App ID is inaccessible.");
+			return null;
+		}
+		// valid
+		return val;
 	}
 	//---------------------------------------------------------------------------
 
@@ -387,12 +436,16 @@ class ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	// accessor for all derived models
+	// accessors
 	getIdAsString() {
 		if (!this._id) {
 			return "";
 		}
 		return this._id.toString();
+	}
+
+	getmodelClass() {
+		return this.constructor;
 	}
 	//---------------------------------------------------------------------------
 

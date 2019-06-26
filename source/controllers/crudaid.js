@@ -34,8 +34,11 @@ class CrudAid {
 		// list
 		const viewFilePathList = this.calcViewFile("list", modelClass);
 		router.get("/", async (req, res, next) => {
+			// get logged in user
+			var user = await arserver.getLoggedInUser(req);
+
 			// acl test
-			if (!await arserver.aclRequireModelAccess(req, res, modelClass, "list")) {
+			if (!await arserver.aclRequireModelAccess(user, req, res, modelClass, "list")) {
 				return;
 			}
 
@@ -61,6 +64,9 @@ class CrudAid {
 		// add (get)
 		const viewFilePathAdd = this.calcViewFile("addedit", modelClass);
 		router.get("/add/:id?", async (req, res, next) => {
+			// get logged in user
+			var user = await arserver.getLoggedInUser(req);
+
 			var jrResult = JrResult.makeNew();
 			var id = req.params.id;
 			var reqbody;
@@ -71,7 +77,7 @@ class CrudAid {
 				modelClass.validateId(jrResult, id);
 				if (!jrResult.isError()) {
 					// acl test to VIEW the item we are CLONING
-					if (!await arserver.aclRequireModelAccess(req, res, modelClass, "view", id)) {
+					if (!await arserver.aclRequireModelAccess(user, req, res, modelClass, "view", id)) {
 						return;
 					}
 					// get object being edited
@@ -86,12 +92,12 @@ class CrudAid {
 			}
 
 			// acl test to add
-			if (!await arserver.aclRequireModelAccess(req, res, modelClass, "add")) {
+			if (!await arserver.aclRequireModelAccess(user, req, res, modelClass, "add")) {
 				return;
 			}
 
 			// any helper data
-			const helperData = await modelClass.calcCrudAddEditHelperData(req, res);
+			const helperData = await modelClass.calcCrudAddEditHelperData(user);
 
 			// generic main html for page (add form)
 			var genericMainHtml;
@@ -117,6 +123,10 @@ class CrudAid {
 		// add (post submit)
 		router.post("/add/:ignoredid?", async (req, res, next) => {
 			// user posts form for adding submission
+
+			// get logged in user
+			var user = await arserver.getLoggedInUser(req);
+
 			var jrResult = JrResult.makeNew();
 			var formTypeStr = "add";
 			var flagRepresentAfterSuccess = false;
@@ -126,7 +136,7 @@ class CrudAid {
 				return;
 			}
 			// acl test
-			if (!await arserver.aclRequireModelAccess(req, res, this, "add")) {
+			if (!await arserver.aclRequireModelAccess(user, req, res, this, "add")) {
 				return;
 			}
 
@@ -138,7 +148,7 @@ class CrudAid {
 			var obj = await modelClass.validateAddEditFormIdMakeObj(jrResult, req, res, formTypeStr);
 
 			if (!jrResult.isError()) {
-				// now save changes
+				// now save add changes
 				var savedobj = await modelClass.doAddEditFromFormReturnObj(jrResult, req, res, formTypeStr, obj);
 				if (!jrResult.isError()) {
 					// success! drop down with new blank form, or alternatively, we could redirect to a VIEW obj._id page
@@ -154,7 +164,7 @@ class CrudAid {
 			}
 
 			// any helper data
-			const helperData = await modelClass.calcCrudAddEditHelperData(req, res);
+			const helperData = await modelClass.calcCrudAddEditHelperData(user);
 
 			// generic main html for page (add form)
 			var genericMainHtml;
@@ -182,13 +192,16 @@ class CrudAid {
 		// edit (get)
 		const viewFilePathEdit = this.calcViewFile("addedit", modelClass);
 		router.get("/edit/:id", async (req, res, next) => {
+			// get logged in user
+			var user = await arserver.getLoggedInUser(req);
+
 			var jrResult = JrResult.makeNew();
 
 			// get id from get param
 			var id = req.params.id;
 
 			// validate and get id, this will also do an ACL test
-			var obj = await modelClass.validateGetObjByIdDoAcl(jrResult, req, res, id, "edit");
+			var obj = await modelClass.validateGetObjByIdDoAcl(user, jrResult, req, res, id, "edit");
 			if (jrResult.isError()) {
 				return;
 			}
@@ -197,7 +210,7 @@ class CrudAid {
 			var reqbody = obj.modelObjPropertyCopy(true);
 
 			// any helper data
-			const helperData = await modelClass.calcCrudAddEditHelperData(req, res, id);
+			const helperData = await modelClass.calcCrudAddEditHelperData(user, id);
 
 			// generic main html for page (edit form)
 			var genericMainHtml;
@@ -222,6 +235,10 @@ class CrudAid {
 		// edit (post submit)
 		router.post("/edit/:ignoredid?", async (req, res, next) => {
 			// user posts form for adding submission
+
+			// get logged in user
+			var user = await arserver.getLoggedInUser(req);
+
 			// ATTN: in post of edit, we ignore the id passed in param and get it from post body
 			var formTypeStr = "edit";
 			var jrResult = JrResult.makeNew();
@@ -235,7 +252,7 @@ class CrudAid {
 				return;
 			}
 			// acl test
-			if (!await arserver.aclRequireModelAccess(req, res, this, "edit", id)) {
+			if (!await arserver.aclRequireModelAccess(user, req, res, this, "edit", id)) {
 				return;
 			}
 
@@ -246,7 +263,7 @@ class CrudAid {
 			var obj = await modelClass.validateAddEditFormIdMakeObj(jrResult, req, res, formTypeStr);
 
 			if (!jrResult.isError()) {
-				// now save changes
+				// now save edit changes
 				var savedobj = await modelClass.doAddEditFromFormReturnObj(jrResult, req, res, formTypeStr, obj);
 				if (!jrResult.isError()) {
 					// success
@@ -266,7 +283,7 @@ class CrudAid {
 			}
 
 			// any helper data
-			const helperData = await modelClass.calcCrudAddEditHelperData(req, res, id);
+			const helperData = await modelClass.calcCrudAddEditHelperData(user, id);
 
 			// generic main html for page (edit form)
 			var genericMainHtml;
@@ -294,12 +311,15 @@ class CrudAid {
 		// view (get)
 		const viewFilePathView = this.calcViewFile("viewdelete", modelClass);
 		router.get("/view/:id", async (req, res, next) => {
+			// get logged in user
+			var user = await arserver.getLoggedInUser(req);
+
 			// get id from get param
 			var jrResult = JrResult.makeNew();
 			var id = req.params.id;
 
 			// get obj AND perform acl test
-			var obj = await modelClass.validateGetObjByIdDoAcl(jrResult, req, res, id, "view");
+			var obj = await modelClass.validateGetObjByIdDoAcl(user, jrResult, req, res, id, "view");
 			if (jrResult.isError()) {
 				return;
 			}
@@ -333,12 +353,15 @@ class CrudAid {
 		// delete (get)
 		const viewFilePathDelete = this.calcViewFile("viewdelete", modelClass);
 		router.get("/delete/:id", async (req, res, next) => {
+			// get logged in user
+			var user = await arserver.getLoggedInUser(req);
+
 			var jrResult = JrResult.makeNew();
 			// get id from get param
 			var id = req.params.id;
 
 			// get object AND perform ACL test
-			var obj = await modelClass.validateGetObjByIdDoAcl(jrResult, req, res, id, "delete");
+			var obj = await modelClass.validateGetObjByIdDoAcl(user, jrResult, req, res, id, "delete");
 			if (jrResult.isError()) {
 				return;
 			}
@@ -369,7 +392,9 @@ class CrudAid {
 
 		// delete (post submit)
 		router.post("/delete/:ignoredid?", async (req, res, next) => {
-			// user posts form for deleting submission
+			// get logged in user
+			var user = await arserver.getLoggedInUser(req);
+
 			var jrResult = JrResult.makeNew();
 			// get id from post, ignore url param
 			var id = req.body._id;
@@ -379,7 +404,7 @@ class CrudAid {
 				return;
 			}
 			// get object AND perform ACL test
-			var obj = await modelClass.validateGetObjByIdDoAcl(jrResult, req, res, id, "delete");
+			var obj = await modelClass.validateGetObjByIdDoAcl(user, jrResult, req, res, id, "delete");
 			if (jrResult.isError()) {
 				return;
 			}
@@ -428,8 +453,11 @@ class CrudAid {
 		// stats
 		const viewFilePathStats = this.calcViewFile("stats", modelClass);
 		router.get("/stats", async (req, res, next) => {
+			// get logged in user
+			var user = await arserver.getLoggedInUser(req);
+
 			// acl test
-			if (!await arserver.aclRequireModelAccess(req, res, modelClass, "stats")) {
+			if (!await arserver.aclRequireModelAccess(user, req, res, modelClass, "stats")) {
 				return;
 			}
 

@@ -1231,13 +1231,15 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	async aclRequireModelAccess(req, res, modelClass, accessTypeStr, modelId) {
+	async aclRequireModelAccess(user, req, res, modelClass, accessTypeStr, modelId) {
 		// return FALSE if we are denying user access
 		// and in that case WE should redirect them or render the output
 		// return TRUE if we should let them continue
 		var access = false;
-		//
-		var user = await this.getLoggedInUser(req);
+
+		if (!user) {
+			user = await this.getLoggedInUser(req);
+		}
 
 		// ATTN: TEST - let's just fail them if they are not logged in
 		if (!user) {

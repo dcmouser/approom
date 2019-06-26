@@ -220,6 +220,9 @@ function jrGridListTable(listHelperData, queryUrlData) {
 
 
 function jrGridListTableHeader(listHelperData, queryUrlData) {
+	// test flag
+	var flagUseLabel = true;
+
 	var rethtml = "";
 
 	// header start
@@ -251,6 +254,7 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 			var extraLabel = "";
 			var updateObjString;
 			var title;
+			var keyLabel;
 			if (sortDir) {
 				if (sortDir === "asc") {
 					extraLabel = " &#9660;";
@@ -266,12 +270,19 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 			}
 			onclick = "requestGridUpdate('" + queryUrlData.tableId + "', " + updateObjString + ");return false;";
 			//
-			if (key === "_id") {
-				// fixup for id
-				key = "id";
+			// use label?
+			if (flagUseLabel) {
+				keyLabel = listHelperData.modelClass.getSchemaExtraFieldVal(key, "label", key);
+			} else {
+				if (key === "_id") {
+					// fixup for id
+					keyLabel = "id";
+				} else {
+					keyLabel = key;
+				}
 			}
 			rethtml += `
-				<th scope="col"> <a href="#" onclick="${onclick}" title = "${title}"> ${key}${extraLabel} </a></th>
+				<th scope="col"> <a href="#" onclick="${onclick}" title="${title}"> ${keyLabel}${extraLabel} </a></th>
 			`;
 		}
 	});

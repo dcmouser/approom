@@ -110,30 +110,28 @@ class RoomModel extends ModelBaseMongoose {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 
-		// set fields from form and validate
-		obj.appid = req.body.appid;
-		obj.shortcode = req.body.shortcode;
-		obj.label = req.body.label;
-		obj.description = req.body.description;
+		// get logged in user
+		const arserver = require("../controllers/server");
+		var user = await arserver.getLoggedInUser(req);
 
-		// validate fields
-		await this.validateModelFieldUnique(jrResult, "shortcode", obj.shortcode, obj);
-		this.validateModelFieldNotEmpty(jrResult, "label", obj.label);
-		this.validateModelFieldNotEmpty(jrResult, "description", obj.description);
+		// set fields from form and validate
+		// obj.appid = this.validateModelFieldNotEmpty(jrResult, "appid", req.body.appid);
+		obj.appid = await this.validateModelFieldAppId(jrResult, "appid", req.body.appid, user);
+		obj.shortcode = await this.validateModelFieldUnique(jrResult, "shortcode", req.body.shortcode, obj);
+		obj.label = this.validateModelFieldNotEmpty(jrResult, "label", req.body.label);
+		obj.description = this.validateModelFieldNotEmpty(jrResult, "description", req.body.description);
+		obj.disabled = this.validateModelFielDisbled(jrResult, "disabled", req.body.disabled);
+
 		// ATTN: TODO appid is not yet validated
-		//
-		// any errors?
+
+		// any validation errors?
 		if (jrResult.isError()) {
 			return null;
 		}
 
 		// validated successfully
-
-		// save it
-		var objdoc = await obj.dbSave();
-
-		// success
-		jrResult.pushSuccess(this.getNiceName() + " " + jrhelpers.getFormTypeStrToPastTenseVerb(formTypeStr) + " on " + jrhelpers.getNiceNowString() + ".");
+		// save it (success message will be pushed onto jrResult)
+		var objdoc = await obj.dbSave(jrResult);
 
 		// return the saved object
 		return objdoc;
@@ -144,10 +142,10 @@ class RoomModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	// crud add/edit form helper data
 	// in case of rooms, this should be the list of APPS that the USER has access to
-	static async calcCrudAddEditHelperData(req, res, id) {
+	static async calcCrudAddEditHelperData(user, id) {
 		// build app list, pairs of id -> nicename
 		const AppModel = require("./app");
-		const applist = await AppModel.buildSimpleAppListUserTargetable(req);
+		const applist = await AppModel.buildSimpleAppListUserTargetable(user);
 
 		// return it
 		return {
@@ -157,7 +155,7 @@ class RoomModel extends ModelBaseMongoose {
 
 	// crud helper for view
 	static async calcCrudViewDeleteHelperData(req, res, id, obj) {
-		// get nice label of the app it's attached to
+	// get nice label of the app it's attached to
 		var appLabel;
 		const appid = obj.appid;
 		if (appid) {

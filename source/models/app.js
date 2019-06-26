@@ -93,29 +93,20 @@ class AppModel extends ModelBaseMongoose {
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 
 		// set fields from form and validate
-		obj.shortcode = req.body.shortcode;
-		obj.name = req.body.name;
-		obj.label = req.body.label;
-		obj.description = req.body.description;
+		obj.shortcode = await this.validateModelFieldUnique(jrResult, "shortcode", req.body.shortcode, obj);
+		obj.name = this.validateModelFieldNotEmpty(jrResult, "name", req.body.name);
+		obj.label = this.validateModelFieldNotEmpty(jrResult, "label", req.body.label);
+		obj.description = this.validateModelFieldNotEmpty(jrResult, "description", req.body.description);
+		obj.disabled = this.validateModelFielDisbled(jrResult, "disabled", req.body.disabled);
 
-		// validate fields
-		await this.validateModelFieldUnique(jrResult, "shortcode", obj.shortcode, obj);
-		await this.validateModelFieldUnique(jrResult, "name", obj.name, obj);
-		this.validateModelFieldNotEmpty(jrResult, "label", obj.label);
-		this.validateModelFieldNotEmpty(jrResult, "description", obj.description);
-		//
-		// any errors?
+		// any validation errors?
 		if (jrResult.isError()) {
 			return null;
 		}
 
 		// validated successfully
-
-		// save it
-		var objdoc = await obj.dbSave();
-
-		// success
-		jrResult.pushSuccess(this.getNiceName() + " " + jrhelpers.getFormTypeStrToPastTenseVerb(formTypeStr) + " on " + jrhelpers.getNiceNowString() + ".");
+		// save it (success message will be pushed onto jrResult)
+		var objdoc = await obj.dbSave(jrResult);
 
 		// return the saved object
 		return objdoc;
@@ -123,22 +114,26 @@ class AppModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 
 	//---------------------------------------------------------------------------
-	static async buildSimpleAppListUserTargetable(req) {
+	static async buildSimpleAppListUserTargetable(user) {
 		// build app list, pairs of id -> nicename, that are targetable (ie user can add rooms to) to current logged in user
-		const arserver = require("../controllers/server");
-		const userid = arserver.getLoggedInLocalLoginIdFromSession(req);
-		var applist = await this.buildSimpleAppList();
+		var applist = await this.buildSimpleAppList(user);
 		return applist;
 	}
 
 	// see http://thecodebarbarian.com/whats-new-in-mongoose-53-async-iterators.html
-	static async buildSimpleAppList() {
-		var applist = [];
+	static async buildSimpleAppList(user) {
 		const docs = await this.mongooseModel.find().select("_id name label");
+		var applist = [];
 		for (const doc of docs) {
 			applist[doc._id] = doc.name + " - " + doc.label;
 		}
 		return applist;
+	}
+
+	static async buildSimpleAppIdListUserTargetable(user) {
+		const docs = await this.buildSimpleAppListUserTargetable();
+		var ids = Object.keys(docs);
+		return ids;
 	}
 	//---------------------------------------------------------------------------
 
