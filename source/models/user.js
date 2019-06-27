@@ -71,45 +71,24 @@ class UserModel extends ModelBaseMongoose {
 				type: String,
 				unique: true,
 				required: true,
-				jr: {
-					label: "Username",
-				},
 			},
 			realname: {
 				type: String,
-				jr: {
-					label: "Real name",
-				},
 			},
 			email: {
 				type: String,
-				jr: {
-					label: "Email",
-				},
 			},
 			passwordObj: {
 				type: String,
-				jr: {
-					label: "Password",
-				},
 			},
 			passwordVersion: {
 				type: Number,
-				jr: {
-					label: "Password version",
-				},
 			},
 			passwordDate: {
 				type: Date,
-				jr: {
-					label: "Date password was last changed/set",
-				},
 			},
 			loginDate: {
 				type: Date,
-				jr: {
-					label: "Date user last logged in",
-				},
 			},
 			// additional fields we may add dynamically for in-memory use, but not saved to db
 			// loginId : { type: ObjectId },
@@ -139,9 +118,11 @@ class UserModel extends ModelBaseMongoose {
 			},
 			passwordDate: {
 				label: "Date password set/modified",
+				hide: ["edit"],
 			},
 			loginDate: {
 				label: "Date of last login",
+				hide: ["edit"],
 			},
 		};
 	}

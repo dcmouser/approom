@@ -45,17 +45,10 @@ const jrhandlebars = require("../helpers/jrhandlebars");
 // approomserver globals
 const arGlobals = require("../approomglobals");
 
-// model imports
-const AclModel = require("../models/acl");
-const AppModel = require("../models/app");
-const ConnectionModel = require("../models/connection");
-const FileModel = require("../models/file");
-const RoomModel = require("../models/room");
-const UserModel = require("../models/user");
-const LoginModel = require("../models/login");
+// models (we require most locally to avoid circular requires)
 const LogModel = require("../models/log");
-const OptionModel = require("../models/option");
-const VerificationModel = require("../models/verification");
+
+
 
 // ATTN: circular reference problem? so we require this only when we need it below?
 // may have to do this with other models that also bring in require("server")
@@ -343,6 +336,18 @@ class AppRoomServer {
 	setupExpressRoutes(expressApp) {
 		// add routes to express app
 
+		// model requires
+		const RoomModel = require("../models/room");
+		const AclModel = require("../models/acl");
+		const AppModel = require("../models/app");
+		const ConnectionModel = require("../models/connection");
+		const FileModel = require("../models/file");
+
+		const OptionModel = require("../models/option");
+		const UserModel = require("../models/user");
+		const VerificationModel = require("../models/verification");
+		const LoginModel = require("../models/login");
+
 		// home page
 		this.setupRoute(expressApp, "/", "index");
 
@@ -483,6 +488,7 @@ class AppRoomServer {
 				// first, find the user via their password
 				var jrResult;
 				jrlog.cdebugf("In passport local strategy test with username=%s and password=%s", usernameEmail, password);
+				const UserModel = require("../models/user");
 				var user = await UserModel.findOneByUsernameEmail(usernameEmail);
 				if (!user) {
 					// not found
@@ -537,6 +543,7 @@ class AppRoomServer {
 					},
 				};
 				// created bridged user
+				const LoginModel = require("../models/login");
 				var { user, jrResult } = await LoginModel.processBridgedLoginGetOrCreateUserOrProxy(bridgedLoginObj, req);
 				// if user could not be created, it's an error
 				// add jrResult to session in case we did extra stuff and info to show the user
@@ -655,21 +662,65 @@ class AppRoomServer {
 	}
 
 	async getLoggedInUser(req) {
-		var userId = this.getLoggedInLocalUserIdFromSession(req);
-		if (!userId) {
-			return null;
+		// first check if we've CACHED this info in the req
+		if (req.arCachedUser !== undefined) {
+			return req.arCachedUser;
 		}
-		var user = await UserModel.findOneById(userId);
+		// not cached
+		var user;
+		const userId = this.getLoggedInLocalUserIdFromSession(req);
+		if (!userId) {
+			user = null;
+		} else {
+			const UserModel = require("../models/user");
+			user = await UserModel.findOneById(userId);
+		}
+		// cache it
+		req.arCachedUser = user;
+		// return it
 		return user;
 	}
 
 	async getLoggedInLogin(req) {
-		var loginId = this.getLoggedInLocalLoginIdFromSession(req);
-		if (!loginId) {
-			return null;
+		// first check if we've CACHED this info in the req
+		if (req.arCachedLogin !== undefined) {
+			return req.arCachedLogin;
 		}
-		var login = await LoginModel.findOneById(loginId);
+		// not cached
+		var login;
+		const loginId = this.getLoggedInLocalLoginIdFromSession(req);
+		if (!loginId) {
+			login = null;
+		} else {
+			const LoginModel = require("../models/login");
+			login = await LoginModel.findOneById(loginId);
+		}
+		// cache it
+		req.arCachedLogin = login;
+		// return it
 		return login;
+	}
+
+
+	// just shortcuts to verifcationModel statics
+	async getLastSessionedVerification(req) {
+		// first check if we've CACHED this info in the req
+		if (req.arCachedLastVerification !== undefined) {
+			return req.arCachedLastVerification;
+		}
+		// not cached
+		var verification;
+		const verificationId = this.getLastSessionedVerificationId(req);
+		if (!verificationId) {
+			verification = null;
+		} else {
+			const VerificationModel = require("../models/verification");
+			verification = await VerificationModel.findOneById(verificationId);
+		}
+		// cache it
+		req.arCachedLastVerification = verification;
+		// return it
+		return verification;
 	}
 
 
@@ -682,17 +733,17 @@ class AppRoomServer {
 	getLoggedInLocalLoginIdFromSession(req) {
 		return this.getLoggedInPassportUserOfProvider(req, "localLogin");
 	}
-	//---------------------------------------------------------------------------
 
-
-
-
-	//---------------------------------------------------------------------------
-	// just shortcuts to verifcationModel statics
-	async getLastSessionedVerification(req) {
-		return await VerificationModel.getLastSessionedVerification(req);
+	// helper function to get last verification id
+	// see VerificationModel code for where this is set
+	static getLastSessionedVerificationId(req) {
+		return req.session.lastVerificationId;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
 
 
 	//---------------------------------------------------------------------------
@@ -781,6 +832,7 @@ class AppRoomServer {
 				// and NOW if they were previously sessioned with a pre-account Login object, we can connect that to this account
 				if (newlyLoggedInUserId && previousLoginId) {
 					// try to connect
+					const LoginModel = require("../models/login");
 					var jrResult2 = await LoginModel.connectUserToLogin(newlyLoggedInUserId, previousLoginId, false);
 					if (jrResult2) {
 						jrResult.mergeIn(jrResult2);
@@ -989,6 +1041,17 @@ class AppRoomServer {
 	async createAndConnectToDatabase() {
 		// setup database stuff (create and connect to models -- callable whether db is already created or not)
 		var bretv = false;
+
+		// model requires
+		const RoomModel = require("../models/room");
+		const AclModel = require("../models/acl");
+		const AppModel = require("../models/app");
+		const ConnectionModel = require("../models/connection");
+		const FileModel = require("../models/file");
+		const OptionModel = require("../models/option");
+		const UserModel = require("../models/user");
+		const VerificationModel = require("../models/verification");
+		const LoginModel = require("../models/login");
 
 		try {
 			// connect to db

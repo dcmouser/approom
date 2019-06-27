@@ -87,17 +87,41 @@ class AppModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
+	static getSaveFields(req, operationType) {
+		// operationType is commonly "crudAdd", "crudEdit"
+		// return an array of field names that the user can modify when saving an object
+		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
+		// subclasses implement; by default we return empty array
+		// NOTE: this list can be generated dynamically based on logged in user
+		var reta;
+		if (operationType === "crudAdd" || operationType === "crudEdit") {
+			reta = ["shortcode", "name", "label", "description", "disabled"];
+		}
+		return reta;
+	}
+
+
 	// crud add/edit
-	static async doAddEditFromFormReturnObj(jrResult, req, res, formTypeStr, obj) {
+	static async doObjSave(jrResult, req, source, saveFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
+		var key, val;
 
 		// set fields from form and validate
-		obj.shortcode = await this.validateModelFieldUnique(jrResult, "shortcode", req.body.shortcode, obj);
-		obj.name = this.validateModelFieldNotEmpty(jrResult, "name", req.body.name);
-		obj.label = this.validateModelFieldNotEmpty(jrResult, "label", req.body.label);
-		obj.description = this.validateModelFieldNotEmpty(jrResult, "description", req.body.description);
-		obj.disabled = this.validateModelFielDisbled(jrResult, "disabled", req.body.disabled);
+		await this.doObjSaveSetAsync(jrResult, "shortcode", source, saveFields, obj, true, async (jrr, keyname, inVal) => await this.validateModelFieldUnique(jrr, keyname, inVal, obj));
+		this.doObjSaveSet(jrResult, "name", source, saveFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
+		this.doObjSaveSet(jrResult, "label", source, saveFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
+		this.doObjSaveSet(jrResult, "description", source, saveFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
+		this.doObjSaveSet(jrResult, "disabled", source, saveFields, obj, true, (jrr, keyname, inVal) => this.validateModelFielDisbled(jrr, keyname, inVal));
+
+		/*
+		OLD version
+		obj.shortcode = await this.validateModelFieldUnique(jrResult, "shortcode", source.shortcode, obj);
+		obj.name = this.validateModelFieldNotEmpty(jrResult, "name", source.name);
+		obj.label = this.validateModelFieldNotEmpty(jrResult, "label", source.label);
+		obj.description = this.validateModelFieldNotEmpty(jrResult, "description", source.description);
+		obj.disabled = this.validateModelFielDisbled(jrResult, "disabled", source.disabled);
+		*/
 
 		// any validation errors?
 		if (jrResult.isError()) {

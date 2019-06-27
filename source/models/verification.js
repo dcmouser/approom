@@ -423,6 +423,9 @@ class VerificationModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
+	// session helper stuff
+	// see server.js for where this info is read
+
 	saveSessionUse(req) {
 		// add verification id to session so it can be reused
 		const idstr = this.getIdAsString();
@@ -443,21 +446,6 @@ class VerificationModel extends ModelBaseMongoose {
 			return true;
 		}
 		return false;
-	}
-
-	//
-
-	static getLastSessionedVerificationId(req) {
-		return req.session.lastVerificationId;
-	}
-
-	static async getLastSessionedVerification(req) {
-		const verificationId = this.getLastSessionedVerificationId(req);
-		if (!verificationId) {
-			return undefined;
-		}
-		var verification = await this.findOneById(verificationId);
-		return verification;
 	}
 	//---------------------------------------------------------------------------
 

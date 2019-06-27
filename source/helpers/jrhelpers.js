@@ -202,8 +202,12 @@ function makeSafeForFormInput(str) {
 //---------------------------------------------------------------------------
 
 
-
-
+//---------------------------------------------------------------------------
+// https://stackoverflow.com/questions/27746304/how-do-i-tell-if-an-object-is-a-promise
+function isPromise(value) {
+	return Boolean(value && typeof value.then === "function");
+}
+//---------------------------------------------------------------------------
 
 
 
@@ -219,5 +223,6 @@ module.exports = {
 	getNiceNowString,
 	reqVal, reqValAsInt, reqValFromList, reqPrefixedValueArray,
 	regexEscapeStr, makeSafeForFormInput,
+	isPromise,
 };
 //---------------------------------------------------------------------------

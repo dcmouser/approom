@@ -13,6 +13,7 @@ const mongoose = require("mongoose");
 
 // models
 const ModelBaseMongoose = require("./modelBaseMongoose");
+const arserver = require("../controllers/server");
 
 // our helper modules
 const jrhelpers = require("../helpers/jrhelpers");
@@ -105,24 +106,42 @@ class RoomModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
+	static getSaveFields(req, operationType) {
+		// operationType is commonly "crudAdd", "crudEdit"
+		// return an array of field names that the user can modify when saving an object
+		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
+		// subclasses implement; by default we return empty array
+		// NOTE: this list can be generated dynamically based on logged in user
+		var reta;
+		if (operationType === "crudAdd" || operationType === "crudEdit") {
+			reta = ["appid", "shortcode", "label", "description", "disabled"];
+		}
+		return reta;
+	}
+
 	// crud add/edit
-	static async doAddEditFromFormReturnObj(jrResult, req, res, formTypeStr, obj) {
+	static async doObjSave(jrResult, req, source, saveFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 
 		// get logged in user
-		const arserver = require("../controllers/server");
 		var user = await arserver.getLoggedInUser(req);
 
 		// set fields from form and validate
-		// obj.appid = this.validateModelFieldNotEmpty(jrResult, "appid", req.body.appid);
-		obj.appid = await this.validateModelFieldAppId(jrResult, "appid", req.body.appid, user);
-		obj.shortcode = await this.validateModelFieldUnique(jrResult, "shortcode", req.body.shortcode, obj);
-		obj.label = this.validateModelFieldNotEmpty(jrResult, "label", req.body.label);
-		obj.description = this.validateModelFieldNotEmpty(jrResult, "description", req.body.description);
-		obj.disabled = this.validateModelFielDisbled(jrResult, "disabled", req.body.disabled);
+		await this.doObjSaveSetAsync(jrResult, "appid", source, saveFields, obj, true, async (jrr, keyname, inVal) => this.validateModelFieldAppId(jrr, keyname, inVal, user));
+		await this.doObjSaveSetAsync(jrResult, "shortcode", source, saveFields, obj, true, async (jrr, keyname, inVal) => await this.validateModelFieldUnique(jrr, keyname, inVal, obj));
+		this.doObjSaveSet(jrResult, "label", source, saveFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
+		this.doObjSaveSet(jrResult, "description", source, saveFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
+		this.doObjSaveSet(jrResult, "disabled", source, saveFields, obj, true, (jrr, keyname, inVal) => this.validateModelFielDisbled(jrr, keyname, inVal));
 
-		// ATTN: TODO appid is not yet validated
+		/*
+		old way
+		obj.appid = await this.validateModelFieldAppId(jrResult, "appid", source.appid, user);
+		obj.shortcode = await this.validateModelFieldUnique(jrResult, "shortcode", source.shortcode, obj);
+		obj.label = this.validateModelFieldNotEmpty(jrResult, "label", source.label);
+		obj.description = this.validateModelFieldNotEmpty(jrResult, "description", source.description);
+		obj.disabled = this.validateModelFielDisbled(jrResult, "disabled", source.disabled);
+		*/
 
 		// any validation errors?
 		if (jrResult.isError()) {
@@ -142,7 +161,7 @@ class RoomModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	// crud add/edit form helper data
 	// in case of rooms, this should be the list of APPS that the USER has access to
-	static async calcCrudAddEditHelperData(user, id) {
+	static async calcCrudEditHelperData(user, id) {
 		// build app list, pairs of id -> nicename
 		const AppModel = require("./app");
 		const applist = await AppModel.buildSimpleAppListUserTargetable(user);
@@ -154,7 +173,7 @@ class RoomModel extends ModelBaseMongoose {
 	}
 
 	// crud helper for view
-	static async calcCrudViewDeleteHelperData(req, res, id, obj) {
+	static async calcCrudViewHelperData(req, res, id, obj) {
 	// get nice label of the app it's attached to
 		var appLabel;
 		const appid = obj.appid;

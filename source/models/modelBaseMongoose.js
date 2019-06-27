@@ -225,23 +225,28 @@ class ModelBaseMongoose {
 		// simple wrapper (for now) around mongoose model save
 		// this should always be used instead of superclass save() function
 
-		if (jrResult) {
-			// save and catch exception
-			var retv;
-			try {
-				retv = await this.save();
-			} catch (err) {
-				jrResult.pushError("Failed to save " + this.getmodelClass().getNiceName() + ". " + err.toString());
-				return null;
-			}
-			// success
-			// jrResult.pushSuccess(this.getNiceName() + " " + jrhelpers.getFormTypeStrToPastTenseVerb(formTypeStr) + " on " + jrhelpers.getNiceNowString() + ".");
-			jrResult.pushSuccess(this.getmodelClass().getNiceName() + " saved on " + jrhelpers.getNiceNowString() + ".");
-			return retv;
+		// update modification date
+		this.updateModificationDate();
+
+		// first we check if jrResult is passed to us; IF SO, it means *WE* should catch the error and set it in jrResult
+		// if not, we drop down and just do a save and let exceptions get caught
+
+		if (jrResult === undefined) {
+			// ok just save it and let exceptions throw and percolate
+			return await this.save();
 		}
 
-		// save and let it throw error
-		return await this.save();
+		// save and we catch any exceptions and convert to jrResults
+		var retv;
+		try {
+			retv = await this.save();
+		} catch (err) {
+			jrResult.pushError("Failed to save " + this.getmodelClass().getNiceName() + ". " + err.toString());
+			return null;
+		}
+		// success
+		jrResult.pushSuccess(this.getmodelClass().getNiceName() + " saved on " + jrhelpers.getNiceNowString() + ".");
+		return retv;
 	}
 	//---------------------------------------------------------------------------
 
@@ -254,20 +259,81 @@ class ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// subclasses implement this
-	static async doAddEditFromFormReturnObj(jrResult, req, res, formTypeStr) {
-		jrResult.pushError("Internal error: No subclassed proecure to handle doAddEditFromForm for " + this.getCollectionName() + " model");
+	static async doObjSave(jrResult, req, source, saveFields, obj) {
+		jrResult.pushError("Internal error: No subclassed proecure to handle doObjSave for " + this.getCollectionName() + " model");
 		return null;
 	}
 
-	// subclasses implement this
-	static async validateAddEditFormMakeObj(req, res, formTypeStr) {
-		var jrResult = JrResult.makeError("ModelCrud", "Internal error: No subclassed proecure to handle validateAddEditFormMakeObj for " + this.getCollectionName() + " model");
-		return jrResult;
+
+	static getSaveFields(req, operationType) {
+		// operationType is commonly "crudAdd", "crudEdit"
+		// return an array of field names that the user can modify when saving an object
+		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
+		// subclasses implement; by default we return empty array
+		// NOTE: this list can be generated dynamically based on logged in user
+		return [];
+	}
+
+	static async doObjSaveSetAsync(jrResult, fieldName, source, saveFields, obj, flagRequired, valFunc) {
+		// first check if the value is set in source, if not, nothing to do
+		if (!(fieldName in source)) {
+			if (flagRequired && !(fieldName in obj)) {
+				// it's an error that its not provided and not set in obj already
+				// ATTN: note that this test does *NOT* require that the field be set in source, just that it already be set in obj if not
+				jrResult.pushError("Required value not provided for: " + fieldName);
+			}
+			return undefined;
+		}
+		// ok its set in source. if we aren't allowed to save this field, its an error
+		if (saveFields !== "*" && !(saveFields.includes(fieldName))) {
+			jrResult.pushError("Permission denied to save value for: " + fieldName);
+			return undefined;
+		}
+		// resolve valFunc to get value
+		var val = await valFunc(jrResult, fieldName, source[fieldName]);
+		// if its an error, for example during validation, we are done
+		if (jrResult.isError()) {
+			return undefined;
+		}
+		// success, set it
+		obj[fieldName] = val;
+		return val;
 	}
 
 
+	// copy of above but non-async
+	// ATTN: do we really need 2 functions for this, an async and non-async version?
+	static doObjSaveSet(jrResult, fieldName, source, saveFields, obj, flagRequired, valFunc) {
+		// first check if the value is set in source, if not, nothing to do
+		if (!(fieldName in source)) {
+			if (flagRequired && !(fieldName in obj)) {
+				// it's an error that its not provided and not set in obj already
+				// ATTN: note that this test does *NOT* require that the field be set in source, just that it already be set in obj if not
+				jrResult.pushError("Required value not provided for: " + fieldName);
+			}
+			return undefined;
+		}
+		// ok its set in source. if we aren't allowed to save this field, its an error
+		if (saveFields !== "*" && !(saveFields.includes(fieldName))) {
+			jrResult.pushError("Permission denied to save value for: " + fieldName);
+			return undefined;
+		}
+		// resolve valFunc to get value
+		var val = valFunc(jrResult, fieldName, source[fieldName]);
+		// if its an error, for example during validation, we are done
+		if (jrResult.isError()) {
+			return undefined;
+		}
+
+		// success, set it
+		obj[fieldName] = val;
+		return val;
+	}
+	//---------------------------------------------------------------------------
 
 
+
+	//---------------------------------------------------------------------------
 	static async validateAddEditFormId(jrResult, req, res, formTypeStr) {
 		// push error into jrResult on error
 		// return {id, existingModel}
@@ -450,7 +516,11 @@ class ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 
 
-
+	//---------------------------------------------------------------------------
+	updateModificationDate() {
+		this.modificationDate = new Date();
+	}
+	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
@@ -520,12 +590,12 @@ class ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// subclasses can subclass this for crud add/edit
-	static async calcCrudAddEditHelperData(req, res, id) {
+	static async calcCrudEditHelperData(req, res, id) {
 		return undefined;
 	}
 
 	// subclasses can subclass this for crud view
-	static async calcCrudViewDeleteHelperData(req, res, id, obj) {
+	static async calcCrudViewHelperData(req, res, id, obj) {
 		return undefined;
 	}
 
