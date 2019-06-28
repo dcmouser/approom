@@ -9,13 +9,11 @@
 // modules
 const mongoose = require("mongoose");
 
-// modules
+// models
 const ModelBaseMongoose = require("./modelBaseMongoose");
 const UserModel = require("./user");
 const LoginModel = require("./login");
-
-// controllers
-const RegistrationAid = require("../controllers/registrationaid");
+const arserver = require("../controllers/server");
 
 // our helper modules
 const jrhelpers = require("../helpers/jrhelpers");
@@ -277,7 +275,7 @@ class VerificationModel extends ModelBaseMongoose {
 		if (!baseUrl) {
 			baseUrl = "verify";
 		}
-		const arserver = require("../controllers/server");
+		// const arserver = require("../controllers/server");
 		return arserver.calcAbsoluteSiteUrlPreferHttps(baseUrl + "/code/" + this.uniqueCode);
 	}
 	//---------------------------------------------------------------------------
@@ -302,7 +300,7 @@ class VerificationModel extends ModelBaseMongoose {
 		mailobj.to = emailAddress;
 		//
 		// require here to avoid circular reference problem
-		const arserver = require("../controllers/server");
+		// const arserver = require("../controllers/server");
 		var retv = await arserver.sendMail(mailobj);
 		//
 		return retv;
@@ -566,11 +564,11 @@ class VerificationModel extends ModelBaseMongoose {
 		// but also note that in some use cases perhaps we dont need to gather extra info from them, if we don't care about usernames and passwords...
 
 		var successRedirectTo;
-		var jrResult;
+		var jrResult = JrResult.makeNew();
 		var retvResult;
 
-		// models
-		const arserver = require("../controllers/server");
+		// controllers
+		const RegistrationAid = require("../controllers/registrationaid");
 
 		// data from extraData
 		var extraData = JSON.parse(this.extraData);
@@ -585,22 +583,22 @@ class VerificationModel extends ModelBaseMongoose {
 		var user = await UserModel.findOneByUsernameEmail(email);
 		if (user) {
 			// error, a user with this email already exist; but they just confirmed that THEY own the email which means that
-			// first they signed up when the email wasn't in use, and then later confirmed it, and then tried to access via this verification
+			// first they signed up when the email wasn't in use, and then later confirmed it through another different verification, and then tried to access via this verification
 			// we could prevent this case by ensuring we cancel all verifications related to an email once a user confirms/claims that email, but better safe than sorry here
-			// or it means they somehow intercepted someone's verification code that they shouldn't have; regardless it's not important
-			jrResult = JrResult.makeError("VerificationError", "This email already has already been claimed by an existing user account (" + user.getUsername() + ").");
+			// or it means they somehow intercepted someone's verification code that they shouldn't have; regardless it's not important, we block it
+			jrResult.pushError("This email already has already been claimed/verified by an existing user account (" + user.getUsername() + ").");
 			// use it up since we are done with it at this point
 			await this.useUpAndSave(req, true);
 			// return error
 			return { jrResult, successRedirectTo };
 		}
 
-		// ok their verified email is unique, now we'd PROBABLY like to present them with a form where they can give us a username and password of their choosing
+		// ok their verified email is unique, now we'd PROBABLY like to present them with a registration form where they can give us a username and password of their choosing
 		// we can default to any values we found in their signup (or bridged login) request
 		// note that we are going to have to check the verified email AGAIN when they submit this next form, so really we could skip all testing of it here
 		// and just check it when they submit the second form..
 
-		// ONE OPTION, if they provided sufficient info at their initial registration (username, password) in addition to email address
+		// BUT ANOTHER OPTION, if they provided sufficient info at their initial registration (username, password) in addition to email address
 		// would be to complete their registration right now (asusming username is unique, etc.)
 
 		// do they NEED full register form?
@@ -617,27 +615,33 @@ class VerificationModel extends ModelBaseMongoose {
 		}
 		// validate fields -- we ignore errors here, we just dont go through with creation of user if we hit one
 		if (readyToCreateUser) {
+			// temporary non-fatal test to determine if we have enough info to create user right now
 			// valid username?
-			retvResult = await UserModel.validateUsername(username, true, !requiredFields.includes("username"));
+			retvResult = JrResult.makeNew();
+			var flagRequired = requiredFields.includes("username");
+			var flagCheckDisallowedUsername = true;
+			await UserModel.validateUsername(retvResult, username, true, flagRequired, flagCheckDisallowedUsername, null);
 			if (retvResult.isError()) {
+				// not a fatal error, just means we can't create user yet
 				readyToCreateUser = false;
 			}
 		}
 
 		if (readyToCreateUser) {
-			// we can go ahead and directly create the user
+			// we think we have enough info, we can go ahead and directly create the user
 			var userData = {
 				username,
 				email,
 				passwordHashed,
 				realname,
 			};
-			retvResult = await RegistrationAid.createFullNewUserAccount(req, this, userData);
+			// temporary non-fatal test to determine if we have enough info to create user right now
+			retvResult = JrResult.makeNew();
+			await RegistrationAid.createFullNewUserAccountForLoggedInUser(retvResult, req, this, userData);
 			if (!retvResult.isError()) {
 				// success creating user, so let them know, log them in and redirect to profile
 				successRedirectTo = "/profile";
-				jrResult = JrResult.makeSuccess("Your email address has been verified.");
-				jrResult.mergeIn(retvResult);
+				jrResult.pushSuccess("Your email address has been verified.");
 				// they may have been auto-logged-in
 				if (arserver.getLoggedInLocalUserIdFromSession(req)) {
 					// they have been logged in after verifying, so send them to their profile.
@@ -646,7 +650,8 @@ class VerificationModel extends ModelBaseMongoose {
 					successRedirectTo = "/login";
 				}
 			} else {
-				// failure creating user, just drop down
+				// something went wrong tryign to create user; not fatal, just drop down
+				// not a fatal error, just means we can't create user yet
 				readyToCreateUser = false;
 			}
 		}
@@ -663,7 +668,7 @@ class VerificationModel extends ModelBaseMongoose {
 			if (!jrResult.isError()) {
 				successRedirectTo = "/register";
 				// we don't push this success message into session, BECAUSE we are redirecting them to a page that will say it
-				// jrResult = jrResult.pushSuccess("Your email address has been verified..");
+				jrResult = jrResult.pushSuccess("Your email address has been verified.");
 				// await this.useUpAndSave(req, false);
 			}
 		}
@@ -674,7 +679,28 @@ class VerificationModel extends ModelBaseMongoose {
 
 
 
+	//---------------------------------------------------------------------------
+	// helper
+	static async getValidVerificationFromIdOrLastSession(verificationId, req) {
+		var verification;
+		if (verificationId) {
+			// first lookup verify code if code provided in form
+			verification = await VerificationModel.findOneByCode(verificationId);
+		}
+		if (!verification) {
+			// not found in form, maybe there is a remembered verification id in ession regarding new account email verified, then show full
+			verification = await arserver.getLastSessionedVerification(req);
+		}
 
+		if (verification) {
+			if (!verification.isValidNewAccountEmailReady(req)) {
+				// no good, clear it
+				verification = undefined;
+			}
+		}
+		return verification;
+	}
+	//---------------------------------------------------------------------------
 
 
 

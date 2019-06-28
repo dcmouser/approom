@@ -73,6 +73,7 @@ class AppModel extends ModelBaseMongoose {
 			},
 			description: {
 				label: "Description",
+				format: "textarea",
 			},
 		};
 	}
@@ -102,35 +103,28 @@ class AppModel extends ModelBaseMongoose {
 
 
 	// crud add/edit
-	static async doObjSave(jrResult, req, source, saveFields, obj) {
+	static async validateAndSave(jrResult, flagSave, req, source, saveFields, preValidatedFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
-		var key, val;
+		var objdoc;
 
 		// set fields from form and validate
-		await this.doObjSaveSetAsync(jrResult, "shortcode", source, saveFields, obj, true, async (jrr, keyname, inVal) => await this.validateModelFieldUnique(jrr, keyname, inVal, obj));
-		this.doObjSaveSet(jrResult, "name", source, saveFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
-		this.doObjSaveSet(jrResult, "label", source, saveFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
-		this.doObjSaveSet(jrResult, "description", source, saveFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
-		this.doObjSaveSet(jrResult, "disabled", source, saveFields, obj, true, (jrr, keyname, inVal) => this.validateModelFielDisbled(jrr, keyname, inVal));
-
-		/*
-		OLD version
-		obj.shortcode = await this.validateModelFieldUnique(jrResult, "shortcode", source.shortcode, obj);
-		obj.name = this.validateModelFieldNotEmpty(jrResult, "name", source.name);
-		obj.label = this.validateModelFieldNotEmpty(jrResult, "label", source.label);
-		obj.description = this.validateModelFieldNotEmpty(jrResult, "description", source.description);
-		obj.disabled = this.validateModelFielDisbled(jrResult, "disabled", source.disabled);
-		*/
+		await this.doObjMergeSetAsync(jrResult, "shortcode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await this.validateModelFieldUnique(jrr, keyname, inVal, obj));
+		await this.doObjMergeSetAsync(jrResult, "name", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
+		await this.doObjMergeSetAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
+		await this.doObjMergeSetAsync(jrResult, "description", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
+		await this.doObjMergeSetAsync(jrResult, "disabled", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFielDisbled(jrr, keyname, inVal));
 
 		// any validation errors?
 		if (jrResult.isError()) {
 			return null;
 		}
 
-		// validated successfully
-		// save it (success message will be pushed onto jrResult)
-		var objdoc = await obj.dbSave(jrResult);
+		if (flagSave) {
+			// validated successfully
+			// save it (success message will be pushed onto jrResult)
+			objdoc = await obj.dbSave(jrResult);
+		}
 
 		// return the saved object
 		return objdoc;

@@ -397,11 +397,17 @@ function jrGridListTableData(listHelperData, queryUrlData) {
 					// use custom value resolving callback function
 					valDisplay = valFuncList[key](item);
 				} else {
+					if (val === undefined) {
+						valDisplay = "";
+					} else if (val === null) {
+						valDisplay = "null";
+					} else {
+						valDisplay = val.toString();
+					}
+					//
 					crudLink = listHelperData.modelClass.getSchemaExtraFieldVal(key, "crudLink");
 					if (crudLink) {
-						valDisplay = `<a href="${crudLink}/view/${val}">${val}</a>`;
-					} else {
-						valDisplay = val;
+						valDisplay = `<a href="${crudLink}/view/${val}">${valDisplay}</a>`;
 					}
 				}
 				if (key === "_id") {

@@ -133,7 +133,7 @@ router.post("/email", async (req, res, next) => {
 		// set error and drop down to re-display email login form with error
 		jrResult = UserModel.makeJrResultErrorNoUserFromField("usernameEmail", usernameEmail);
 	} else {
-		var userId = user.getIdAsString();
+		var userId = user.getId();
 		var userEmail = user.email;
 		var flagRevealEmail = (userEmail === usernameEmail);
 		jrResult = await VerificationModel.createVerificationOneTimeLoginTokenEmail(userEmail, userId, null, flagRevealEmail, null);

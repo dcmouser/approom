@@ -5,7 +5,6 @@
 
 "use strict";
 
-
 // our helper modules
 const jrlog = require("../helpers/jrlog");
 
@@ -89,6 +88,28 @@ function makeClonedObjFromEnumerableProperties(source) {
 	// just a simple wrapper to make code easier to understand
 	var obj = Object.assign({}, source);
 	return obj;
+}
+
+
+// see https://medium.com/@Farzad_YZ/3-ways-to-clone-objects-in-javascript-f752d148054d
+function iterationCopy(src) {
+	var target = {};
+	for (var prop in src) {
+		if (Object.prototype.hasOwnProperty.call(src, prop)) {
+			target[prop] = src[prop];
+		}
+	}
+	return target;
+}
+
+
+function keyCopy(src) {
+	var keys = Object.keys(src);
+	var target = {};
+	for (var prop in keys) {
+		target[prop] = src[prop];
+	}
+	return target;
 }
 //---------------------------------------------------------------------------
 
@@ -213,16 +234,30 @@ function isPromise(value) {
 
 
 //---------------------------------------------------------------------------
+function parseJsonObj(obj, defaultVal) {
+	if (!obj) {
+		return defaultVal;
+	}
+	var parsedObj = JSON.parse(obj);
+	return parsedObj;
+}
+//---------------------------------------------------------------------------
+
+
+
+
+//---------------------------------------------------------------------------
 module.exports = {
 	mergeArraysDedupe, getNonEmptyPropertyOrDefault, firstNonEmptyValue,
 	DateNowPlusMinutes,
 	stringArrayToNiceString,
-	makeClonedObjFromEnumerableProperties,
+	makeClonedObjFromEnumerableProperties, iterationCopy, keyCopy,
 	getFormTypeStrToPastTenseVerb,
 	isValidMongooseObjectId,
 	getNiceNowString,
 	reqVal, reqValAsInt, reqValFromList, reqPrefixedValueArray,
 	regexEscapeStr, makeSafeForFormInput,
 	isPromise,
+	parseJsonObj,
 };
 //---------------------------------------------------------------------------

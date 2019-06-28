@@ -11,6 +11,7 @@ const express = require("express");
 
 // models
 const UserModel = require("../models/user");
+const VerificationModel = require("../models/verification");
 const arserver = require("../controllers/server");
 const RegistrationAid = require("../controllers/registrationaid");
 
@@ -27,6 +28,7 @@ const router = express.Router();
 // simple request at register page
 router.get("/", async (req, res, next) => {
 	// they should not already be logged in. if they are send them elsewhere (e.g. to their profile page)
+
 	if (arserver.sendLoggedInUsersElsewhere(req, res)) {
 		return;
 	}
@@ -38,9 +40,9 @@ router.get("/", async (req, res, next) => {
 	// render
 	var viewpath = await getRegisterViewPath(req);
 	res.render(viewpath, {
-		jrResult: JrResult.sessionRenderResult(req, res, jrResult),
+		jrResult: JrResult.sessionRenderResult(req, res, jrResult, true),
 		reqbody: req.body,
-		flagFullRegistrationForm: getUseFullRegistrationForm(),
+		flagFullRegistrationForm: arserver.getOptionUseFullRegistrationForm(),
 		csrfToken: arserver.makeCsrf(req, res),
 	});
 });
@@ -75,7 +77,7 @@ router.post("/", async (req, res, next) => {
 		res.render(viewpath, {
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 			reqbody: req.body,
-			flagFullRegistrationForm: getUseFullRegistrationForm(),
+			flagFullRegistrationForm: arserver.getOptionUseFullRegistrationForm(),
 			csrfToken: arserver.makeCsrf(req, res),
 		});
 		return;
@@ -92,36 +94,20 @@ router.post("/", async (req, res, next) => {
 //---------------------------------------------------------------------------
 // which register view we render depends on whether this is initial registration, or continuing one after they have verified an email
 async function getRegisterViewPath(req) {
-	//
-	var verification;
-	var renderview = "account/register_initial";
+	var renderview;
 
-	if (req.body.verifyCode) {
-		// first lookup verify code if code provided in form
-		const VerificationModel = require("../models/verification");
-		verification = await VerificationModel.findOneByCode(req.body.verifyCode);
-	}
-	if (!verification) {
-		// not found in form, maybe there is a remembered verification id in ession regarding new account email verified, then show full
-		verification = await arserver.getLastSessionedVerification(req);
-	}
+	// get any verification code associated with this registration, to prove they own the email
+	// verifyCode can come explicitly from the form (takes priority) OR the session if not in the form
+	var verification = await VerificationModel.getValidVerificationFromIdOrLastSession(req.body.verifyCode, req);
 
 	if (verification) {
-		// let's make sure it is still valid
-		if (verification.isValidNewAccountEmailReady(req)) {
-			// show full form
-			renderview = "account/register_full";
-		}
+		// show full form
+		renderview = "account/register_full";
+	} else {
+		renderview = "account/register_initial";
 	}
 
 	return renderview;
-}
-
-
-function getUseFullRegistrationForm() {
-	// present with full registration even on initial signup?
-	// if false, we just ask for email at signup and get other info after
-	return false;
 }
 //---------------------------------------------------------------------------
 

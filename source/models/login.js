@@ -16,6 +16,7 @@ const UserModel = require("./user");
 // helpers
 const jrlog = require("../helpers/jrlog");
 const JrResult = require("../helpers/jrresult");
+const jrhelpersmdb = require("../helpers/jrhelpersmdb");
 
 
 
@@ -48,7 +49,6 @@ class LoginModel extends ModelBaseMongoose {
 			},
 			userId: {
 				type: mongoose.Schema.ObjectId,
-				required: true,
 			},
 			extraData: {
 				type: String,
@@ -88,6 +88,10 @@ class LoginModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// accessors
+	getUserId() {
+		return this.userId;
+	}
+
 	getUserIdAsString() {
 		if (!this.userId) {
 			return "";
@@ -211,7 +215,8 @@ class LoginModel extends ModelBaseMongoose {
 				}
 			}
 		}
-		var userId = user.getIdAsString();
+
+		var userId = user.getId();
 
 		// create Login if it's not been created yet; saving userId with it
 		if (!login) {
@@ -229,7 +234,7 @@ class LoginModel extends ModelBaseMongoose {
 			eventNewlyLinked = true;
 		} else {
 			// login already existed -- but did it have the right userId already?
-			if (login.getUserIdAsString() !== userId && userId) {
+			if (userId && !jrhelpersmdb.mongoIdEqual(login.getUserId(), userId)) {
 				// ok we need to update login data to point to the new user
 				// ATTN: We expect this case to happen when login.userId is empty;
 				// but is it possible for us to get here with login.userId with a real user?
@@ -249,7 +254,7 @@ class LoginModel extends ModelBaseMongoose {
 		// NEW - ADD login id to user id -- this (may not) be saved to database,
 		//  since that's not important, but WILL be carried around with session data after a user does a bridged login
 		// this is most important if in this function we decide we do want to actually create a full user object here
-		user.loginId = login.getIdAsString();
+		user.loginId = login.getId();
 
 		// now return the associated user we found (or created above)
 		return {
@@ -286,13 +291,13 @@ class LoginModel extends ModelBaseMongoose {
 		}
 
 		// should we connect (note that userId comparison is not !== because im not sure if .userId is a string natively)
-		if (login.userId && login.getUserIdAsString() !== user.getIdAsString() && !flagConnectEvenIfLoginHasUser) {
+		if (login.userId && login.getUserId() !== user.getId() && !flagConnectEvenIfLoginHasUser) {
 			// mismatch, dont connect them
 			return null;
 		}
 
 		// connect them!
-		login.userId = user.getIdAsString();
+		login.userId = user.getId();
 		await login.dbSave();
 		var jrResult = JrResult.makeSuccess("Connected your " + login.provider + " login with this user account.");
 		return jrResult;

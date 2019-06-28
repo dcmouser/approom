@@ -116,6 +116,8 @@ class AppRoomServer {
 	getOptionSiteDomain() { return jrconfig.get("server:SITE_DOMAIN"); }
 
 	getOptionDebugEnabled() { return jrconfig.getDefault("DEBUG", false); }
+
+	getOptionUseFullRegistrationForm() { return jrconfig.getDefault("options:SIGNUP_FULLREGISTRATIONFORM", false); }
 	//---------------------------------------------------------------------------
 
 
@@ -496,7 +498,7 @@ class AppRoomServer {
 					return done(null, false, jrResult);
 				}
 				// ok we found the user, now check their password
-				var bretv = await user.testPassword(password);
+				var bretv = await user.testPlaintextPassword(password);
 				if (!bretv) {
 					// password doesn't match
 					jrResult = JrResult.makeNew("PasswordMismatch").pushFieldError("password", "Password does not match");
@@ -504,10 +506,12 @@ class AppRoomServer {
 				}
 				// password matches!
 				// update last login time
+				jrResult = JrResult.makeNew();
+				await user.updateloginDateAndSave(jrResult);
 				// return the minimal user info needed
 				// IMP NOTE: the profile object we return here is precisely what gets passed to the serializeUser function above
 				const userProfile = user.getMinimalPassportProfile();
-				return done(null, userProfile);
+				return done(null, userProfile, jrResult);
 			},
 		));
 	}
@@ -736,7 +740,7 @@ class AppRoomServer {
 
 	// helper function to get last verification id
 	// see VerificationModel code for where this is set
-	static getLastSessionedVerificationId(req) {
+	getLastSessionedVerificationId(req) {
 		return req.session.lastVerificationId;
 	}
 	//---------------------------------------------------------------------------
@@ -1243,6 +1247,8 @@ class AppRoomServer {
 
 		if (success) {
 			jrResult = JrResult.makeSuccess();
+			// update login date and save it
+			await user.updateloginDateAndSave(jrResult);
 		} else if (!jrResult) {
 			// unknown exception error that happened in passport login attempt?
 			jrResult = JrResult.makeError("VerificationError", "Unknown passport login error in useNowOneTimeLogin.");

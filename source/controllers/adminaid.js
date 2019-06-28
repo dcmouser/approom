@@ -43,7 +43,7 @@ class AdminAid {
 			// save it
 			await app.dbSave();
 			appsAdded += 1;
-			appid = app.getIdAsString();
+			appid = app.getId();
 
 			// now create some rooms attached to the app
 			for (var roomindex = 0; roomindex < addCountRooms; roomindex += 1) {

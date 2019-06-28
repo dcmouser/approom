@@ -96,7 +96,7 @@ describe("user", () => {
 
 		// test password see if its default
 		var plaintextPassword = UserModel.getPasswordAdminPlaintextDefault();
-		var bretv = await user.testPassword(plaintextPassword);
+		var bretv = await user.testPlaintextPassword(plaintextPassword);
 		assert(bretv, "admin user password is not set to default value");
 	});
 

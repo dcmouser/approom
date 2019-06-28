@@ -8,13 +8,14 @@
 
 // models
 const ModelBaseMongoose = require("./modelBaseMongoose");
-const RegistrationAid = require("../controllers/registrationaid");
 
 // our helper modules
 const jrhelpers = require("../helpers/jrhelpers");
 const jrlog = require("../helpers/jrlog");
 const jrcrypto = require("../helpers/jrcrypto");
 const JrResult = require("../helpers/jrresult");
+const jrvalidators = require("../helpers/jrvalidators");
+const jrhmisc = require("../helpers/jrhmisc");
 
 
 //---------------------------------------------------------------------------
@@ -78,14 +79,8 @@ class UserModel extends ModelBaseMongoose {
 			email: {
 				type: String,
 			},
-			passwordObj: {
+			passwordHashed: {
 				type: String,
-			},
-			passwordVersion: {
-				type: Number,
-			},
-			passwordDate: {
-				type: Date,
 			},
 			loginDate: {
 				type: Date,
@@ -107,24 +102,63 @@ class UserModel extends ModelBaseMongoose {
 			email: {
 				label: "Email",
 			},
-			passwordObj: {
+			passwordHashed: {
 				label: "Password",
 				format: "password",
-				hide: ["edit"],
-			},
-			passwordVersion: {
-				label: "Password version",
-				hide: ["edit"],
-			},
-			passwordDate: {
-				label: "Date password set/modified",
-				hide: ["edit"],
+				valueFunctions: {
+					view: (obj, helperData) => {
+						// return obj.passwordObj;
+						var rethtml;
+						if (true) {
+							// for debuging
+							rethtml = obj.passwordHashed;
+						} else {
+							// safe
+							rethtml = this.safeDisplayPasswordInfoFromPasswordHashed(obj.passwordHashed);
+						}
+						return rethtml;
+					},
+					edit: (obj, helperData) => {
+						var appid = obj ? obj.appid : null;
+						var rethtml = jrhmisc.jrHtmlFormInputPassword("password", obj);
+						return rethtml;
+					},
+					list: (obj, helperData) => {
+						if (!obj.passwordHashed) {
+							return "";
+						}
+						return "[CENSORED]";
+					},
+				},
 			},
 			loginDate: {
 				label: "Date of last login",
 				hide: ["edit"],
 			},
 		};
+	}
+
+
+	static safeDisplayPasswordInfoFromPasswordHashed(passwordHashed) {
+		// regex way
+		if (true) {
+			if (!passwordHashed) {
+				return "";
+			}
+			const regexCensor = /"hash":"[^"]*"/;
+			var safeStr = passwordHashed.replace(regexCensor, "\"hash\":[CENSORED]");
+			return safeStr;
+		}
+
+		// old way, dejson then rejson
+		var passwordObj = this.passwordHashToObj(passwordHashed);
+		if (!passwordObj) {
+			return "";
+		}
+		if (passwordObj.hash) {
+			passwordObj.hash = "***";
+		}
+		return (JSON.stringify(passwordObj));
 	}
 	//---------------------------------------------------------------------------
 
@@ -141,16 +175,14 @@ class UserModel extends ModelBaseMongoose {
 			// create admin object
 			jrlog.cdebug("  Creating admin user");
 			// hash password
-			var passwordObj = await this.hashPassword(this.getPasswordAdminPlaintextDefault());
-			var passwordObjForFieldSaving = this.getPasswordObjForFieldSaving(passwordObj);
+			var passwordObj = await this.hashPlaintextPasswordToObj(this.getPasswordAdminPlaintextDefault());
+			var passwordHashed = this.passwordObjToHash(passwordObj);
 			// create generic new object
 			var userAdminObj = {
 				username: "admin",
 				realname: "jesse reichler",
 				email: "mouser@donationcoder.com",
-				// merge in passwordObjForFieldSaving data
-				...passwordObjForFieldSaving,
-
+				passwordHashed,
 			};
 			// now create model (this will also add default properties to it)
 			var user = UserModel.createModel(userAdminObj);
@@ -172,6 +204,16 @@ class UserModel extends ModelBaseMongoose {
 	getUsername() {
 		return this.username;
 	}
+
+	updateloginDate() {
+		// update login date
+		this.loginDate = new Date();
+	}
+
+	async updateloginDateAndSave(jrResult) {
+		this.updateloginDate();
+		await this.dbSave(jrResult);
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -180,41 +222,44 @@ class UserModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// test password on a LOADED user object
-	async testPassword(passwordPlaintext) {
+	async testPlaintextPassword(passwordPlaintext) {
 		// return true if password matches, false if not or if any error
-		var passwordObjParsed = JSON.parse(this.passwordObj);
-		jrlog.cdebugObj(passwordObjParsed, "passwordObjParsed");
-		var bretv = await jrcrypto.testPassword(passwordPlaintext, passwordObjParsed);
+		var passwordObj = this.getPasswordObj();
+		var bretv = await jrcrypto.testPlaintextPassword(passwordPlaintext, passwordObj);
 		return bretv;
 	}
 
 
 	// static hash password helper
-	static async hashPassword(passwordPlaintext) {
-		var oretv = await jrcrypto.hashPlaintextPassword(passwordPlaintext);
+	static async hashPlaintextPasswordToObj(passwordPlaintext) {
+		var oretv = await jrcrypto.hashPlaintextPasswordToObj(passwordPlaintext);
 		return oretv;
 	}
 
 
-	static getPasswordObjForFieldSaving(passwordObj) {
-		// simple helper that returns a new object with the fields we save to our USER model
+	static passwordObjToHash(passwordObj) {
 		if (!passwordObj) {
-			return {};
+			return undefined;
 		}
-		//
-		var obj = {
-			passwordObj: JSON.stringify(passwordObj),
-			passwordVersion: passwordObj.ver,
-			passwordDate: passwordObj.date,
-		};
-		return obj;
+		return JSON.stringify(passwordObj);
 	}
 
+	static passwordHashToObj(passwordHashed) {
+		var passwordObj = jrhelpers.parseJsonObj(passwordHashed, {});
+		return passwordObj;
+	}
 
 	// test
 	static getPasswordAdminPlaintextDefault() { return DefPasswordAdminPlaintextDefault; }
 	//---------------------------------------------------------------------------
 
+
+	//---------------------------------------------------------------------------
+	getPasswordObj() {
+		// helper to get unstringified password obj from hash
+		return UserModel.passwordHashToObj(this.passwordHashed);
+	}
+	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
@@ -232,7 +277,7 @@ class UserModel extends ModelBaseMongoose {
 				{ email: usernameEmail },
 			],
 		}).exec();
-		jrlog.cdebugObj(user, "in findOneByUsernameEmail");
+
 		return user;
 	}
 
@@ -282,42 +327,45 @@ class UserModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// validate email
-	static async validateEmail(email, flagMustBeUnique, flagCanBeBlank) {
+	static async validateEmail(jrResult, email, flagMustBeUnique, flagRequired, existingUser) {
+		// existingUser can be passed to avoid complaint about flagMustBeUnique
 		// return JrResult with error set if error, or blank one on success
-		// ATTN: unfinished
 
 		// validation helper
 		const validator = require("validator");
 
 		if (!email) {
-			if (flagCanBeBlank) {
-				return JrResult.makeSuccess();
+			if (!flagRequired) {
+				return email;
 			}
-			return JrResult.makeNew("EmailInvalid").pushFieldError("email", "Email cannot be blank.");
+			jrResult.pushFieldError("email", "Email cannot be blank.");
+			return undefined;
 		}
 
 		// valid syntax?
 		// see https://github.com/chriso/validator.js
 		const isEmailOptions = {};
 		if (!validator.isEmail(email, isEmailOptions)) {
-			return JrResult.makeNew("EmailInvalid").pushFieldError("email", "Not a properly formatted email address.");
+			jrResult.pushFieldError("email", "Not a properly formatted email address.");
+			return undefined;
 		}
 
 		// check if used by someone already
 		if (flagMustBeUnique) {
 			var user = await this.findOneByEmail(email);
-			if (user) {
-				return JrResult.makeNew("EmailInvalid").pushFieldError("email", "Email already in use.");
+			if (user && (!existingUser || existingUser.id !== user.id)) {
+				jrResult.pushFieldError("email", "Email already in use.");
+				return undefined;
 			}
 		}
 
 		// it's good
-		return JrResult.makeSuccess();
+		return email;
 	}
 
 
 	// validate username
-	static async validateUsername(username, flagMustBeUnique, flagCanBeBlank) {
+	static async validateUsername(jrResult, username, flagMustBeUnique, flagRequired, flagCheckDisallowed, existingUser) {
 		// return JrResult with error set if error, or blank one on success
 		// ATTN: unfinished
 
@@ -325,37 +373,42 @@ class UserModel extends ModelBaseMongoose {
 		const validator = require("validator");
 
 		if (!username) {
-			if (flagCanBeBlank) {
-				return JrResult.makeSuccess();
+			if (!flagRequired) {
+				return username;
 			}
-			return JrResult.makeNew("UsernameInvalid").pushFieldError("username", "Username cannot be blank.");
+			jrResult.pushFieldError("username", "Username cannot be blank.");
+			return undefined;
 		}
 
 		// valid syntax?
 		// see https://github.com/chriso/validator.js
 		if (!validator.matches(username, DefRegexUsernamePattern)) {
-			return JrResult.makeNew("UsernameInvalid").pushBiFieldError("username", "Not a legal username.", "Not a legal username: " + DefRegexUsernameExplanation);
+			jrResult.pushBiFieldError("username", "Not a legal username.", "Not a legal username: " + DefRegexUsernameExplanation);
+			return undefined;
 		}
 
 		// check against some blacklisted username
-		var result = this.isDisallowedNewUsername(username);
-		if (result.isError()) {
-			return result;
+		if (flagCheckDisallowed) {
+			this.checkDisallowedNewUsername(jrResult, username);
+			if (jrResult.isError()) {
+				return undefined;
+			}
 		}
 
 		// check if used by someone already
 		if (flagMustBeUnique) {
 			var user = await this.findOneByUsername(username);
-			if (user) {
-				return JrResult.makeNew("UsernameInvalid").pushFieldError("username", "Username already in use.");
+			if (user && (!existingUser || existingUser.id !== user.id)) {
+				jrResult.pushFieldError("username", "Username already in use.");
+				return undefined;
 			}
 		}
 
 		// it's good
-		return JrResult.makeSuccess();
+		return username;
 	}
 
-	static isDisallowedNewUsername(str) {
+	static checkDisallowedNewUsername(jrResult, username) {
 		// return true if the str is not allowed for new users
 		// note that his may include usernames or emails that admins are allowed to set up, just not users
 		var errorStr;
@@ -363,12 +416,12 @@ class UserModel extends ModelBaseMongoose {
 			if (word[word.length - 1] === "*") {
 				// match against it or prefix
 				word = word.substring(0, word.length - 1);
-				if (str.startsWith(word)) {
+				if (username.startsWith(word)) {
 					errorStr = "Cannot start with the reserved word '" + word + "'";
 					break;
 				}
 			} else {
-				if (str === word) {
+				if (username === word) {
 					errorStr = "Cannot use the reserved word '" + word + "'";
 					break;
 				}
@@ -377,38 +430,51 @@ class UserModel extends ModelBaseMongoose {
 
 		if (errorStr) {
 			// error
-			return JrResult.makeNew("UsernameInvalid").pushBiFieldError("username", "Invalid username", "Invalid username: " + errorStr);
+			jrResult.pushBiFieldError("username", "Invalid username", "Invalid username: " + errorStr);
+			return undefined;
 		}
 		// success
-		return JrResult.makeSuccess();
+		return username;
 	}
 
 
 	// validate password
-	static async validatePassword(password, flagCanBeBlank) {
+	static async validatePlaintextPasswordConvertToHash(jrResult, passwordPlaintext, flagRequired) {
 		// return JrResult with error set if error, or blank one on success
 		// ATTN: unfinished
 
 		// validation helper
 		const validator = require("validator");
 
-		if (!password) {
-			if (flagCanBeBlank) {
-				return JrResult.makeSuccess();
+		if (!passwordPlaintext) {
+			if (flagRequired) {
+				jrResult.pushFieldError("password", "Password cannot be blank.");
 			}
-			return JrResult.makeNew("PasswordInvalid").pushFieldError("password", "Password cannot be blank.");
+			return undefined;
 		}
 
 		// valid syntax?
 		// see https://github.com/chriso/validator.js
-		if (!validator.matches(password, DefRegexPasswordPattern)) {
-			return JrResult.makeNew("PasswordInvalid").pushBiFieldError("password", "Not a legal password.", "Not a legal password: " + DefRegexPasswordExplanation);
+		if (!validator.matches(passwordPlaintext, DefRegexPasswordPattern)) {
+			jrResult.pushBiFieldError("password", "Not a legal password.", "Not a legal password: " + DefRegexPasswordExplanation);
 		}
 
 		// it's good
-		return JrResult.makeSuccess();
+		var passwordObj = await UserModel.hashPlaintextPasswordToObj(passwordPlaintext);
+		var passwordHashed = this.passwordObjToHash(passwordObj);
+		return passwordHashed;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -441,11 +507,10 @@ class UserModel extends ModelBaseMongoose {
 	static async createUniqueUserFromBridgedLogin(bridgedLoginObj, flagUpdateLoginDate) {
 		// this could be tricky because we may have collisions in our desired username, email, etc.
 		var userObj = {
-			username: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.extraData.userName, null),
-			realname: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.extraData.realName, null),
-			email: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.extraData.email, null),
-			passwordHashed: null,
-			passwordDate: null,
+			username: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.extraData.userName, undefined),
+			realname: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.extraData.realName, undefined),
+			email: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.extraData.email, undefined),
+			passwordHashed: undefined,
 		};
 		// modify or tweak username if its not unique
 		await this.uniqueifyUserObj(userObj, bridgedLoginObj.providerName + "_" + bridgedLoginObj.providerId);
@@ -495,7 +560,9 @@ class UserModel extends ModelBaseMongoose {
 		// we may have cases where we are importing a username, or getting one from a bridged login
 		// here we need to ensure it meets our rules
 		const MAXTRIES = 100;
-		var jrResult;
+		var jrResult = JrResult.makeNew();
+
+		var flagCheckDisallowedUsername = true;
 
 		// part 1 is getting a syntax conforming username, short enough for us to add random suffix
 		username = await this.fixImportedUsernameSyntaxLength(username);
@@ -511,7 +578,8 @@ class UserModel extends ModelBaseMongoose {
 		// ok now loop trying to fix unique username by adding suffixes to uniqueify
 		for (var i = 1; i < MAXTRIES; ++i) {
 			// see if user with username already exists (or if this is base default username we are pretending already exists)
-			jrResult = await this.validateUsername(username, true, false);
+			jrResult.clear();
+			await this.validateUsername(jrResult, username, true, false, flagCheckDisallowedUsername, null);
 			if (!jrResult.isError()) {
 				// got a good unique username, so return it
 				return username;
@@ -540,6 +608,8 @@ class UserModel extends ModelBaseMongoose {
 			username = username.toLowerCase();
 		}
 
+		var flagCheckDisallowedUsername = true;
+
 		// REMOVE bad characters
 
 		// loop through the username
@@ -566,8 +636,8 @@ class UserModel extends ModelBaseMongoose {
 		}
 
 		// ok let's take an early try at validating it -- IT SHOULD be good.
-		var jrResult;
-		jrResult = await this.validateUsername(username, false, false);
+		var jrResult = JrResult.makeNew();
+		await this.validateUsername(jrResult, username, false, false, flagCheckDisallowedUsername, null);
 		if (!jrResult.isError()) {
 			// good!
 			return username;
@@ -594,27 +664,7 @@ class UserModel extends ModelBaseMongoose {
 
 
 
-	//---------------------------------------------------------------------------
-	static async createUserFromObj(userObj) {
-		// create a new user account
-		var passwordObjForFieldSaving = this.getPasswordObjForFieldSaving(userObj.passwordHashed);
-		// create generic new object
-		var userObjFull = {
-			username: userObj.username,
-			email: userObj.email,
-			// merge in passwordObjForFieldSaving data
-			...passwordObjForFieldSaving,
 
-		};
-			// now create model (this will also add default properties to it)
-		var user = UserModel.createModel(userObjFull);
-		// and save it
-		var userdoc = await user.dbSave();
-		//
-		jrlog.cdebugObj(userdoc, "new user");
-		return userdoc;
-	}
-	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
@@ -634,6 +684,75 @@ class UserModel extends ModelBaseMongoose {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	static getSaveFields(req, operationType) {
+		// operationType is commonly "crudAdd", "crudEdit"
+		// return an array of field names that the user can modify when saving an object
+		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
+		// subclasses implement; by default we return empty array
+		// NOTE: this list can be generated dynamically based on logged in user
+		var reta;
+		if (operationType === "crudAdd" || operationType === "crudEdit") {
+			reta = ["username", "realname", "email", "password", "passwordHashed", "disabled"];
+		}
+		return reta;
+	}
+
+
+
+	// crud add/edit
+	static async validateAndSave(jrResult, flagSave, req, source, saveFields, preValidatedFields, obj) {
+		// parse form and extrace validated object properies; return if error
+		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
+		// ATTN: TODO there is duplication with code in registrationaid.js currently, because we are trying to decide where best to do these things - ELIMINATE
+		var objdoc;
+		//
+		var flagCheckDisallowedUsername = true;
+
+		// set fields from form and validate
+		await this.doObjMergeSetAsync(jrResult, "username", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validateUsername(jrr, inVal, true, false, flagCheckDisallowedUsername, obj));
+		await this.doObjMergeSetAsync(jrResult, "email", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validateEmail(jrr, inVal, true, false, obj));
+		await this.doObjMergeSetAsync(jrResult, "password", "passwordHashed", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validatePlaintextPasswordConvertToHash(jrr, inVal, false));
+		await this.doObjMergeSetAsync(jrResult, "realname", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal) => jrvalidators.validateString(jrr, keyname, inVal, false));
+		await this.doObjMergeSetAsync(jrResult, "disabled", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFielDisbled(jrr, keyname, inVal));
+
+		// ATTN: unfinished - need to verify email changes
+		// ATTN: unfinished - complains about reserved usernames for admin-only-usernames
+		// ATTN: duslicateive code found in registrationaid and related files
+
+		// any validation errors?
+		if (jrResult.isError()) {
+			return null;
+		}
+
+		// validated successfully
+
+		if (flagSave) {
+			// save it (success message will be pushed onto jrResult)
+			objdoc = await obj.dbSave(jrResult);
+		}
+
+		// return the saved object
+		return objdoc;
+	}
+	//---------------------------------------------------------------------------
 
 
 

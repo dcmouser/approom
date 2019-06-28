@@ -10,10 +10,19 @@
 const jrhelpers = require("../helpers/jrhelpers");
 const JrResult = require("../helpers/jrresult");
 
+// require models
+const arserver = require("../controllers/server");
+const VerificationModel = require("../models/verification");
+const UserModel = require("../models/user");
+const LoginModel = require("../models/login");
+
 
 class RegistrationAid {
 
 	//---------------------------------------------------------------------------
+	// this function is used to initialize form variables when presenting registration form
+	// it gets values from session related if they have a bridged login or a session-remembered validation of their emai, etc.
+	// which allows us to have multi-step registration
 	static async fillReqBodyWithSessionedFieldValues(req) {
 		// option fields
 		var username;
@@ -22,10 +31,6 @@ class RegistrationAid {
 		var jrResult = JrResult.makeNew();
 
 		// initial values for the form to present them with
-
-		// require models
-		const arserver = require("./server");
-		const UserModel = require("../models/user");
 
 		// ok now let's check if they are sessioned with a LoginId; if so we might get initial values from that
 		var login = await arserver.getLoggedInLogin(req);
@@ -55,7 +60,7 @@ class RegistrationAid {
 			// ok we can get their initial registration data from their verification they already verified
 			if (verification.key === "email") {
 				email = verification.val;
-				jrResult.pushSuccess("Your email address has been verified.");
+				jrResult.pushSuccess("With your email address verified, you may now complete your registration.");
 			}
 			extraData = verification.getExtraData();
 			if (extraData.username) {
@@ -108,63 +113,38 @@ class RegistrationAid {
 	// New all in one registration/account form helper
 	static async processAccountAllInOneForm(req) {
 		var jrResult = JrResult.makeNew();
-		var retvResult;
 		var successRedirectTo;
-
-		// require models
-		const arserver = require("../controllers/server");
-		const VerificationModel = require("../models/verification");
-		const UserModel = require("../models/user");
 
 		// get any verification code associated with this registration, to prove they own the email
 		// verifyCode can come explicitly from the form (takes priority) OR the session if not in the form
-		var verification;
-		//
-		var verifyCodeForm = req.body.verifyCode;
-		if (verifyCodeForm) {
-			// verification vode was explicitly provided in the form, so get the information from that
-			// and in THIS case we will allow an expired code to be used, since
-			verification = await VerificationModel.findOneByCode(verifyCodeForm);
-		} else {
-			verification = await arserver.getLastSessionedVerification(req);
-		}
-		//
-		if (verification) {
-			if (!verification.isValidNewAccountEmailReady(req)) {
-				// no good, vlear it
-				verification = null;
-			}
-		}
-
+		var verification = await VerificationModel.getValidVerificationFromIdOrLastSession(req.body.verifyCode, req);
 
 		// depending on how we are invoked we may allow for missing fields
+		// ATTN: note that it may be the case that a field is REQUIRED, but does not have to be present
+		//  on the form if it is present in the verification record (e.g. they have verified their email)
 		var requiredFields;
 		if (verification) {
 			// when we are following up on a verification, then this is a final registration
 			requiredFields = RegistrationAid.calcRequiredRegistrationFieldsFinal();
 		} else {
-			// new registration, we only need certain info
+			// new registration, we may only need certain info, because we aren't creating user account yet, just pre-account verification without account to be created after they verify their email
 			requiredFields = RegistrationAid.calcRequiredRegistrationFieldsInitial();
 		}
-		var flagAllowBlankEmail = !requiredFields.includes("email");
-		var flagAllowBlankUsername = !requiredFields.includes("username");
-		var flagAllowBlankPassword = !requiredFields.includes("password");
-
-		// ATTN: note that it may be the case that a field is REQUIRED, but does not have to be present
-		//  on the form if it is present in the verification record (e.g. they have verified their email)
+		var flagEmailRequired = requiredFields.includes("email");
+		var flagUsernameRequired = requiredFields.includes("username");
+		var flagPasswordRequired = requiredFields.includes("password");
+		var flagCheckDisallowedUsername = true;
 
 
-		// ---
-		// VALIDATE FIELDS
-
-		// values from form
+		// get values from form submission, falling back on verification if there is one that is verified
 		var email = req.body.email;
 		var username = req.body.username;
 		var password = req.body.password;
-		var passwordHashed; // defaults to undefined
+		var passwordHashed;
 		var flagVerifiedEmail = false;
 
-		// blank values can assume verification values
+		// blank values in form can assume verification values
+		// this is so that when they signed up pre-account creation they could have supplies some of these as requested (but not guaranteed) values
 		if (verification) {
 			if (!email) {
 				email = verification.getVerifiedValue("email");
@@ -186,39 +166,35 @@ class RegistrationAid {
 		}
 
 
+
+
+
+		// ok now we want to validate fields
+		// ATTN: there is some duplicated overlapping code here from user.js validateAndSaveNew() that we would ideally like to merge
+
 		// valid email?
-		retvResult = await UserModel.validateEmail(email, true, flagAllowBlankEmail);
-		if (retvResult.isError()) {
-			jrResult.mergeIn(retvResult);
-		}
+		await UserModel.validateEmail(jrResult, email, true, flagEmailRequired, null);
 
 		// valid username?
-		retvResult = await UserModel.validateUsername(username, true, flagAllowBlankUsername);
-		if (retvResult.isError()) {
-			jrResult.mergeIn(retvResult);
-		}
+		await UserModel.validateUsername(jrResult, username, true, flagUsernameRequired, flagCheckDisallowedUsername, null);
 
 		// valid password?
 		if (passwordHashed) {
 			// we already have a valid hashed password for them, previously calculated and stored in verification object (and no new password specified), so we'll use that
 		} else {
-			retvResult = await UserModel.validatePassword(password, flagAllowBlankPassword);
-			if (retvResult.isError()) {
-				jrResult.mergeIn(retvResult);
-			} else {
-				// hash password for storage
-				if (password) {
-					// hash their password
-					passwordHashed = await UserModel.hashPassword(password);
-				}
-			}
+			passwordHashed = await UserModel.validatePlaintextPasswordConvertToHash(jrResult, password, flagPasswordRequired);
 		}
 
 		if (jrResult.isError()) {
 			// error case, we can return now
 			return { jrResult, successRedirectTo };
 		}
-		// ---
+		//---------------------------------------------------------------------------
+
+
+
+
+
 
 
 		// user data object, used in both cases below
@@ -238,18 +214,21 @@ class RegistrationAid {
 		//
 		if (verification && flagVerifiedEmail) {
 			// case 1, we can create the full account
-			jrResult = await RegistrationAid.createFullNewUserAccount(req, verification, extraData);
+			//
+			await RegistrationAid.createFullNewUserAccountForLoggedInUser(jrResult, req, verification, extraData);
 			if (!jrResult.isError()) {
 				if (arserver.getLoggedInLocalUserIdFromSession(req)) {
 					// they have been logged in after verifying, so send them to their profile.
 					successRedirectTo = "/profile";
 				} else {
+					// not logged in, so send them to login page to login
 					successRedirectTo = "/login";
 				}
+				// drop down whether success or error
 			}
 		} else {
 			// case 2, it's an initial registration attempt for which we need to send them a verification
-
+			//
 			// session user data (userId should be blank, but loginId might not be if they are doing this after a bridged login)
 			var userId = arserver.getLoggedInLocalUserIdFromSession(req);
 			var loginId = arserver.getLoggedInLocalLoginIdFromSession(req);
@@ -276,11 +255,16 @@ class RegistrationAid {
 
 	//---------------------------------------------------------------------------
 	static calcRequiredRegistrationFieldsInitial() {
+		// we can change this stuff if we want to force user to provide different info on initial registration
+		// if we only require email, then we can't create account until they verify email, and thereafter fill in another form with username, etc.
+		// wheras if we gather full info (username, pass) now, we can remember it and create full account after they verify their email
 		var requiredFields = ["email"];
 		return requiredFields;
 	}
 
 	static calcRequiredRegistrationFieldsFinal() {
+		// what fields we require to create the full user account
+		// ATTN: note that you can't put just any arbitrary list of fields here, only certain ones are checked in processAccountAllInOneForm() above
 		var requiredFields = ["email", "username", "password"];
 		return requiredFields;
 	}
@@ -300,45 +284,56 @@ class RegistrationAid {
 	// IMPORTANT: extraData may contain an email address -- if so it MUST match the one in the verification, otherwise it is an error to complain about
 	// NOTE: verifyCode can optionally be an already resolved verification object
 	//
-	static async createFullNewUserAccount(req, verification, userObj) {
-		var jrResult, jrResult2;
+	static async createFullNewUserAccountForLoggedInUser(jrResult, req, verification, userObj) {
+		var retvResult;
 
 		// log them in automatically after we create their account?
 		var flagLogInUserAfterAccountCreate = true;
 
 		// require models
-		const arserver = require("../controllers/server");
-		const LoginModel = require("../models/login");
-		const UserModel = require("../models/user");
+		// const arserver = require("../controllers/server");
+		// const LoginModel = require("../models/login");
+		// const UserModel = require("../models/user");
 
-		// create user
-		var user = await UserModel.createUserFromObj(userObj);
+		// ATTN: this currently fails because password is stored in passwordHashed
+
+		// create user (passwordHashed is pre-validated)
+		// ATTN: this function is typically called by caller who has already validated username, email, etc, so we COULD list these all (or *) in the preValidated list
+		// but for safety we ask ValidateAndSaveNew to revalidate everything EXCEPT passwordHash which cannot be re-validated since the plaintext may be gone to the wind
+		var saveFields = ["username", "email", "realname", "passwordHashed"];
+		var user = await UserModel.validateAndSaveNew(jrResult, true, req, userObj, saveFields, ["passwordHashed"]);
 
 		// success?
-		if (user) {
+		if (!jrResult.isError()) {
 			// success
-			jrResult = JrResult.makeSuccess("Your new account with username '" + user.username + "' has been created.");
-			// mark that it is used
-			await verification.useUpAndSave(req, true);
+			jrResult.pushSuccess("Your new account with username '" + user.username + "' has been created.");
+			// mark that verification is used
+			if (verification) {
+				await verification.useUpAndSave(req, true);
+			}
 			// now, if they were sessioned-in with a Login, we want to connect that to the new user
 			//
 			var loginId = arserver.getLoggedInLocalLoginIdFromSession(req);
 			if (loginId) {
-				jrResult2 = await LoginModel.connectUserToLogin(user, loginId, false);
-				jrResult.mergeIn(jrResult2);
+				retvResult = await LoginModel.connectUserToLogin(user, loginId, false);
+				jrResult.mergeIn(retvResult);
 			}
 			// if successfullly created new account, should we actually log them in at this point?
 			if (!jrResult.isError()) {
 				if (flagLogInUserAfterAccountCreate) {
-					jrResult2 = await arserver.loginUserThroughPassport(req, user);
-					jrResult.mergeIn(jrResult2);
+					// log them in
+					retvResult = await arserver.loginUserThroughPassport(req, user);
+					// merge errors?
+					jrResult.mergeIn(retvResult);
+					if (!jrResult.isError()) {
+						jrResult.pushSuccess("You have been logged in.");
+					}
 				}
 			}
-			return jrResult;
+			return;
 		}
 
-		jrResult = JrResult.makeError("RegistrationError", "Failed to create new user account.");
-		return jrResult;
+		jrResult.pushError("Failed to create new user account.");
 	}
 	//---------------------------------------------------------------------------
 

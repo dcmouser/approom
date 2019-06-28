@@ -57,6 +57,14 @@ class JrResult {
 		}
 		return jrResult;
 	}
+
+
+	clear() {
+		this.typestr = undefined;
+		this.fields = undefined;
+		this.items = undefined;
+		this.extraData = undefined;
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -91,14 +99,18 @@ class JrResult {
 	}
 
 	// now we have more generic lists of messages/errors
-	push(key, msg) {
+	push(key, msg, flagOnTop) {
 		if (this.items === undefined) {
 			this.items = {};
 		}
 		if (this.items[key] === undefined) {
 			this.items[key] = [msg];
 		} else {
-			this.items[key].push(msg);
+			if (flagOnTop) {
+				this.items[key].unshift(msg);
+			} else {
+				this.items[key].push(msg);
+			}
 		}
 		return this;
 	}
@@ -127,8 +139,8 @@ class JrResult {
 		return this;
 	}
 
-	pushSuccess(msg) {
-		this.push("success", msg);
+	pushSuccess(msg, flagOnTop) {
+		this.push("success", msg, flagOnTop);			
 		return this;
 	}
 

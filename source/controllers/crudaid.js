@@ -16,6 +16,7 @@ const hbs = require("hbs");
 // helpers
 const JrResult = require("../helpers/jrresult");
 const jrhmisc = require("../helpers/jrhmisc");
+const jrhelpers = require("../helpers/jrhelpers");
 
 // models
 const arserver = require("./server");
@@ -149,7 +150,8 @@ class CrudAid {
 		// generic main html for page (add form)
 		var genericMainHtml;
 		if (this.isViewPathGeneric(viewfile)) {
-			genericMainHtml = this.buildGenericMainHtml(modelClass, null, jrResult, "add", helperData);
+			// genericMainHtml = this.buildGenericMainHtml(modelClass, null, jrResult, "add", helperData);
+			genericMainHtml = this.buildGenericMainHtml(modelClass, reqbody, jrResult, "add", helperData);
 		}
 
 		// render
@@ -196,9 +198,10 @@ class CrudAid {
 		if (!jrResult.isError()) {
 			// now save add changes
 			var saveFields = modelClass.getSaveFields(req, "crudAdd");
-			var savedobj = await modelClass.doObjSave(jrResult, req, req.body, saveFields, obj);
+			var savedobj = await modelClass.validateAndSave(jrResult, true, req, req.body, saveFields, null, obj);
 			if (!jrResult.isError()) {
 				// success! drop down with new blank form, or alternatively, we could redirect to a VIEW obj._id page
+				jrResult.pushSuccess(modelClass.getNiceName() + " added on " + jrhelpers.getNiceNowString() + ".");
 				if (flagRepresentAfterSuccess) {
 					// success, so clear reqbody and drop down so they can add another
 					reqbody = {};
@@ -216,7 +219,8 @@ class CrudAid {
 		// generic main html for page (add form)
 		var genericMainHtml;
 		if (this.isViewPathGeneric(viewfile)) {
-			genericMainHtml = this.buildGenericMainHtml(modelClass, null, jrResult, "add", helperData);
+			genericMainHtml = this.buildGenericMainHtml(modelClass, reqbody, jrResult, "add", helperData);
+			// genericMainHtml = this.buildGenericMainHtml(modelClass, null, jrResult, "add", helperData);
 		}
 
 		// re-present form for another add?
@@ -244,7 +248,7 @@ class CrudAid {
 		var id = req.params.id;
 
 		// validate and get id, this will also do an ACL test
-		var obj = await modelClass.validateGetObjByIdDoAcl(user, jrResult, req, res, id, "edit");
+		var obj = await modelClass.validateGetObjByIdDoAcl(jrResult, user, req, res, id, "edit");
 		if (jrResult.isError()) {
 			return;
 		}
@@ -307,9 +311,10 @@ class CrudAid {
 		if (!jrResult.isError()) {
 			// now save edit changes
 			var saveFields = modelClass.getSaveFields(req, "crudEdit");
-			var savedobj = await modelClass.doObjSave(jrResult, req, req.body, saveFields, obj);
+			var savedobj = await modelClass.validateAndSave(jrResult, true, req, req.body, saveFields, null, obj);
 			if (!jrResult.isError()) {
 				// success! drop down with new blank form, or alternatively, we could redirect to a VIEW obj._id page
+				jrResult.pushSuccess(modelClass.getNiceName() + " saved on " + jrhelpers.getNiceNowString() + ".");
 				if (flagRepresentAfterSuccess) {
 					// fill form data with object properties and drop down to let user re-edit
 					reqbody = savedobj.modelObjPropertyCopy(true);
@@ -354,7 +359,7 @@ class CrudAid {
 		var id = req.params.id;
 
 		// get obj AND perform acl test
-		var obj = await modelClass.validateGetObjByIdDoAcl(user, jrResult, req, res, id, "view");
+		var obj = await modelClass.validateGetObjByIdDoAcl(jrResult, user, req, res, id, "view");
 		if (jrResult.isError()) {
 			return;
 		}
@@ -391,7 +396,7 @@ class CrudAid {
 		var id = req.params.id;
 
 		// get object AND perform ACL test
-		var obj = await modelClass.validateGetObjByIdDoAcl(user, jrResult, req, res, id, "delete");
+		var obj = await modelClass.validateGetObjByIdDoAcl(jrResult, user, req, res, id, "delete");
 		if (jrResult.isError()) {
 			return;
 		}
@@ -433,13 +438,13 @@ class CrudAid {
 			return;
 		}
 		// get object AND perform ACL test
-		var obj = await modelClass.validateGetObjByIdDoAcl(user, jrResult, req, res, id, "delete");
+		var obj = await modelClass.validateGetObjByIdDoAcl(jrResult, user, req, res, id, "delete");
 		if (jrResult.isError()) {
 			return;
 		}
 
 		// object id for display.
-		var objid = obj.getIdAsString();
+		var objIdString = obj.getIdAsString();
 
 		// process delete
 		obj.doDelete(jrResult);
@@ -447,7 +452,7 @@ class CrudAid {
 		// on success redirect to listview
 		if (!jrResult.isError()) {
 			// success
-			jrResult.pushSuccess(modelClass.getNiceName() + " #" + objid + " has been deleted.");
+			jrResult.pushSuccess(modelClass.getNiceName() + " #" + objIdString + " has been deleted.");
 			// redirect
 			jrResult.addToSession(req);
 			res.redirect(baseCrudUrl);
@@ -594,6 +599,7 @@ class CrudAid {
 				// ok we have a custom function to call to get html to show for value
 				valHtml = valfunc(obj, helperData);
 			}
+			var format = modelClass.getSchemaExtraFieldVal(fieldName, "format", undefined);
 
 			// if we havent yet set a value using valueFunctions (or if that returns undefined) then use default value
 			if (valHtml === undefined) {
@@ -608,6 +614,9 @@ class CrudAid {
 				choices = modelClass.getSchemaExtraFieldVal(fieldName, "choices", null);
 				if (choices) {
 					valHtml = this.buildChoiceHtmlForAddEdit(fieldName, choices, val);
+				} else if (format === "textarea") {
+					// textview block
+					valHtml = `<textarea name="${fieldName}" rows="4" cols="80">${val}</textarea>`;
 				} else {
 					// default is simple text input
 					valHtml = `<input type="text" name="${fieldName}" value="${val}" size="80"/>`;
@@ -617,7 +626,7 @@ class CrudAid {
 			rethtml += `
 			<tr>
         		<td><strong>${label}</strong></td>
-   	   			<td>${valHtml}<span class="jrErrorInline">${err}</span> </td>
+   	   			<td>${valHtml} <span class="jrErrorInline">${err}</span> </td>
 			</tr>
 			`;
 		});

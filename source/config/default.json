@@ -34,7 +34,8 @@
 	
 	"options": {
 		"ACCOUNTREQUIRE_PASSWORD": false,
-		"ACCOUNTREQUIRE_EMAIL": false
+		"ACCOUNTREQUIRE_EMAIL": false,
+		"SIGNUP_FULLREGISTRATIONFORM": true
 	}
 
 }

@@ -245,7 +245,8 @@ class ModelBaseMongoose {
 			return null;
 		}
 		// success
-		jrResult.pushSuccess(this.getmodelClass().getNiceName() + " saved on " + jrhelpers.getNiceNowString() + ".");
+		// we don't push a success result here because we would see it in operations we dont want messages on
+		// jrResult.pushSuccess(this.getmodelClass().getNiceName() + " saved on " + jrhelpers.getNiceNowString() + ".");
 		return retv;
 	}
 	//---------------------------------------------------------------------------
@@ -259,11 +260,16 @@ class ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// subclasses implement this
-	static async doObjSave(jrResult, req, source, saveFields, obj) {
-		jrResult.pushError("Internal error: No subclassed proecure to handle doObjSave for " + this.getCollectionName() + " model");
+	static async validateAndSave(jrResult, flagSave, req, source, saveFields, preValidatedFields, obj) {
+		jrResult.pushError("Internal error: No subclassed proecure to handle validateAndSave() for " + this.getCollectionName() + " model");
 		return null;
 	}
 
+	static async validateAndSaveNew(jrResult, flagSave, req, source, saveFields, preValidatedFields) {
+		var newObj = this.createModel({});
+		await this.validateAndSave(jrResult, flagSave, req, source, saveFields, preValidatedFields, newObj);
+		return newObj;
+	}
 
 	static getSaveFields(req, operationType) {
 		// operationType is commonly "crudAdd", "crudEdit"
@@ -274,60 +280,70 @@ class ModelBaseMongoose {
 		return [];
 	}
 
-	static async doObjSaveSetAsync(jrResult, fieldName, source, saveFields, obj, flagRequired, valFunc) {
-		// first check if the value is set in source, if not, nothing to do
-		if (!(fieldName in source)) {
-			if (flagRequired && !(fieldName in obj)) {
+	// ATTN: this function typically does not have to run async so its cpu inefficient to make it async but rather than have 2 copies of this function to maintain, we use just async one
+	// ATTN: TODO in future make a version of this that is sync; or find some better way to handle it
+	static async doObjMergeSetAsync(jrResult, fieldNameSource, fieldNameTarget, source, saveFields, preValidatedFields, obj, flagRequired, valFunc) {
+		//
+		// source and target field names might be different (for example, password is plaintext hashed into a different target fieldname)
+		if (fieldNameTarget === "") {
+			fieldNameTarget = fieldNameSource;
+		}
+
+		// first see if value was pre-validated
+		var validatedVal, unvalidatedVal;
+		var fieldNameUsed;
+		if (preValidatedFields && (preValidatedFields === "*" || (preValidatedFields.includes(fieldNameTarget)))) {
+			// field is pre-validated, so just grab its prevalidated value
+			fieldNameUsed = fieldNameTarget;
+			unvalidatedVal = source[fieldNameSource];
+			validatedVal = source[fieldNameTarget];
+		} else {
+			fieldNameUsed = fieldNameSource;
+			unvalidatedVal = source[fieldNameSource];
+		}
+
+		//
+		// check if the value is even set (!== undefined).  this is either an error, or a case where we return doing nothing
+		if (validatedVal === undefined && unvalidatedVal === undefined) {
+			// no value found, so do nothing; but throw error if required and it's not ALREADY in the object we are merging into
+			if (flagRequired && obj[fieldNameTarget] === undefined) {
 				// it's an error that its not provided and not set in obj already
 				// ATTN: note that this test does *NOT* require that the field be set in source, just that it already be set in obj if not
-				jrResult.pushError("Required value not provided for: " + fieldName);
+				jrResult.pushError("Required value not provided for: " + fieldNameSource);
 			}
 			return undefined;
 		}
-		// ok its set in source. if we aren't allowed to save this field, its an error
-		if (saveFields !== "*" && !(saveFields.includes(fieldName))) {
-			jrResult.pushError("Permission denied to save value for: " + fieldName);
+
+		// ok its set. if we aren't allowed to save this field, its an error
+		if (saveFields !== "*" && !(saveFields.includes(fieldNameUsed))) {
+			jrResult.pushError("Permission denied to save value for: " + fieldNameUsed);
 			return undefined;
 		}
-		// resolve valFunc to get value
-		var val = await valFunc(jrResult, fieldName, source[fieldName]);
-		// if its an error, for example during validation, we are done
-		if (jrResult.isError()) {
-			return undefined;
+
+		// now resolve it if its not yet resolved
+		if (validatedVal === undefined) {
+			validatedVal = await valFunc(jrResult, fieldNameSource, unvalidatedVal);
+			// if its an error, for example during validation, we are done
+			if (jrResult.isError()) {
+				return undefined;
+			}
 		}
-		// success, set it
-		obj[fieldName] = val;
-		return val;
-	}
 
-
-	// copy of above but non-async
-	// ATTN: do we really need 2 functions for this, an async and non-async version?
-	static doObjSaveSet(jrResult, fieldName, source, saveFields, obj, flagRequired, valFunc) {
-		// first check if the value is set in source, if not, nothing to do
-		if (!(fieldName in source)) {
-			if (flagRequired && !(fieldName in obj)) {
+		// secondary check for missing value
+		if (validatedVal === undefined) {
+			// if undefined is returned, we do NOT save the value
+			if (flagRequired && obj[fieldNameTarget] === undefined) {
 				// it's an error that its not provided and not set in obj already
 				// ATTN: note that this test does *NOT* require that the field be set in source, just that it already be set in obj if not
-				jrResult.pushError("Required value not provided for: " + fieldName);
+				jrResult.pushError("Required value not provided for: " + fieldNameUsed);
 			}
-			return undefined;
-		}
-		// ok its set in source. if we aren't allowed to save this field, its an error
-		if (saveFields !== "*" && !(saveFields.includes(fieldName))) {
-			jrResult.pushError("Permission denied to save value for: " + fieldName);
-			return undefined;
-		}
-		// resolve valFunc to get value
-		var val = valFunc(jrResult, fieldName, source[fieldName]);
-		// if its an error, for example during validation, we are done
-		if (jrResult.isError()) {
+			// should we return undefined, OR should we return obj[fieldNameTarget] if its already in there
 			return undefined;
 		}
 
 		// success, set it
-		obj[fieldName] = val;
-		return val;
+		obj[fieldNameTarget] = validatedVal;
+		return validatedVal;
 	}
 	//---------------------------------------------------------------------------
 
@@ -395,7 +411,7 @@ class ModelBaseMongoose {
 	}
 
 
-	static async validateGetObjByIdDoAcl(user, jrResult, req, res, val, aclTestName) {
+	static async validateGetObjByIdDoAcl(jrResult, user, req, res, val, aclTestName) {
 		// validate id
 		var obj;
 		var id = this.validateModelFieldId(jrResult, val);
@@ -503,7 +519,16 @@ class ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// accessors
+	getId() {
+		return this._id;
+	}
+
 	getIdAsString() {
+		if (true) {
+			// ATTN: does this work?
+			return this.id;
+		}
+		// old
 		if (!this._id) {
 			return "";
 		}

@@ -126,6 +126,18 @@ function jrBootstrapCollapseBox(title, body, footer) {
 //---------------------------------------------------------------------------
 
 
+//---------------------------------------------------------------------------
+function jrHtmlFormInputPassword(fieldName, obj) {
+	var rethtml, val;
+	if (obj && obj[fieldName]) {
+		val = obj[fieldName];
+	} else {
+		val = "";
+	}
+	rethtml = `<input name="${fieldName}" type="password" value="${val}">`;
+	return rethtml;
+}
+//---------------------------------------------------------------------------
 
 
 
@@ -135,5 +147,6 @@ module.exports = {
 	jrPluralize, jrPluralizeCount,
 	jrHtmlFormOptionListSelect, jrHtmlFormOptionList, jrHtmlNiceOptionFromList,
 	jrBootstrapCollapseBox,
+	jrHtmlFormInputPassword,
 };
 //---------------------------------------------------------------------------

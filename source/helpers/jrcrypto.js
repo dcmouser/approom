@@ -52,7 +52,7 @@ const DefHumanEasyCharacters = DefHumanEasyCharactersArray[0] + DefHumanEasyChar
 
 
 //---------------------------------------------------------------------------
-async function hashPlaintextPassword(passwordPlaintext) {
+async function hashPlaintextPasswordToObj(passwordPlaintext) {
 	// algorithm to use
 	var passwordAlgorithm = DefPasswordAlgorithm;
 	var salt = "";
@@ -119,7 +119,7 @@ async function createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, 
 
 
 
-async function testPassword(passwordPlaintext, passwordHashed) {
+async function testPlaintextPassword(passwordPlaintext, passwordHashed) {
 	// see if password matches
 
 	// if passwordHashStringFromDb == "" then there is no password stored, so result is always false
@@ -148,7 +148,7 @@ async function testPassword(passwordPlaintext, passwordHashed) {
 		// now is the hashed version of the new plaintext the same as the hashed version of the old stored one?
 		return (passwordHashedTest.passwordHashedStr === passwordHashedStr);
 	} catch (err) {
-		jrlog.log("Error in jrhelpers exports.testPassword while attempting to parse/compare hashed password string");
+		jrlog.log("Error in jrhelpers exports.testPlaintextPassword while attempting to parse/compare hashed password string");
 		jrlog.log(err);
 	}
 
@@ -229,7 +229,7 @@ function genRandomStringHumanEasier(length) {
 
 //---------------------------------------------------------------------------
 module.exports = {
-	hashPlaintextPassword, createPasswordHashed, testPassword,
+	hashPlaintextPasswordToObj, createPasswordHashed, testPlaintextPassword,
 	genRandomStringHex, genRandomStringHumanEasy, genRandomStringHumanEasier,
 };
 //---------------------------------------------------------------------------
