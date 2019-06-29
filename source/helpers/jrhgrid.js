@@ -236,8 +236,18 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 	`;
 	var gridSchema = listHelperData.gridSchema;
 	var headerKeys = calcHeaderKeysNicely(gridSchema);
+
+	//
+	var filterOptions = listHelperData.filterOptions;
+	var protectedFields = filterOptions.protectedFields;
+	var hiddenFields = filterOptions.hiddenFields;
+
 	var onclick;
 	headerKeys.forEach((key) => {
+		if (jrhelpers.isInAnyArray(key, hiddenFields)) {
+			return;
+		}
+		//
 		if (key === "_checkbox") {
 			// toggle check all button
 			onclick = "jrGridToggleCheckboxes('" + queryUrlData.tableId + "');return false;";
@@ -248,6 +258,10 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 			// actions column for edit/delete buttons
 			rethtml += `
 				<th scope="col"> &nbsp; </th>
+			`;
+		} else if (false && jrhelpers.isInAnyArray(key, protectedFields)) {
+			rethtml += `
+				<th scope="col">${key}</th>
 			`;
 		} else {
 			var sortDir = jrGridListTableHeaderSortDir(key, queryUrlData);
@@ -296,6 +310,9 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 			<tr>
 	`;
 	headerKeys.forEach((key) => {
+		if (jrhelpers.isInAnyArray(key, hiddenFields)) {
+			return;
+		}
 		if (key === "_checkbox") {
 			onclick = "jrGridClearFilters('" + queryUrlData.tableId + "'); requestGridUpdate('" + queryUrlData.tableId + "', {}); return false;";
 			rethtml += `
@@ -305,6 +322,10 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 			// action column
 			rethtml += `
 				<th scope="col"> &nbsp; </th>
+			`;
+		} else if (jrhelpers.isInAnyArray(key, protectedFields)) {
+			rethtml += `
+				<th scope="col">&nbsp;</th>
 			`;
 		} else {
 			var val = queryUrlData.fieldFilters[key];
@@ -358,6 +379,11 @@ function jrGridListTableData(listHelperData, queryUrlData) {
 	var headerKeys = calcHeaderKeysNicely(gridSchema);
 	const gridItems = listHelperData.gridItems;
 
+	//
+	var filterOptions = listHelperData.filterOptions;
+	var protectedFields = filterOptions.protectedFields;
+	var hiddenFields = filterOptions.hiddenFields;
+
 	// cache header field custom display hints
 	var valFuncList = {};
 	var valfunc;
@@ -379,6 +405,9 @@ function jrGridListTableData(listHelperData, queryUrlData) {
 			`;
 		// item row
 		headerKeys.forEach((key) => {
+			if (jrhelpers.isInAnyArray(key, hiddenFields)) {
+				return;
+			}
 			if (key === "_checkbox") {
 				// checkbox for batch actions
 				rethtml += `

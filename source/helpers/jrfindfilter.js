@@ -35,6 +35,14 @@ function buildMongooseQueryFromReq(filterOptions, schema, req, jrResult) {
 	var sortDir = jrhelpers.reqValFromList(req, "sortDir", ["asc", "desc"], filterOptions.defaultSortDir);
 	//
 	var fieldFilters = jrhelpers.reqPrefixedValueArray(req, "filter", fieldKeys);
+	//
+	var protectedFields = filterOptions.protectedFields;
+	var hiddenFields = filterOptions.hiddenFields;
+
+	// block sort if its on our block list
+	if (jrhelpers.isInAnyArray(sortField, protectedFields, hiddenFields)) {
+		sortField = "";
+	}
 
 	// query options
 	var queryOptions = {};
@@ -53,6 +61,12 @@ function buildMongooseQueryFromReq(filterOptions, schema, req, jrResult) {
 	var fieldSchema;
 	var fieldFilterKeys = Object.keys(fieldFilters);
 	fieldFilterKeys.forEach((fieldFilterKey) => {
+
+		// certain fields we will refuse to filter on
+		if (jrhelpers.isInAnyArray(fieldFilterKey, protectedFields)) {
+			return;
+		}
+
 		fieldSchema = schema[fieldFilterKey];
 		aFindFilter = convertReqQueryStringToAMongooseFindFilter(fieldFilterKey, fieldSchema, fieldFilters[fieldFilterKey], jrResult);
 		if (aFindFilter !== undefined) {

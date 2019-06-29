@@ -625,7 +625,7 @@ class ModelBaseMongoose {
 	}
 
 	// subclasses can subclass this list grid helper
-	static async calcCrudListHelperData(req, res, baseUrl, jrResult) {
+	static async calcCrudListHelperData(req, res, baseUrl, protectedFields, hiddenFields, jrResult) {
 		// perform a find filter and create table grid
 
 		// schema for obj
@@ -647,8 +647,9 @@ class ModelBaseMongoose {
 			maxPageSize: 1000,
 			defaultSortField: "_id",
 			defaultSortDir: "asc",
-			protectedFields: [],
 			alwaysFilter: [],
+			protectedFields,
+			hiddenFields,
 		};
 
 		const jrFindFilter = require("../helpers/jrfindfilter");
@@ -691,6 +692,7 @@ class ModelBaseMongoose {
 			queryOptions,
 			queryUrlData,
 			gridItems,
+			filterOptions,
 		};
 	}
 

@@ -19,27 +19,34 @@ const arserver = require("../controllers/server");
 const router = express.Router();
 
 
+function setupRouter(urlPath) {
 
-router.get("/", (req, res, next) => {
-	const auth = req.isAuthenticated();
-	if (auth) {
-		jrlog.cdebugObj(req.session, "REQ SESSION");
-		jrlog.cdebugObj(req.user, "REQ USER");
-	}
+	router.get("/", async (req, res, next) => {
 
-	var userInfo = (req.session.passport) ? JSON.stringify(req.session.passport.user) : "not logged in";
+		// require them to be logged in, or creates a redirect
+		var user = await arserver.getLoggedInUser(req);
+		if (!arserver.requireUserIsLoggedIn(req, res, user, urlPath, "/login")) {
+			// all done
+			return;
+		}
 
-	// ignore any previous login diversions
-	arserver.forgetLoginDiversions(req);
+		var userInfo = (req.session.passport) ? JSON.stringify(req.session.passport.user, null, "  ") : "not logged in";
 
-	res.render("user/profile", {
-		jrResult: JrResult.sessionRenderResult(req, res),
-		auth,
-		userInfo,
+		// ignore any previous login diversions
+		arserver.forgetLoginDiversions(req);
+
+		res.render("user/profile", {
+			jrResult: JrResult.sessionRenderResult(req, res),
+			userInfo,
+		});
 	});
-});
+
+	// need to return router
+	return router;
+}
 
 
 
-
-module.exports = router;
+module.exports = {
+	setupRouter,
+};

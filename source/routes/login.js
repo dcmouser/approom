@@ -141,7 +141,8 @@ router.post("/email", async (req, res, next) => {
 			// success; redirect them to homepage and tell them to check their email for a login token (see the verify route for when they click the link to login)
 			jrResult.pushSuccess("Check your mail for your link to login.");
 			jrResult.addToSession(req);
-			res.redirect("/login");
+			// res.redirect("/login");
+			res.redirect("/verify");
 			return;
 		// error, just drop down and re-display the email login form with error
 		}

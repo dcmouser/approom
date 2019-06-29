@@ -105,6 +105,10 @@ class LoginModel extends ModelBaseMongoose {
 		}
 		return JSON.parse(this.extraData);
 	}
+
+	getProviderLabel() {
+		return this.provider;
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -270,7 +274,7 @@ class LoginModel extends ModelBaseMongoose {
 		if (!existingUserId || !existingLoginId) {
 			return null;
 		}
-		// get both models
+
 		var user;
 		var login;
 

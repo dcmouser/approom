@@ -52,6 +52,8 @@ class RegistrationAid {
 			if (username) {
 				username = await UserModel.fixImportedUsername(username);
 			}
+			// show them about their bridged login
+			jrResult.pushSuccess("After your complete your registration, you will be able to login using " + login.getProviderLabel() + ".");
 		}
 
 		// previously sessioned with a verificationId? if so we could get initial values from that

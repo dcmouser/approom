@@ -24,6 +24,15 @@ const jrlog = require("../helpers/jrlog");
 function mergeArraysDedupe(array1, array2) {
 	return Array.from(new Set(array1.concat(array2)));
 }
+
+function isInAnyArray(val, ...arrays) {
+	for (var ar of arrays) {
+		if (ar.indexOf(val) !== -1) {
+			return true;
+		}
+	}
+	return false;
+}
 //---------------------------------------------------------------------------
 
 
@@ -245,10 +254,21 @@ function parseJsonObj(obj, defaultVal) {
 
 
 
+//---------------------------------------------------------------------------
+function forgetSessionVar(req, varName) {
+	if (req.session && req.session[varName] !== undefined) {
+		delete req.session[varName];
+	}
+}
+//---------------------------------------------------------------------------
+
+
+
 
 //---------------------------------------------------------------------------
 module.exports = {
-	mergeArraysDedupe, getNonEmptyPropertyOrDefault, firstNonEmptyValue,
+	mergeArraysDedupe, isInAnyArray,
+	getNonEmptyPropertyOrDefault, firstNonEmptyValue,
 	DateNowPlusMinutes,
 	stringArrayToNiceString,
 	makeClonedObjFromEnumerableProperties, iterationCopy, keyCopy,
@@ -259,5 +279,6 @@ module.exports = {
 	regexEscapeStr, makeSafeForFormInput,
 	isPromise,
 	parseJsonObj,
+	forgetSessionVar,
 };
 //---------------------------------------------------------------------------

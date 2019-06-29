@@ -26,7 +26,7 @@ router.get("/", async (req, res, next) => {
 
 	// require them to be logged in, or creates a redirect
 	var user = await arserver.getLoggedInUser(req);
-	if (!arserver.requireUserIsLoggedIn(req, res, user, "/membersonly", "/login")) {
+	if (!arserver.requireUserIsLoggedIn(req, res, user, "/membersonly")) {
 		// all done
 		return;
 	}

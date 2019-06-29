@@ -96,8 +96,14 @@ class CrudAid {
 
 		var jrResult = JrResult.makeNew();
 
-		// any helper data
-		const helperData = await modelClass.calcCrudListHelperData(req, res, baseCrudUrl, jrResult);
+		// ATTN: We might set these differently based on who is logged in and looking at the list
+		// and it should be a per-modelClass thing..
+		// ATTN: testing here some manual items:
+		var protectedFields = ["passwordHashed"];
+		var hiddenFields = [];
+
+		// make helper data
+		const helperData = await modelClass.calcCrudListHelperData(req, res, baseCrudUrl, protectedFields, hiddenFields, jrResult);
 
 		// render
 		res.render(viewfile, {

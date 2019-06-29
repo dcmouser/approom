@@ -31,6 +31,7 @@ const passportFacebook = require("passport-facebook");
 // misc modules
 const path = require("path");
 const fs = require("fs");
+const assert = require("assert");
 
 // mail
 const nodemailer = require("nodemailer");
@@ -397,6 +398,7 @@ class AppRoomServer {
 		//
 		if (route.setupRouter) {
 			var expressRouter = route.setupRouter(urlPath);
+			assert(expressRouter);
 			expressApp.use(urlPath, expressRouter);
 		} else {
 			expressApp.use(urlPath, route);
@@ -742,6 +744,17 @@ class AppRoomServer {
 	// see VerificationModel code for where this is set
 	getLastSessionedVerificationId(req) {
 		return req.session.lastVerificationId;
+	}
+
+	forgetLastSessionVerification(req) {
+		jrhelpers.forgetSessionVar(req, "lastVerificationId");
+		jrhelpers.forgetSessionVar(req, "lastVerificationDate");
+		/*
+		if (req.session && req.session.lastVerificationId) {
+			delete req.session.lastVerificationId;
+			delete req.session.lastVerificationDate;
+		}
+		*/
 	}
 	//---------------------------------------------------------------------------
 
@@ -1147,14 +1160,18 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	async requireLoggedIn(req, res, goalRelUrl) {
-		var failureRelUrl = "/login";
 		var user = await this.getLoggedInUser(req);
-		return this.requireUserIsLoggedIn(req, res, user, goalRelUrl, failureRelUrl);
+		return this.requireUserIsLoggedIn(req, res, user, goalRelUrl);
 	}
 
 	requireUserIsLoggedIn(req, res, user, goalRelUrl, failureRelUrl) {
 		// if user fails permission, remember the goalRelUrl in session and temporarily redirect to failureRelUrl and return false
 		// otherwise return true
+
+		// set failureRelUrl default
+		if (!failureRelUrl) {
+			failureRelUrl = "/login";
+		}
 
 		// we just need to check if the user is non-empty
 		if (!user) {
@@ -1218,10 +1235,12 @@ class AppRoomServer {
 	forgetLoginDiversions(req) {
 		// call this to unset any session diversions -- this can be useful if the user tried to access a protected page but then left the login page and did other things
 		// remove it from session
-		if (!req.session || !req.session.divertedUrl) {
-			return;
+		jrhelpers.forgetSessionVar(req, "divertedUrl");
+		/*
+		if (req.session && req.session.divertedUrl) {
+			delete req.session.divertedUrl;
 		}
-		delete req.session.divertedUrl;
+		*/
 	}
 	//---------------------------------------------------------------------------
 
@@ -1396,9 +1415,38 @@ class AppRoomServer {
 	}
 
 
-	getCsrf() { return this.csrfInstance; }
+	getCsrf() {
+		return this.csrfInstance;
+	}
+
+	forgetCsrfToken(req) {
+		jrhelpers.forgetSessionVar(req, "csrfSecret");
+	}
 	//---------------------------------------------------------------------------
 
+
+	//---------------------------------------------------------------------------
+	logoutForgetSessionData(req, flagClearAll) {
+		// logout the user from passport
+		req.logout();
+
+		if (flagClearAll) {
+			// forcefully forget EVERYTHING?
+			req.session.destroy();
+		} else {
+			// ignore any previous login diversions
+			this.forgetLoginDiversions(req);
+			// forget remembered verification codes, etc.
+			this.forgetLastSessionVerification(req);
+			// csrf?
+			this.forgetCsrfToken(req);
+			jrhelpers.forgetSessionVar(req, "views");
+		}
+	}
+
+
+
+	//---------------------------------------------------------------------------
 
 
 }

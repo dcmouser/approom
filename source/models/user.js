@@ -670,10 +670,16 @@ class UserModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	// error helper
 	static makeJrResultErrorNoUserFromField(key, value) {
-		var jrResult = JrResult.makeNew("UserNotFound");
-		var msgShort = "User not found.";
+		var msgShort, msgLong;
 		var keylabel = (key === "usernameEmail") ? "username or email" : key;
-		var msgLong = "No user found with user " + keylabel + " matching " + value + ".";
+		if (!value) {
+			msgShort = "Specify " + keylabel;
+			msgLong = "No " + keylabel + " specified to search for.";
+		} else {
+			msgShort = "User not found.";
+			msgLong = "No user found with user " + keylabel + " matching " + value + ".";
+		}
+		var jrResult = JrResult.makeNew("UserNotFound");
 		jrResult.pushBiFieldError(key, msgShort, msgLong);
 		return jrResult;
 	}

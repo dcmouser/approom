@@ -19,16 +19,15 @@ const JrResult = require("../helpers/jrresult");
 const router = express.Router();
 
 router.get("/", (req, res, next) => {
-	// logout the user from passport
-	req.logout();
-	JrResult.makeNew("info").pushSuccess("You have been logged out.").addToSession(req);
 
-	// ignore any previous login diversions
-	arserver.forgetLoginDiversions(req);
+	// remove all?most? session data that the user might want forgotten and log them out
+	arserver.logoutForgetSessionData(req);
+
+	// session message
+	JrResult.makeNew("info").pushSuccess("You have been logged out.").addToSession(req);
 
 	res.redirect("/");
 });
-
 
 
 

@@ -140,7 +140,7 @@ class JrResult {
 	}
 
 	pushSuccess(msg, flagOnTop) {
-		this.push("success", msg, flagOnTop);			
+		this.push("success", msg, flagOnTop);
 		return this;
 	}
 

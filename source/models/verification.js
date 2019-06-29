@@ -431,12 +431,6 @@ class VerificationModel extends ModelBaseMongoose {
 		req.session.lastVerificationDate = new Date();
 	}
 
-	forgetSessionUse(req) {
-		// forget last verification id
-		delete req.session.lastVerificationId;
-		delete req.session.lastVerificationDate;
-	}
-
 	isVerifiedInSession(req) {
 		// see if this verification is stored in the users session
 		const idstr = this.getIdAsString();
@@ -508,7 +502,7 @@ class VerificationModel extends ModelBaseMongoose {
 		// save it to mark it as used
 		await this.dbSave();
 		if (flagForgetFromSession) {
-			this.forgetSessionUse(req);
+			arserver.forgetLastSessionVerification(req);
 		} else {
 			// remember it in session; this is useful for multi-step verification, such as creating an account after verifying email addres
 			this.saveSessionUse(req);
@@ -531,13 +525,16 @@ class VerificationModel extends ModelBaseMongoose {
 		var userId = this.userId;
 		var user = await UserModel.findOneById(userId, true);
 		if (!user) {
-			jrResult = JrResult.makeError("VerificationError", "Unknown user in useNowOneTimeLogin.");
+			jrResult = JrResult.makeError("VerificationError", "The user referred to by this verification code could not be found.");
 		} else {
 			// do the work of logging them in using this verification (addes to passport session, uses up verification model, etc.)
-			jrResult = this.useUpAndSave(req, true);
-			//
+			jrResult = await arserver.loginUserThroughPassport(req, user);
 			if (!jrResult.isError()) {
-				jrResult.pushSuccess("You have successfully logged in using your one-time login code.");
+				var retvResult = await this.useUpAndSave(req, true);
+				jrResult.mergeIn(retvResult);
+				if (!retvResult.isError()) {
+					jrResult.pushSuccess("You have successfully logged in using your one-time login code.");
+				}
 			}
 		}
 
@@ -641,7 +638,8 @@ class VerificationModel extends ModelBaseMongoose {
 			if (!retvResult.isError()) {
 				// success creating user, so let them know, log them in and redirect to profile
 				successRedirectTo = "/profile";
-				jrResult.pushSuccess("Your email address has been verified.");
+				jrResult.mergeIn(retvResult);
+				jrResult.pushSuccess("Your email address has been verified.", true);
 				// they may have been auto-logged-in
 				if (arserver.getLoggedInLocalUserIdFromSession(req)) {
 					// they have been logged in after verifying, so send them to their profile.
