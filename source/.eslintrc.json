@@ -57,6 +57,7 @@
         "no-restricted-syntax": ["error", "LabeledStatement", "WithStatement"],
         "guard-for-in": 0,
         "no-loop-func": 0,
-        "no-alert": 0
+        "no-alert": 0,
+        "arrow-body-style": 0
     }
 }

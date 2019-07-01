@@ -17,6 +17,9 @@ const JrResult = require("../helpers/jrresult");
 const jrvalidators = require("../helpers/jrvalidators");
 const jrhmisc = require("../helpers/jrhmisc");
 
+// controllers
+const arserver = require("../controllers/server");
+
 
 //---------------------------------------------------------------------------
 // constants
@@ -90,8 +93,20 @@ class UserModel extends ModelBaseMongoose {
 		};
 	}
 
+
 	static getSchemaDefinitionExtra() {
 		return {
+			// we start with id, its contents will be overwritten by the getBaseSchemaDefinitionExtra call below, but this will enforce order at top
+			_id: {},
+			avatar: {
+				label: "Avatar",
+				valueFunctions: {
+					view: (obj, helperData) => { return arserver.calcAvatarHtmlImgForUser(obj); },
+					edit: (obj, helperData) => { return arserver.calcAvatarHtmlImgForUser(obj); },
+					list: (obj, helperData) => { return arserver.calcAvatarHtmlImgForUser(obj); },
+				},
+				filterSize: 0,
+			},
 			...(this.getBaseSchemaDefinitionExtra()),
 			username: {
 				label: "Username",
@@ -130,6 +145,7 @@ class UserModel extends ModelBaseMongoose {
 						return "[CENSORED]";
 					},
 				},
+				filterSize: 0,
 			},
 			loginDate: {
 				label: "Date of last login",

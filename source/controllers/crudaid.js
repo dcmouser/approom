@@ -33,18 +33,20 @@ class CrudAid {
 		// and use that calc'd path each time the request is made without having to recompute it
 
 
+		const extraViewData = {};
+
 		//---------------------------------------------------------------------------
 		// list
 		const viewFilePathList = this.calcViewFile("list", modelClass);
-		router.get("/", async (req, res, next) => await this.handleListGet(req, res, next, modelClass, baseCrudUrl, viewFilePathList));
+		router.get("/", async (req, res, next) => await this.handleListGet(req, res, next, modelClass, baseCrudUrl, viewFilePathList, extraViewData));
 		//---------------------------------------------------------------------------
 
 		//---------------------------------------------------------------------------
 		// add (get)
 		const viewFilePathAdd = this.calcViewFile("addedit", modelClass);
-		router.get("/add/:id?", async (req, res, next) => await this.handleAddGet(req, res, next, modelClass, baseCrudUrl, viewFilePathAdd));
+		router.get("/add/:id?", async (req, res, next) => await this.handleAddGet(req, res, next, modelClass, baseCrudUrl, viewFilePathAdd, extraViewData));
 		// add (post submit)
-		router.post("/add/:ignoredid?", async (req, res, next) => await this.handleAddPost(req, res, next, modelClass, baseCrudUrl, viewFilePathAdd));
+		router.post("/add/:ignoredid?", async (req, res, next) => await this.handleAddPost(req, res, next, modelClass, baseCrudUrl, viewFilePathAdd, extraViewData));
 		//---------------------------------------------------------------------------
 
 		//---------------------------------------------------------------------------
@@ -52,27 +54,27 @@ class CrudAid {
 		const viewFilePathEdit = this.calcViewFile("addedit", modelClass);
 		router.get("/edit/:id", async (req, res, next) => await this.handleEditGet(req, res, next, modelClass, baseCrudUrl, viewFilePathEdit));
 		// edit (post submit)
-		router.post("/edit/:ignoredid?", async (req, res, next) => await this.handleEditPost(req, res, next, modelClass, baseCrudUrl, viewFilePathEdit));
+		router.post("/edit/:ignoredid?", async (req, res, next) => await this.handleEditPost(req, res, next, modelClass, baseCrudUrl, viewFilePathEdit, extraViewData));
 		//---------------------------------------------------------------------------
 
 		//---------------------------------------------------------------------------
 		// view (get)
 		const viewFilePathView = this.calcViewFile("viewdelete", modelClass);
-		router.get("/view/:id", async (req, res, next) => await this.handleViewGet(req, res, next, modelClass, baseCrudUrl, viewFilePathView));
+		router.get("/view/:id", async (req, res, next) => await this.handleViewGet(req, res, next, modelClass, baseCrudUrl, viewFilePathView, extraViewData));
 		//---------------------------------------------------------------------------
 
 		//---------------------------------------------------------------------------
 		// delete (get)
 		const viewFilePathDelete = this.calcViewFile("viewdelete", modelClass);
-		router.get("/delete/:id", async (req, res, next) => await this.handleDeleteGet(req, res, next, modelClass, baseCrudUrl, viewFilePathDelete));
+		router.get("/delete/:id", async (req, res, next) => await this.handleDeleteGet(req, res, next, modelClass, baseCrudUrl, viewFilePathDelete, extraViewData));
 		// delete (post submit)
-		router.post("/delete/:ignoredid?", async (req, res, next) => await this.handleDeletePost(req, res, next, modelClass, baseCrudUrl, viewFilePathDelete));
+		router.post("/delete/:ignoredid?", async (req, res, next) => await this.handleDeletePost(req, res, next, modelClass, baseCrudUrl, viewFilePathDelete, extraViewData));
 		//---------------------------------------------------------------------------
 
 		//---------------------------------------------------------------------------
 		// stats
 		const viewFilePathStats = this.calcViewFile("stats", modelClass);
-		router.get("/stats", async (req, res, next) => await this.handleStatsGet(req, res, next, modelClass, baseCrudUrl, viewFilePathStats));
+		router.get("/stats", async (req, res, next) => await this.handleStatsGet(req, res, next, modelClass, baseCrudUrl, viewFilePathStats, extraViewData));
 		//---------------------------------------------------------------------------
 	}
 	//---------------------------------------------------------------------------
@@ -85,13 +87,13 @@ class CrudAid {
 	//---------------------------------------------------------------------------
 	// These functions do the actual work of crud routes
 
-	static async handleListGet(req, res, next, modelClass, baseCrudUrl, viewfile) {
+	static async handleListGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
 
 		// acl test
 		if (!await arserver.aclRequireModelAccess(user, req, res, modelClass, "list")) {
-			return;
+			return true;
 		}
 
 		var jrResult = JrResult.makeNew();
@@ -102,22 +104,28 @@ class CrudAid {
 		var protectedFields = ["passwordHashed"];
 		var hiddenFields = [];
 
+		// parse view file set
+		var { viewFile, isGeneric } = viewFileSet;
+
 		// make helper data
 		const helperData = await modelClass.calcCrudListHelperData(req, res, baseCrudUrl, protectedFields, hiddenFields, jrResult);
 
 		// render
-		res.render(viewfile, {
+		res.render(viewFile, {
 			headline: "List " + modelClass.getNiceName() + "s",
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 			crudClassNiceName: modelClass.getNiceName(),
 			csrfToken: arserver.makeCsrf(req, res),
 			helperData,
 			baseCrudUrl,
+			extraViewData,
 		});
+
+		return true;
 	}
 
 
-	static async handleAddGet(req, res, next, modelClass, baseCrudUrl, viewfile) {
+	static async handleAddGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
 
@@ -132,7 +140,7 @@ class CrudAid {
 			if (!jrResult.isError()) {
 				// acl test to VIEW the item we are CLONING
 				if (!await arserver.aclRequireModelAccess(user, req, res, modelClass, "view", id)) {
-					return;
+					return true;
 				}
 				// get object being edited
 				var obj = await modelClass.findOneById(id);
@@ -147,21 +155,23 @@ class CrudAid {
 
 		// acl test to add
 		if (!await arserver.aclRequireModelAccess(user, req, res, modelClass, "add")) {
-			return;
+			return true;
 		}
 
 		// any helper data
 		const helperData = await modelClass.calcCrudEditHelperData(user);
 
+		// parse view file set
+		var { viewFile, isGeneric } = viewFileSet;
+
 		// generic main html for page (add form)
 		var genericMainHtml;
-		if (this.isViewPathGeneric(viewfile)) {
-			// genericMainHtml = this.buildGenericMainHtml(modelClass, null, jrResult, "add", helperData);
+		if (isGeneric) {
 			genericMainHtml = this.buildGenericMainHtml(modelClass, reqbody, jrResult, "add", helperData);
 		}
 
 		// render
-		res.render(viewfile, {
+		res.render(viewFile, {
 			headline: "Add " + modelClass.getNiceName(),
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 			crudClassNiceName: modelClass.getNiceName(),
@@ -171,11 +181,14 @@ class CrudAid {
 			genericMainHtml,
 			baseCrudUrl,
 			crudAdd: true,
+			extraViewData,
 		});
+
+		return true;
 	}
 
 
-	static async handleAddPost(req, res, next, modelClass, baseCrudUrl, viewfile) {
+	static async handleAddPost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// user posts form for adding submission
 
 		// get logged in user
@@ -187,11 +200,11 @@ class CrudAid {
 
 		// check required csrf token
 		if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
-			return;
+			return true;
 		}
 		// acl test
 		if (!await arserver.aclRequireModelAccess(user, req, res, this, "add")) {
-			return;
+			return true;
 		}
 
 		// process
@@ -208,13 +221,19 @@ class CrudAid {
 			if (!jrResult.isError()) {
 				// success! drop down with new blank form, or alternatively, we could redirect to a VIEW obj._id page
 				jrResult.pushSuccess(modelClass.getNiceName() + " added on " + jrhelpers.getNiceNowString() + ".");
+
+				if (!baseCrudUrl) {
+					// just return to caller saying they should take over
+					return false;
+				}
+
 				if (flagRepresentAfterSuccess) {
 					// success, so clear reqbody and drop down so they can add another
 					reqbody = {};
 				} else {
 					jrResult.addToSession(req);
 					res.redirect(baseCrudUrl + "/view/" + savedobj.getIdAsString());
-					return;
+					return true;
 				}
 			}
 		}
@@ -222,15 +241,17 @@ class CrudAid {
 		// any helper data
 		const helperData = await modelClass.calcCrudEditHelperData(user);
 
+		// parse view file set
+		var { viewFile, isGeneric } = viewFileSet;
+
 		// generic main html for page (add form)
 		var genericMainHtml;
-		if (this.isViewPathGeneric(viewfile)) {
+		if (isGeneric) {
 			genericMainHtml = this.buildGenericMainHtml(modelClass, reqbody, jrResult, "add", helperData);
-			// genericMainHtml = this.buildGenericMainHtml(modelClass, null, jrResult, "add", helperData);
 		}
 
 		// re-present form for another add?
-		res.render(viewfile, {
+		res.render(viewFile, {
 			headline: "Add " + modelClass.getNiceName(),
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 			crudClassNiceName: modelClass.getNiceName(),
@@ -240,11 +261,14 @@ class CrudAid {
 			genericMainHtml,
 			baseCrudUrl,
 			crudAdd: true,
+			extraViewData,
 		});
+
+		return true;
 	}
 
 
-	static async handleEditGet(req, res, next, modelClass, baseCrudUrl, viewfile) {
+	static async handleEditGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
 
@@ -256,7 +280,7 @@ class CrudAid {
 		// validate and get id, this will also do an ACL test
 		var obj = await modelClass.validateGetObjByIdDoAcl(jrResult, user, req, res, id, "edit");
 		if (jrResult.isError()) {
-			return;
+			return false;
 		}
 
 		// put object fields in body, for view form
@@ -265,14 +289,17 @@ class CrudAid {
 		// any helper data
 		const helperData = await modelClass.calcCrudEditHelperData(user, id);
 
+		// parse view file set
+		var { viewFile, isGeneric } = viewFileSet;
+
 		// generic main html for page (edit form)
 		var genericMainHtml;
-		if (this.isViewPathGeneric(viewfile)) {
+		if (isGeneric) {
 			genericMainHtml = this.buildGenericMainHtml(modelClass, reqbody, jrResult, "edit", helperData);
 		}
 
 		// render
-		res.render(viewfile, {
+		res.render(viewFile, {
 			headline: "Edit " + modelClass.getNiceName() + " #" + id,
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 			crudClassNiceName: modelClass.getNiceName(),
@@ -281,11 +308,14 @@ class CrudAid {
 			helperData,
 			genericMainHtml,
 			baseCrudUrl,
+			extraViewData,
 		});
+
+		return true;
 	}
 
 
-	static async handleEditPost(req, res, next, modelClass, baseCrudUrl, viewfile) {
+	static async handleEditPost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// user posts form for adding submission
 
 		// get logged in user
@@ -301,11 +331,11 @@ class CrudAid {
 
 		// check required csrf token
 		if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
-			return;
+			return false;
 		}
 		// acl test
 		if (!await arserver.aclRequireModelAccess(user, req, res, this, "edit", id)) {
-			return;
+			return false;
 		}
 
 		// process
@@ -321,13 +351,19 @@ class CrudAid {
 			if (!jrResult.isError()) {
 				// success! drop down with new blank form, or alternatively, we could redirect to a VIEW obj._id page
 				jrResult.pushSuccess(modelClass.getNiceName() + " saved on " + jrhelpers.getNiceNowString() + ".");
+				if (!baseCrudUrl) {
+					// just return to caller saying they should take over
+					jrResult.addToSession(req);
+					return false;
+				}
+
 				if (flagRepresentAfterSuccess) {
 					// fill form data with object properties and drop down to let user re-edit
 					reqbody = savedobj.modelObjPropertyCopy(true);
 				} else {
 					jrResult.addToSession(req);
 					res.redirect(baseCrudUrl + "/view/" + savedobj.getIdAsString());
-					return;
+					return true;
 				}
 
 			}
@@ -336,14 +372,17 @@ class CrudAid {
 		// any helper data
 		const helperData = await modelClass.calcCrudEditHelperData(user, id);
 
+		// parse view file set
+		var { viewFile, isGeneric } = viewFileSet;
+
 		// generic main html for page (edit form)
 		var genericMainHtml;
-		if (this.isViewPathGeneric(viewfile)) {
+		if (isGeneric) {
 			genericMainHtml = this.buildGenericMainHtml(modelClass, reqbody, jrResult, "edit", helperData);
 		}
 
 		// render -- just like original edit
-		res.render(viewfile, {
+		res.render(viewFile, {
 			headline: "Edit " + modelClass.getNiceName() + " #" + id,
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 			crudClassNiceName: modelClass.getNiceName(),
@@ -352,11 +391,14 @@ class CrudAid {
 			helperData,
 			genericMainHtml,
 			baseCrudUrl,
+			extraViewData,
 		});
+
+		return true;
 	}
 
 
-	static async handleViewGet(req, res, next, modelClass, baseCrudUrl, viewfile) {
+	static async handleViewGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
 
@@ -367,20 +409,23 @@ class CrudAid {
 		// get obj AND perform acl test
 		var obj = await modelClass.validateGetObjByIdDoAcl(jrResult, user, req, res, id, "view");
 		if (jrResult.isError()) {
-			return;
+			return true;
 		}
 
 		// any helper data
 		const helperData = await modelClass.calcCrudViewHelperData(req, res, id, obj);
 
+		// parse view file set
+		var { viewFile, isGeneric } = viewFileSet;
+
 		// generic main html for page (view form)
 		var genericMainHtml;
-		if (this.isViewPathGeneric(viewfile)) {
+		if (isGeneric) {
 			genericMainHtml = this.buildGenericMainHtml(modelClass, obj, jrResult, "view", helperData);
 		}
 
 		// render
-		res.render(viewfile, {
+		res.render(viewFile, {
 			headline: "View " + modelClass.getNiceName() + " #" + id,
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 			crudClassNiceName: modelClass.getNiceName(),
@@ -389,11 +434,14 @@ class CrudAid {
 			genericMainHtml,
 			crudDelete: false,
 			baseCrudUrl,
+			extraViewData,
 		});
+
+		return true;
 	}
 
 
-	static async handleDeleteGet(req, res, next, modelClass, baseCrudUrl, viewfile) {
+	static async handleDeleteGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
 
@@ -404,20 +452,23 @@ class CrudAid {
 		// get object AND perform ACL test
 		var obj = await modelClass.validateGetObjByIdDoAcl(jrResult, user, req, res, id, "delete");
 		if (jrResult.isError()) {
-			return;
+			return true;
 		}
 
 		// any helper data
 		const helperData = await modelClass.calcCrudViewHelperData(req, res, id, obj);
 
+		// parse view file set
+		var { viewFile, isGeneric } = viewFileSet;
+
 		// generic main html for page (delete form)
 		var genericMainHtml;
-		if (this.isViewPathGeneric(viewfile)) {
+		if (isGeneric) {
 			genericMainHtml = this.buildGenericMainHtml(modelClass, obj, jrResult, "delete", helperData);
 		}
 
 		// render
-		res.render(viewfile, {
+		res.render(viewFile, {
 			headline: "Delete " + modelClass.getNiceName() + " #" + id,
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 			crudClassNiceName: modelClass.getNiceName(),
@@ -427,11 +478,14 @@ class CrudAid {
 			genericMainHtml,
 			crudDelete: true,
 			baseCrudUrl,
+			extraViewData,
 		});
+
+		return true;
 	}
 
 
-	static async handleDeletePost(req, res, next, modelClass, baseCrudUrl, viewfile) {
+	static async handleDeletePost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
 
@@ -441,12 +495,12 @@ class CrudAid {
 
 		// check required csrf token
 		if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
-			return;
+			return true;
 		}
 		// get object AND perform ACL test
 		var obj = await modelClass.validateGetObjByIdDoAcl(jrResult, user, req, res, id, "delete");
 		if (jrResult.isError()) {
-			return;
+			return true;
 		}
 
 		// object id for display.
@@ -462,20 +516,23 @@ class CrudAid {
 			// redirect
 			jrResult.addToSession(req);
 			res.redirect(baseCrudUrl);
-			return;
+			return true;
 		}
 
 		// any helper data
 		const helperData = await modelClass.calcCrudViewHelperData(req, res, id, obj);
 
+		// parse view file set
+		var { viewFile, isGeneric } = viewFileSet;
+
 		// generic main html for page (delete form)
 		var genericMainHtml;
-		if (this.isViewPathGeneric(viewfile)) {
+		if (isGeneric) {
 			genericMainHtml = this.buildGenericMainHtml(modelClass, obj, jrResult, "delete", helperData);
 		}
 
 		// failed, present them with delete page like view?
-		res.render(viewfile, {
+		res.render(viewFile, {
 			headline: "Delete " + modelClass.getNiceName() + " #" + id,
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 			crudClassNiceName: modelClass.getNiceName(),
@@ -483,39 +540,60 @@ class CrudAid {
 			genericMainHtml,
 			crudDelete: true,
 			baseCrudUrl,
+			extraViewData,
 		});
+
+		return true;
 	}
 
 
-	static async handleStatsGet(req, res, next, modelClass, baseCrudUrl, viewfile) {
+	static async handleStatsGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
 
 		// acl test
 		if (!await arserver.aclRequireModelAccess(user, req, res, modelClass, "stats")) {
-			return;
+			return true;
 		}
 
 		// any helper data
 		const helperData = await modelClass.calcCrudStatsHelperData(req, res);
 
+		var { viewFile, isGeneric } = viewFileSet;
+
 		// generic main html for page (delete form)
 		var genericMainHtml;
-		if (this.isViewPathGeneric(viewfile)) {
+		if (isGeneric) {
 			genericMainHtml = this.buildGenericMainHtml(modelClass, null, null, "stats", helperData);
 		}
 
 		// render
-		res.render(viewfile, {
+		res.render(viewFile, {
 			jrResult: JrResult.sessionRenderResult(req, res),
 			crudClassNiceName: modelClass.getNiceName(),
 			csrfToken: arserver.makeCsrf(req, res),
 			helperData,
 			genericMainHtml,
 			baseCrudUrl,
+			extraViewData,
 		});
+
+		return true;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -536,19 +614,21 @@ class CrudAid {
 		var fpath = path.join(arserver.getViewPath(), fnameModelSpecific + arserver.getViewExt());
 		// jrLog.debug("ATTN: looking for " + fpath);
 		if (fs.existsSync(fpath)) {
-			return fnameModelSpecific;
+			return {
+				viewFile: fnameModelSpecific,
+				isGeneric: false,
+			};
 		}
-		return fnameModelGeneric;
+		return {
+			viewFile: fnameModelGeneric,
+			isGeneric: true,
+		};
 	}
 	//---------------------------------------------------------------------------
 
 
 
 	//---------------------------------------------------------------------------
-	static isViewPathGeneric(viewPath) {
-		return (viewPath.indexOf("generic_") !== -1);
-	}
-
 	static buildGenericMainHtml(modelClass, obj, jrResult, crudSubType, helperData) {
 		var rethtml;
 

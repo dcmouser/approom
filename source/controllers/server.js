@@ -28,10 +28,13 @@ const passport = require("passport");
 const passportLocal = require("passport-local");
 const passportFacebook = require("passport-facebook");
 
-// misc modules
+// misc node core modules
 const path = require("path");
 const fs = require("fs");
 const assert = require("assert");
+
+// misc 3rd party modules
+const gravatar = require("gravatar");
 
 // mail
 const nodemailer = require("nodemailer");
@@ -65,6 +68,7 @@ class AppRoomServer {
 	constructor() {
 		// csrf
 		this.csrfInstance = undefined;
+		this.gravatarOptions = undefined;
 	}
 
 	// global singleton request
@@ -119,6 +123,18 @@ class AppRoomServer {
 	getOptionDebugEnabled() { return jrconfig.getDefault("DEBUG", false); }
 
 	getOptionUseFullRegistrationForm() { return jrconfig.getDefault("options:SIGNUP_FULLREGISTRATIONFORM", false); }
+
+	// see https://stackoverflow.com/questions/2683803/gravatar-is-there-a-default-image
+	/*
+		404: do not load any image if none is associated with the email hash, instead return an HTTP 404 (File Not Found) response
+		mm: (mystery-man) a simple, cartoon-style silhouetted outline of a person (does not vary by email hash)
+		identicon: a geometric pattern based on an email hash
+		monsterid: a generated 'monster' with different colors, faces, etc
+		wavatar: generated faces with differing features and backgrounds
+		retro: awesome generated, 8-bit arcade-style pixelated faces
+		blank: a transparent PNG image (border added to HTML below for demonstration purposes)
+	*/
+	getOptionsGravatar() { return jrconfig.getDefault("options:GRAVATAR_OPTIONS", {}); }
 	//---------------------------------------------------------------------------
 
 
@@ -978,6 +994,20 @@ class AppRoomServer {
 
 
 
+	//---------------------------------------------------------------------------
+	cacheMiscOptions() {
+		// cache some options for quicker access
+		// note that we might have to call this whenever options change
+		this.gravatarOptions = this.getOptionsGravatar();
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
 
 
 
@@ -1044,6 +1074,9 @@ class AppRoomServer {
 
 		// other helper stuff
 		await this.setupMailer();
+
+		// cache any options for faster access
+		this.cacheMiscOptions();
 
 		// now make the express servers (http AND/OR https)
 		this.createExpressServersAndListen();
@@ -1443,10 +1476,30 @@ class AppRoomServer {
 			jrhelpers.forgetSessionVar(req, "views");
 		}
 	}
-
+	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
+	// user avatars
+	calcAvatarHtmlImgForUser(obj) {
+		var rethtml;
+		if (obj) {
+			var avatarUrl = this.calcAvatarUrlForUser(obj);
+			rethtml = `<img src="${avatarUrl}">`;
+		} else {
+			rethtml = "&nbsp;";
+		}
+		return rethtml;
+	}
+
+	calcAvatarUrlForUser(obj) {
+		// ATTN: cache this somewhere to improve the speed of this function
+		var id = obj.email;
+		var url = gravatar.url(id, this.gravatarOptions);
+		return url;
+	}
+	//---------------------------------------------------------------------------
+
 
 
 }

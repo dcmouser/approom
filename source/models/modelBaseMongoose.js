@@ -49,10 +49,12 @@ class ModelBaseMongoose {
 			_id: {
 				label: "Id",
 				hide: ["edit"],
+				filterSize: 25,
 			},
 			version: {
 				label: "Version",
 				hide: ["edit"],
+				filterSize: 3,
 			},
 			creationDate: {
 				label: "Date created",
@@ -69,6 +71,7 @@ class ModelBaseMongoose {
 					1: "Disabled",
 					2: "Deleted",
 				},
+				filterSize: 3,
 			},
 		};
 	}
@@ -630,6 +633,7 @@ class ModelBaseMongoose {
 
 		// schema for obj
 		var gridSchema = this.getSchemaDefinition();
+		var schemaExtra = this.getSchemaDefinitionExtra();
 
 		// force add the invisible id field to schema for display
 		// we shouldn't have to do this anymore, we found out had to add it to the model schema
@@ -687,6 +691,7 @@ class ModelBaseMongoose {
 		return {
 			modelClass: this,
 			gridSchema,
+			schemaExtra,
 			gridHeaders,
 			query,
 			queryOptions,

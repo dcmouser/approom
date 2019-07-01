@@ -35,7 +35,10 @@
 	"options": {
 		"ACCOUNTREQUIRE_PASSWORD": false,
 		"ACCOUNTREQUIRE_EMAIL": false,
-		"SIGNUP_FULLREGISTRATIONFORM": true
+		"SIGNUP_FULLREGISTRATIONFORM": true,
+		"GRAVATAR_OPTIONS": {
+			"d": "monsterid"
+		}
 	}
 
 }

@@ -1,5 +1,18 @@
 <h1>Profile</h1>
 
-<div>Session user info:<pre>{{userInfo}}</pre></div>
+<div>Session user info:<pre>{{extraViewData.userInfo}}</pre></div>
 
+
+	<form action="" method="post">
+
+		{{genericMainHtml}}
+	
+	   	<div>
+        	<input type="submit" value="Submit" />
+    	</div>
+
+    	<input type="hidden" name="_id" value="{{reqbody._id}}">
+    	<input type="hidden" name="_csrf" value="{{csrfToken}}">
+
+    </form>
 

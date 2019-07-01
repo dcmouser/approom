@@ -220,12 +220,12 @@ function jrGridListTable(listHelperData, queryUrlData) {
 
 
 function jrGridListTableHeader(listHelperData, queryUrlData) {
-	// test flag
-	var flagUseLabel = true;
-
-	var rethtml = "";
+	// defaults
+	const defaultFilterInputSize = 20;
+	const flagUseLabel = true;
 
 	// header start
+	var rethtml = "";
 	rethtml += `
 		<thead>
 	`;
@@ -234,10 +234,10 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 	rethtml += `
 			<tr>
 	`;
-	var gridSchema = listHelperData.gridSchema;
-	var headerKeys = calcHeaderKeysNicely(gridSchema);
 
-	//
+	// data content
+	var schemaExtra = listHelperData.schemaExtra;
+	var headerKeys = calcHeaderKeysNicely(schemaExtra);
 	var filterOptions = listHelperData.filterOptions;
 	var protectedFields = filterOptions.protectedFields;
 	var hiddenFields = filterOptions.hiddenFields;
@@ -335,9 +335,16 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 				val = jrhelpers.makeSafeForFormInput(val);
 			}
 			var onkeydown = "jrGridGenericOnEnterRefresh(event, '" + queryUrlData.tableId + "', this)";
-			rethtml += `
-				<th scope="col"> <input type="text" name = "filter_${key}" value="${val}" onkeydown="${onkeydown}" title="type search filter and hit Enter to refresh"> </th>
-			`;
+			var size = listHelperData.modelClass.getSchemaExtraFieldVal(key, "filterSize", defaultFilterInputSize);
+			if (!size) {
+				rethtml += `
+					<th scope="col"> &nbsp; </th>
+				`;
+			} else {
+				rethtml += `
+					<th scope="col"> <input type="text" name="filter_${key}" value="${val}" size="${size}" onkeydown="${onkeydown}" title="type search filter and hit Enter to refresh"> </th>
+				`;
+			}
 		}
 	});
 	//
@@ -375,8 +382,8 @@ function jrGridListTableData(listHelperData, queryUrlData) {
 	`;
 
 	// data content
-	var gridSchema = listHelperData.gridSchema;
-	var headerKeys = calcHeaderKeysNicely(gridSchema);
+	var schemaExtra = listHelperData.schemaExtra;
+	var headerKeys = calcHeaderKeysNicely(schemaExtra);
 	const gridItems = listHelperData.gridItems;
 
 	//
@@ -468,12 +475,6 @@ function jrGridListTableData(listHelperData, queryUrlData) {
 
 function calcHeaderKeysNicely(gridSchema) {
 	var headerKeys = Object.keys(gridSchema);
-	// if _id is found, move it to top
-	var posId = headerKeys.indexOf("_id");
-	if (posId > 0) {
-		headerKeys.splice(posId, 1);
-		headerKeys.unshift("_id");
-	}
 
 	// add checkbox
 	headerKeys.unshift("_checkbox");
