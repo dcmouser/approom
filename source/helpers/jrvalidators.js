@@ -20,6 +20,11 @@ function validateString(jrResult, keyname, str, flagRequired) {
 	// anything else is good for now
 	return str;
 }
+
+
+function validateRealName(jrResult, keyname, str, flagRequired) {
+	return validateString(jrResult, keyname, str, flagRequired);
+}
 //---------------------------------------------------------------------------
 
 
@@ -47,7 +52,7 @@ function validateCheckbox(jrResult, keyname, val, flagRequired) {
 
 //---------------------------------------------------------------------------
 module.exports = {
-	validateString,
+	validateString, validateRealName,
 	validateCheckbox,
 };
 //---------------------------------------------------------------------------

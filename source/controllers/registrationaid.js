@@ -9,6 +9,7 @@
 // our helper modules
 const jrhelpers = require("../helpers/jrhelpers");
 const JrResult = require("../helpers/jrresult");
+const jrvalidators = require("../helpers/jrvalidators");
 
 // require models
 const arserver = require("../controllers/server");
@@ -25,9 +26,7 @@ class RegistrationAid {
 	// which allows us to have multi-step registration
 	static async fillReqBodyWithSessionedFieldValues(req) {
 		// option fields
-		var username;
-		var email;
-		var extraData;
+		var username, email, realName;
 		var jrResult = JrResult.makeNew();
 
 		// initial values for the form to present them with
@@ -36,19 +35,9 @@ class RegistrationAid {
 		var login = await arserver.getLoggedInLogin(req);
 		if (login) {
 			// bridged login, get their requested (or default) username
-			extraData = login.getExtraData();
-			if (extraData.username) {
-				username = extraData.username;
-			}
-			if (extraData.email) {
-				email = extraData.email;
-			}
-			//			if (extraData.passwordHashed) {
-			//				passwordHashed = extraData.passwordHashed;
-			//			}
-			if (!username && extraData.realName) {
-				username = extraData.realName;
-			}
+			email = login.getExtraData("email");
+			realName = login.getExtraData("realName");
+			username = login.getExtraData("username", realName);
 			if (username) {
 				username = await UserModel.fixImportedUsername(username);
 			}
@@ -64,13 +53,9 @@ class RegistrationAid {
 				email = verification.val;
 				jrResult.pushSuccess("With your email address verified, you may now complete your registration.");
 			}
-			extraData = verification.getExtraData();
-			if (extraData.username) {
-				username = extraData.username;
-			}
-			if (extraData.email) {
-				email = extraData.email;
-			}
+			realName = verification.getExtraData("realName", realName);
+			username = verification.getExtraData("username", username);
+			email = verification.getExtraData("email", email);
 		} else {
 			// not relevant for us
 			verification = null;
@@ -79,6 +64,7 @@ class RegistrationAid {
 		// store initial values for form in req.body, just as they would be if were were re-presending a failed form
 		req.body.username = username;
 		req.body.email = email;
+		req.body.realName = realName;
 		if (verification) {
 			req.body.verifyCode = verification.getUniqueCode();
 		}
@@ -142,6 +128,7 @@ class RegistrationAid {
 		var email = req.body.email;
 		var username = req.body.username;
 		var password = req.body.password;
+		var realName = req.body.realName;
 		var passwordHashed;
 		var flagVerifiedEmail = false;
 
@@ -160,10 +147,13 @@ class RegistrationAid {
 				}
 			}
 			if (!username) {
-				username = verification.getExtraValue("username");
+				username = verification.getExtraData("username");
 			}
 			if (!password) {
-				passwordHashed = verification.getExtraValue("passwordHashed");
+				passwordHashed = verification.getExtraData("passwordHashed");
+			}
+			if (!realName) {
+				realName = verification.getExtraData("realName");
 			}
 		}
 
@@ -175,10 +165,13 @@ class RegistrationAid {
 		// ATTN: there is some duplicated overlapping code here from user.js validateAndSaveNew() that we would ideally like to merge
 
 		// valid email?
-		await UserModel.validateEmail(jrResult, email, true, flagEmailRequired, null);
+		email = await UserModel.validateEmail(jrResult, email, true, flagEmailRequired, null);
 
 		// valid username?
-		await UserModel.validateUsername(jrResult, username, true, flagUsernameRequired, flagCheckDisallowedUsername, null);
+		username = await UserModel.validateUsername(jrResult, username, true, flagUsernameRequired, flagCheckDisallowedUsername, null);
+
+		// valid realName
+		realName = await jrvalidators.validateRealName(jrResult, "realName", realName, false);
 
 		// valid password?
 		if (passwordHashed) {
@@ -200,9 +193,10 @@ class RegistrationAid {
 
 
 		// user data object, used in both cases below
-		var extraData = {
+		var userObj = {
 			email,
 			username,
+			realName,
 			passwordHashed,
 		};
 		// ATTN: IMPORTANT NOTE
@@ -211,13 +205,12 @@ class RegistrationAid {
 		//  in which case we can create the account
 		// Case 2: They somehow are on this page requesting a new account, without proof of they own the email (maybe they lost the verification coder, etc.)
 		//  in this case, it's identical to asking for a registration
-		// in case 1 we will complain if they try to use an email address in extraData that does not match the one in the verification;
+		// in case 1 we will complain if they try to use an email address in userObj that does not match the one in the verification;
 		//  but alternately we could take a mismatch of email as a sign of case 2, and rather than complaining, just begin the email verification process again.
 		//
 		if (verification && flagVerifiedEmail) {
 			// case 1, we can create the full account
-			//
-			await RegistrationAid.createFullNewUserAccountForLoggedInUser(jrResult, req, verification, extraData);
+			await RegistrationAid.createFullNewUserAccountForLoggedInUser(jrResult, req, verification, userObj);
 			if (!jrResult.isError()) {
 				if (arserver.getLoggedInLocalUserIdFromSession(req)) {
 					// they have been logged in after verifying, so send them to their profile.
@@ -236,7 +229,7 @@ class RegistrationAid {
 			var loginId = arserver.getLoggedInLocalLoginIdFromSession(req);
 
 			// create the email verification and mail it
-			jrResult = await VerificationModel.createVerificationNewAccountEmail(email, userId, loginId, extraData);
+			jrResult = await VerificationModel.createVerificationNewAccountEmail(email, userId, loginId, userObj);
 
 			// add message on success
 			if (!jrResult.isError()) {
@@ -283,7 +276,7 @@ class RegistrationAid {
 	// there is very similar code elsewhere that we would like to combine
 	//
 	// ATTN: there is redundant code here; better would be to call the generic UseVerification process with the extra info
-	// IMPORTANT: extraData may contain an email address -- if so it MUST match the one in the verification, otherwise it is an error to complain about
+	// IMPORTANT: userObj may contain an email address -- if so it MUST match the one in the verification, otherwise it is an error to complain about
 	// NOTE: verifyCode can optionally be an already resolved verification object
 	//
 	static async createFullNewUserAccountForLoggedInUser(jrResult, req, verification, userObj) {
@@ -292,18 +285,15 @@ class RegistrationAid {
 		// log them in automatically after we create their account?
 		var flagLogInUserAfterAccountCreate = true;
 
-		// require models
-		// const arserver = require("../controllers/server");
-		// const LoginModel = require("../models/login");
-		// const UserModel = require("../models/user");
-
-		// ATTN: this currently fails because password is stored in passwordHashed
-
 		// create user (passwordHashed is pre-validated)
 		// ATTN: this function is typically called by caller who has already validated username, email, etc, so we COULD list these all (or *) in the preValidated list
 		// but for safety we ask ValidateAndSaveNew to revalidate everything EXCEPT passwordHash which cannot be re-validated since the plaintext may be gone to the wind
-		var saveFields = ["username", "email", "realname", "passwordHashed"];
-		var user = await UserModel.validateAndSaveNew(jrResult, true, req, userObj, saveFields, ["passwordHashed"]);
+		var saveFields = ["username", "email", "realName", "passwordHashed"];
+		// trust the email since we just verified it
+		var options = {
+			flagTrustEmailChange: true,
+		};
+		var user = await UserModel.validateAndSaveNew(jrResult, options, true, req, userObj, saveFields, ["passwordHashed"]);
 
 		// success?
 		if (!jrResult.isError()) {

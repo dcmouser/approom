@@ -78,7 +78,7 @@ class UserModel extends ModelBaseMongoose {
 				unique: true,
 				required: true,
 			},
-			realname: {
+			realName: {
 				type: String,
 			},
 			email: {
@@ -109,7 +109,7 @@ class UserModel extends ModelBaseMongoose {
 			username: {
 				label: "Username",
 			},
-			realname: {
+			realName: {
 				label: "Real name",
 			},
 			email: {
@@ -205,7 +205,7 @@ class UserModel extends ModelBaseMongoose {
 			// create generic new object
 			var userAdminObj = {
 				username: "admin",
-				realname: "jesse reichler",
+				realName: "jesse reichler",
 				email: "mouser@donationcoder.com",
 				passwordHashed,
 			};
@@ -379,7 +379,7 @@ class UserModel extends ModelBaseMongoose {
 		if (flagMustBeUnique) {
 			var user = await this.findOneByEmail(email);
 			if (user && (!existingUser || existingUser.id !== user.id)) {
-				jrResult.pushFieldError("email", "Email already in use.");
+				jrResult.pushFieldError("email", "Email already in use (" + email + ").");
 				return undefined;
 			}
 		}
@@ -532,9 +532,9 @@ class UserModel extends ModelBaseMongoose {
 	static async createUniqueUserFromBridgedLogin(bridgedLoginObj, flagUpdateLoginDate) {
 		// this could be tricky because we may have collisions in our desired username, email, etc.
 		var userObj = {
-			username: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.extraData.userName, undefined),
-			realname: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.extraData.realName, undefined),
-			email: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.extraData.email, undefined),
+			username: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.getExtraData("username"), undefined),
+			realName: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.getExtraData("realName"), undefined),
+			email: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.getExtraData("email"), undefined),
 			passwordHashed: undefined,
 		};
 		// modify or tweak username if its not unique
@@ -559,7 +559,7 @@ class UserModel extends ModelBaseMongoose {
 		var username = userObj.username;
 		if (!username) {
 			// is there a real name for this person
-			username = userObj.realname;
+			username = userObj.realName;
 		}
 		if (!username) {
 			// maybe providername is something we can use
@@ -741,7 +741,7 @@ class UserModel extends ModelBaseMongoose {
 		// NOTE: this list can be generated dynamically based on logged in user
 		var reta;
 		if (operationType === "crudAdd" || operationType === "crudEdit") {
-			reta = ["username", "realname", "email", "password", "passwordHashed", "disabled"];
+			reta = ["username", "realName", "email", "password", "passwordHashed", "disabled"];
 		}
 		return reta;
 	}
@@ -749,7 +749,7 @@ class UserModel extends ModelBaseMongoose {
 
 
 	// crud add/edit
-	static async validateAndSave(jrResult, flagSave, req, source, saveFields, preValidatedFields, obj) {
+	static async validateAndSave(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 		// ATTN: TODO there is duplication with code in registrationaid.js currently, because we are trying to decide where best to do these things - ELIMINATE
@@ -767,11 +767,13 @@ class UserModel extends ModelBaseMongoose {
 		// set fields from form and validate
 		await this.validateMergeAsync(jrResult, "username", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validateUsername(jrr, inVal, true, false, flagCheckDisallowedUsername, obj));
 		await this.validateMergeAsync(jrResult, "password", "passwordHashed", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validatePlaintextPasswordConvertToHash(jrr, inVal, false));
-		await this.validateMergeAsync(jrResult, "realname", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal) => jrvalidators.validateString(jrr, keyname, inVal, false));
+		await this.validateMergeAsync(jrResult, "realName", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal) => jrvalidators.validateRealName(jrr, keyname, inVal, false));
 		await this.validateMergeAsync(jrResult, "disabled", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFielDisbled(jrr, keyname, inVal));
 
 		// can we trust them to bypass verification email
-		if (flagUserIsSuperAdmin) {
+		if (options.flagTrustEmailChange) {
+			flagTrustEmailChange = true;
+		} else if (flagUserIsSuperAdmin) {
 			var keynameEmailBypass = "emailBypassVerify";
 			flagTrustEmailChange = jrvalidators.validateCheckbox(jrResult, keynameEmailBypass, source[keynameEmailBypass], false);
 		}

@@ -50,9 +50,6 @@ class LoginModel extends ModelBaseMongoose {
 			userId: {
 				type: mongoose.Schema.ObjectId,
 			},
-			extraData: {
-				type: String,
-			},
 			loginDate: {
 				type: Date,
 			},
@@ -71,9 +68,6 @@ class LoginModel extends ModelBaseMongoose {
 			userId: {
 				label: "Local user id",
 				crudLink: UserModel.getCrudUrlBase(),
-			},
-			extraData: {
-				label: "Extra user data",
 			},
 			loginDate: {
 				label: "Date of last login",
@@ -97,13 +91,6 @@ class LoginModel extends ModelBaseMongoose {
 			return "";
 		}
 		return this.userId.toString();
-	}
-
-	getExtraData() {
-		if (!this.extraData) {
-			return {};
-		}
-		return JSON.parse(this.extraData);
 	}
 
 	getProviderLabel() {
@@ -229,7 +216,7 @@ class LoginModel extends ModelBaseMongoose {
 				provider: bridgedLoginObj.provider,
 				providerUserId: bridgedLoginObj.providerUserId,
 				userId,
-				extraData: JSON.stringify(bridgedLoginObj.extraData),
+				extraData: bridgedLoginObj.extraData,
 				loginDate: new Date(),
 			};
 			// create model (this will also add default properties to it)

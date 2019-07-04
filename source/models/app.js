@@ -103,7 +103,7 @@ class AppModel extends ModelBaseMongoose {
 
 
 	// crud add/edit
-	static async validateAndSave(jrResult, flagSave, req, source, saveFields, preValidatedFields, obj) {
+	static async validateAndSave(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 		var objdoc;

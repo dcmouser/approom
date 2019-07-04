@@ -63,7 +63,7 @@ class JrResult {
 		this.typestr = undefined;
 		this.fields = undefined;
 		this.items = undefined;
-		this.extraData = undefined;
+		this.eData = undefined;
 	}
 	//---------------------------------------------------------------------------
 
@@ -144,18 +144,18 @@ class JrResult {
 		return this;
 	}
 
-	setExtraData(key, val) {
-		if (!this.extraData) {
-			this.extraData = [];
+	setEData(key, val) {
+		if (!this.eData) {
+			this.eData = [];
 		}
-		this.extraData[key] = val;
+		this.eData[key] = val;
 	}
 
-	getExtraData(key, defaultVal) {
-		if (!this.extraData || !(key in this.extraData)) {
+	getEData(key, defaultVal) {
+		if (!this.eData || !(key in this.eData)) {
 			return defaultVal;
 		}
-		return this.extraData[key];
+		return this.eData[key];
 	}
 	//---------------------------------------------------------------------------
 

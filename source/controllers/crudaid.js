@@ -227,7 +227,7 @@ class CrudAid {
 		if (!jrResult.isError()) {
 			// now save add changes
 			var saveFields = modelClass.getSaveFields(req, "crudAdd");
-			var savedobj = await modelClass.validateAndSave(jrResult, true, req, req.body, saveFields, null, obj);
+			var savedobj = await modelClass.validateAndSave(jrResult, {}, true, req, req.body, saveFields, null, obj);
 			if (!jrResult.isError()) {
 				// success! drop down with new blank form, or alternatively, we could redirect to a VIEW obj._id page
 				jrResult.pushSuccess(modelClass.getNiceName() + " added on " + jrhelpers.getNiceNowString() + ".");
@@ -355,7 +355,7 @@ class CrudAid {
 		if (!jrResult.isError()) {
 			// now save edit changes
 			var saveFields = modelClass.getSaveFields(req, "crudEdit");
-			var savedobj = await modelClass.validateAndSave(jrResult, true, req, req.body, saveFields, null, obj);
+			var savedobj = await modelClass.validateAndSave(jrResult, {}, true, req, req.body, saveFields, null, obj);
 			if (!jrResult.isError()) {
 				// success! drop down with new blank form, or alternatively, we could redirect to a VIEW obj._id page
 				jrResult.pushSuccess(modelClass.getNiceName() + " saved on " + jrhelpers.getNiceNowString() + ".");

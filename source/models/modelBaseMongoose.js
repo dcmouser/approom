@@ -40,6 +40,9 @@ class ModelBaseMongoose {
 			disabled: {
 				type: Number,
 			},
+			extraData: {
+				type: Map,
+			},
 		};
 	}
 
@@ -73,6 +76,13 @@ class ModelBaseMongoose {
 				},
 				filterSize: 3,
 			},
+			extraData: {
+				label: "Extra data",
+				valueFunction: async (viewType, req, obj, helperData) => {
+					return JSON.stringify(obj.extraData, null, " ");
+				},
+				filterSize: 0,
+			},
 		};
 	}
 	//---------------------------------------------------------------------------
@@ -102,7 +112,7 @@ class ModelBaseMongoose {
 	// ATTN: TODO -- cache the schema definition and extras
 	static getSchemaExtraFieldVal(fieldName, key, defaultVal) {
 		var modelSchemaExtra = this.getSchemaDefinitionExtra();
-		if (modelSchemaExtra[fieldName] && modelSchemaExtra[fieldName][key]) {
+		if (modelSchemaExtra[fieldName] && modelSchemaExtra[fieldName][key] !== undefined) {
 			return modelSchemaExtra[fieldName][key];
 		}
 		return defaultVal;
@@ -280,14 +290,14 @@ class ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// subclasses implement this
-	static async validateAndSave(jrResult, flagSave, req, source, saveFields, preValidatedFields, obj) {
+	static async validateAndSave(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj) {
 		jrResult.pushError("Internal error: No subclassed proecure to handle validateAndSave() for " + this.getCollectionName() + " model");
 		return null;
 	}
 
-	static async validateAndSaveNew(jrResult, flagSave, req, source, saveFields, preValidatedFields) {
+	static async validateAndSaveNew(jrResult, options, flagSave, req, source, saveFields, preValidatedFields) {
 		var newObj = this.createModel({});
-		await this.validateAndSave(jrResult, flagSave, req, source, saveFields, preValidatedFields, newObj);
+		await this.validateAndSave(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, newObj);
 		return newObj;
 	}
 
@@ -592,6 +602,18 @@ class ModelBaseMongoose {
 
 	getmodelClass() {
 		return this.constructor;
+	}
+
+	getExtraData(key, defaultVal) {
+		var val = this.extraData.get(key);
+		if (val === undefined) {
+			return defaultVal;
+		}
+		return val;
+	}
+
+	setExtraData(key, val) {
+		this.extraData.set(key, val);
 	}
 	//---------------------------------------------------------------------------
 

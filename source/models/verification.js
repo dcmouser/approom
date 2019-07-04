@@ -83,9 +83,6 @@ class VerificationModel extends ModelBaseMongoose {
 			expirationDate: {
 				type: Date,
 			},
-			extraData: {
-				type: String,
-			},
 		};
 	}
 
@@ -118,10 +115,6 @@ class VerificationModel extends ModelBaseMongoose {
 			expirationDate: {
 				label: "Date expired",
 			},
-			extraData: {
-				label: "Extra data",
-				hide: ["edit"],
-			},
 		};
 	}
 	//---------------------------------------------------------------------------
@@ -144,12 +137,6 @@ class VerificationModel extends ModelBaseMongoose {
 		return this.uniqueCode;
 	}
 
-	getExtraData() {
-		if (!this.extraData) {
-			return {};
-		}
-		return JSON.parse(this.extraData);
-	}
 
 	getVerifiedValue(key) {
 		if (this.key === key) {
@@ -158,13 +145,6 @@ class VerificationModel extends ModelBaseMongoose {
 		return undefined;
 	}
 
-	getExtraValue(key) {
-		var extraData = this.getExtraData();
-		if (key in extraData) {
-			return extraData[key];
-		}
-		return undefined;
-	}
 	//---------------------------------------------------------------------------
 
 
@@ -195,7 +175,7 @@ class VerificationModel extends ModelBaseMongoose {
 		verification.val = val;
 		verification.userId = userId;
 		verification.loginId = loginId;
-		verification.extraData = JSON.stringify(extraData);
+		verification.extraData = extraData;
 		verification.expirationDate = jrhelpers.DateNowPlusMinutes(expirationMinutes);
 		verification.usedDate = null;
 		// NOTE: verification.uniqueCode set below
@@ -701,23 +681,20 @@ If this request was not made by you, please ignore this email.
 		// controllers
 		const RegistrationAid = require("../controllers/registrationaid");
 
-		// data from extraData
-		var extraData = JSON.parse(this.extraData);
-
 		// properties
 		var email = this.val;
-		var username = jrhelpers.firstNonEmptyValue(extraData.username, extraValues.username);
-		var realname = jrhelpers.firstNonEmptyValue(extraData.realname, extraValues.realname);
-		var passwordHashed = extraData.passwordHashed;
+		var username = jrhelpers.firstNonEmptyValue(this.getExtraData("username"), extraValues.username);
+		var realName = jrhelpers.firstNonEmptyValue(this.getExtraData("realName"), extraValues.realName);
+		var passwordHashed = this.getExtraData("passwordHashed");
 
 		// first step, let's check if the email has alread been used by someone, if so then we can just redirect them to try to sign up again and cancel this verification
-		var existingUser = await UserModel.findOneByUsernameEmail(email);
-		if (existingUser) {
+		var existingUserWithEmail = await UserModel.findOneByUsernameEmail(email);
+		if (existingUserWithEmail) {
 			// error, a user with this email already exist; but they just confirmed that THEY own the email which means that
 			// first they signed up when the email wasn't in use, and then later confirmed it through another different verification, and then tried to access via this verification
 			// we could prevent this case by ensuring we cancel all verifications related to an email once a user confirms/claims that email, but better safe than sorry here
 			// or it means they somehow intercepted someone's verification code that they shouldn't have; regardless it's not important, we block it
-			jrResult.pushError("This email already has already been claimed/verified by an existing user account (" + existingUser.getUsername() + ").");
+			jrResult.pushError("This email already has already been claimed/verified by an existing user account (" + existingUserWithEmail.getUsername() + ").");
 			// use it up since we are done with it at this point
 			await this.useUpAndSave(req, true);
 			// return error
@@ -741,7 +718,7 @@ If this request was not made by you, please ignore this email.
 		if (requiredFields.includes("password") && !passwordHashed) {
 			readyToCreateUser = false;
 		}
-		if (requiredFields.includes("realname") && !realname) {
+		if (requiredFields.includes("realName") && !realName) {
 			readyToCreateUser = false;
 		}
 		// validate fields -- we ignore errors here, we just dont go through with creation of user if we hit one
@@ -764,7 +741,7 @@ If this request was not made by you, please ignore this email.
 				username,
 				email,
 				passwordHashed,
-				realname,
+				realName,
 			};
 			// temporary non-fatal test to determine if we have enough info to create user right now
 			retvResult = JrResult.makeNew();

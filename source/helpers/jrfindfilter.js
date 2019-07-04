@@ -168,6 +168,9 @@ function convertReqQueryStringToAMongooseFindFilter(fkey, fieldSchema, querystr,
 	} else if (schemaType === mongoose.Schema.ObjectId) {
 		// exact match
 		retQuery = convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, querystr, "idstring", jrResult);
+	} else if (schemaType === Map) {
+		// can't filter this
+		retQuery = undefined;
 	} else {
 		jrResult.pushError("Search filter error: Unknown schema field type: " + schemaType.toString());
 	}

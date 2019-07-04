@@ -859,9 +859,14 @@ class AppRoomServer {
 				}
 				// success
 				var jrResult = JrResult.makeNew("info");
-				jrResult.pushSuccess("You have successfully logged in " + providerNiceLabel + ".");
 				// userId we JUST signed in as -- NOTE: this could be null if its a local bridged login short of a full user account
 				var newlyLoggedInUserId = thisArserver.getLoggedInLocalUserIdFromSession(req);
+				// announce info
+				if (newlyLoggedInUserId) {
+					jrResult.pushSuccess("You have successfully logged in " + providerNiceLabel + ".");
+				} else {
+					jrResult.pushSuccess("You have successfully connected " + providerNiceLabel + ".");
+				}
 				// and NOW if they were previously sessioned with a pre-account Login object, we can connect that to this account
 				if (newlyLoggedInUserId && previousLoginId) {
 					// try to connect
