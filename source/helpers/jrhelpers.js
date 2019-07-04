@@ -27,11 +27,20 @@ function mergeArraysDedupe(array1, array2) {
 
 function isInAnyArray(val, ...arrays) {
 	for (var ar of arrays) {
-		if (ar.indexOf(val) !== -1) {
+		if (ar && ar.indexOf(val) !== -1) {
 			return true;
 		}
 	}
 	return false;
+}
+
+
+// ATTENTION: very weird things happen if you try to do a foreach loop with async functions inside, they run in parallal essentialy
+// make very sure this is called with "await jrhelpers.asyncForEach" or you will not get correct outcome
+async function asyncForEach(array, callback) {
+	for (let index = 0; index < array.length; index++) {
+		await callback(array[index], index, array);
+	}
 }
 //---------------------------------------------------------------------------
 
@@ -268,6 +277,7 @@ function forgetSessionVar(req, varName) {
 //---------------------------------------------------------------------------
 module.exports = {
 	mergeArraysDedupe, isInAnyArray,
+	asyncForEach,
 	getNonEmptyPropertyOrDefault, firstNonEmptyValue,
 	DateNowPlusMinutes,
 	stringArrayToNiceString,

@@ -17,6 +17,7 @@ const hbs = require("hbs");
 const JrResult = require("../helpers/jrresult");
 const jrhmisc = require("../helpers/jrhmisc");
 const jrhelpers = require("../helpers/jrhelpers");
+const jrhgrid = require("../helpers/jrhgrid");
 
 // models
 const arserver = require("./server");
@@ -107,8 +108,18 @@ class CrudAid {
 		// parse view file set
 		var { viewFile, isGeneric } = viewFileSet;
 
+		// hidden fields for list view
+		var hiddenFiledsExtraSchema = await modelClass.getSchemaExtraKeysMatchingViewType("list", req);
+		hiddenFields = jrhelpers.mergeArraysDedupe(hiddenFields, hiddenFiledsExtraSchema);
+
 		// make helper data
 		const helperData = await modelClass.calcCrudListHelperData(req, res, baseCrudUrl, protectedFields, hiddenFields, jrResult);
+
+		// generic main html for page (add form)
+		var genericMainHtml;
+		if (isGeneric) {
+			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, req.body, jrResult, "list", helperData);
+		}
 
 		// render
 		res.render(viewFile, {
@@ -116,6 +127,7 @@ class CrudAid {
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
 			csrfToken: arserver.makeCsrf(req, res),
 			helperData,
+			genericMainHtml,
 			baseCrudUrl,
 			extraViewData,
 		});
@@ -166,7 +178,7 @@ class CrudAid {
 		// generic main html for page (add form)
 		var genericMainHtml;
 		if (isGeneric) {
-			genericMainHtml = this.buildGenericMainHtml(modelClass, reqbody, jrResult, "add", helperData);
+			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, reqbody, jrResult, "add", helperData);
 		}
 
 		// render
@@ -245,7 +257,7 @@ class CrudAid {
 		// generic main html for page (add form)
 		var genericMainHtml;
 		if (isGeneric) {
-			genericMainHtml = this.buildGenericMainHtml(modelClass, reqbody, jrResult, "add", helperData);
+			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, reqbody, jrResult, "add", helperData);
 		}
 
 		// re-present form for another add?
@@ -292,7 +304,7 @@ class CrudAid {
 		// generic main html for page (edit form)
 		var genericMainHtml;
 		if (isGeneric) {
-			genericMainHtml = this.buildGenericMainHtml(modelClass, reqbody, jrResult, "edit", helperData);
+			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, reqbody, jrResult, "edit", helperData);
 		}
 
 		// render
@@ -373,7 +385,7 @@ class CrudAid {
 		// generic main html for page (edit form)
 		var genericMainHtml;
 		if (isGeneric) {
-			genericMainHtml = this.buildGenericMainHtml(modelClass, reqbody, jrResult, "edit", helperData);
+			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, reqbody, jrResult, "edit", helperData);
 		}
 
 		// render -- just like original edit
@@ -415,7 +427,7 @@ class CrudAid {
 		// generic main html for page (view form)
 		var genericMainHtml;
 		if (isGeneric) {
-			genericMainHtml = this.buildGenericMainHtml(modelClass, obj, jrResult, "view", helperData);
+			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, obj, jrResult, "view", helperData);
 		}
 
 		// render
@@ -457,7 +469,7 @@ class CrudAid {
 		// generic main html for page (delete form)
 		var genericMainHtml;
 		if (isGeneric) {
-			genericMainHtml = this.buildGenericMainHtml(modelClass, obj, jrResult, "delete", helperData);
+			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, obj, jrResult, "delete", helperData);
 		}
 
 		// render
@@ -520,7 +532,7 @@ class CrudAid {
 		// generic main html for page (delete form)
 		var genericMainHtml;
 		if (isGeneric) {
-			genericMainHtml = this.buildGenericMainHtml(modelClass, obj, jrResult, "delete", helperData);
+			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, obj, jrResult, "delete", helperData);
 		}
 
 		// failed, present them with delete page like view?
@@ -555,7 +567,7 @@ class CrudAid {
 		// generic main html for page (delete form)
 		var genericMainHtml;
 		if (isGeneric) {
-			genericMainHtml = this.buildGenericMainHtml(modelClass, null, null, "stats", helperData);
+			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, null, null, "stats", helperData);
 		}
 
 		// render
@@ -620,18 +632,21 @@ class CrudAid {
 
 
 	//---------------------------------------------------------------------------
-	static buildGenericMainHtml(modelClass, obj, jrResult, crudSubType, helperData) {
+	static async buildGenericMainHtml(modelClass, req, obj, jrResult, crudSubType, helperData) {
 		var rethtml;
 
 		if (crudSubType === "add" || crudSubType === "edit") {
 			// build form html for adding or editing
-			rethtml = this.buildGenericMainHtmlAddEdit(modelClass, obj, helperData, jrResult);
+			rethtml = await this.buildGenericMainHtmlAddEdit(modelClass, req, obj, helperData, jrResult);
 		} else if (crudSubType === "delete" || crudSubType === "view") {
 			// build form html for viewing
-			rethtml = this.buildGenericMainHtmlView(modelClass, obj, helperData, jrResult);
+			rethtml = await this.buildGenericMainHtmlView(modelClass, req, obj, helperData, jrResult);
 		} else if (crudSubType === "stats") {
 			// show stats
-			rethtml = this.buildGenericMainHtmlStats(modelClass, obj, helperData, jrResult);
+			rethtml = await this.buildGenericMainHtmlStats(modelClass, req, obj, helperData, jrResult);
+		} else if (crudSubType === "list") {
+			// show stats
+			rethtml = await this.buildGenericMainHtmlList(modelClass, req, obj, helperData, jrResult);
 		} else {
 			throw ("Illegal subtype (" + crudSubType + ") in buildGenericMainHtml.");
 		}
@@ -640,7 +655,7 @@ class CrudAid {
 		return new hbs.SafeString(rethtml);
 	}
 
-	static buildGenericMainHtmlAddEdit(modelClass, obj, helperData, jrResult) {
+	static async buildGenericMainHtmlAddEdit(modelClass, req, obj, helperData, jrResult) {
 		var rethtml = "";
 
 		// start table
@@ -653,10 +668,11 @@ class CrudAid {
 		var modelSchemaExtra = modelClass.getSchemaDefinitionExtra();
 		var schemaKeys = Object.keys(modelSchemaExtra);
 		var val, valHtml, label, valfunc, hideList, choices;
+		var visfunc, isVisible;
 		var err;
-		schemaKeys.forEach((fieldName) => {
+		await jrhelpers.asyncForEach(schemaKeys, async (fieldName) => {
 			hideList = modelClass.getSchemaExtraFieldVal(fieldName, "hide", undefined);
-			if (hideList && hideList.indexOf("edit") !== -1) {
+			if (jrhelpers.isInAnyArray("edit", hideList)) {
 				return;
 			}
 
@@ -671,12 +687,23 @@ class CrudAid {
 
 			// now value
 			valHtml = undefined;
-			valfunc = modelClass.getSchemaExtraFieldValueFunction(fieldName, "edit");
+			valfunc = modelClass.getSchemaExtraFieldVal(fieldName, "valueFunction");
 			if (valfunc) {
 				// ok we have a custom function to call to get html to show for value
-				valHtml = valfunc(obj, helperData);
+				valHtml = await valfunc("edit", req, obj, helperData);
 			}
 			var format = modelClass.getSchemaExtraFieldVal(fieldName, "format", undefined);
+
+			// dynamic visibility function
+			visfunc = modelClass.getSchemaExtraFieldVal(fieldName, "visibleFunction");
+			if (visfunc) {
+				// ok we have a custom function to call
+				isVisible = await visfunc("edit", req, obj, helperData);
+				if (!isVisible) {
+					return;
+				}
+			}
+
 
 			// if we havent yet set a value using valueFunctions (or if that returns undefined) then use default value
 			if (valHtml === undefined) {
@@ -694,6 +721,15 @@ class CrudAid {
 				} else if (format === "textarea") {
 					// textview block
 					valHtml = `<textarea name="${fieldName}" rows="4" cols="80">${val}</textarea>`;
+				} else if (format === "checkbox") {
+					// checkbox
+					var extra;
+					if (val) {
+						extra = "checked";
+					} else {
+						extra = "";
+					}
+					valHtml = `<input type="checkbox" name="${fieldName}" ${extra}>`;
 				} else {
 					// default is simple text input
 					valHtml = `<input type="text" name="${fieldName}" value="${val}" size="80"/>`;
@@ -720,7 +756,7 @@ class CrudAid {
 
 
 
-	static buildGenericMainHtmlView(modelClass, obj, helperData, jrResult) {
+	static async buildGenericMainHtmlView(modelClass, req, obj, helperData, jrResult) {
 		var rethtml = "";
 
 		// start table
@@ -733,10 +769,12 @@ class CrudAid {
 		var modelSchemaExtra = modelClass.getSchemaDefinitionExtra();
 		var schemaKeys = Object.keys(modelSchemaExtra);
 		var val, valHtml, label, valfunc, hideList, choices;
+		var visfunc, isVisible;
 		var crudLink;
-		schemaKeys.forEach((fieldName) => {
+
+		await jrhelpers.asyncForEach(schemaKeys, async (fieldName) => {
 			hideList = modelClass.getSchemaExtraFieldVal(fieldName, "hide", undefined);
-			if (hideList && hideList.indexOf("view") !== -1) {
+			if (jrhelpers.isInAnyArray("view", hideList)) {
 				return;
 			}
 
@@ -745,10 +783,21 @@ class CrudAid {
 
 			// now value
 			valHtml = undefined;
-			valfunc = modelClass.getSchemaExtraFieldValueFunction(fieldName, "view");
+			valfunc = modelClass.getSchemaExtraFieldVal(fieldName, "valueFunction");
 			if (valfunc) {
 				// ok we have a custom function to call to get html to show for value
-				valHtml = valfunc(obj, helperData);
+				valHtml = await valfunc("view", req, obj, helperData);
+			}
+			var format = modelClass.getSchemaExtraFieldVal(fieldName, "format", undefined);
+
+			// dynamic visibility function
+			visfunc = modelClass.getSchemaExtraFieldVal(fieldName, "visibleFunction");
+			if (visfunc) {
+				// ok we have a custom function to call to get html to show for value
+				isVisible = await visfunc("view", req, obj, helperData);
+				if (!isVisible) {
+					return;
+				}
 			}
 
 			// if we havent yet set a value using valueFunctions (or if that returns undefined) then use default value
@@ -797,10 +846,16 @@ class CrudAid {
 		return rethtml;
 	}
 
-	static buildGenericMainHtmlStats(modelClass, obj, helperData, jrResult) {
+	static async buildGenericMainHtmlStats(modelClass, req, obj, helperData, jrResult) {
 		var rethtml;
 		rethtml = "<div>stats</div>";
 		return rethtml;
+	}
+
+
+	static async buildGenericMainHtmlList(modelClass, req, obj, helperData, jrResult) {
+		var rehtml = await jrhgrid.jrGridList(req, helperData);
+		return rehtml;
 	}
 	//---------------------------------------------------------------------------
 

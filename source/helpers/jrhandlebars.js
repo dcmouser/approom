@@ -15,7 +15,7 @@ const path = require("path");
 const jrlog = require("./jrlog");
 const jrhelpers = require("./jrhelpers");
 const jrhmisc = require("./jrhmisc");
-const jrhgrid = require("./jrhgrid");
+
 
 
 
@@ -77,9 +77,6 @@ function setupJrHandlebarHelpers() {
 
 	// form helper for drop down inputs
 	hbs.registerHelper("jrHtmlFormOptionList", (pairlist, selectedid) => new hbs.SafeString(jrhmisc.jrHtmlFormOptionList(pairlist, selectedid)));
-
-	// paged grid list helper
-	hbs.registerHelper("jrGridList", listHelperData => new hbs.SafeString(jrhgrid.jrGridList(listHelperData)));
 }
 //---------------------------------------------------------------------------
 

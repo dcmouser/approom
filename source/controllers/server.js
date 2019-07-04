@@ -1512,6 +1512,17 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 
 
+	//---------------------------------------------------------------------------
+	async isLoggedInUserSuperAdmin(req) {
+		var loggedInUser = await this.getLoggedInUser(req);
+		if (loggedInUser) {
+			return loggedInUser.isSuperAdmin();
+		}
+		return false;
+	}
+	//---------------------------------------------------------------------------
+
+
 
 }
 

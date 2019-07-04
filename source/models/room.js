@@ -66,23 +66,25 @@ class RoomModel extends ModelBaseMongoose {
 			...(this.getBaseSchemaDefinitionExtra()),
 			appid: {
 				label: "App Id",
-				valueFunctions: {
-					view: (obj, helperData) => {
-						var viewUrl = AppModel.getCrudUrlBase("view", obj.appid);
-						var appLabel = helperData.appLabel;
-						var rethtml = `${appLabel} (<a href="${viewUrl}">#${obj.appid}</a>)`;
+				valueFunction: (viewType, req, obj, helperData) => {
+					var viewUrl, appLabel, rethtml, appid;
+					if (viewType === "view") {
+						viewUrl = AppModel.getCrudUrlBase("view", obj.appid);
+						appLabel = helperData.appLabel;
+						rethtml = `${appLabel} (<a href="${viewUrl}">#${obj.appid}</a>)`;
 						return rethtml;
-					},
-					edit: (obj, helperData) => {
-						var appid = obj ? obj.appid : null;
-						var rethtml = jrhmisc.jrHtmlFormOptionListSelect("appid", helperData.applist, appid);
+					}
+					if (viewType === "edit") {
+						appid = obj ? obj.appid : null;
+						rethtml = jrhmisc.jrHtmlFormOptionListSelect("appid", helperData.applist, appid);
 						return rethtml;
-					},
-					list: (obj, helperData) => {
-						var viewUrl = AppModel.getCrudUrlBase("view", obj.appid);
-						var rethtml = `<a href="${viewUrl}">${obj.appid}</a>`;
+					}
+					if (viewType === "list") {
+						viewUrl = AppModel.getCrudUrlBase("view", obj.appid);
+						rethtml = `<a href="${viewUrl}">${obj.appid}</a>`;
 						return rethtml;
-					},
+					}
+					return undefined;
 				},
 				// alternative generic way to have crud pages link to this val
 				// crudLink: AppModel.getCrudUrlBase(),

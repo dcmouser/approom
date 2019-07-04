@@ -13,7 +13,7 @@ const jrhmisc = require("./jrhmisc");
 
 
 //---------------------------------------------------------------------------
-function jrGridList(listHelperData) {
+async function jrGridList(req, listHelperData) {
 	var rethtml = "";
 
 	// destructure parts
@@ -46,7 +46,7 @@ function jrGridList(listHelperData) {
 	}
 
 	// build table
-	rethtml += jrGridListTable(listHelperData, queryUrlData);
+	rethtml += await jrGridListTable(req, listHelperData, queryUrlData);
 
 	// add pager at bottom
 	rethtml += pagerHtml;
@@ -194,7 +194,7 @@ function jrGridListPagerItemPerPage(label, newPageSize, oldPageSize, flagLink, q
 }
 
 
-function jrGridListTable(listHelperData, queryUrlData) {
+async function jrGridListTable(req, listHelperData, queryUrlData) {
 	var rethtml = "";
 
 	// beginning stuff
@@ -207,7 +207,7 @@ function jrGridListTable(listHelperData, queryUrlData) {
 	rethtml += jrGridListTableHeader(listHelperData, queryUrlData);
 
 	// data
-	rethtml += jrGridListTableData(listHelperData, queryUrlData);
+	rethtml += await jrGridListTableData(req, listHelperData, queryUrlData);
 
 	// ending stuff
 	rethtml += `
@@ -373,7 +373,7 @@ function jrGridListTableHeaderSortDir(key, queryUrlData) {
 
 
 
-function jrGridListTableData(listHelperData, queryUrlData) {
+async function jrGridListTableData(req, listHelperData, queryUrlData) {
 	var rethtml = "";
 
 	// data body start
@@ -395,7 +395,7 @@ function jrGridListTableData(listHelperData, queryUrlData) {
 	var valFuncList = {};
 	var valfunc;
 	headerKeys.forEach((key) => {
-		valfunc = listHelperData.modelClass.getSchemaExtraFieldValueFunction(key, "list");
+		valfunc = listHelperData.modelClass.getSchemaExtraFieldVal(key, "valueFunction");
 		if (valfunc) {
 			valFuncList[key] = valfunc;
 		}
@@ -411,7 +411,7 @@ function jrGridListTableData(listHelperData, queryUrlData) {
 			<tr>
 			`;
 		// item row
-		headerKeys.forEach((key) => {
+		await jrhelpers.asyncForEach(headerKeys, async (key) => {
 			if (jrhelpers.isInAnyArray(key, hiddenFields)) {
 				return;
 			}
@@ -431,7 +431,7 @@ function jrGridListTableData(listHelperData, queryUrlData) {
 				val = item[key];
 				if (valFuncList[key]) {
 					// use custom value resolving callback function
-					valDisplay = valFuncList[key](item);
+					valDisplay = await valFuncList[key]("list", req, item, listHelperData);
 				} else {
 					if (val === undefined) {
 						valDisplay = "";

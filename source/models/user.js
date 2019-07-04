@@ -102,11 +102,7 @@ class UserModel extends ModelBaseMongoose {
 			_id: {},
 			avatar: {
 				label: "Avatar",
-				valueFunctions: {
-					view: (obj, helperData) => { return arserver.calcAvatarHtmlImgForUser(obj); },
-					edit: (obj, helperData) => { return arserver.calcAvatarHtmlImgForUser(obj); },
-					list: (obj, helperData) => { return arserver.calcAvatarHtmlImgForUser(obj); },
-				},
+				valueFunction: async (viewType, req, obj, helperData) => { return arserver.calcAvatarHtmlImgForUser(obj); },
 				filterSize: 0,
 			},
 			...(this.getBaseSchemaDefinitionExtra()),
@@ -119,33 +115,44 @@ class UserModel extends ModelBaseMongoose {
 			email: {
 				label: "Email",
 			},
+			emailBypassVerify: {
+				label: "Bypass change verification email?",
+				// hide: ["view", "list"],
+				format: "checkbox",
+				visibleFunction: async (viewType, req, obj, helperData) => {
+					if (viewType === "edit") {
+						return await arserver.isLoggedInUserSuperAdmin(req);
+					}
+					return false;
+				},
+			},
 			passwordHashed: {
 				label: "Password",
 				format: "password",
-				valueFunctions: {
-					view: (obj, helperData) => {
-						// return obj.passwordObj;
-						var rethtml;
-						if (true) {
+				valueFunction: async (viewType, req, obj, helperData) => {
+					var isLoggedInUserSuperAdmin = await arserver.isLoggedInUserSuperAdmin(req);
+					if (viewType === "view") {
+						if (isLoggedInUserSuperAdmin) {
 							// for debuging
-							rethtml = obj.passwordHashed;
-						} else {
-							// safe
-							rethtml = this.safeDisplayPasswordInfoFromPasswordHashed(obj.passwordHashed);
+							return obj.passwordHashed;
 						}
-						return rethtml;
-					},
-					edit: (obj, helperData) => {
+						// safe
+						return this.safeDisplayPasswordInfoFromPasswordHashed(obj.passwordHashed);
+					}
+					if (viewType === "edit") {
 						var appid = obj ? obj.appid : null;
-						var rethtml = jrhmisc.jrHtmlFormInputPassword("password", obj);
-						return rethtml;
-					},
-					list: (obj, helperData) => {
+						return jrhmisc.jrHtmlFormInputPassword("password", obj);
+					}
+					if (viewType === "list") {
+						if (isLoggedInUserSuperAdmin) {
+							return obj.passwordHashed;
+						}
 						if (!obj.passwordHashed) {
 							return "";
 						}
 						return "[CENSORED]";
-					},
+					}
+					return undefined;
 				},
 				filterSize: 0,
 			},
@@ -749,6 +756,13 @@ class UserModel extends ModelBaseMongoose {
 		var objdoc;
 		//
 		var flagCheckDisallowedUsername = true;
+		var flagTrustEmailChange = false;
+		var flagUserIsSuperAdmin = await arserver.isLoggedInUserSuperAdmin(req);
+
+		// super users can do some things others cannot
+		if (flagUserIsSuperAdmin) {
+			flagCheckDisallowedUsername = false;
+		}
 
 		// set fields from form and validate
 		await this.validateMergeAsync(jrResult, "username", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validateUsername(jrr, inVal, true, false, flagCheckDisallowedUsername, obj));
@@ -756,7 +770,13 @@ class UserModel extends ModelBaseMongoose {
 		await this.validateMergeAsync(jrResult, "realname", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal) => jrvalidators.validateString(jrr, keyname, inVal, false));
 		await this.validateMergeAsync(jrResult, "disabled", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFielDisbled(jrr, keyname, inVal));
 
-		var flagTrustEmailChange = false;
+		// can we trust them to bypass verification email
+		if (flagUserIsSuperAdmin) {
+			var keynameEmailBypass = "emailBypassVerify";
+			flagTrustEmailChange = jrvalidators.validateCheckbox(jrResult, keynameEmailBypass, source[keynameEmailBypass], false);
+		}
+
+		// do this last because it may send a verification email
 		if (flagTrustEmailChange) {
 			// merge in new email without validating it
 			await this.validateMergeAsync(jrResult, "email", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validateEmail(jrr, inVal, true, false, obj));
@@ -804,6 +824,17 @@ class UserModel extends ModelBaseMongoose {
 	}
 	//---------------------------------------------------------------------------
 
+
+
+	//---------------------------------------------------------------------------
+	isSuperAdmin() {
+		// ATTN: a temporary test function
+		if (this.getUsername() === "admin") {
+			return true;
+		}
+		return false;
+	}
+	//---------------------------------------------------------------------------
 
 
 

@@ -108,12 +108,29 @@ class ModelBaseMongoose {
 		return defaultVal;
 	}
 
-	static getSchemaExtraFieldValueFunction(fieldName, valueFunctionType) {
+	static async getSchemaExtraKeysMatchingViewType(viewType, req) {
+		var retKeys = [];
 		var modelSchemaExtra = this.getSchemaDefinitionExtra();
-		if (modelSchemaExtra[fieldName] && modelSchemaExtra[fieldName].valueFunctions && modelSchemaExtra[fieldName].valueFunctions[valueFunctionType]) {
-			return modelSchemaExtra[fieldName].valueFunctions[valueFunctionType];
-		}
-		return undefined;
+		var keys = Object.keys(modelSchemaExtra);
+		var keyHideArray;
+		var visfunc, isVisible;
+
+		await jrhelpers.asyncForEach(keys, async (key) => {
+			keyHideArray = modelSchemaExtra[key].hide;
+			if (jrhelpers.isInAnyArray(viewType, keyHideArray)) {
+				retKeys.push(key);
+			} else {
+				visfunc = modelSchemaExtra[key].visibleFunction;
+				if (visfunc) {
+					isVisible = await visfunc(viewType, req, null, null);
+					if (!isVisible) {
+						retKeys.push(key);
+					}
+				}
+			}
+		});
+
+		return retKeys;
 	}
 	//---------------------------------------------------------------------------
 
