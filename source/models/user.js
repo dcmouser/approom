@@ -9,6 +9,7 @@
 // models
 const ModelBaseMongoose = require("./modelBaseMongoose");
 
+
 // our helper modules
 const jrhelpers = require("../helpers/jrhelpers");
 const jrlog = require("../helpers/jrlog");
@@ -19,6 +20,7 @@ const jrhmisc = require("../helpers/jrhmisc");
 
 // controllers
 const arserver = require("../controllers/server");
+
 
 
 //---------------------------------------------------------------------------
@@ -749,11 +751,24 @@ class UserModel extends ModelBaseMongoose {
 		var flagCheckDisallowedUsername = true;
 
 		// set fields from form and validate
-		await this.doObjMergeSetAsync(jrResult, "username", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validateUsername(jrr, inVal, true, false, flagCheckDisallowedUsername, obj));
-		await this.doObjMergeSetAsync(jrResult, "email", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validateEmail(jrr, inVal, true, false, obj));
-		await this.doObjMergeSetAsync(jrResult, "password", "passwordHashed", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validatePlaintextPasswordConvertToHash(jrr, inVal, false));
-		await this.doObjMergeSetAsync(jrResult, "realname", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal) => jrvalidators.validateString(jrr, keyname, inVal, false));
-		await this.doObjMergeSetAsync(jrResult, "disabled", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFielDisbled(jrr, keyname, inVal));
+		await this.validateMergeAsync(jrResult, "username", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validateUsername(jrr, inVal, true, false, flagCheckDisallowedUsername, obj));
+		await this.validateMergeAsync(jrResult, "password", "passwordHashed", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validatePlaintextPasswordConvertToHash(jrr, inVal, false));
+		await this.validateMergeAsync(jrResult, "realname", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal) => jrvalidators.validateString(jrr, keyname, inVal, false));
+		await this.validateMergeAsync(jrResult, "disabled", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFielDisbled(jrr, keyname, inVal));
+
+		var flagTrustEmailChange = false;
+		if (flagTrustEmailChange) {
+			// merge in new email without validating it
+			await this.validateMergeAsync(jrResult, "email", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validateEmail(jrr, inVal, true, false, obj));
+		} else {
+			// we do NOT auto merge in an email change, instead send them a change of email address
+			var emailAddressNew = await UserModel.validateEmail(jrResult, source.email, true, false, obj);
+			if (!jrResult.isError() && emailAddressNew && emailAddressNew !== obj.email) {
+				// they want to change their email address, send them a change of email verification
+				await obj.createAndSendVerificationEmailChange(emailAddressNew);
+				jrResult.pushSuccess("Your new E-mail address is pending.  Please check " + emailAddressNew + " for a confirmation link.  Your new email address will only take effect after you confirm it.");
+			}
+		}
 
 		// ATTN: unfinished - need to verify email changes
 		// ATTN: unfinished - complains about reserved usernames for admin-only-usernames
@@ -780,7 +795,14 @@ class UserModel extends ModelBaseMongoose {
 
 
 
-
+	//---------------------------------------------------------------------------
+	async createAndSendVerificationEmailChange(emailAddressNew) {
+		const VerificationModel = require("./verification");
+		var emailAddressOld = this.email;
+		var userId = this.getId();
+		return await VerificationModel.createAndSendVerificationEmailChange(emailAddressOld, emailAddressNew, userId);
+	}
+	//---------------------------------------------------------------------------
 
 
 

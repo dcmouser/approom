@@ -136,6 +136,10 @@ class VerificationModel extends ModelBaseMongoose {
 		return this.type;
 	}
 
+	getUserId() {
+		return this.userId;
+	}
+
 	getUniqueCode() {
 		return this.uniqueCode;
 	}
@@ -225,44 +229,165 @@ class VerificationModel extends ModelBaseMongoose {
 		// return saved verification doc (or null if error)
 		return verificationdoc;
 	}
+	//---------------------------------------------------------------------------
 
 
-	// create an email verification
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// create a new account email verification, and email it
 	static async createVerificationNewAccountEmail(emailAddress, userId, loginId, extraData) {
+		// first let's cancel all other verifications of same type from this user
+		var vtype = "newAccountEmail";
+		await this.cancelVerifications({ type: vtype, email: emailAddress });
+
 		// make the verification item and email the user about it with verification code
-		var verification = await this.createModel("newAccountEmail", "email", emailAddress, userId, loginId, extraData, DefExpirationDurationMinutesNormal);
+		var verification = await this.createModel(vtype, "email", emailAddress, userId, loginId, extraData, DefExpirationDurationMinutesNormal);
 		//
 		var mailobj = {
-			subject: "E-mail verification for new website account",
-			text: "We have received a request to create a new account on our website.\n\n"
-			+ "If this request was made by you, please click on the link below to verify that you are the owner of this email address(" + emailAddress + "):\n"
-			+ " " + verification.createVerificationCodeUrl(),
 			revealEmail: true,
+			subject: "E-mail verification for new website account",
+			text: `
+We have received a request to create a new account on our website.
+If this request was made by you, please click on the link below to verify that you are the owner of this email address (${emailAddress}):
+${verification.createVerificationCodeUrl()}
+`,
 		};
 		return await verification.sendViaEmail(mailobj, emailAddress);
 	}
 
 
 
+	// create a one-time login token for the user, and email it
+	static async createVerificationOneTimeLoginTokenEmail(emailAddress, userId, flagRevealEmail, extraData) {
+		// first let's cancel all other verifications of same type from this user
+		var vtype = "onetimeLogin";
+		await this.cancelVerifications({ type: vtype, userId });
 
-	// generate a one-time login token for the user
-	static async createVerificationOneTimeLoginTokenEmail(emailAddress, userId, loginId, flagRevealEmail, extraData) {
-		// ATTN: unfinished
 		// make the verification item and email and/or call the user with the one time login/verification code
-		var verification = await this.createModel("onetimeLogin", null, null, userId, loginId, extraData, DefExpirationDurationMinutesShort);
+		var verification = await this.createModel(vtype, null, null, userId, null, extraData, DefExpirationDurationMinutesShort);
 		//
 		var mailobj = {
 			revealEmail: flagRevealEmail,
 			subject: "Link for one-time login via E-Mail",
-			text: "We have received a request for a one-time login via E-mail code.\n"
-			+ "If this request was made by you, please click on the link below to log into the website.\n"
-			+ " " + verification.createVerificationCodeUrl(),
+			text: `
+We have received a request for a one-time login via E-mail code.
+If this request was made by you, please click on the link below to log into the website:
+${verification.createVerificationCodeUrl()}
+
+If this request was not made by you, please ignore this email.
+`,
 		};
 		return await verification.sendViaEmail(mailobj, emailAddress);
 	}
 
 
 
+	// user wants to change their email address
+	static async createAndSendVerificationEmailChange(emailAddressOld, emailAddressNew, userId) {
+		// first let's cancel all other verifications of same type from this user
+		var vtype = "changeEmail";
+		await this.cancelVerifications({ type: vtype, userId });
+
+		// make the verification item and email and/or call the user with the one time login/verification code
+		var verification = await this.createModel(vtype, "email", emailAddressNew, userId, null, {}, DefExpirationDurationMinutesLong);
+		//
+		var mailobj = {
+			revealEmail: true,
+			subject: "Request for change of account E-mail address, confirmation needed",
+			text: `
+We have received a request to change the E-mail address associated with your account.
+From ${emailAddressOld} to ${emailAddressNew}.
+
+If this request was made by you, please click on the link below to confirm the E-mail address chage.
+${verification.createVerificationCodeUrl()}
+
+If this request was not made by you, please ignore this email.
+`,
+		};
+		return await verification.sendViaEmail(mailobj, emailAddressNew);
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
 	static async generateUniqueCode() {
 		return jrcrypto.genRandomStringHumanEasier(DefCodeLength);
 	}
@@ -327,7 +452,7 @@ class VerificationModel extends ModelBaseMongoose {
 		if (!verification) {
 			// not found
 			return {
-				jrResult: JrResult.makeError("VerificationError", "Code not found."),
+				jrResult: JrResult.makeError("VerificationError", "Verification code (" + code + ") not found."),
 				successRedirectTo: null,
 			};
 		}
@@ -341,9 +466,22 @@ class VerificationModel extends ModelBaseMongoose {
 			};
 		}
 
+		// get the user
+		var userId = verification.getUserId();
+		var user;
+		if (userId) {
+			user = await UserModel.findOneById(userId, true);
+			if (!user) {
+				return {
+					jrResult: JrResult.makeError("VerificationError", "The user associated with this verification code could not be found."),
+					successRedirectTo: null,
+				};
+			}
+		}
+
 		// ok its not used, and not expired
 		// let's use it up and return success if we can
-		return await verification.useNow(extraValues, req, res);
+		return await verification.useNow(user, extraValues, req, res);
 	}
 	//---------------------------------------------------------------------------
 
@@ -471,27 +609,30 @@ class VerificationModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	async useNow(extraValues, req, res) {
+	async useNow(user, extraValues, req, res) {
 		// consume the verification and process it
 		// ATTN: there is a small chance a verification code could be used twice, if called twice in the middle of checking unused and marking it used
 		// if we are worried about this we can use the enabled field and do a findAndUpdate set it to 0 so that it can only succeed once,
 		// ATTN: there is also the dilemma, do we use up token and then try to perform action, or vice versa; in case of error it matters
 		// ATTN: unfinished
 		// @return JrResult
-		var successRedirect;
+		var successRedirectTo;
 
 		// switch for the different kinds of verifications
 
 		if (this.type === "newAccountEmail") {
-			return await this.useNowNewAccountEmail(extraValues, req, res);
+			return await this.useNowNewAccountEmail(user, extraValues, req, res);
 		}
 		if (this.type === "onetimeLogin") {
-			return await this.useNowOneTimeLogin(req, res);
+			return await this.useNowOneTimeLogin(user, req, res);
+		}
+		if (this.type === "changeEmail") {
+			return await this.useNowEmailChange(user, req, res);
 		}
 
 		// unknown
 		var jrResult = JrResult.makeError("VerificationError", "Unknown verification token type (" + this.type + ")");
-		return { jrResult, successRedirect };
+		return { jrResult, successRedirectTo };
 	}
 
 
@@ -515,30 +656,23 @@ class VerificationModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	async useNowOneTimeLogin(req, res) {
+	async useNowOneTimeLogin(user, req, res) {
 		// one-time login the user associated with this email address
 		// this could be used as an alternative to logging in with password
 		var jrResult;
-		var successRedirect;
+		var successRedirectTo;
 
-		// get the user
-		var userId = this.userId;
-		var user = await UserModel.findOneById(userId, true);
-		if (!user) {
-			jrResult = JrResult.makeError("VerificationError", "The user referred to by this verification code could not be found.");
-		} else {
-			// do the work of logging them in using this verification (addes to passport session, uses up verification model, etc.)
-			jrResult = await arserver.loginUserThroughPassport(req, user);
-			if (!jrResult.isError()) {
-				var retvResult = await this.useUpAndSave(req, true);
-				jrResult.mergeIn(retvResult);
-				if (!retvResult.isError()) {
-					jrResult.pushSuccess("You have successfully logged in using your one-time login code.");
-				}
+		// do the work of logging them in using this verification (addes to passport session, uses up verification model, etc.)
+		jrResult = await arserver.loginUserThroughPassport(req, user);
+		if (!jrResult.isError()) {
+			var retvResult = await this.useUpAndSave(req, true);
+			jrResult.mergeIn(retvResult);
+			if (!retvResult.isError()) {
+				jrResult.pushSuccess("You have successfully logged in using your one-time login code.");
 			}
 		}
 
-		return { jrResult, successRedirect };
+		return { jrResult, successRedirectTo };
 	}
 	//---------------------------------------------------------------------------
 
@@ -547,7 +681,7 @@ class VerificationModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	async useNowNewAccountEmail(extraValues, req, res) {
+	async useNowNewAccountEmail(user, extraValues, req, res) {
 		// create the new user account
 		//
 		// ATTN: at this point we should check if there is already a user with username or if username is blank, and if so present user with form before they process
@@ -577,13 +711,13 @@ class VerificationModel extends ModelBaseMongoose {
 		var passwordHashed = extraData.passwordHashed;
 
 		// first step, let's check if the email has alread been used by someone, if so then we can just redirect them to try to sign up again and cancel this verification
-		var user = await UserModel.findOneByUsernameEmail(email);
-		if (user) {
+		var existingUser = await UserModel.findOneByUsernameEmail(email);
+		if (existingUser) {
 			// error, a user with this email already exist; but they just confirmed that THEY own the email which means that
 			// first they signed up when the email wasn't in use, and then later confirmed it through another different verification, and then tried to access via this verification
 			// we could prevent this case by ensuring we cancel all verifications related to an email once a user confirms/claims that email, but better safe than sorry here
 			// or it means they somehow intercepted someone's verification code that they shouldn't have; regardless it's not important, we block it
-			jrResult.pushError("This email already has already been claimed/verified by an existing user account (" + user.getUsername() + ").");
+			jrResult.pushError("This email already has already been claimed/verified by an existing user account (" + existingUser.getUsername() + ").");
 			// use it up since we are done with it at this point
 			await this.useUpAndSave(req, true);
 			// return error
@@ -677,6 +811,38 @@ class VerificationModel extends ModelBaseMongoose {
 
 
 
+
+	//---------------------------------------------------------------------------
+	async useNowEmailChange(user, req, res) {
+		// one-time login the user associated with this email address
+		// this could be used as an alternative to logging in with password
+		var jrResult = JrResult.makeNew();
+		var successRedirectTo;
+
+		// change the email address
+		var emailAddressNew = this.val;
+		// NOTE: we cannot assume the new email address is still validated so we have to validate it AGAIN
+		emailAddressNew = await UserModel.validateEmail(jrResult, emailAddressNew, true, false, user);
+		if (!jrResult.isError()) {
+			// save change
+			user.email = emailAddressNew;
+			await user.dbSave(jrResult);
+			// now use up the verification
+			var retvResult = await this.useUpAndSave(req, true);
+			if (!retvResult.isError()) {
+				jrResult.pushSuccess("Your new E-mail address (" + emailAddressNew + ") has now been confirmed.");
+			}
+			// merge in result
+			jrResult.mergeIn(retvResult);
+		}
+
+		return { jrResult, successRedirectTo };
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
 	//---------------------------------------------------------------------------
 	// helper
 	static async getValidVerificationFromIdOrLastSession(verificationId, req) {
@@ -702,6 +868,12 @@ class VerificationModel extends ModelBaseMongoose {
 
 
 
+	//---------------------------------------------------------------------------
+	static async cancelVerifications(findObj) {
+		// delete any extant verifications that match findObj; this is called when sending new ones that should override old
+		await VerificationModel.mongooseModel.deleteMany(findObj).exec();
+	}
+	//---------------------------------------------------------------------------
 
 
 

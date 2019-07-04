@@ -114,7 +114,6 @@ class CrudAid {
 		res.render(viewFile, {
 			headline: "List " + modelClass.getNiceName() + "s",
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
-			crudClassNiceName: modelClass.getNiceName(),
 			csrfToken: arserver.makeCsrf(req, res),
 			helperData,
 			baseCrudUrl,
@@ -174,7 +173,6 @@ class CrudAid {
 		res.render(viewFile, {
 			headline: "Add " + modelClass.getNiceName(),
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
-			crudClassNiceName: modelClass.getNiceName(),
 			csrfToken: arserver.makeCsrf(req, res),
 			reqbody,
 			helperData,
@@ -254,7 +252,6 @@ class CrudAid {
 		res.render(viewFile, {
 			headline: "Add " + modelClass.getNiceName(),
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
-			crudClassNiceName: modelClass.getNiceName(),
 			csrfToken: arserver.makeCsrf(req, res),
 			reqbody,
 			helperData,
@@ -302,7 +299,6 @@ class CrudAid {
 		res.render(viewFile, {
 			headline: "Edit " + modelClass.getNiceName() + " #" + id,
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
-			crudClassNiceName: modelClass.getNiceName(),
 			csrfToken: arserver.makeCsrf(req, res),
 			reqbody,
 			helperData,
@@ -356,7 +352,6 @@ class CrudAid {
 					jrResult.addToSession(req);
 					return false;
 				}
-
 				if (flagRepresentAfterSuccess) {
 					// fill form data with object properties and drop down to let user re-edit
 					reqbody = savedobj.modelObjPropertyCopy(true);
@@ -385,7 +380,6 @@ class CrudAid {
 		res.render(viewFile, {
 			headline: "Edit " + modelClass.getNiceName() + " #" + id,
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
-			crudClassNiceName: modelClass.getNiceName(),
 			csrfToken: arserver.makeCsrf(req, res),
 			reqbody,
 			helperData,
@@ -428,7 +422,6 @@ class CrudAid {
 		res.render(viewFile, {
 			headline: "View " + modelClass.getNiceName() + " #" + id,
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
-			crudClassNiceName: modelClass.getNiceName(),
 			obj,
 			helperData,
 			genericMainHtml,
@@ -471,7 +464,6 @@ class CrudAid {
 		res.render(viewFile, {
 			headline: "Delete " + modelClass.getNiceName() + " #" + id,
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
-			crudClassNiceName: modelClass.getNiceName(),
 			csrfToken: arserver.makeCsrf(req, res),
 			obj,
 			helperData,
@@ -535,7 +527,6 @@ class CrudAid {
 		res.render(viewFile, {
 			headline: "Delete " + modelClass.getNiceName() + " #" + id,
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
-			crudClassNiceName: modelClass.getNiceName(),
 			obj,
 			genericMainHtml,
 			crudDelete: true,
@@ -569,8 +560,8 @@ class CrudAid {
 
 		// render
 		res.render(viewFile, {
+			headline: modelClass.getNiceName() + " Stats",
 			jrResult: JrResult.sessionRenderResult(req, res),
-			crudClassNiceName: modelClass.getNiceName(),
 			csrfToken: arserver.makeCsrf(req, res),
 			helperData,
 			genericMainHtml,

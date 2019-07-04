@@ -136,7 +136,7 @@ router.post("/email", async (req, res, next) => {
 		var userId = user.getId();
 		var userEmail = user.email;
 		var flagRevealEmail = (userEmail === usernameEmail);
-		jrResult = await VerificationModel.createVerificationOneTimeLoginTokenEmail(userEmail, userId, null, flagRevealEmail, null);
+		jrResult = await VerificationModel.createVerificationOneTimeLoginTokenEmail(userEmail, userId, flagRevealEmail, null);
 		if (!jrResult.isError()) {
 			// success; redirect them to homepage and tell them to check their email for a login token (see the verify route for when they click the link to login)
 			jrResult.pushSuccess("Check your mail for your link to login.");

@@ -52,9 +52,9 @@ class ModelBaseMongoose {
 				filterSize: 25,
 			},
 			version: {
-				label: "Version",
+				label: "Ver.",
 				hide: ["edit"],
-				filterSize: 3,
+				filterSize: 2,
 			},
 			creationDate: {
 				label: "Date created",
@@ -65,7 +65,7 @@ class ModelBaseMongoose {
 				hide: ["edit"],
 			},
 			disabled: {
-				label: "Is disabled?",
+				label: "Disabled?",
 				choices: {
 					0: "Enabled",
 					1: "Disabled",
@@ -285,7 +285,7 @@ class ModelBaseMongoose {
 
 	// ATTN: this function typically does not have to run async so its cpu inefficient to make it async but rather than have 2 copies of this function to maintain, we use just async one
 	// ATTN: TODO in future make a version of this that is sync; or find some better way to handle it
-	static async doObjMergeSetAsync(jrResult, fieldNameSource, fieldNameTarget, source, saveFields, preValidatedFields, obj, flagRequired, valFunc) {
+	static async validateMergeAsync(jrResult, fieldNameSource, fieldNameTarget, source, saveFields, preValidatedFields, obj, flagRequired, valFunc) {
 		//
 		// source and target field names might be different (for example, password is plaintext hashed into a different target fieldname)
 		if (fieldNameTarget === "") {
@@ -475,6 +475,41 @@ class ModelBaseMongoose {
 
 		return val;
 	}
+
+
+	static async validateShortcode(jrResult, key, val, existingModel) {
+		if (!val) {
+			jrResult.pushFieldError(key, "Shortcode value for " + key + " cannot be blank.");
+		}
+
+		// uppercase it
+		val = val.toUpperCase();
+
+		// must be unique so we search for collissions
+		var criteria;
+		if (existingModel._id) {
+			// there is an id for the object we are working on, so DONT include that one when searching for a colission
+			criteria = {
+				[key]: val,
+				_id: { $ne: existingModel._id },
+			};
+		} else {
+			criteria = {
+				[key]: val,
+			};
+		}
+
+		var clashObj = await this.mongooseModel.findOne(criteria).exec();
+		if (clashObj) {
+			// error
+			jrResult.pushFieldError(key, "Duplicate " + key + " entry found for another " + this.getNiceName());
+			// doesnt matter what we return?
+			return null;
+		}
+
+		return val;
+	}
+
 
 	static validateModelFieldNotEmpty(jrResult, key, val) {
 		if (!val) {

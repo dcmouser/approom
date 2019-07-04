@@ -1075,6 +1075,9 @@ class AppRoomServer {
 		// other helper stuff
 		await this.setupMailer();
 
+		// other model stuff
+		await this.setupAcl();
+
 		// cache any options for faster access
 		this.cacheMiscOptions();
 
@@ -1130,11 +1133,13 @@ class AppRoomServer {
 				jrlog.debug("");
 			}
 
-
 			// set some options for mongoose/mongodb
-			//
+
 			// to skip some deprecation warnigns; see https://github.com/Automattic/mongoose/issues/6880 and https://mongoosejs.com/docs/deprecations.html
 			await mongoose.set("useFindAndModify", false);
+
+			// deprecation warnings triggered by acl module
+			mongoose.set("useCreateIndex", true);
 
 			// save a log entry to db
 			await this.log("db", "setup database", 1);
@@ -1169,6 +1174,14 @@ class AppRoomServer {
 	}
 	//---------------------------------------------------------------------------
 
+
+
+	//---------------------------------------------------------------------------
+	async setupAcl() {
+		const AclModel = require("../models/acl");
+		await AclModel.setupAcl(mongoose.connection.db, "acl_");
+	}
+	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
@@ -1393,7 +1406,6 @@ class AppRoomServer {
 		// render
 		res.render("acldeny", {
 			jrResult: JrResult.sessionRenderResult(req, res, jrError),
-			crudClassNiceName: modelClass.getNiceName(),
 		});
 	}
 
@@ -1401,7 +1413,6 @@ class AppRoomServer {
 		// render
 		res.render("acldeny", {
 			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
-			crudClassNiceName: modelClass.getNiceName(),
 		});
 	}
 	//---------------------------------------------------------------------------
