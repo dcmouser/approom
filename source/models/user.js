@@ -150,7 +150,7 @@ class UserModel extends ModelBaseMongoose {
 						if (!obj.passwordHashed) {
 							return "";
 						}
-						return "[CENSORED]";
+						return "[HIDDEN]";
 					}
 					return undefined;
 				},
@@ -171,7 +171,7 @@ class UserModel extends ModelBaseMongoose {
 				return "";
 			}
 			const regexCensor = /"hash":"[^"]*"/;
-			var safeStr = passwordHashed.replace(regexCensor, "\"hash\":[CENSORED]");
+			var safeStr = passwordHashed.replace(regexCensor, "\"hash\":[HIDDEN]");
 			return safeStr;
 		}
 
@@ -757,18 +757,24 @@ class UserModel extends ModelBaseMongoose {
 		//
 		var flagCheckDisallowedUsername = true;
 		var flagTrustEmailChange = false;
+		var flagRrequiredEmail = false;
 		var flagUserIsSuperAdmin = await arserver.isLoggedInUserSuperAdmin(req);
+		var flagIsNew = obj.getIsNew();
 
 		// super users can do some things others cannot
 		if (flagUserIsSuperAdmin) {
 			flagCheckDisallowedUsername = false;
 		}
 
+		// REMEMBER old email addresss
+		var emailAddressOld = obj.email;
+
 		// set fields from form and validate
 		await this.validateMergeAsync(jrResult, "username", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validateUsername(jrr, inVal, true, false, flagCheckDisallowedUsername, obj));
 		await this.validateMergeAsync(jrResult, "password", "passwordHashed", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validatePlaintextPasswordConvertToHash(jrr, inVal, false));
 		await this.validateMergeAsync(jrResult, "realName", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal) => jrvalidators.validateRealName(jrr, keyname, inVal, false));
 		await this.validateMergeAsync(jrResult, "disabled", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFielDisbled(jrr, keyname, inVal));
+		await this.validateMergeAsync(jrResult, "email", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => this.validateEmail(jrr, inVal, true, flagRrequiredEmail, obj));
 
 		// can we trust them to bypass verification email
 		if (options.flagTrustEmailChange) {
@@ -778,17 +784,34 @@ class UserModel extends ModelBaseMongoose {
 			flagTrustEmailChange = jrvalidators.validateCheckbox(jrResult, keynameEmailBypass, source[keynameEmailBypass], false);
 		}
 
+		if (flagIsNew && !flagTrustEmailChange) {
+			jrResult.pushError("When creating a new user object directly, you *must* bypass the email verification setting.");
+		}
+
+		// any validation errors?
+		if (jrResult.isError()) {
+			return null;
+		}
+
+		// new email address we are about to save
+		var emailAddressNew = obj.email;
+
+
 		// do this last because it may send a verification email
-		if (flagTrustEmailChange) {
-			// merge in new email without validating it
-			await this.validateMergeAsync(jrResult, "email", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validateEmail(jrr, inVal, true, false, obj));
+		if (flagTrustEmailChange || emailAddressNew === "") {
+			// nothing special to do, drop down to save new object with new email address
 		} else {
 			// we do NOT auto merge in an email change, instead send them a change of email address
-			var emailAddressNew = await UserModel.validateEmail(jrResult, source.email, true, false, obj);
-			if (!jrResult.isError() && emailAddressNew && emailAddressNew !== obj.email) {
-				// they want to change their email address, send them a change of email verification
+			if (!jrResult.isError() && emailAddressNew !== emailAddressOld) {
+				// they want to change their email address, dont do it yet; instead put it back to what it was
+				obj.email = emailAddressOld;
+				// send them a change of email verification
 				await obj.createAndSendVerificationEmailChange(emailAddressNew);
-				jrResult.pushSuccess("Your new E-mail address is pending.  Please check " + emailAddressNew + " for a confirmation link.  Your new email address will only take effect after you confirm it.");
+				if (obj.getId() === arserver.getLoggedInLocalUserIdFromSession(req)) {
+					jrResult.pushSuccess(`Your new E-mail address is pending.  Please check ${emailAddressNew} for a verification link.  Your new email address will only take effect after you confirm it.`);
+				} else {
+					jrResult.pushSuccess(`The E-mail address for user ${obj.username} will need to be verified before it is accepted.  The user should check ${emailAddressNew} for a verification link.`);
+				}
 			}
 		}
 
@@ -796,7 +819,7 @@ class UserModel extends ModelBaseMongoose {
 		// ATTN: unfinished - complains about reserved usernames for admin-only-usernames
 		// ATTN: duslicateive code found in registrationaid and related files
 
-		// any validation errors?
+		// any errors saving?
 		if (jrResult.isError()) {
 			return null;
 		}

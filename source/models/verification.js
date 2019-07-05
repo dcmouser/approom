@@ -497,7 +497,7 @@ If this request was not made by you, please ignore this email.
 			// already used
 			// however, for certain verifications we allow reuse
 			if (!this.canUserReuse(req)) {
-				return JrResult.makeError("VerifcationError", "Verification code (" + this.getUniqueCode() + ") has already been used up.");
+				return JrResult.makeError("VerifcationError", "Verification code (" + this.getUniqueCode() + ") has already been used, and cannot be used again.");
 			}
 		}
 		if (this.isExpired()) {

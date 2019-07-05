@@ -79,7 +79,10 @@ class ModelBaseMongoose {
 			extraData: {
 				label: "Extra data",
 				valueFunction: async (viewType, req, obj, helperData) => {
-					return JSON.stringify(obj.extraData, null, " ");
+					if (obj) {
+						return JSON.stringify(obj.extraData, null, " ");
+					}
+					return "";
 				},
 				filterSize: 0,
 			},
@@ -614,6 +617,11 @@ class ModelBaseMongoose {
 
 	setExtraData(key, val) {
 		this.extraData.set(key, val);
+	}
+
+	getIsNew() {
+		// return TRUE if it is new and not yet saved
+		return this.isNew;
 	}
 	//---------------------------------------------------------------------------
 
