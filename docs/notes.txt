@@ -1,6 +1,17 @@
 4/26/19
 These are my notes for the approom application.
 
+
+//---------------------------------------------------------------------------
+To run:
+1. Run mongod db daemon: Launch console with C:\Programs\MongoDB\Server\4.0\bin\mongod_run_with_config.lnk, which is shortcut to C:\Programs\MongoDB\Server\4.0\bin\mongod.exe -f mongod.cfg
+2. Start nodejs running approom server: Go to E:\MyDocs\Programming\nodejs\approom\source and open console and run "npm run runserver" to 
+3. Open https://www.testapp.com:8080
+//---------------------------------------------------------------------------
+
+
+
+//---------------------------------------------------------------------------
 // see https://stackoverflow.com/questions/30909492/mongoerror-topology-was-destroyed
 
 
@@ -44,3 +55,4 @@ OR we can, as with a bridged login, force the user to specify a unique username 
 In summary, a registration request creates a lightweigh VERIFICATION object in the db, and a bridged login creates a lightweight LOGIN object in the db.
 Both of these can trigger the creation of a full User account when the user confirms the info we need to create an account (which may be none, but which would typically be a unique username, email. password).
 
+//---------------------------------------------------------------------------

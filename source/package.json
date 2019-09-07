@@ -18,17 +18,16 @@
   "license": "UNLICENSED",
   "repository": "dcmouser/approom",
   "devDependencies": {
-    "cross-env": "^5.2.0",
+    "cross-env": "^5.2.1",
     "eslint": "^5.16.0",
     "eslint-config-airbnb": "^17.1.1",
-    "eslint-plugin-import": "^2.18.0",
+    "eslint-plugin-import": "^2.18.2",
     "eslint-plugin-jsx-a11y": "^6.2.3",
     "eslint-plugin-mocha": "^5.3.0",
-    "eslint-plugin-react": "^7.14.2",
-    "mocha": "^6.1.4"
+    "eslint-plugin-react": "^7.14.3",
+    "mocha": "^6.2.0"
   },
   "dependencies": {
-    "acl": "^0.4.11",
     "bcrypt": "^3.0.6",
     "body-parser": "^1.19.0",
     "bootstrap": "^4.3.1",
@@ -44,18 +43,19 @@
     "hbs": "^4.0.4",
     "http-errors": "^1.7.3",
     "jquery": "^3.4.1",
-    "mongodb": "^3.2.7",
-    "mongoose": "^5.6.3",
+    "mongodb": "^3.3.2",
+    "mongoose": "^5.6.11",
     "morgan": "^1.9.1",
     "nconf": "^0.10.0",
-    "nodemailer": "^6.2.1",
+    "nodemailer": "^6.3.0",
     "passport": "^0.4.0",
     "passport-facebook": "^3.0.0",
     "passport-local": "^1.0.0",
     "popper.js": "^1.15.0",
     "redis": "^2.8.0",
-    "validator": "^11.0.0",
+    "role-acl": "^3.3.6",
+    "validator": "^11.1.0",
     "winston": "^3.2.1",
-    "yargs": "^13.2.4"
+    "yargs": "^13.3.0"
   }
 }

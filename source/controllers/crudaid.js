@@ -667,14 +667,20 @@ class CrudAid {
 		// schema for obj
 		var modelSchemaExtra = modelClass.getSchemaDefinitionExtra();
 		var schemaKeys = Object.keys(modelSchemaExtra);
-		var val, valHtml, label, valfunc, hideList, choices;
-		var visfunc, isVisible;
+		var val, valHtml, label, valfunc, hideList, readOnlyList, choices;
+		var visfunc, isVisible, isReadOnly;
 		var err;
 		await jrhelpers.asyncForEach(schemaKeys, async (fieldName) => {
+
+			// hidden?
 			hideList = modelClass.getSchemaExtraFieldVal(fieldName, "hide", undefined);
 			if (jrhelpers.isInAnyArray("edit", hideList)) {
 				return;
 			}
+
+			// read only?
+			readOnlyList = modelClass.getSchemaExtraFieldVal(fieldName, "readOnly", undefined);
+			isReadOnly = jrhelpers.isInAnyArray("edit", readOnlyList);
 
 			// label
 			label = modelClass.getSchemaExtraFieldVal(fieldName, "label", fieldName);
@@ -704,7 +710,6 @@ class CrudAid {
 				}
 			}
 
-
 			// if we havent yet set a value using valueFunctions (or if that returns undefined) then use default value
 			if (valHtml === undefined) {
 				if (!obj) {
@@ -714,9 +719,18 @@ class CrudAid {
 				} else {
 					val = obj[fieldName];
 				}
+
 				// is it multiple choice type?
 				choices = modelClass.getSchemaExtraFieldVal(fieldName, "choices", null);
-				if (choices) {
+
+				if (isReadOnly) {
+					// read only value
+					if (choices) {
+						valHtml = this.buildChoiceHtmlForView(choices, val);
+					} else {
+						valHtml = val.toString();
+					}
+				} else if (choices) {
 					valHtml = this.buildChoiceHtmlForAddEdit(fieldName, choices, val);
 				} else if (format === "textarea") {
 					// textview block
@@ -773,6 +787,8 @@ class CrudAid {
 		var crudLink;
 
 		await jrhelpers.asyncForEach(schemaKeys, async (fieldName) => {
+
+			// hidden?
 			hideList = modelClass.getSchemaExtraFieldVal(fieldName, "hide", undefined);
 			if (jrhelpers.isInAnyArray("view", hideList)) {
 				return;

@@ -6,9 +6,11 @@
 
 "use strict";
 
+// misc node core modules
+const assert = require("assert");
+
 // models
 const ModelBaseMongoose = require("./modelBaseMongoose");
-
 
 // our helper modules
 const jrhelpers = require("../helpers/jrhelpers");
@@ -20,7 +22,7 @@ const jrhmisc = require("../helpers/jrhmisc");
 
 // controllers
 const arserver = require("../controllers/server");
-
+const aclAid = require("../controllers/aclaid");
 
 
 //---------------------------------------------------------------------------
@@ -89,6 +91,9 @@ class UserModel extends ModelBaseMongoose {
 			},
 			loginDate: {
 				type: Date,
+			},
+			roles: {
+				type: Array,
 			},
 			// additional fields we may add dynamically for in-memory use, but not saved to db
 			// loginId : { type: ObjectId },
@@ -160,6 +165,11 @@ class UserModel extends ModelBaseMongoose {
 				label: "Date of last login",
 				hide: ["edit"],
 			},
+			roles: {
+				label: "Roles",
+				readOnly: ["edit"],
+				valueFunction: async (viewType, req, obj, helperData) => { return (obj.roles).toString(); },
+			},
 		};
 	}
 
@@ -211,6 +221,8 @@ class UserModel extends ModelBaseMongoose {
 			};
 			// now create model (this will also add default properties to it)
 			var user = UserModel.createModel(userAdminObj);
+			// set some permissions for it
+			user.addRole("admin");
 			// and save it
 			var userdoc = await user.dbSave();
 			//
@@ -851,13 +863,148 @@ class UserModel extends ModelBaseMongoose {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	//---------------------------------------------------------------------------
-	isSuperAdmin() {
-		// ATTN: a temporary test function
-		if (this.getUsername() === "admin") {
-			return true;
+	// ACL stuff
+
+	getRolesOnObject(objectId, flagAddNoneRole) {
+		// get any roles the user is assigned to this ojbectId
+		// if objectId is null then get roles unrelated to object
+		var rolesFound = [];
+
+		// simple walk of roles array
+		for (var key in this.roles) {
+			if (this.roles[key][1] === objectId) {
+				// found it
+				rolesFound.push(this.roles[key][0]);
+			}
 		}
+
+		if (flagAddNoneRole) {
+			// add 'none' role
+			rolesFound.push("none");
+		}
+
+		return rolesFound;
+	}
+
+
+	setExclusiveRole(role, objectId = null) {
+		// set that the user has role on objectId, removing any other roles that the user previously had on objectId)
+
+		// remove other roles on this object
+		this.removeAllRolesForObject(objectId);
+
+		// now add this one by handing off to addRole function
+		this.addRole(role, objectId);
+	}
+
+
+	hasRole(role, objectId = null) {
+		// return true if user has role on (optional) objectId
+
+		// simple walk of roles array
+		for (var key in this.roles) {
+			if (this.roles[key][0] === role && this.roles[key][1] === objectId) {
+				// found it
+				return true;
+			}
+		}
+
+		// not found
 		return false;
+	}
+
+
+	addRole(role, objectId = null) {
+		// add that the user has role on objectId
+
+		// first check if it already exists
+		if (this.roles.length > 0 && this.hasRole(role, objectId)) {
+			// already set
+			return;
+		}
+		// add it
+		this.roles.push([role, objectId]);
+	}
+
+
+	removeRole(role, objectId = null) {
+		// remove any record that user has role on objectId
+
+		// simple walk of roles array, but backwards
+		var foundCount = 0;
+		for (var key = this.roles.length - 1; key >= 0; key--) {
+			if (this.roles[key][0] === role && this.roles[key][1] === objectId) {
+				// found it
+				this.splice(key, 1);
+				++foundCount;
+			}
+		}
+
+		return foundCount;
+	}
+
+	removeAllRolesForObject(objectId = null) {
+		// remove all roles for the user and this object
+		// simple walk of roles array, but backwards
+		var foundCount = 0;
+		for (var key = this.roles.length - 1; key >= 0; key--) {
+			if (this.roles[key][1] === objectId) {
+				// found it
+				this.splice(key, 1);
+				++foundCount;
+			}
+		}
+
+		return foundCount;
+	}
+
+	removeAllRoles() {
+		// remove all roles for the user
+		var foundCount = this.roles.length;
+		this.roles = [];
+		return foundCount;
+	}
+
+
+	hasPermission(permission, target, objectId = null) {
+		// return true if user has permission on (optional) objectId
+		// permissions are derived from roles
+
+		// get roles held on the object in question (optional)
+		const objectRoles = this.getRolesOnObject(objectId, true);
+
+		// now ask if any of these rules imply the permission
+		return aclAid.anyRolesImplyPermission(objectRoles, permission, target);
+	}
+
+
+	isSuperAdmin() {
+		// just check if user has permission to admin the site
+		return this.hasPermission("admin", "site");
 	}
 	//---------------------------------------------------------------------------
 

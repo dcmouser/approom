@@ -51,12 +51,12 @@ class ModelBaseMongoose {
 		return {
 			_id: {
 				label: "Id",
-				hide: ["edit"],
+				readOnly: ["edit"],
 				filterSize: 25,
 			},
 			version: {
 				label: "Ver.",
-				hide: ["edit"],
+				readOnly: ["edit"],
 				filterSize: 2,
 			},
 			creationDate: {
@@ -65,7 +65,7 @@ class ModelBaseMongoose {
 			},
 			modificationDate: {
 				label: "Date modified",
-				hide: ["edit"],
+				readOnly: ["edit"],
 			},
 			disabled: {
 				label: "Disabled?",
@@ -85,6 +85,7 @@ class ModelBaseMongoose {
 					return "";
 				},
 				filterSize: 0,
+				readOnly: ["edit"],
 			},
 		};
 	}

@@ -357,7 +357,6 @@ class AppRoomServer {
 
 		// model requires
 		const RoomModel = require("../models/room");
-		const AclModel = require("../models/acl");
 		const AppModel = require("../models/app");
 		const ConnectionModel = require("../models/connection");
 		const FileModel = require("../models/file");
@@ -396,7 +395,6 @@ class AppRoomServer {
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/verification", VerificationModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/connection", ConnectionModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/file", FileModel);
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/acl", AclModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/option", OptionModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/log", LogModel);
 
@@ -1102,7 +1100,6 @@ class AppRoomServer {
 
 		// model requires
 		const RoomModel = require("../models/room");
-		const AclModel = require("../models/acl");
 		const AppModel = require("../models/app");
 		const ConnectionModel = require("../models/connection");
 		const FileModel = require("../models/file");
@@ -1118,7 +1115,6 @@ class AppRoomServer {
 			await mongoose.connect(mongoUrl, { useNewUrlParser: true, useCreateIndex: true });
 
 			// setup the model databases
-			await this.setupModelSchema(mongoose, AclModel);
 			await this.setupModelSchema(mongoose, AppModel);
 			await this.setupModelSchema(mongoose, ConnectionModel);
 			await this.setupModelSchema(mongoose, FileModel);
@@ -1183,8 +1179,8 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	async setupAcl() {
-		const AclModel = require("../models/acl");
-		await AclModel.setupAcl(mongoose.connection.db, "acl_");
+		const AclAid = require("./aclaid");
+		await AclAid.setupAclPermissions();
 	}
 	//---------------------------------------------------------------------------
 

@@ -43,11 +43,11 @@ class ModelBaseMongooseMinimal extends ModelBaseMongoose {
 		return {
 			_id: {
 				label: "Id",
-				hide: ["edit"],
+				readOnly: ["edit"],
 			},
 			creationDate: {
 				label: "Date created",
-				hide: ["edit"],
+				readOnly: ["edit"],
 			},
 		};
 	}
