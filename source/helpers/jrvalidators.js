@@ -7,52 +7,61 @@
 
 
 
-//---------------------------------------------------------------------------
-function validateString(jrResult, keyname, str, flagRequired) {
-	if (!str) {
-		if (!flagRequired) {
-			return str;
+class JrValidators {
+
+	//---------------------------------------------------------------------------
+	constructor() {
+	}
+
+	// global singleton request
+	static getSingleton(...args) {
+		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
+		if (this.globalSingleton === undefined) {
+			this.globalSingleton = new JrValidators(...args);
 		}
-		jrResult.pushFieldError(keyname, keyname + " cannot be left blank");
-		return undefined;
+		return this.globalSingleton;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	validateString(jrResult, keyname, str, flagRequired) {
+		if (!str) {
+			if (!flagRequired) {
+				return str;
+			}
+			jrResult.pushFieldError(keyname, keyname + " cannot be left blank");
+			return undefined;
+		}
+
+		// anything else is good for now
+		return str;
 	}
 
-	// anything else is good for now
-	return str;
+
+	validateRealName(jrResult, keyname, str, flagRequired) {
+		return this.validateString(jrResult, keyname, str, flagRequired);
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	validateCheckbox(jrResult, keyname, val, flagRequired) {
+		if (val) {
+			return true;
+		}
+		if (flagRequired) {
+			jrResult.pushFieldError(keyname, keyname + " cannot be left blank");
+			return undefined;
+		}
+		return false;
+	}
+	//---------------------------------------------------------------------------
+
 }
 
 
-function validateRealName(jrResult, keyname, str, flagRequired) {
-	return validateString(jrResult, keyname, str, flagRequired);
-}
-//---------------------------------------------------------------------------
 
-
-//---------------------------------------------------------------------------
-function validateCheckbox(jrResult, keyname, val, flagRequired) {
-	if (val) {
-		return true;
-	}
-	if (flagRequired) {
-		jrResult.pushFieldError(keyname, keyname + " cannot be left blank");
-		return undefined;
-	}
-	return false;
-}
-//---------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-//---------------------------------------------------------------------------
-module.exports = {
-	validateString, validateRealName,
-	validateCheckbox,
-};
-//---------------------------------------------------------------------------
+// export the class as the sole export
+module.exports = JrValidators.getSingleton();

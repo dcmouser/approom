@@ -31,6 +31,15 @@ var debugfunc;
 class JrLog {
 
 	//---------------------------------------------------------------------------
+	constructor() {
+		// init
+		this.logger = undefined;
+		this.debugfunc = undefined;
+		//
+		this.debugEnabled = false;
+	}
+
+
 	// global singleton request
 	static getSingleton(...args) {
 		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
@@ -38,14 +47,6 @@ class JrLog {
 			this.globalSingleton = new JrLog(...args);
 		}
 		return this.globalSingleton;
-	}
-
-	constructor() {
-		// init
-		this.logger = undefined;
-		this.debugfunc = undefined;
-		//
-		this.debugEnabled = false;
 	}
 	//---------------------------------------------------------------------------
 
@@ -255,7 +256,7 @@ class JrLog {
 		if (msg) {
 			this.debug(msg + ": " + this.objToString(obj, false));
 		} else {
-			this.debug(this.objToString(this.obj, false));
+			this.debug(this.objToString(obj, false));
 		}
 	}
 

@@ -25,7 +25,7 @@ const router = express.Router();
 function setupRouter(urlPath) {
 
 	router.get("/", async (req, res, next) => {
-		if (!await arserver.requireLoggedIn(req, res, urlPath)) {
+		if (!await arserver.requireLoggedInSitePermission("admin", req, res, urlPath)) {
 			// all done
 			return;
 		}
@@ -38,7 +38,7 @@ function setupRouter(urlPath) {
 
 
 	router.get("/testing", async (req, res, next) => {
-		if (!await arserver.requireLoggedIn(req, res, urlPath + "/testing")) {
+		if (!await arserver.requireLoggedInSitePermission("admin", req, res, urlPath + "/testing")) {
 			// all done
 			return;
 		}
@@ -50,7 +50,7 @@ function setupRouter(urlPath) {
 
 
 	router.get("/testing/makeappsrooms", async (req, res, next) => {
-		if (!await arserver.requireLoggedIn(req, res, urlPath + "/testing/makeappsrooms")) {
+		if (!await arserver.requireLoggedInSitePermission("admin", req, res, urlPath + "/testing/makeappsrooms")) {
 			// all done
 			return;
 		}
@@ -66,7 +66,7 @@ function setupRouter(urlPath) {
 
 
 	router.post("/testing/makeappsrooms", async (req, res, next) => {
-		if (!await arserver.requireLoggedIn(req, res, urlPath + "/testing/makeappsrooms")) {
+		if (!await arserver.requireLoggedInSitePermission("admin", req, res, urlPath + "/testing/makeappsrooms")) {
 			// all done
 			return;
 		}

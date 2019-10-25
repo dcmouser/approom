@@ -50,6 +50,11 @@ class VerificationModel extends ModelBaseMongoose {
 	static getNiceName() {
 		return "Verification";
 	}
+
+	// name for acl lookup
+	static getAclName() {
+		return "verification";
+	}
 	//---------------------------------------------------------------------------
 
 

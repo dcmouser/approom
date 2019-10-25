@@ -21,10 +21,26 @@ const LoginModel = require("../models/login");
 class RegistrationAid {
 
 	//---------------------------------------------------------------------------
+	// constructor
+	constructor() {
+	}
+
+	// global singleton request
+	static getSingleton(...args) {
+		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
+		if (this.globalSingleton === undefined) {
+			this.globalSingleton = new RegistrationAid(...args);
+		}
+		return this.globalSingleton;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
 	// this function is used to initialize form variables when presenting registration form
 	// it gets values from session related if they have a bridged login or a session-remembered validation of their emai, etc.
 	// which allows us to have multi-step registration
-	static async fillReqBodyWithSessionedFieldValues(req) {
+	async fillReqBodyWithSessionedFieldValues(req) {
 		// option fields
 		var username, email, realName;
 		var jrResult = JrResult.makeNew();
@@ -99,7 +115,7 @@ class RegistrationAid {
 
 	//---------------------------------------------------------------------------
 	// New all in one registration/account form helper
-	static async processAccountAllInOneForm(req) {
+	async processAccountAllInOneForm(req) {
 		var jrResult = JrResult.makeNew();
 		var successRedirectTo;
 
@@ -113,10 +129,10 @@ class RegistrationAid {
 		var requiredFields;
 		if (verification) {
 			// when we are following up on a verification, then this is a final registration
-			requiredFields = RegistrationAid.calcRequiredRegistrationFieldsFinal();
+			requiredFields = this.calcRequiredRegistrationFieldsFinal();
 		} else {
 			// new registration, we may only need certain info, because we aren't creating user account yet, just pre-account verification without account to be created after they verify their email
-			requiredFields = RegistrationAid.calcRequiredRegistrationFieldsInitial();
+			requiredFields = this.calcRequiredRegistrationFieldsInitial();
 		}
 		var flagEmailRequired = requiredFields.includes("email");
 		var flagUsernameRequired = requiredFields.includes("username");
@@ -210,7 +226,7 @@ class RegistrationAid {
 		//
 		if (verification && flagVerifiedEmail) {
 			// case 1, we can create the full account
-			await RegistrationAid.createFullNewUserAccountForLoggedInUser(jrResult, req, verification, userObj);
+			await this.createFullNewUserAccountForLoggedInUser(jrResult, req, verification, userObj);
 			if (!jrResult.isError()) {
 				if (arserver.getLoggedInLocalUserIdFromSession(req)) {
 					// they have been logged in after verifying, so send them to their profile.
@@ -249,7 +265,7 @@ class RegistrationAid {
 
 
 	//---------------------------------------------------------------------------
-	static calcRequiredRegistrationFieldsInitial() {
+	calcRequiredRegistrationFieldsInitial() {
 		// we can change this stuff if we want to force user to provide different info on initial registration
 		// if we only require email, then we can't create account until they verify email, and thereafter fill in another form with username, etc.
 		// wheras if we gather full info (username, pass) now, we can remember it and create full account after they verify their email
@@ -257,7 +273,7 @@ class RegistrationAid {
 		return requiredFields;
 	}
 
-	static calcRequiredRegistrationFieldsFinal() {
+	calcRequiredRegistrationFieldsFinal() {
 		// what fields we require to create the full user account
 		// ATTN: note that you can't put just any arbitrary list of fields here, only certain ones are checked in processAccountAllInOneForm() above
 		var requiredFields = ["email", "username", "password"];
@@ -279,7 +295,7 @@ class RegistrationAid {
 	// IMPORTANT: userObj may contain an email address -- if so it MUST match the one in the verification, otherwise it is an error to complain about
 	// NOTE: verifyCode can optionally be an already resolved verification object
 	//
-	static async createFullNewUserAccountForLoggedInUser(jrResult, req, verification, userObj) {
+	async createFullNewUserAccountForLoggedInUser(jrResult, req, verification, userObj) {
 		var retvResult;
 
 		// log them in automatically after we create their account?
@@ -334,4 +350,4 @@ class RegistrationAid {
 
 
 // export the class as the sole export
-module.exports = RegistrationAid;
+module.exports = RegistrationAid.getSingleton();

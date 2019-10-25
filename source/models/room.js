@@ -18,6 +18,7 @@ const arserver = require("../controllers/server");
 // our helper modules
 const jrhelpers = require("../helpers/jrhelpers");
 const jrhmisc = require("../helpers/jrhmisc");
+const jrlog = require("../helpers/jrlog");
 
 
 
@@ -34,6 +35,11 @@ class RoomModel extends ModelBaseMongoose {
 
 	static getNiceName() {
 		return "Room";
+	}
+
+	// name for acl lookup
+	static getAclName() {
+		return "room";
 	}
 	//---------------------------------------------------------------------------
 
@@ -117,10 +123,13 @@ class RoomModel extends ModelBaseMongoose {
 		// NOTE: this list can be generated dynamically based on logged in user
 		var reta;
 		if (operationType === "crudAdd" || operationType === "crudEdit") {
-			reta = ["appid", "shortcode", "label", "description", "disabled"];
+			reta = ["appid", "shortcode", "label", "description", "disabled", "notes"];
 		}
 		return reta;
 	}
+
+
+
 
 	// crud add/edit
 	static async validateAndSave(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj) {
@@ -136,7 +145,10 @@ class RoomModel extends ModelBaseMongoose {
 		await this.validateMergeAsync(jrResult, "shortcode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await this.validateShortcode(jrr, keyname, inVal, obj));
 		await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
 		await this.validateMergeAsync(jrResult, "description", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
-		await this.validateMergeAsync(jrResult, "disabled", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFielDisbled(jrr, keyname, inVal));
+
+		// base fields shared between all? (notes, etc.)
+		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj);
+
 
 		// any validation errors?
 		if (jrResult.isError()) {
@@ -179,12 +191,38 @@ class RoomModel extends ModelBaseMongoose {
 			const AppModel = require("./app");
 			const app = await AppModel.findOneById(appid);
 			if (app) {
-				appLabel = app.name + " - " + app.label;
+				appLabel = app.shortcode + " - " + app.label;
 			}
 		}
 		return {
 			appLabel,
 		};
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	static async buildSimpleRoomListUserTargetable(user) {
+		// build room list, pairs of id -> nicename, that are targetable to current logged in user
+		var roomlist = await this.buildSimpleRoomList(user);
+		return roomlist;
+	}
+
+	// see http://thecodebarbarian.com/whats-new-in-mongoose-53-async-iterators.html
+	static async buildSimpleRoomList(user) {
+		const docs = await this.mongooseModel.find().select("_id shortcode label");
+		var roomlist = [];
+		for (const doc of docs) {
+			roomlist[doc._id] = doc.shortcode + " - " + doc.label;
+		}
+
+		return roomlist;
+	}
+
+	static async buildSimpleRoomIdListUserTargetable(user) {
+		const docs = await this.buildSimpleRoomListUserTargetable(user);
+		var ids = Object.keys(docs);
+		return ids;
 	}
 	//---------------------------------------------------------------------------
 

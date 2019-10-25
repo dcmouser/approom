@@ -48,172 +48,188 @@ const DefHumanEasyCharacters = DefHumanEasyCharactersArray[0] + DefHumanEasyChar
 
 
 
+class JrCrypto {
+
+	//---------------------------------------------------------------------------
+	constructor() {
+	}
+
+	// global singleton request
+	static getSingleton(...args) {
+		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
+		if (this.globalSingleton === undefined) {
+			this.globalSingleton = new JrCrypto(...args);
+		}
+		return this.globalSingleton;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	async hashPlaintextPasswordToObj(passwordPlaintext) {
+		// algorithm to use
+		var passwordAlgorithm = DefPasswordAlgorithm;
+		var salt = "";
+		// hash it
+		var passwordHashed = await this.createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, DefCryptSaltRounds, DefLatestPasswordVersion);
+		// return it -- an OBJECT with properties not just a string
+		return passwordHashed;
+	}
 
 
 
-//---------------------------------------------------------------------------
-async function hashPlaintextPasswordToObj(passwordPlaintext) {
-	// algorithm to use
-	var passwordAlgorithm = DefPasswordAlgorithm;
-	var salt = "";
-	// hash it
-	var passwordHashed = await createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, DefCryptSaltRounds, DefLatestPasswordVersion);
-	// return it -- an OBJECT with properties not just a string
-	return passwordHashed;
-}
+	async createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, saltRounds, passwordVersion) {
+		// function to hash plaintext password and return an object with hashed password properties
 
+		var passwordHashedStr;
+		//
+		if (passwordAlgorithm === "plain") {
+			passwordHashedStr = passwordPlaintext;
+			salt = "";
+		} else if (passwordAlgorithm === "bcrypt") {
+			// bcrypt module hash -- the most widely recommended method
+			// note that bcrypt does not let us specify salt, and embeds extra info in passwordHashedStr string
+			passwordHashedStr = await bcrypt.hash(passwordPlaintext, saltRounds);
+			// null these so we dont save them (saltRound info is embedded in the bcrypt hash)
+			salt = null;
+			saltRounds = null;
+		} else if (passwordAlgorithm === "crypto_sha512") {
+			// crypto module hash
+			// see https://ciphertrick.com/2016/01/18/salt-hash-passwords-using-nodejs-crypto/
+			// note: crypto does not use saltRounds
+			if (!salt) {
+				// no salt provided, make a random one
+				salt = this.generateRandomSalt();
+			}
+			//
+			var hash = crypto.createHmac("sha512", salt);
+			hash.update(passwordPlaintext);
+			passwordHashedStr = hash.digest("hex");
+			// null these so we dont save them
+			saltRounds = null;
+		} else {
+			throw ("Uknown password hash algorithm: " + passwordAlgorithm);
+		}
 
-
-async function createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, saltRounds, passwordVersion) {
-	// function to hash plaintext password and return an object with hashed password properties
-
-	var passwordHashedStr;
-	//
-	if (passwordAlgorithm === "plain") {
-		passwordHashedStr = passwordPlaintext;
-		salt = "";
-	} else if (passwordAlgorithm === "bcrypt") {
-		// bcrypt module hash -- the most widely recommended method
-		// note that bcrypt does not let us specify salt, and embeds extra info in passwordHashedStr string
-		passwordHashedStr = await bcrypt.hash(passwordPlaintext, saltRounds);
-		// null these so we dont save them (saltRound info is embedded in the bcrypt hash)
-		salt = null;
-		saltRounds = null;
-	} else if (passwordAlgorithm === "crypto_sha512") {
-		// crypto module hash
-		// see https://ciphertrick.com/2016/01/18/salt-hash-passwords-using-nodejs-crypto/
-		// note: crypto does not use saltRounds
-		if (!salt) {
-			// no salt provided, make a random one
-			salt = generateRandomSalt();
+		// build the passwordHashed and return it
+		var passwordHashed = {
+			hash: passwordHashedStr,
+			alg: passwordAlgorithm,
+			// version is a numeric value we can use in case we need to force upgrade everyone with an old password algorithm, etc.
+			ver: passwordVersion,
+			// save date so we can find older passwords we want to force users to update after some issue
+			date: new Date(),
+		};
+		if (salt !== null) {
+			passwordHashed.salt = salt;
+		}
+		if (saltRounds !== null) {
+			passwordHashed.saltRounds = saltRounds;
 		}
 		//
-		var hash = crypto.createHmac("sha512", salt);
-		hash.update(passwordPlaintext);
-		passwordHashedStr = hash.digest("hex");
-		// null these so we dont save them
-		saltRounds = null;
-	} else {
-		throw ("Uknown password hash algorithm: " + passwordAlgorithm);
+		return passwordHashed;
 	}
 
-	// build the passwordHashed and return it
-	var passwordHashed = {
-		hash: passwordHashedStr,
-		alg: passwordAlgorithm,
-		// version is a numeric value we can use in case we need to force upgrade everyone with an old password algorithm, etc.
-		ver: passwordVersion,
-		// save date so we can find older passwords we want to force users to update after some issue
-		date: new Date(),
-	};
-	if (salt !== null) {
-		passwordHashed.salt = salt;
-	}
-	if (saltRounds !== null) {
-		passwordHashed.saltRounds = saltRounds;
-	}
-	//
-	return passwordHashed;
-}
 
 
 
+	async testPlaintextPassword(passwordPlaintext, passwordHashed) {
+		// see if password matches
 
-async function testPlaintextPassword(passwordPlaintext, passwordHashed) {
-	// see if password matches
+		// if passwordHashStringFromDb == "" then there is no password stored, so result is always false
+		if (!passwordPlaintext || !passwordHashed) {
+			return false;
+		}
 
-	// if passwordHashStringFromDb == "" then there is no password stored, so result is always false
-	if (!passwordPlaintext || !passwordHashed) {
+		// password obj properties
+		var passwordAlgorithm = passwordHashed.alg;
+		var passwordHashedStr = passwordHashed.hash;
+		var passwordVersion = passwordHashed.ver;
+
+		// ok compare
+		try {
+			if (passwordAlgorithm === "bcrypt") {
+				// bcrypt uses its own explicit compare function, that is meant to defeat timing attacks
+				// note that it will figure out the salt and saltrounds from the actual hash string
+				var bretv = bcrypt.compare(passwordPlaintext, passwordHashedStr);
+				return bretv;
+			}
+			// for non-bcrypt, we essentially repeat the hash process with the previously used salt and then compare
+			var salt = passwordHashed.salt;
+			var saltRounds = passwordHashed.saltRounds;
+			//
+			var passwordHashedTest = await this.createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, saltRounds, passwordVersion);
+			// now is the hashed version of the new plaintext the same as the hashed version of the old stored one?
+			return (passwordHashedTest.passwordHashedStr === passwordHashedStr);
+		} catch (err) {
+			jrlog.log("Error in jrhelpers exports.testPlaintextPassword while attempting to parse/compare hashed password string");
+			jrlog.log(err);
+		}
+
+		// no match
 		return false;
 	}
 
-	// password obj properties
-	var passwordAlgorithm = passwordHashed.alg;
-	var passwordHashedStr = passwordHashed.hash;
-	var passwordVersion = passwordHashed.ver;
 
-	// ok compare
-	try {
-		if (passwordAlgorithm === "bcrypt") {
-			// bcrypt uses its own explicit compare function, that is meant to defeat timing attacks
-			// note that it will figure out the salt and saltrounds from the actual hash string
-			var bretv = bcrypt.compare(passwordPlaintext, passwordHashedStr);
-			return bretv;
+
+	generateRandomSalt() {
+		// private func
+		return this.genRandomStringHex(DefCryptSaltLength);
+	}
+
+
+
+	// see https://ciphertrick.com/2016/01/18/salt-hash-passwords-using-nodejs-crypto/
+	/**
+	 * generates random string of characters i.e salt
+	 * @function
+	 * @param {number} length - Length of the random string.
+	 */
+	genRandomStringHex(length) {
+		return crypto.randomBytes(Math.ceil(length / 2))
+			.toString("hex")
+			.slice(0, length);
+	}
+
+
+	genRandomStringHumanEasy(length) {
+		// generate a string of letters and numbers that is hard for humans to mistake
+		// so all uppercase and avoid letters that could be duplicates
+		// see https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
+		var retstr = "";
+		var charlen = DefHumanEasyCharacters.length;
+		var charpos;
+		for (var i = 0; i < length; i++) {
+			charpos = Math.floor(Math.random() * charlen);
+			retstr += DefHumanEasyCharacters.charAt(charpos);
 		}
-		// for non-bcrypt, we essentially repeat the hash process with the previously used salt and then compare
-		var salt = passwordHashed.salt;
-		var saltRounds = passwordHashed.saltRounds;
-		//
-		var passwordHashedTest = await createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, saltRounds, passwordVersion);
-		// now is the hashed version of the new plaintext the same as the hashed version of the old stored one?
-		return (passwordHashedTest.passwordHashedStr === passwordHashedStr);
-	} catch (err) {
-		jrlog.log("Error in jrhelpers exports.testPlaintextPassword while attempting to parse/compare hashed password string");
-		jrlog.log(err);
+		return retstr;
 	}
 
-	// no match
-	return false;
-}
 
-
-
-function generateRandomSalt() {
-	// private func
-	return genRandomStringHex(DefCryptSaltLength);
-}
-
-
-
-// see https://ciphertrick.com/2016/01/18/salt-hash-passwords-using-nodejs-crypto/
-/**
- * generates random string of characters i.e salt
- * @function
- * @param {number} length - Length of the random string.
- */
-function genRandomStringHex(length) {
-	return crypto.randomBytes(Math.ceil(length / 2))
-		.toString("hex")
-		.slice(0, length);
-}
-
-
-function genRandomStringHumanEasy(length) {
-	// generate a string of letters and numbers that is hard for humans to mistake
-	// so all uppercase and avoid letters that could be duplicates
-	// see https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
-	var retstr = "";
-	var charlen = DefHumanEasyCharacters.length;
-	var charpos;
-	for (var i = 0; i < length; i++) {
-		charpos = Math.floor(Math.random() * charlen);
-		retstr += DefHumanEasyCharacters.charAt(charpos);
-	}
-	return retstr;
-}
-
-
-function genRandomStringHumanEasier(length) {
-	// generate a string of letters and numbers that is hard for humans to mistake
-	// so all uppercase and avoid letters that could be duplicates
-	// see https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
-	// this version alternates digits and letters for even easier to read codes
-	var retstr = "";
-	var charlen, charpos;
-	var group = 0;
-	for (var i = 0; i < length; i++) {
-		if (group > 1) {
-			// alternate
-			group = 0;
+	genRandomStringHumanEasier(length) {
+		// generate a string of letters and numbers that is hard for humans to mistake
+		// so all uppercase and avoid letters that could be duplicates
+		// see https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
+		// this version alternates digits and letters for even easier to read codes
+		var retstr = "";
+		var charlen, charpos;
+		var group = 0;
+		for (var i = 0; i < length; i++) {
+			if (group > 1) {
+				// alternate
+				group = 0;
+			}
+			charlen = DefHumanEasyCharactersArray[group].length;
+			charpos = Math.floor(Math.random() * charlen);
+			retstr += DefHumanEasyCharactersArray[group].charAt(charpos);
+			group++;
 		}
-		charlen = DefHumanEasyCharactersArray[group].length;
-		charpos = Math.floor(Math.random() * charlen);
-		retstr += DefHumanEasyCharactersArray[group].charAt(charpos);
-		group++;
+		return retstr;
 	}
-	return retstr;
+	//---------------------------------------------------------------------------
+
 }
-//---------------------------------------------------------------------------
 
 
 
@@ -225,11 +241,5 @@ function genRandomStringHumanEasier(length) {
 
 
 
-
-
-//---------------------------------------------------------------------------
-module.exports = {
-	hashPlaintextPasswordToObj, createPasswordHashed, testPlaintextPassword,
-	genRandomStringHex, genRandomStringHumanEasy, genRandomStringHumanEasier,
-};
-//---------------------------------------------------------------------------
+// export the class as the sole export
+module.exports = JrCrypto.getSingleton();

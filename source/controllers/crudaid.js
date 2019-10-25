@@ -26,9 +26,23 @@ const arserver = require("./server");
 
 class CrudAid {
 
+	//---------------------------------------------------------------------------
+	// constructor
+	constructor() {
+	}
+
+	// global singleton request
+	static getSingleton(...args) {
+		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
+		if (this.globalSingleton === undefined) {
+			this.globalSingleton = new CrudAid(...args);
+		}
+		return this.globalSingleton;
+	}
+	//---------------------------------------------------------------------------
 
 	//---------------------------------------------------------------------------
-	static setupRouter(router, modelClass, baseCrudUrl) {
+	setupRouter(router, modelClass, baseCrudUrl) {
 		// this is called during server setup, for each route that we want to provide crud route support on
 		// note that we use const variables with different names here so that we can precalc the view files ONCE
 		// and use that calc'd path each time the request is made without having to recompute it
@@ -88,12 +102,12 @@ class CrudAid {
 	//---------------------------------------------------------------------------
 	// These functions do the actual work of crud routes
 
-	static async handleListGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	async handleListGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
 
 		// acl test
-		if (!await arserver.aclRequireModelAccess(user, req, res, modelClass, "list")) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, "list")) {
 			return true;
 		}
 
@@ -136,7 +150,7 @@ class CrudAid {
 	}
 
 
-	static async handleAddGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	async handleAddGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
 
@@ -150,7 +164,7 @@ class CrudAid {
 			modelClass.validateId(jrResult, id);
 			if (!jrResult.isError()) {
 				// acl test to VIEW the item we are CLONING
-				if (!await arserver.aclRequireModelAccess(user, req, res, modelClass, "view", id)) {
+				if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, "view", id)) {
 					return true;
 				}
 				// get object being edited
@@ -165,7 +179,7 @@ class CrudAid {
 		}
 
 		// acl test to add
-		if (!await arserver.aclRequireModelAccess(user, req, res, modelClass, "add")) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, "add")) {
 			return true;
 		}
 
@@ -198,7 +212,7 @@ class CrudAid {
 	}
 
 
-	static async handleAddPost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	async handleAddPost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// user posts form for adding submission
 
 		// get logged in user
@@ -213,7 +227,7 @@ class CrudAid {
 			return true;
 		}
 		// acl test
-		if (!await arserver.aclRequireModelAccess(user, req, res, this, "add")) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, "add")) {
 			return true;
 		}
 
@@ -277,7 +291,7 @@ class CrudAid {
 	}
 
 
-	static async handleEditGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	async handleEditGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
 
@@ -287,7 +301,7 @@ class CrudAid {
 		var id = req.params.id;
 
 		// validate and get id, this will also do an ACL test
-		var obj = await modelClass.validateGetObjByIdDoAcl(jrResult, user, req, res, id, "edit");
+		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, "edit");
 		if (jrResult.isError()) {
 			return false;
 		}
@@ -323,7 +337,7 @@ class CrudAid {
 	}
 
 
-	static async handleEditPost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	async handleEditPost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// user posts form for adding submission
 
 		// get logged in user
@@ -342,7 +356,7 @@ class CrudAid {
 			return false;
 		}
 		// acl test
-		if (!await arserver.aclRequireModelAccess(user, req, res, this, "edit", id)) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, "edit", id)) {
 			return false;
 		}
 
@@ -404,7 +418,7 @@ class CrudAid {
 	}
 
 
-	static async handleViewGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	async handleViewGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
 
@@ -413,7 +427,7 @@ class CrudAid {
 		var id = req.params.id;
 
 		// get obj AND perform acl test
-		var obj = await modelClass.validateGetObjByIdDoAcl(jrResult, user, req, res, id, "view");
+		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, "view");
 		if (jrResult.isError()) {
 			return true;
 		}
@@ -446,7 +460,7 @@ class CrudAid {
 	}
 
 
-	static async handleDeleteGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	async handleDeleteGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
 
@@ -455,7 +469,7 @@ class CrudAid {
 		var id = req.params.id;
 
 		// get object AND perform ACL test
-		var obj = await modelClass.validateGetObjByIdDoAcl(jrResult, user, req, res, id, "delete");
+		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, "delete");
 		if (jrResult.isError()) {
 			return true;
 		}
@@ -489,7 +503,7 @@ class CrudAid {
 	}
 
 
-	static async handleDeletePost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	async handleDeletePost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
 
@@ -502,7 +516,7 @@ class CrudAid {
 			return true;
 		}
 		// get object AND perform ACL test
-		var obj = await modelClass.validateGetObjByIdDoAcl(jrResult, user, req, res, id, "delete");
+		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, "delete");
 		if (jrResult.isError()) {
 			return true;
 		}
@@ -550,12 +564,12 @@ class CrudAid {
 	}
 
 
-	static async handleStatsGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	async handleStatsGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
 
 		// acl test
-		if (!await arserver.aclRequireModelAccess(user, req, res, modelClass, "stats")) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, "stats")) {
 			return true;
 		}
 
@@ -609,7 +623,7 @@ class CrudAid {
 	//---------------------------------------------------------------------------
 	// helper to determine which view file to show
 	// checks first for model specific view, then defaults to crud generic if the specific one not found
-	static calcViewFile(subview, modelClass) {
+	calcViewFile(subview, modelClass) {
 		var fname = path.join("crud", subview);
 		var fnameModelSpecific = path.join("crud", modelClass.getCollectionName() + "_" + subview);
 		var fnameModelGeneric = path.join("crud", "generic_" + subview);
@@ -632,7 +646,7 @@ class CrudAid {
 
 
 	//---------------------------------------------------------------------------
-	static async buildGenericMainHtml(modelClass, req, obj, jrResult, crudSubType, helperData) {
+	async buildGenericMainHtml(modelClass, req, obj, jrResult, crudSubType, helperData) {
 		var rethtml;
 
 		if (crudSubType === "add" || crudSubType === "edit") {
@@ -655,7 +669,7 @@ class CrudAid {
 		return new hbs.SafeString(rethtml);
 	}
 
-	static async buildGenericMainHtmlAddEdit(modelClass, req, obj, helperData, jrResult) {
+	async buildGenericMainHtmlAddEdit(modelClass, req, obj, helperData, jrResult) {
 		var rethtml = "";
 
 		// start table
@@ -770,7 +784,7 @@ class CrudAid {
 
 
 
-	static async buildGenericMainHtmlView(modelClass, req, obj, helperData, jrResult) {
+	async buildGenericMainHtmlView(modelClass, req, obj, helperData, jrResult) {
 		var rethtml = "";
 
 		// start table
@@ -862,14 +876,14 @@ class CrudAid {
 		return rethtml;
 	}
 
-	static async buildGenericMainHtmlStats(modelClass, req, obj, helperData, jrResult) {
+	async buildGenericMainHtmlStats(modelClass, req, obj, helperData, jrResult) {
 		var rethtml;
 		rethtml = "<div>stats</div>";
 		return rethtml;
 	}
 
 
-	static async buildGenericMainHtmlList(modelClass, req, obj, helperData, jrResult) {
+	async buildGenericMainHtmlList(modelClass, req, obj, helperData, jrResult) {
 		var rehtml = await jrhgrid.jrGridList(req, helperData);
 		return rehtml;
 	}
@@ -877,12 +891,12 @@ class CrudAid {
 
 
 	//---------------------------------------------------------------------------
-	static buildChoiceHtmlForAddEdit(fieldName, choices, val) {
+	buildChoiceHtmlForAddEdit(fieldName, choices, val) {
 		var rethtml = jrhmisc.jrHtmlFormOptionListSelect(fieldName, choices, val);
 		return rethtml;
 	}
 
-	static buildChoiceHtmlForView(choices, val) {
+	buildChoiceHtmlForView(choices, val) {
 		var rethtml = jrhmisc.jrHtmlNiceOptionFromList(choices, val, "[NOT SET]");
 		return rethtml;
 	}
@@ -895,4 +909,4 @@ class CrudAid {
 
 
 // export the class as the sole export
-module.exports = CrudAid;
+module.exports = CrudAid.getSingleton();

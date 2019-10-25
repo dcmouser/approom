@@ -18,7 +18,23 @@ const RoomModel = require("../models/room");
 
 class AdminAid {
 
-	static async addTestAppsAndRooms(req, addCountApps, addCountRooms) {
+	//---------------------------------------------------------------------------
+	// constructor
+	constructor() {
+	}
+
+	// global singleton request
+	static getSingleton(...args) {
+		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
+		if (this.globalSingleton === undefined) {
+			this.globalSingleton = new AdminAid(...args);
+		}
+		return this.globalSingleton;
+	}
+	//---------------------------------------------------------------------------
+
+
+	async addTestAppsAndRooms(req, addCountApps, addCountRooms) {
 		// add some test apps and rooms
 		var successMessage1, successMessage2;
 		var app, room;
@@ -83,4 +99,4 @@ class AdminAid {
 
 
 // export the class as the sole export
-module.exports = AdminAid;
+module.exports = AdminAid.getSingleton();

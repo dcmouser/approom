@@ -19,7 +19,7 @@ const jrhelpers = require("../helpers/jrhelpers");
 const jrhmisc = require("../helpers/jrhmisc");
 
 
-class FileModel extends ModelBaseMongoose {
+class RoomdataModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// global static version info
@@ -27,16 +27,16 @@ class FileModel extends ModelBaseMongoose {
 
 	// collection name for this model
 	static getCollectionName() {
-		return "files";
+		return "roomdata";
 	}
 
 	static getNiceName() {
-		return "File";
+		return "RoomData";
 	}
 
 	// name for acl lookup
 	static getAclName() {
-		return "file";
+		return "roomdata";
 	}
 	//---------------------------------------------------------------------------
 
@@ -49,21 +49,12 @@ class FileModel extends ModelBaseMongoose {
 				type: mongoose.Schema.ObjectId,
 				required: true,
 			},
-			path: {
-				type: String,
-				required: true,
-			},
-			label: {
-				type: String,
-			},
-			sizeInBytes: {
-				type: Number,
-			},
 		};
 	}
 
 	static getSchemaDefinitionExtra() {
 		const RoomModel = require("./room");
+
 		return {
 			...(this.getBaseSchemaDefinitionExtra()),
 			roomid: {
@@ -91,21 +82,9 @@ class FileModel extends ModelBaseMongoose {
 				// alternative generic way to have crud pages link to this val
 				// crudLink: AppModel.getCrudUrlBase(),
 			},
-			path: {
-				label: "Path",
-			},
-			label: {
-				label: "Label",
-			},
-			sizeInBytes: {
-				label: "Size in bytes",
-			},
 		};
 	}
 	//---------------------------------------------------------------------------
-
-
-
 
 
 
@@ -147,9 +126,6 @@ class FileModel extends ModelBaseMongoose {
 
 
 
-
-
-
 	//---------------------------------------------------------------------------
 	static getSaveFields(req, operationType) {
 		// operationType is commonly "crudAdd", "crudEdit"
@@ -159,7 +135,7 @@ class FileModel extends ModelBaseMongoose {
 		// NOTE: this list can be generated dynamically based on logged in user
 		var reta;
 		if (operationType === "crudAdd" || operationType === "crudEdit") {
-			reta = ["roomid", "path", "label", "sizeInBytes", "disabled", "notes"];
+			reta = ["roomid", "disabled", "notes"];
 		}
 		return reta;
 	}
@@ -180,9 +156,6 @@ class FileModel extends ModelBaseMongoose {
 
 		// set fields from form and validate
 		await this.validateMergeAsync(jrResult, "roomid", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => this.validateModelFieldRoomId(jrr, keyname, inVal, user));
-		await this.validateMergeAsync(jrResult, "path", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await this.validateModelFieldString(jrr, keyname, inVal, obj));
-		await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldString(jrr, keyname, inVal));
-		await this.validateMergeAsync(jrResult, "sizeInBytes", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldString(jrr, keyname, inVal));
 
 		// base fields shared between all? (notes, etc.)
 		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj);
@@ -209,16 +182,8 @@ class FileModel extends ModelBaseMongoose {
 
 
 
-
-
-
-
-
-
-
-
 }
 
 
 // export the class as the sole export
-module.exports = FileModel;
+module.exports = RoomdataModel;

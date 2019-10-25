@@ -360,6 +360,7 @@ class AppRoomServer {
 		const AppModel = require("../models/app");
 		const ConnectionModel = require("../models/connection");
 		const FileModel = require("../models/file");
+		const RoomdataModel = require("../models/roomdata");
 
 		const OptionModel = require("../models/option");
 		const UserModel = require("../models/user");
@@ -395,6 +396,7 @@ class AppRoomServer {
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/verification", VerificationModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/connection", ConnectionModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/file", FileModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/roomdata", RoomdataModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/option", OptionModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/log", LogModel);
 
@@ -1103,21 +1105,30 @@ class AppRoomServer {
 		const AppModel = require("../models/app");
 		const ConnectionModel = require("../models/connection");
 		const FileModel = require("../models/file");
+		const RoomdataModel = require("../models/roomdata");
 		const OptionModel = require("../models/option");
 		const UserModel = require("../models/user");
 		const VerificationModel = require("../models/verification");
 		const LoginModel = require("../models/login");
+		const mongooseOptions = {
+			useNewUrlParser: true,
+			// see https://github.com/Automattic/mongoose/issues/8156
+			useUnifiedTopology: true,
+			useCreateIndex: true,
+		};
 
 		try {
 			// connect to db
 			const mongoUrl = this.getOptionDbUrl();
 			jrlog.cdebug("Connecting to mongoose-mongodb: " + mongoUrl);
-			await mongoose.connect(mongoUrl, { useNewUrlParser: true, useCreateIndex: true });
+
+			await mongoose.connect(mongoUrl, mongooseOptions);
 
 			// setup the model databases
 			await this.setupModelSchema(mongoose, AppModel);
 			await this.setupModelSchema(mongoose, ConnectionModel);
 			await this.setupModelSchema(mongoose, FileModel);
+			await this.setupModelSchema(mongoose, RoomdataModel);
 			await this.setupModelSchema(mongoose, RoomModel);
 			await this.setupModelSchema(mongoose, UserModel);
 			//
@@ -1210,28 +1221,42 @@ class AppRoomServer {
 		var user = await this.getLoggedInUser(req);
 		return this.requireUserIsLoggedIn(req, res, user, goalRelUrl);
 	}
+	//---------------------------------------------------------------------------
 
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
 	requireUserIsLoggedIn(req, res, user, goalRelUrl, failureRelUrl) {
 		// if user fails permission, remember the goalRelUrl in session and temporarily redirect to failureRelUrl and return false
 		// otherwise return true
 
-		// set failureRelUrl default
-		if (!failureRelUrl) {
-			failureRelUrl = "/login";
-		}
-
-		// we just need to check if the user is non-empty
 		if (!user) {
-			// ok this is failure, save rediret goal url
-			this.rememberDivertedRelUrlAndGo(req, res, goalRelUrl, failureRelUrl, "You need to log in before you can access that page.");
+			this.handleRequireLoginFailure(req, res, user, goalRelUrl, failureRelUrl, "You need to log in before you can access that page.");
 			return false;
 		}
 
 		// they are good, so forget any previously remembered login diversions
 		this.forgetLoginDiversions(req);
-
 		return true;
 	}
+
+
+
+	handleRequireLoginFailure(req, res, user, goalRelUrl, failureRelUrl, errorMsg) {
+		// set failureRelUrl default
+		if (!failureRelUrl) {
+			failureRelUrl = "/login";
+		}
+
+		// ok this is failure, save rediret goal url
+		this.rememberDivertedRelUrlAndGo(req, res, goalRelUrl, failureRelUrl, errorMsg);
+	}
+
+
 
 
 	divertToLoginPageThenBackToCurrentUrl(req, res) {
@@ -1365,60 +1390,6 @@ class AppRoomServer {
 
 
 
-	//---------------------------------------------------------------------------
-	async aclRequireModelAccess(user, req, res, modelClass, accessTypeStr, modelId) {
-		// return FALSE if we are denying user access
-		// and in that case WE should redirect them or render the output
-		// return TRUE if we should let them continue
-		var access = false;
-
-		if (!user) {
-			user = await this.getLoggedInUser(req);
-		}
-
-		// ATTN: TEST - let's just fail them if they are not logged in
-		if (!user) {
-			access = false;
-		} else {
-			access = true;
-		}
-
-		// if we granted them access, just return true
-		if (access) {
-			return true;
-		}
-
-		// deny them access?
-
-		if (!user) {
-			// ok if we denied them access and they are not logged in, make them log in -- after that they may have permission
-			this.divertToLoginPageThenBackToCurrentUrl(req, res);
-		} else {
-			// just tell them they don't have access
-			this.renderAclAccessError(req, res, modelClass, "You do not have permissions to access this resource/page.");
-		}
-
-		return false;
-	}
-
-
-	renderAclAccessError(req, res, modelClass, errorMessage) {
-		var jrError = JrResult.makeError("ACL", errorMessage);
-		// render
-		res.render("acldeny", {
-			jrResult: JrResult.sessionRenderResult(req, res, jrError),
-		});
-	}
-
-	renderAclAccessErrorResult(req, res, modelClass, jrResult) {
-		// render
-		res.render("acldeny", {
-			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
-		});
-	}
-	//---------------------------------------------------------------------------
-
-
 
 
 
@@ -1513,13 +1484,144 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 
 
+
 	//---------------------------------------------------------------------------
-	async isLoggedInUserSuperAdmin(req) {
+	makeAlinkHtmlToAclModel(objType, objId) {
+		// get nice linked html text for an object from acl object types
+		var label = objType + " #" + objId;
+		var modelClass;
+		if (objType === "app") {
+			modelClass = require("../models/app");
+		} else if (objType === "room") {
+			modelClass = require("../models/room");
+		} else if (objType === "user") {
+			modelClass = require("../models/user");
+		} else if (objType === "file") {
+			modelClass = require("../models/file");
+		}
+
+		if (modelClass !== undefined) {
+			var alink = modelClass.getCrudUrlBase("view", objId);
+			var htmlText = "<a href=" + alink + ">" + label + "</a>";
+			return htmlText;
+		}
+		return label;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	async isLoggedInUserSiteAdmin(req) {
 		var loggedInUser = await this.getLoggedInUser(req);
 		if (loggedInUser) {
-			return loggedInUser.isSuperAdmin();
+			return loggedInUser.isSiteAdmin();
 		}
 		return false;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	async requireLoggedInSitePermission(permission, req, res, goalRelUrl) {
+		return await this.requireLoggedInPermission(permission, "site", null, req, res, goalRelUrl);
+	}
+
+	async requireLoggedInPermission(permission, permissionObjType, permissionObjId, req, res, goalRelUrl) {
+		var user = await this.getLoggedInUser(req);
+		// we just need to check if the user is non-empty
+		if (!user) {
+			// user is not logged in
+			this.handleRequireLoginFailure(req, res, user, goalRelUrl, null, "You need to log in before you can access that page.");
+			return false;
+		}
+
+		// they are logged in, but do they have permission required
+		const hasPermission = user.hasPermission(permission, permissionObjType, permissionObjId);
+		if (!hasPermission) {
+			this.handleRequireLoginFailure(req, res, user, goalRelUrl, null, "You do not have sufficient permission to accesss that page.");
+			return false;
+		}
+
+		// they are good, so forget any previously remembered login diversions
+		this.forgetLoginDiversions(req);
+		return true;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	async aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, accessTypeStr, modelId) {
+		// called by generic crud functions
+		// return FALSE if we are denying user access
+		// and in that case WE should redirect them or render the output
+		// return TRUE if we should let them continue
+
+		if (!user) {
+			user = await this.getLoggedInUser(req);
+			if (!user) {
+				// ok if we denied them access and they are not logged in, make them log in -- after that they may have permission
+				this.divertToLoginPageThenBackToCurrentUrl(req, res);
+				return false;
+			}
+		}
+
+		// ok they are logged in, now check their permission
+
+		// conversions from model info to acl info
+		var permission = accessTypeStr;
+		var permissionObjType = modelClass.getAclName();
+		var permissionObjId = modelId;
+		if (permissionObjId === undefined) {
+			permissionObjId = null;
+		}
+
+		// check permission
+		const hasPermission = user.hasPermission(permission, permissionObjType, permissionObjId);
+
+		if (!hasPermission) {
+			// tell them they don't have access
+			this.renderAclAccessError(req, res, modelClass, "You do not have permission to access this resource/page.");
+			return false;
+		}
+
+		// granted access
+		return true;
+	}
+
+
+	renderAclAccessError(req, res, modelClass, errorMessage) {
+		var jrError = JrResult.makeError("ACL", errorMessage);
+		// render
+		res.render("acldeny", {
+			jrResult: JrResult.sessionRenderResult(req, res, jrError),
+		});
+	}
+
+	renderAclAccessErrorResult(req, res, modelClass, jrResult) {
+		// render
+		res.render("acldeny", {
+			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
+		});
 	}
 	//---------------------------------------------------------------------------
 

@@ -25,6 +25,11 @@ class LogModel extends ModelBaseMongooseMinimal {
 	static getNiceName() {
 		return "LogEntry";
 	}
+
+	// name for acl lookup
+	static getAclName() {
+		return "log";
+	}
 	//---------------------------------------------------------------------------
 
 

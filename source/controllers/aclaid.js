@@ -41,57 +41,86 @@ const jrlog = require("../helpers/jrlog");
 
 class AclAid {
 
+	//---------------------------------------------------------------------------
+	// constructor
+	constructor() {
+	}
+
+	// global singleton request
+	static getSingleton(...args) {
+		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
+		if (this.globalSingleton === undefined) {
+			this.globalSingleton = new AclAid(...args);
+		}
+		return this.globalSingleton;
+	}
+	//---------------------------------------------------------------------------
+
 
 
 	//---------------------------------------------------------------------------
-	static async setupAclPermissions() {
+	async setupAclPermissions() {
 
 		// create role-acl module system
 		this.roleAcl = new roleAcl();
 
 		// ATTN: 9/3/19 - below are working thought experiments rbac stuff, i am still experimenting
 
-		this.roleAcl.grant("admin").execute("admin").on("site");
-		// this.roleAcl.grant("admin").execute("*");
+		// create permissions for the different resources
+		this.createAclEditViewGrantsForResource("app");
+		this.createAclEditViewGrantsForResource("room");
+
 		//
-		this.roleAcl.grant("globalModerator").execute("edit").on("app");
-		this.roleAcl.grant("appOwner").execute("edit").on("app");
-		this.roleAcl.grant("appModerator").execute("edit").on("app");
-		this.roleAcl.grant("appFriend").execute("view").on("app");
-		this.roleAcl.grant("none").execute("view").when({ Fn: "EQUALS", args: { public: true } }).on("app");
+		this.createAclEditViewGrantsForResource("file");
+		// files can be viewed by friends of the ROOM
+		this.roleAcl.grant("roomFriend").execute("view").on("file");
 		//
-		this.roleAcl.grant("globalModerator").execute("edit").on("room");
-		this.roleAcl.grant("roomOwner").execute("edit").on("room");
-		this.roleAcl.grant("roomModerator").execute("edit").on("room");
-		this.roleAcl.grant("roomFriend").execute("view").on("room");
-		this.roleAcl.grant("none").execute("view").when({ Fn: "EQUALS", args: { public: true } }).on("room");
+		this.createAclEditViewGrantsForResource("roomdata");
+		// files can be viewed by friends of the ROOM
+		this.roleAcl.grant("roomFriend").execute("view").on("roomdata");
+
+
 		//
-		this.roleAcl.grant("globalModerator").execute("edit").on("file");
-		this.roleAcl.grant("fileOwner").execute("edit").on("file");
-		this.roleAcl.grant("fileRoomFriend").execute("view").on("file");
-		this.roleAcl.grant("none").execute("view").when({ Fn: "EQUALS", args: { public: true } }).on("file");
-		//
-		this.roleAcl.grant("globalModerator").execute("edit").on("user");
-		this.roleAcl.grant("userOwner").execute("edit").on("user");
-		this.roleAcl.grant("userFriend").execute("view").on("user");
-		this.roleAcl.grant("none").execute("view").when({ Fn: "EQUALS", args: { public: true } }).on("user");
-		//
+		this.createAclEditViewGrantsForResource("user");
+
+		// global site admin
+		this.roleAcl.grant("siteAdmin").execute("admin").on("site");
+
+		// admin inherits the permissions of globalModerator
+		// this.roleAcl.grant("siteAdmin").extend(["globalModerator"]);
+		this.roleAcl.extendRole("siteAdmin", "globalModerator");
+
+		// visitor role is for people not logged in
+		this.roleAcl.grant("visitor");
 
 		// test
 		// jrlog.debugObj(this.roleAcl.getGrants(), "TEST of ACL permission grants");
 
 		return true;
 	}
+
+
+	createAclEditViewGrantsForResource(resourceName) {
+		// give global moderator permission
+		this.roleAcl.grant("globalModerator").execute(["add", "edit", "view", "list", "delete"]).on(resourceName);
+		// now owner, friend, none
+		this.roleAcl.grant(resourceName + "Owner").execute(["add", "edit", "view", "list"]).on(resourceName);
+		this.roleAcl.grant(resourceName + "Moderator").execute(["add", "edit", "view", "list"]).on(resourceName);
+		this.roleAcl.grant(resourceName + "Friend").execute("view").on(resourceName);
+		//
+		this.roleAcl.grant("none").execute(["view", "list"]).when({ Fn: "EQUALS", args: { public: true } }).on(resourceName);
+	}
 	//---------------------------------------------------------------------------
 
 
 
 
+
 	//---------------------------------------------------------------------------
-	static async anyRolesImplyPermission(roles, action, target) {
+	anyRolesImplyPermission(roles, action, target) {
 		// return true if any of the specified roles (array) have permission
 		for (var key in roles) {
-			if (this.roleImpliesPermission(roles[key], action, target)) {
+			if (this.roleImpliesPermission(roles[key], action, target) === true) {
 				// yes!
 				return true;
 			}
@@ -102,7 +131,7 @@ class AclAid {
 	}
 
 
-	static async roleImpliesPermission(role, action, target) {
+	roleImpliesPermission(role, action, target) {
 		// return true if the role implies the action
 
 		var permission = this.roleAcl.can(role).execute(action).on(target);
@@ -116,4 +145,4 @@ class AclAid {
 
 
 // export the class as the sole export
-module.exports = AclAid;
+module.exports = AclAid.getSingleton();

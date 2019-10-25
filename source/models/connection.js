@@ -25,6 +25,11 @@ class ConnectionModel extends ModelBaseMongoose {
 	static getNiceName() {
 		return "Connection";
 	}
+
+	// name for acl lookup
+	static getAclName() {
+		return "connection";
+	}
 	//---------------------------------------------------------------------------
 
 

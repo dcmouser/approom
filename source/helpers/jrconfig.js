@@ -38,19 +38,6 @@ const configFilesDefault = ["defaultPrivate", "default"];
 class JrConfig {
 
 	//---------------------------------------------------------------------------
-	// global singleton request
-	static getSingleton(...args) {
-		// we could do this more simply by just exporting a new instance as module export,
-		// but we wrap a function for more flexibility
-		if (this.globalSingleton === undefined) {
-			this.globalSingleton = new JrConfig(...args);
-		}
-		return this.globalSingleton;
-	}
-	//---------------------------------------------------------------------------
-
-
-	//---------------------------------------------------------------------------
 	constructor() {
 		// envList is an array of strings of environmental variables whose values will be merged in
 
@@ -65,7 +52,18 @@ class JrConfig {
 		this.queuedCommands = [];
 		this.configFiles = [];
 	}
-	//----------------------------------------------------------------------------
+
+	// global singleton request
+	static getSingleton(...args) {
+		// we could do this more simply by just exporting a new instance as module export,
+		// but we wrap a function for more flexibility
+		if (this.globalSingleton === undefined) {
+			this.globalSingleton = new JrConfig(...args);
+		}
+		return this.globalSingleton;
+	}
+	//---------------------------------------------------------------------------
+
 
 
 	//---------------------------------------------------------------------------

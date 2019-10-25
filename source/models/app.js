@@ -10,6 +10,7 @@
 
 // our helper modules
 const jrhelpers = require("../helpers/jrhelpers");
+const jrlog = require("../helpers/jrlog");
 
 // models
 const ModelBaseMongoose = require("./modelBaseMongoose");
@@ -33,6 +34,11 @@ class AppModel extends ModelBaseMongoose {
 	static getNiceName() {
 		return "App";
 	}
+
+	// name for acl lookup
+	static getAclName() {
+		return "app";
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -41,11 +47,6 @@ class AppModel extends ModelBaseMongoose {
 		return {
 			...(this.getBaseSchemaDefinition()),
 			shortcode: {
-				type: String,
-				unique: true,
-				required: true,
-			},
-			name: {
 				type: String,
 				unique: true,
 				required: true,
@@ -64,9 +65,6 @@ class AppModel extends ModelBaseMongoose {
 			...(this.getBaseSchemaDefinitionExtra()),
 			shortcode: {
 				label: "Shortcode",
-			},
-			name: {
-				label: "Name",
 			},
 			label: {
 				label: "Label",
@@ -96,7 +94,7 @@ class AppModel extends ModelBaseMongoose {
 		// NOTE: this list can be generated dynamically based on logged in user
 		var reta;
 		if (operationType === "crudAdd" || operationType === "crudEdit") {
-			reta = ["shortcode", "name", "label", "description", "disabled"];
+			reta = ["shortcode", "label", "description", "disabled", "notes"];
 		}
 		return reta;
 	}
@@ -110,10 +108,12 @@ class AppModel extends ModelBaseMongoose {
 
 		// set fields from form and validate
 		await this.validateMergeAsync(jrResult, "shortcode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await this.validateShortcode(jrr, keyname, inVal, obj));
-		await this.validateMergeAsync(jrResult, "name", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
+		// await this.validateMergeAsync(jrResult, "name", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
 		await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
 		await this.validateMergeAsync(jrResult, "description", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
-		await this.validateMergeAsync(jrResult, "disabled", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFielDisbled(jrr, keyname, inVal));
+
+		// base fields shared between all? (notes, etc.)
+		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj);
 
 		// any validation errors?
 		if (jrResult.isError()) {
@@ -140,16 +140,17 @@ class AppModel extends ModelBaseMongoose {
 
 	// see http://thecodebarbarian.com/whats-new-in-mongoose-53-async-iterators.html
 	static async buildSimpleAppList(user) {
-		const docs = await this.mongooseModel.find().select("_id name label");
+		const docs = await this.mongooseModel.find().select("_id shortcode label");
 		var applist = [];
 		for (const doc of docs) {
-			applist[doc._id] = doc.name + " - " + doc.label;
+			applist[doc._id] = doc.shortcode + " - " + doc.label;
 		}
+
 		return applist;
 	}
 
 	static async buildSimpleAppIdListUserTargetable(user) {
-		const docs = await this.buildSimpleAppListUserTargetable();
+		const docs = await this.buildSimpleAppListUserTargetable(user);
 		var ids = Object.keys(docs);
 		return ids;
 	}

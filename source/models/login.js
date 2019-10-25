@@ -34,6 +34,11 @@ class LoginModel extends ModelBaseMongoose {
 	static getNiceName() {
 		return "Bridged Login";
 	}
+
+	// name for acl lookup
+	static getAclName() {
+		return "login";
+	}
 	//---------------------------------------------------------------------------
 
 

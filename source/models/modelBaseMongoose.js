@@ -43,6 +43,9 @@ class ModelBaseMongoose {
 			extraData: {
 				type: Map,
 			},
+			notes: {
+				type: String,
+			},
 		};
 	}
 
@@ -86,6 +89,9 @@ class ModelBaseMongoose {
 				},
 				filterSize: 0,
 				readOnly: ["edit"],
+			},
+			notes: {
+				label: "Notes",
 			},
 		};
 	}
@@ -177,6 +183,7 @@ class ModelBaseMongoose {
 			creationDate: new Date(),
 			modificationDate: null,
 			disabled: 0,
+			notes: "",
 			...inobj,
 		};
 		var model = new this.mongooseModel(obj);
@@ -443,34 +450,6 @@ class ModelBaseMongoose {
 
 		return existingModel;
 	}
-
-
-	static async validateGetObjByIdDoAcl(jrResult, user, req, res, val, aclTestName) {
-		// validate id
-		var obj;
-		var id = this.validateModelFieldId(jrResult, val);
-
-		// models
-		const arserver = require("../controllers/server");
-
-		if (!jrResult.isError()) {
-			// acl test
-			if (!await arserver.aclRequireModelAccess(user, req, res, this, aclTestName, id)) {
-				return null;
-			}
-			// get object being edited
-			obj = await this.findOneById(id);
-			if (!obj) {
-				jrResult.pushError("Could not find " + this.getNiceName() + " with that Id.");
-			}
-		}
-		//
-		if (jrResult.isError()) {
-			arserver.renderAclAccessErrorResult(req, res, this, jrResult);
-			return null;
-		}
-		return obj;
-	}
 	//---------------------------------------------------------------------------
 
 
@@ -480,7 +459,7 @@ class ModelBaseMongoose {
 
 	static async validateModelFieldUnique(jrResult, key, val, existingModel) {
 		if (!val) {
-			jrResult.pushFieldError(key, "Value for " + key + " cannot be blank.");
+			jrResult.pushFieldError(key, "Value for " + key + " cannot be blank (must be unique).");
 		}
 		// must be unique so we search for collissions
 		var criteria;
@@ -577,6 +556,23 @@ class ModelBaseMongoose {
 			return null;
 		}
 		// valid
+		return val;
+	}
+
+	static async validateModelFieldRoomId(jrResult, key, val, user) {
+		const RoomModel = require("./room");
+		const roomIds = await RoomModel.buildSimpleRoomIdListUserTargetable(user);
+		if (!roomIds || roomIds.indexOf(val) === -1) {
+			jrResult.pushError("The specified Room ID is inaccessible.");
+			return null;
+		}
+		// valid
+		return val;
+	}
+
+
+	static validateModelFieldString(jrResult, key, val) {
+		// ATTN: test for certain characters?
 		return val;
 	}
 	//---------------------------------------------------------------------------
@@ -789,6 +785,62 @@ class ModelBaseMongoose {
 		return undefined;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	static async validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, val, aclTestName) {
+		// get a model object, performing acl access check first
+		// if not, render an error and return null
+
+		var obj;
+		var id = this.validateModelFieldId(jrResult, val);
+
+		// models
+		const arserver = require("../controllers/server");
+
+		if (!jrResult.isError()) {
+			// acl test
+			if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, this, aclTestName, id)) {
+				// ATTN: note that in thie case, callee will have ALREADY rendered an error to the user about permissions, which is why we need to not drop down and re-render acl access error
+				// but we DO need to push an error onto jrresult for our return check; note that text of error message is irrelevant
+				jrResult.pushError("model access denied");
+				return null;
+			}
+			// permission was granted
+			// get object being edited
+			obj = await this.findOneById(id);
+			if (!obj) {
+				jrResult.pushError("Could not find " + this.getNiceName() + " with that Id.");
+			}
+		}
+		//
+		if (jrResult.isError()) {
+			// render error
+			arserver.renderAclAccessErrorResult(req, res, this, jrResult);
+			return null;
+		}
+		return obj;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	static async validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj) {
+		// base fields shared among most models
+		await this.validateMergeAsync(jrResult, "disabled", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFielDisbled(jrr, keyname, inVal));
+		await this.validateMergeAsync(jrResult, "notes", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldString(jrr, keyname, inVal));
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
 
 
 }
