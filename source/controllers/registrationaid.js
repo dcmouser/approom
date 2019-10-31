@@ -193,7 +193,7 @@ class RegistrationAid {
 		if (passwordHashed) {
 			// we already have a valid hashed password for them, previously calculated and stored in verification object (and no new password specified), so we'll use that
 		} else {
-			passwordHashed = await UserModel.validatePlaintextPasswordConvertToHash(jrResult, password, flagPasswordRequired);
+			passwordHashed = await UserModel.validatePlaintextPasswordConvertToHash(jrResult, password, flagPasswordRequired, false);
 		}
 
 		if (jrResult.isError()) {

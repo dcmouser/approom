@@ -15,26 +15,33 @@ const arserver = require("../controllers/server");
 // helpers
 const JrResult = require("../helpers/jrresult");
 
-// init
+// express router
 const router = express.Router();
 
 
+function setupRouter(urlPath) {
 
-// Get home page
-router.get("/", (req, res, next) => {
+	// Get home page
+	router.get("/", (req, res, next) => {
 
-	// ignore any previous login diversions
-	// NOTE: we have to be careful about this to make sure nothing like the email token onetime login redirects here after login token sent, or we will forget diverted url info
-	arserver.forgetLoginDiversions(req);
+		// ignore any previous login diversions
+		// NOTE: we have to be careful about this to make sure nothing like the email token onetime login redirects here after login token sent, or we will forget diverted url info
+		arserver.forgetLoginDiversions(req);
 
-	// render view
-	res.render("index", {
-		jrResult: JrResult.sessionRenderResult(req, res),
-		title: "AppRoom",
+		// render view
+		res.render("index", {
+			jrResult: JrResult.sessionRenderResult(req, res),
+			title: "AppRoom",
+		});
 	});
-});
+
+
+	// need to return router
+	return router;
+}
 
 
 
-
-module.exports = router;
+module.exports = {
+	setupRouter,
+};

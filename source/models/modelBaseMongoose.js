@@ -12,6 +12,7 @@ const mongoose = require("mongoose");
 // our helper modules
 const jrlog = require("../helpers/jrlog");
 const jrhelpers = require("../helpers/jrhelpers");
+const jrhmisc = require("../helpers/jrhmisc");
 const JrResult = require("../helpers/jrresult");
 
 
@@ -81,12 +82,7 @@ class ModelBaseMongoose {
 			},
 			extraData: {
 				label: "Extra data",
-				valueFunction: async (viewType, req, obj, helperData) => {
-					if (obj) {
-						return JSON.stringify(obj.extraData, null, " ");
-					}
-					return "";
-				},
+				valueFunction: this.makeModelValueFunctionExtraData(),
 				filterSize: 0,
 				readOnly: ["edit"],
 			},
@@ -119,6 +115,15 @@ class ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
+	static getBaseSchemaType(fieldname) {
+		var baseSchemaDefinition = this.getBaseSchemaDefinition();
+		if (baseSchemaDefinition[fieldname]) {
+			return baseSchemaDefinition[fieldname].type;
+		}
+		return null;
+	}
+
+
 	// ATTN: TODO -- cache the schema definition and extras
 	static getSchemaExtraFieldVal(fieldName, key, defaultVal) {
 		var modelSchemaExtra = this.getSchemaDefinitionExtra();
@@ -370,7 +375,7 @@ class ModelBaseMongoose {
 			}
 		}
 
-		// secondary check for missing value
+		// secondary check for missing value, after we run the valFunc function
 		if (validatedVal === undefined) {
 			// if undefined is returned, we do NOT save the value
 			if (flagRequired && obj[fieldNameTarget] === undefined) {
@@ -380,6 +385,13 @@ class ModelBaseMongoose {
 			}
 			// should we return undefined, OR should we return obj[fieldNameTarget] if its already in there
 			return undefined;
+		}
+
+		// null value will also cause error if we're not allowed to be blank
+		if (flagRequired && validatedVal === null) {
+			// error if they are trying to save a NULL value and we've been told that the field is required
+			// above we check for undefined, which means DONT CHANGE the value; null means CHANGE The value to null
+			jrResult.pushError("Required value not provided for: " + fieldNameUsed);
 		}
 
 		// success, set it
@@ -486,14 +498,36 @@ class ModelBaseMongoose {
 		return val;
 	}
 
-
-	static async validateShortcode(jrResult, key, val, existingModel) {
+	static validateShortcodeSyntax(jrResult, key, val) {
 		if (!val) {
-			jrResult.pushFieldError(key, "Shortcode value for " + key + " cannot be blank.");
+			if (jrResult) {
+				jrResult.pushFieldError(key, "Shortcode value for " + key + " cannot be blank.");
+			}
+			return null;
 		}
 
 		// uppercase it
 		val = val.toUpperCase();
+
+		// simple regex test it should only contain letters and numbers and a few basic syboles
+		const regexPat = /^[A-Z0-9_\-.]*$/;
+		if (!regexPat.test(val)) {
+			if (jrResult) {
+				jrResult.pushFieldError(key, "Shortcode value for " + key + " cannot be blank, should be uppercase, and shouold contain only the characters A-Z 0-9 _-. (no spaces).");
+			}
+			return null;
+		}
+
+		return val;
+	}
+
+	static async validateShortcodeUnique(jrResult, key, val, existingModel) {
+
+		// first basic validation (and fixing) of shortcode syntax
+		val = this.validateShortcodeSyntax(jrResult, key, val);
+		if (!val) {
+			return val;
+		}
 
 		// must be unique so we search for collissions
 		var criteria;
@@ -572,8 +606,26 @@ class ModelBaseMongoose {
 
 
 	static validateModelFieldString(jrResult, key, val) {
-		// ATTN: test for certain characters?
+		// ATTN: TODO - test for certain characters?
 		return val;
+	}
+
+	static validateModelFieldInteger(jrResult, key, val) {
+		const num = parseInt(val, 10);
+		if (Number.isNaN(num)) {
+			jrResult.pushFieldError(key, "Expected integer value");
+			return null;
+		}
+		return num;
+	}
+
+	static validateModelFieldBoolean(jrResult, key, val) {
+		const num = parseInt(val, 10);
+		if (Number.isNaN(num)) {
+			jrResult.pushFieldError(key, "Expected boolean value");
+			return null;
+		}
+		return num;
 	}
 	//---------------------------------------------------------------------------
 
@@ -631,12 +683,12 @@ class ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static async findOneByShortcode(shortcode) {
+	static async findOneByShortcode(shortcodeval) {
 		// return null if not found
-		if (!shortcode) {
+		if (!shortcodeval) {
 			return null;
 		}
-		return await this.mongooseModel.findOne({ shortcode }).exec();
+		return await this.mongooseModel.findOne({ shortcode: shortcodeval }).exec();
 	}
 
 	// lookup user by their id
@@ -646,6 +698,15 @@ class ModelBaseMongoose {
 			return null;
 		}
 		return await this.mongooseModel.findOne({ _id: id }).exec();
+	}
+
+	static async findOneByKeyValue(key, val) {
+		// return null if not found
+		if (!val) {
+			return null;
+		}
+		var retv = await this.mongooseModel.findOne({ [key]: val }).exec();
+		return retv;
 	}
 	//---------------------------------------------------------------------------
 
@@ -839,6 +900,54 @@ class ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 
 
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// value function helpers
+
+	static makeModelValueFunctionPasswordAdminEyesOnly(arserver, flagRequired) {
+		// a value function usable by model definitions
+		return async (viewType, req, obj, helperData) => {
+			var isLoggedInUserSiteAdmin = await arserver.isLoggedInUserSiteAdmin(req);
+			if (viewType === "view") {
+				if (isLoggedInUserSiteAdmin) {
+					// for debuging
+					return obj.passwordHashed;
+				}
+				// safe
+				return this.safeDisplayPasswordInfoFromPasswordHashed(obj.passwordHashed);
+			}
+			if (viewType === "edit") {
+				var flagExistingIsNonBlank = (obj && (obj.passwordHashed !== undefined && obj.passwordHashed !== null && obj.password !== ""));
+				return this.jrHtmlFormInputPassword("password", obj, flagRequired, flagExistingIsNonBlank);
+			}
+			if (viewType === "list") {
+				if (isLoggedInUserSiteAdmin) {
+					return obj.passwordHashed;
+				}
+				if (!obj.passwordHashed) {
+					return "";
+				}
+				return "[HIDDEN]";
+			}
+			return undefined;
+		};
+	}
+
+
+	static makeModelValueFunctionExtraData() {
+		// a value function usable by model definitions
+		return async (viewType, req, obj, helperData) => {
+			if (obj) {
+				return JSON.stringify(obj.extraData, null, " ");
+			}
+			return "";
+		};
+	}
+	//---------------------------------------------------------------------------
 
 
 

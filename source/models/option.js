@@ -25,6 +25,11 @@ class OptionModel extends ModelBaseMongoose {
 	static getNiceName() {
 		return "Option";
 	}
+
+	// name for acl lookup
+	static getAclName() {
+		return "option";
+	}
 	//---------------------------------------------------------------------------
 
 

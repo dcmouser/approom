@@ -188,6 +188,9 @@ class JrFindFilter {
 		} else if (schemaType === Map) {
 			// can't filter this
 			retQuery = undefined;
+		} else if (schemaType === Boolean) {
+			// boolean
+			retQuery = this.convertReqQueryStringToAMongooseFindFilterBoolean(fkey, schemaType, querystr, jrResult);
 		} else {
 			jrResult.pushError("Search filter error: Unknown schema field type: " + schemaType.toString());
 		}
@@ -312,6 +315,28 @@ class JrFindFilter {
 
 		const standaloneOpString = "";
 		return this.convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaType, querystr, operators, opChars, valPat, mongoValFunc, standaloneOpString, jrResult);
+	}
+
+
+
+
+	convertReqQueryStringToAMongooseFindFilterBoolean(fkey, schemaType, querystr, jrResult) {
+		var retv;
+
+		if (querystr === "true" || querystr === "1") {
+			retv = {
+				$eq: "true",
+			};
+		} else if (querystr === "false" || querystr === "0") {
+			retv = {
+				$ne: "true",
+			};
+		} else {
+			jrResult.pushError("Search filter error: Expected filter to be 'true' or 'false'.");
+			return undefined;
+		}
+
+		return retv;
 	}
 
 

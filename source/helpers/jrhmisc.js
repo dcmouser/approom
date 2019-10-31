@@ -141,7 +141,7 @@ class JrhMisc {
 
 
 	//---------------------------------------------------------------------------
-	jrHtmlFormInputPassword(fieldName, obj) {
+	jrHtmlFormInputPassword(fieldName, obj, flagRequired, flagExistingIsNonBlank) {
 		var rethtml, val;
 		if (obj && obj[fieldName]) {
 			val = obj[fieldName];
@@ -149,9 +149,21 @@ class JrhMisc {
 			val = "";
 		}
 		rethtml = `<input name="${fieldName}" type="password" value="${val}">`;
+		if (flagExistingIsNonBlank) {
+			rethtml += " (existing password in db is encrypted and non-blank; leave this field empty to preserve the existing password";
+			if (!flagRequired) {
+				rethtml += "; or specify '-' to delete existing password and leave it blank";
+			}
+			rethtml += ")";
+		}
 		return rethtml;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
 }
 
 

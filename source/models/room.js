@@ -63,6 +63,9 @@ class RoomModel extends ModelBaseMongoose {
 			description: {
 				type: String,
 			},
+			passwordHashed: {
+				type: String,
+			},
 		};
 	}
 
@@ -105,6 +108,12 @@ class RoomModel extends ModelBaseMongoose {
 				label: "Description",
 				format: "textarea",
 			},
+			passwordHashed: {
+				label: "Password",
+				format: "password",
+				valueFunction: this.makeModelValueFunctionPasswordAdminEyesOnly(arserver, false),
+				filterSize: 0,
+			},
 		};
 	}
 	//---------------------------------------------------------------------------
@@ -123,7 +132,7 @@ class RoomModel extends ModelBaseMongoose {
 		// NOTE: this list can be generated dynamically based on logged in user
 		var reta;
 		if (operationType === "crudAdd" || operationType === "crudEdit") {
-			reta = ["appid", "shortcode", "label", "description", "disabled", "notes"];
+			reta = ["appid", "shortcode", "label", "description", "password", "passwordHashed", "disabled", "notes"];
 		}
 		return reta;
 	}
@@ -136,15 +145,18 @@ class RoomModel extends ModelBaseMongoose {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 		var objdoc;
+		const UserModel = require("./user");
 
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
 
 		// set fields from form and validate
 		await this.validateMergeAsync(jrResult, "appid", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => this.validateModelFieldAppId(jrr, keyname, inVal, user));
-		await this.validateMergeAsync(jrResult, "shortcode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await this.validateShortcode(jrr, keyname, inVal, obj));
+		await this.validateMergeAsync(jrResult, "shortcode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await this.validateShortcodeUnique(jrr, keyname, inVal, obj));
 		await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
 		await this.validateMergeAsync(jrResult, "description", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
+		// note that password is not required
+		await this.validateMergeAsync(jrResult, "password", "passwordHashed", source, saveFields, preValidatedFields, obj, false, async (jrr, keyname, inVal) => await UserModel.validatePlaintextPasswordConvertToHash(jrr, inVal, false, true));
 
 		// base fields shared between all? (notes, etc.)
 		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj);

@@ -16,30 +16,36 @@ const jrlog = require("../helpers/jrlog");
 // models
 const arserver = require("../controllers/server");
 
-
-// init
+// express router
 const router = express.Router();
 
 
+function setupRouter(urlPath) {
 
-router.get("/", async (req, res, next) => {
+	router.get("/", async (req, res, next) => {
 
-	// require them to be logged in, or creates a redirect
-	var user = await arserver.getLoggedInUser(req);
-	if (!arserver.requireUserIsLoggedIn(req, res, user, "/membersonly")) {
-		// all done
-		return;
-	}
+		// require them to be logged in, or creates a redirect
+		var user = await arserver.getLoggedInUser(req);
+		if (!arserver.requireUserIsLoggedIn(req, res, user, "/membersonly")) {
+			// all done
+			return;
+		}
 
-	res.render("user/membersonly", {
-		// jrResult: JrResult.sessionRenderResult(req, res, jrResult, true),
-		jrResult: JrResult.sessionRenderResult(req, res),
-		username: user.getUsername(),
-		id: user.getIdAsString(),
+		res.render("user/membersonly", {
+			// jrResult: JrResult.sessionRenderResult(req, res, jrResult, true),
+			jrResult: JrResult.sessionRenderResult(req, res),
+			username: user.getUsername(),
+			id: user.getIdAsString(),
+		});
 	});
-});
+
+
+	// need to return router
+	return router;
+}
 
 
 
-
-module.exports = router;
+module.exports = {
+	setupRouter,
+};

@@ -681,10 +681,15 @@ class CrudAid {
 		// schema for obj
 		var modelSchemaExtra = modelClass.getSchemaDefinitionExtra();
 		var schemaKeys = Object.keys(modelSchemaExtra);
+		var schemaType;
 		var val, valHtml, label, valfunc, hideList, readOnlyList, choices;
 		var visfunc, isVisible, isReadOnly;
+		var extra;
 		var err;
 		await jrhelpers.asyncForEach(schemaKeys, async (fieldName) => {
+
+			// type of this field
+			schemaType = modelClass.getBaseSchemaType(fieldName);
 
 			// hidden?
 			hideList = modelClass.getSchemaExtraFieldVal(fieldName, "hide", undefined);
@@ -742,7 +747,16 @@ class CrudAid {
 					if (choices) {
 						valHtml = this.buildChoiceHtmlForView(choices, val);
 					} else {
-						valHtml = val.toString();
+						if (format === "checkbox") {
+							// checkbox
+							if (val) {
+								valHtml = "true";
+							} else {
+								valHtml = "false";
+							}
+						} else {
+							valHtml = val.toString();
+						}
 					}
 				} else if (choices) {
 					valHtml = this.buildChoiceHtmlForAddEdit(fieldName, choices, val);
@@ -751,7 +765,6 @@ class CrudAid {
 					valHtml = `<textarea name="${fieldName}" rows="4" cols="80">${val}</textarea>`;
 				} else if (format === "checkbox") {
 					// checkbox
-					var extra;
 					if (val) {
 						extra = "checked";
 					} else {
@@ -795,12 +808,16 @@ class CrudAid {
 
 		// schema for obj
 		var modelSchemaExtra = modelClass.getSchemaDefinitionExtra();
+		var schemaType;
 		var schemaKeys = Object.keys(modelSchemaExtra);
 		var val, valHtml, label, valfunc, hideList, choices;
 		var visfunc, isVisible;
 		var crudLink;
 
 		await jrhelpers.asyncForEach(schemaKeys, async (fieldName) => {
+
+			// type of this field
+			schemaType = modelClass.getBaseSchemaType(fieldName);
 
 			// hidden?
 			hideList = modelClass.getSchemaExtraFieldVal(fieldName, "hide", undefined);
@@ -834,10 +851,12 @@ class CrudAid {
 			if (valHtml === undefined) {
 				if (!obj) {
 					val = "";
-				} else if (obj[fieldName] === null || obj[fieldName] === undefined) {
-					val = "";
 				} else {
-					val = obj[fieldName];
+					if (obj[fieldName] === null || obj[fieldName] === undefined) {
+						val = "";
+					} else {
+						val = obj[fieldName];
+					}
 				}
 				//
 				// is it a crud link?
@@ -851,6 +870,13 @@ class CrudAid {
 					choices = modelClass.getSchemaExtraFieldVal(fieldName, "choices", null);
 					if (choices) {
 						valHtml = this.buildChoiceHtmlForView(choices, val);
+					} else if (format === "checkbox") {
+						// checkbox
+						if (val) {
+							valHtml = "true";
+						} else {
+							valHtml = "false";
+						}
 					}
 				}
 				if (valHtml === undefined) {

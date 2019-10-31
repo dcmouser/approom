@@ -79,6 +79,13 @@ class AclAid {
 		// files can be viewed by friends of the ROOM
 		this.roleAcl.grant("roomFriend").execute("view").on("roomdata");
 
+		//
+		this.createAclEditViewGrantsForResource("log");
+		this.createAclEditViewGrantsForResource("option");
+		this.createAclEditViewGrantsForResource("connection");
+		this.createAclEditViewGrantsForResource("verification");
+		this.createAclEditViewGrantsForResource("login");
+		this.createAclEditViewGrantsForResource("session");
 
 		//
 		this.createAclEditViewGrantsForResource("user");

@@ -9,6 +9,9 @@
 // models
 const ModelBaseMongooseMinimal = require("./modelBaseMongooseMinimal");
 
+// helpers
+const jrhmisc = require("../helpers/jrhmisc");
+
 
 
 class LogModel extends ModelBaseMongooseMinimal {
@@ -37,6 +40,9 @@ class LogModel extends ModelBaseMongooseMinimal {
 	static getSchemaDefinition() {
 		return {
 			...(this.getBaseSchemaDefinition()),
+			creationDate: {
+				type: Date,
+			},
 			type: {
 				type: String,
 			},
@@ -46,12 +52,19 @@ class LogModel extends ModelBaseMongooseMinimal {
 			severity: {
 				type: Number,
 			},
+			extraData: {
+				type: Map,
+			},
 		};
 	}
 
 	static getSchemaDefinitionExtra() {
 		return {
 			...(this.getBaseSchemaDefinitionExtra()),
+			creationDate: {
+				label: "Date created",
+				readOnly: ["edit"],
+			},
 			type: {
 				label: "Type",
 			},
@@ -61,10 +74,26 @@ class LogModel extends ModelBaseMongooseMinimal {
 			severity: {
 				label: "Severity",
 			},
+			extraData: {
+				label: "Extra data",
+				valueFunction: this.makeModelValueFunctionExtraData(),
+				filterSize: 0,
+				readOnly: ["edit"],
+			},
 		};
 	}
 	//---------------------------------------------------------------------------
 
+
+	//---------------------------------------------------------------------------
+	// Override to create minimal model
+	// create new obj -- used by classes which are super minimal (LogModel)
+	static createModel(inobj) {
+		var model = super.createModel(inobj);
+		model.creationDate = new Date();
+		return model;
+	}
+	//---------------------------------------------------------------------------
 
 
 

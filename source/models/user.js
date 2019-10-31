@@ -139,31 +139,7 @@ class UserModel extends ModelBaseMongoose {
 			passwordHashed: {
 				label: "Password",
 				format: "password",
-				valueFunction: async (viewType, req, obj, helperData) => {
-					var isLoggedInUserSiteAdmin = await arserver.isLoggedInUserSiteAdmin(req);
-					if (viewType === "view") {
-						if (isLoggedInUserSiteAdmin) {
-							// for debuging
-							return obj.passwordHashed;
-						}
-						// safe
-						return this.safeDisplayPasswordInfoFromPasswordHashed(obj.passwordHashed);
-					}
-					if (viewType === "edit") {
-						var appid = obj ? obj.appid : null;
-						return jrhmisc.jrHtmlFormInputPassword("password", obj);
-					}
-					if (viewType === "list") {
-						if (isLoggedInUserSiteAdmin) {
-							return obj.passwordHashed;
-						}
-						if (!obj.passwordHashed) {
-							return "";
-						}
-						return "[HIDDEN]";
-					}
-					return undefined;
-				},
+				valueFunction: this.makeModelValueFunctionPasswordAdminEyesOnly(arserver, false),
 				filterSize: 0,
 			},
 			loginDate: {
@@ -552,7 +528,7 @@ class UserModel extends ModelBaseMongoose {
 
 
 	// validate password
-	static async validatePlaintextPasswordConvertToHash(jrResult, passwordPlaintext, flagRequired) {
+	static async validatePlaintextPasswordConvertToHash(jrResult, passwordPlaintext, flagRequired, flagAllowClearDash) {
 		// return JrResult with error set if error, or blank one on success
 		// ATTN: unfinished
 
@@ -564,6 +540,11 @@ class UserModel extends ModelBaseMongoose {
 				jrResult.pushFieldError("password", "Password cannot be blank.");
 			}
 			return undefined;
+		}
+
+		// they can specify - as password which is a special meaning that we should CLEAR the password to "" which is ONLY legal if we are passed flagAllowClearDash
+		if (flagAllowClearDash && passwordPlaintext === "-") {
+			return null;
 		}
 
 		// valid syntax?
@@ -859,7 +840,7 @@ class UserModel extends ModelBaseMongoose {
 
 		// set fields from form and validate
 		await this.validateMergeAsync(jrResult, "username", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validateUsername(jrr, inVal, true, false, flagCheckDisallowedUsername, obj));
-		await this.validateMergeAsync(jrResult, "password", "passwordHashed", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validatePlaintextPasswordConvertToHash(jrr, inVal, false));
+		await this.validateMergeAsync(jrResult, "password", "passwordHashed", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validatePlaintextPasswordConvertToHash(jrr, inVal, false, true));
 		await this.validateMergeAsync(jrResult, "realName", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal) => jrvalidators.validateRealName(jrr, keyname, inVal, false));
 		await this.validateMergeAsync(jrResult, "email", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => this.validateEmail(jrr, inVal, true, flagRrequiredEmail, obj));
 

@@ -366,6 +366,7 @@ class AppRoomServer {
 		const UserModel = require("../models/user");
 		const VerificationModel = require("../models/verification");
 		const LoginModel = require("../models/login");
+		const SessionModel = require("../models/session");
 
 		// home page
 		this.setupRoute(expressApp, "/", "index");
@@ -384,6 +385,14 @@ class AppRoomServer {
 		// profile
 		this.setupRoute(expressApp, "/profile", "profile");
 
+		// app routes
+		this.setupRoute(expressApp, "/app", "app");
+		// room routes
+		this.setupRoute(expressApp, "/room", "room");
+
+		// api routes
+		this.setupRoute(expressApp, "/api", "api");
+
 		// test stuff
 		this.setupRoute(expressApp, "/membersonly", "membersonly");
 
@@ -392,13 +401,14 @@ class AppRoomServer {
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/app", AppModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/room", RoomModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/user", UserModel);
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/bridge", LoginModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/login", LoginModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/verification", VerificationModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/connection", ConnectionModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/file", FileModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/roomdata", RoomdataModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/option", OptionModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/log", LogModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/session", SessionModel);
 
 		// admin
 		this.setupRoute(expressApp, "/admin", "admin");
@@ -1022,6 +1032,7 @@ class AppRoomServer {
 	// Event listener for HTTP server "error" event.
 	onErrorEs(listener, expressServer, flagHttps, error) {
 		// called not on 404 errors but other internal errors?
+		var msg;
 
 		if (error.syscall !== "listen") {
 			throw error;
@@ -1029,9 +1040,22 @@ class AppRoomServer {
 
 		// ATTN: not clear why this uses different method than OnListeningEs to get port info, etc.
 		var addr = listener.address();
-		var bind = (typeof addr === "string")
-			? "pipe " + addr
-			: "port " + addr.port;
+		var bind;
+		if (addr === null) {
+			msg = "Could not bind server listener, got null return from listener.address paramater.  Is server already running (in debugger) ?";
+			jrlog.debug(msg);
+			jrlog.error(msg);
+			process.exit(1);
+		} else if (typeof addr === "string") {
+			bind = "pipe " + addr;
+		} else if (addr.port) {
+			bind = "port " + addr.port;
+		} else {
+			msg = "Could not bind server listener, the listener.address paramater was not understood: " + addr;
+			jrlog.debug(msg);
+			jrlog.error(msg);
+			process.exit(1);
+		}
 
 		// handle specific listen errors with friendly messages
 		switch (error.code) {
@@ -1110,6 +1134,9 @@ class AppRoomServer {
 		const UserModel = require("../models/user");
 		const VerificationModel = require("../models/verification");
 		const LoginModel = require("../models/login");
+		const SessionModel = require("../models/session");
+
+
 		const mongooseOptions = {
 			useNewUrlParser: true,
 			// see https://github.com/Automattic/mongoose/issues/8156
@@ -1137,6 +1164,9 @@ class AppRoomServer {
 			await this.setupModelSchema(mongoose, OptionModel);
 			await this.setupModelSchema(mongoose, VerificationModel);
 
+			// 3rd party session management, we still create our own model for it
+			await this.setupModelSchema(mongoose, SessionModel);
+
 			// display a list of all collections?
 			if (false) {
 				var collections = await mongoose.connection.db.listCollections().toArray();
@@ -1154,7 +1184,11 @@ class AppRoomServer {
 			mongoose.set("useCreateIndex", true);
 
 			// save a log entry to db
-			await this.log("db", "setup database", 1);
+			var logData = {
+				mongourl: mongoUrl,
+				mongooseoptions: mongooseOptions,
+			};
+			await this.log("db", "setup database", 1, logData);
 
 			// success return value -- if we got this far it"s a success; drop down
 			bretv = true;
@@ -1197,7 +1231,7 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	async log(type, message, severity) {
+	async log(type, message, severity, extraData) {
 		// create a new log entry and save it to the log
 
 		// ATTN: should we async and await here or let it just run?
@@ -1205,11 +1239,12 @@ class AppRoomServer {
 			type,
 			message,
 			severity,
+			extraData,
 		});
 		await log.dbSave();
 
 		// also log it using our normal system that makes us log to file?
-		jrlog.dblog(type, message, severity);
+		jrlog.dblog(type, message, severity, extraData);
 	}
 	//---------------------------------------------------------------------------
 

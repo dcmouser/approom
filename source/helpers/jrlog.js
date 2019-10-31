@@ -290,8 +290,13 @@ class JrLog {
 
 	//---------------------------------------------------------------------------
 	// dblog is a mirror of our server.log function that adds log to file, so see Server object
-	dblog(type, message, severity) {
-		var msg = util.format("type='%s' severity='%s' msg='%s'", type, severity, message);
+	dblog(type, message, severity, extraData) {
+		var msg;
+		if (extraData) {
+			msg = util.format("type='%s' severity='%s' msg='%s' data='%s'", type, severity, message, JSON.stringify(extraData));
+		} else {
+			msg = util.format("type='%s' severity='%s' msg='%s'", type, severity, message);
+		}
 		this.logger.log("db", msg);
 		// console.log("dblogging "+msg);
 	}

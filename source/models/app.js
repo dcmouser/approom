@@ -11,6 +11,7 @@
 // our helper modules
 const jrhelpers = require("../helpers/jrhelpers");
 const jrlog = require("../helpers/jrlog");
+const jrvalidators = require("../helpers/jrvalidators");
 
 // models
 const ModelBaseMongoose = require("./modelBaseMongoose");
@@ -57,6 +58,12 @@ class AppModel extends ModelBaseMongoose {
 			description: {
 				type: String,
 			},
+			isPublic: {
+				type: Boolean,
+			},
+			supportsFiles: {
+				type: Boolean,
+			},
 		};
 	}
 
@@ -72,6 +79,14 @@ class AppModel extends ModelBaseMongoose {
 			description: {
 				label: "Description",
 				format: "textarea",
+			},
+			isPublic: {
+				label: "Is public?",
+				format: "checkbox",
+			},
+			supportsFiles: {
+				label: "Supports user files?",
+				format: "checkbox",
 			},
 		};
 	}
@@ -94,7 +109,7 @@ class AppModel extends ModelBaseMongoose {
 		// NOTE: this list can be generated dynamically based on logged in user
 		var reta;
 		if (operationType === "crudAdd" || operationType === "crudEdit") {
-			reta = ["shortcode", "label", "description", "disabled", "notes"];
+			reta = ["shortcode", "label", "description", "notes", "isPublic", "supportsFiles", "disabled"];
 		}
 		return reta;
 	}
@@ -107,13 +122,17 @@ class AppModel extends ModelBaseMongoose {
 		var objdoc;
 
 		// set fields from form and validate
-		await this.validateMergeAsync(jrResult, "shortcode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await this.validateShortcode(jrr, keyname, inVal, obj));
+		await this.validateMergeAsync(jrResult, "shortcode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await this.validateShortcodeUnique(jrr, keyname, inVal, obj));
 		// await this.validateMergeAsync(jrResult, "name", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
 		await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
 		await this.validateMergeAsync(jrResult, "description", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldNotEmpty(jrr, keyname, inVal));
+		//
+		await this.validateMergeAsync(jrResult, "isPublic", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => jrvalidators.validateCheckbox(jrResult, keyname, inVal, false));
+		await this.validateMergeAsync(jrResult, "supportsFiles", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => jrvalidators.validateCheckbox(jrResult, keyname, inVal, false));
 
 		// base fields shared between all? (notes, etc.)
 		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj);
+
 
 		// any validation errors?
 		if (jrResult.isError()) {

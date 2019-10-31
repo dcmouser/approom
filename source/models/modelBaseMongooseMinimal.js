@@ -32,9 +32,7 @@ class ModelBaseMongooseMinimal extends ModelBaseMongoose {
 				type: mongoose.Schema.ObjectId,
 				auto: true,
 			},
-			creationDate: {
-				type: Date,
-			},
+
 		};
 	}
 
@@ -45,10 +43,7 @@ class ModelBaseMongooseMinimal extends ModelBaseMongoose {
 				label: "Id",
 				readOnly: ["edit"],
 			},
-			creationDate: {
-				label: "Date created",
-				readOnly: ["edit"],
-			},
+
 		};
 	}
 	//---------------------------------------------------------------------------
@@ -59,7 +54,6 @@ class ModelBaseMongooseMinimal extends ModelBaseMongoose {
 	// create new obj -- used by classes which are super minimal (LogModel)
 	static createModel(inobj) {
 		var obj = {
-			creationDate: new Date(),
 			...inobj,
 		};
 		var model = new this.mongooseModel(obj);

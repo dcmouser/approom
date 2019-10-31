@@ -5,7 +5,6 @@
 
 "use strict";
 
-
 // modules
 const express = require("express");
 
@@ -17,9 +16,8 @@ const AdminAid = require("../controllers/adminaid");
 // models
 const arserver = require("../controllers/server");
 
-// init
+// express router
 const router = express.Router();
-
 
 
 function setupRouter(urlPath) {
@@ -34,7 +32,6 @@ function setupRouter(urlPath) {
 			jrResult: JrResult.sessionRenderResult(req, res),
 		});
 	});
-
 
 
 	router.get("/testing", async (req, res, next) => {
@@ -89,13 +86,10 @@ function setupRouter(urlPath) {
 		}
 	});
 
+
 	// important -- we must return the router variable from this function
 	return router;
 }
-
-
-
-
 
 
 

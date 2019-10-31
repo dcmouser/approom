@@ -432,6 +432,7 @@ class JrhGrid {
 				if (jrhelpers.isInAnyArray(key, hiddenFields)) {
 					return;
 				}
+
 				if (key === "_checkbox") {
 					// checkbox for batch actions
 					rethtml += `
@@ -445,12 +446,19 @@ class JrhGrid {
 						<td scope="col"> <a href="${urlEdit}" title="edit">&#9998;</a>  <a href="${urlDelete}" title="delete">&#10008;</a> </td>
 					`;
 				} else {
+					var format = listHelperData.modelClass.getSchemaExtraFieldVal(key, "format");
 					val = item[key];
 					if (valFuncList[key]) {
 						// use custom value resolving callback function
 						valDisplay = await valFuncList[key]("list", req, item, listHelperData);
 					} else {
-						if (val === undefined) {
+						if (format === "checkbox") {
+							if (val) {
+								valDisplay = "true";
+							} else {
+								valDisplay = "false";
+							}
+						} else if (val === undefined) {
 							valDisplay = "";
 						} else if (val === null) {
 							valDisplay = "null";
@@ -463,6 +471,7 @@ class JrhGrid {
 							valDisplay = `<a href="${crudLink}/view/${val}">${valDisplay}</a>`;
 						}
 					}
+					//
 					if (key === "_id") {
 						var url = queryUrlData.baseUrl + "/view/" + val;
 						rethtml += `

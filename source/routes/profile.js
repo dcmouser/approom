@@ -20,10 +20,8 @@ const UserModel = require("../models/user");
 const arserver = require("../controllers/server");
 const CrudAid = require("../controllers/crudaid");
 
-
-// init
+// express router
 const router = express.Router();
-
 
 
 
@@ -126,8 +124,6 @@ function setupRouter(urlPath) {
 		});
 	});
 	//---------------------------------------------------------------------------
-
-
 
 
 	// need to return router

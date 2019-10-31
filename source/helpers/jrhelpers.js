@@ -37,6 +37,10 @@ class JrHelpers {
 	//---------------------------------------------------------------------------
 	// helper function for merging unique arrays
 	// see https://stackoverflow.com/questions/1584370/how-to-merge-two-arrays-in-javascript-and-de-duplicate-items
+	mergeArraysKeepDupes(array1, array2) {
+		return array1.concat(array2);
+	}
+
 	mergeArraysDedupe(array1, array2) {
 		return Array.from(new Set(array1.concat(array2)));
 	}
@@ -286,6 +290,12 @@ class JrHelpers {
 		}
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
 }
 
 

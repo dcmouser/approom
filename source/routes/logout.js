@@ -15,22 +15,30 @@ const arserver = require("../controllers/server");
 // helpers
 const JrResult = require("../helpers/jrresult");
 
-
+// express router
 const router = express.Router();
 
-router.get("/", (req, res, next) => {
 
-	// remove all?most? session data that the user might want forgotten and log them out
-	arserver.logoutForgetSessionData(req);
+function setupRouter(urlPath) {
 
-	// session message
-	JrResult.makeNew("info").pushSuccess("You have been logged out.").addToSession(req);
+	router.get("/", (req, res, next) => {
 
-	res.redirect("/");
-});
+		// remove all?most? session data that the user might want forgotten and log them out
+		arserver.logoutForgetSessionData(req);
+
+		// session message
+		JrResult.makeNew("info").pushSuccess("You have been logged out.").addToSession(req);
+
+		res.redirect("/");
+	});
+
+
+	// need to return router
+	return router;
+}
 
 
 
-
-
-module.exports = router;
+module.exports = {
+	setupRouter,
+};

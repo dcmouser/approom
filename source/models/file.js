@@ -11,15 +11,13 @@
 const mongoose = require("mongoose");
 
 // models
-const ModelBaseMongoose = require("./modelBaseMongoose");
-const arserver = require("../controllers/server");
+const RoomdataModel = require("./roomdata");
 
 // our helper modules
 const jrhelpers = require("../helpers/jrhelpers");
-const jrhmisc = require("../helpers/jrhmisc");
+const jrlog = require("../helpers/jrlog");
 
-
-class FileModel extends ModelBaseMongoose {
+class FileModel extends RoomdataModel {
 
 	//---------------------------------------------------------------------------
 	// global static version info
@@ -63,9 +61,10 @@ class FileModel extends ModelBaseMongoose {
 	}
 
 	static getSchemaDefinitionExtra() {
-		const RoomModel = require("./room");
 		return {
-			...(this.getBaseSchemaDefinitionExtra()),
+			// ...(this.getBaseSchemaDefinitionExtra()),
+			...super.getSchemaDefinitionExtra(),
+			/*
 			roomid: {
 				label: "Room Id",
 				valueFunction: (viewType, req, obj, helperData) => {
@@ -91,6 +90,7 @@ class FileModel extends ModelBaseMongoose {
 				// alternative generic way to have crud pages link to this val
 				// crudLink: AppModel.getCrudUrlBase(),
 			},
+			*/
 			path: {
 				label: "Path",
 			},
@@ -116,30 +116,14 @@ class FileModel extends ModelBaseMongoose {
 	// crud add/edit form helper data
 	// in case of rooms, this should be the list of APPS that the USER has access to
 	static async calcCrudEditHelperData(user, id) {
-		// build app list, pairs of id -> nicename
-		const RoomModel = require("./room");
-		const roomlist = await RoomModel.buildSimpleRoomListUserTargetable(user);
-		// return it
-		return {
-			roomlist,
-		};
+		var reta = super.calcCrudEditHelperData(user, id);
+		return reta;
 	}
 
 	// crud helper for view
 	static async calcCrudViewHelperData(req, res, id, obj) {
-	// get nice label of the app it's attached to
-		var roomLabel;
-		const roomid = obj.roomid;
-		if (roomid) {
-			const RoomModel = require("./room");
-			const room = await RoomModel.findOneById(roomid);
-			if (room) {
-				roomLabel = room.shortcode + " - " + room.label;
-			}
-		}
-		return {
-			roomLabel,
-		};
+		var reta = super.calcCrudViewHelperData(req, res, id, obj);
+		return reta;
 	}
 	//---------------------------------------------------------------------------
 
@@ -157,10 +141,12 @@ class FileModel extends ModelBaseMongoose {
 		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
 		// subclasses implement; by default we return empty array
 		// NOTE: this list can be generated dynamically based on logged in user
-		var reta;
+		var reta = super.getSaveFields(req, operationType);
+
 		if (operationType === "crudAdd" || operationType === "crudEdit") {
-			reta = ["roomid", "path", "label", "sizeInBytes", "disabled", "notes"];
+			reta = jrhelpers.mergeArraysKeepDupes(reta, ["path", "label", "sizeInBytes"]);
 		}
+
 		return reta;
 	}
 
@@ -171,22 +157,18 @@ class FileModel extends ModelBaseMongoose {
 	static async validateAndSave(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
+
+		// first base class work (but make sure to tell it NOT to save)
 		var objdoc;
 
-		// get logged in user
-		var user = await arserver.getLoggedInUser(req);
+		await super.validateAndSave(jrResult, options, false, req, source, saveFields, preValidatedFields, obj);
 
-		// ATTN: not all of these file fields are currently validated correctly, because they should not be user-editable
-
-		// set fields from form and validate
-		await this.validateMergeAsync(jrResult, "roomid", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => this.validateModelFieldRoomId(jrr, keyname, inVal, user));
-		await this.validateMergeAsync(jrResult, "path", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await this.validateModelFieldString(jrr, keyname, inVal, obj));
-		await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldString(jrr, keyname, inVal));
-		await this.validateMergeAsync(jrResult, "sizeInBytes", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldString(jrr, keyname, inVal));
-
-		// base fields shared between all? (notes, etc.)
-		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj);
-
+		// now our specific derived class fields
+		if (!jrResult.isError()) {
+			await this.validateMergeAsync(jrResult, "path", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await this.validateModelFieldString(jrr, keyname, inVal, obj));
+			await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldString(jrr, keyname, inVal));
+			await this.validateMergeAsync(jrResult, "sizeInBytes", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldInteger(jrr, keyname, inVal));
+		}
 
 		// any validation errors?
 		if (jrResult.isError()) {
