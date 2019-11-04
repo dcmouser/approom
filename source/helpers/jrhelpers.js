@@ -293,9 +293,6 @@ class JrHelpers {
 
 
 
-
-
-
 }
 
 

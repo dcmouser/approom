@@ -52,6 +52,7 @@
     "passport-facebook": "^3.0.0",
     "passport-local": "^1.0.0",
     "popper.js": "^1.16.0",
+    "rate-limiter-flexible": "^1.1.6",
     "redis": "^2.8.0",
     "role-acl": "^3.3.7",
     "validator": "^11.1.0",

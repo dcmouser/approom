@@ -1,7 +1,7 @@
 // jrhelpersmdb
 // v1.0.0 on 5/7/19 by mouser@donationcoder.com
 //
-// some of my generic helper functions
+// mongo db helper functions
 
 "use strict";
 
@@ -53,6 +53,51 @@ class JrHelpersMdb {
 		return false;
 	}
 	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	async calcDatabaseStructure() {
+		// return info about the database structure
+		const dbStrcuture = await mongoose.connection.db.listCollections().toArray();
+		return dbStrcuture;
+	}
+
+
+	async calcDatabaseResourceUse() {
+		// get overall db memory use (in kb)
+		const statsOptions = {
+			scale: 1024,
+		};
+		var dbStats = await mongoose.connection.db.stats(statsOptions);
+
+		// get database structure
+		var dbStructure = await this.calcDatabaseStructure();
+		// add resource use for each collection
+		var collection;
+		var collectionName, collectionStats;
+		var len = dbStructure.length;
+		for (var i = 0; i < len; ++i) {
+			collection = dbStructure[i];
+			collectionName = collection.name;
+			collectionStats = await mongoose.connection.db.command({ collstats: collectionName, scale: 1024 });
+			// too much info for some fields
+			delete collectionStats.wiredTiger;
+			delete collectionStats.indexDetails;
+			// add it
+			collection.stats = collectionStats;
+		}
+
+		// build return structure
+		var retv = {
+			overall: dbStats,
+			collections: dbStructure,
+		};
+
+		return retv;
+	}
+	//---------------------------------------------------------------------------
+
+
 
 }
 

@@ -41,6 +41,8 @@ const nodemailer = require("nodemailer");
 
 // our helper modules
 const jrhelpers = require("../helpers/jrhelpers");
+const jrhelpersmdb = require("../helpers/jrhelpersmdb");
+const jrhelpersexpress = require("../helpers/jrhelpersexpress");
 const jrlog = require("../helpers/jrlog");
 const jrconfig = require("../helpers/jrconfig");
 const JrResult = require("../helpers/jrresult");
@@ -52,6 +54,8 @@ const arGlobals = require("../approomglobals");
 // models (we require most locally to avoid circular requires)
 const LogModel = require("../models/log");
 
+// rate limiter
+const RateLimiterAid = require("./rateLimiterAid");
 
 
 // ATTN: circular reference problem? so we require this only when we need it below?
@@ -69,6 +73,9 @@ class AppRoomServer {
 		// csrf
 		this.csrfInstance = undefined;
 		this.gravatarOptions = undefined;
+		//
+		this.serverHttps = undefined;
+		this.serverHttp = undefined;
 	}
 
 	// global singleton request
@@ -137,6 +144,12 @@ class AppRoomServer {
 	getOptionsGravatar() { return jrconfig.getDefault("options:GRAVATAR_OPTIONS", {}); }
 	//---------------------------------------------------------------------------
 
+
+	//---------------------------------------------------------------------------
+	getExpressApp() { return this.expressApp; }
+
+	getJrConfig() { return jrconfig; }
+	//---------------------------------------------------------------------------
 
 
 
@@ -397,7 +410,7 @@ class AppRoomServer {
 		this.setupRoute(expressApp, "/membersonly", "membersonly");
 
 		// crud stuff
-		var crudUrlBase = "/admin";
+		var crudUrlBase = "/crud";
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/app", AppModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/room", RoomModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/user", UserModel);
@@ -412,6 +425,10 @@ class AppRoomServer {
 
 		// admin
 		this.setupRoute(expressApp, "/admin", "admin");
+		// internals
+		this.setupRoute(expressApp, "/internals", "internals");
+		// analytics
+		this.setupRoute(expressApp, "/analytics", "analytics");
 	}
 
 
@@ -616,14 +633,14 @@ class AppRoomServer {
 				cert: fs.readFileSync(this.getOptionHttpsCert()),
 			};
 			const port = this.getOptionHttpsPort();
-			this.createOneExpressServerAndListen(true, port, options);
+			this.serverHttps = this.createOneExpressServerAndListen(true, port, options);
 		}
 
 		if (this.getOptionHttp()) {
 			// http server
 			const options = {};
 			const port = this.getOptionHttpPort();
-			this.createOneExpressServerAndListen(false, port, options);
+			this.serverHttp = this.createOneExpressServerAndListen(false, port, options);
 		}
 
 	}
@@ -634,7 +651,7 @@ class AppRoomServer {
 		// create an http or https server and listen
 		var expressServer;
 
-		var normalizedPort = this.normalizePort(port);
+		var normalizedPort = jrhelpersexpress.normalizePort(port);
 
 		if (flagHttps) {
 			expressServer = https.createServer(options, this.expressApp);
@@ -648,23 +665,10 @@ class AppRoomServer {
 		// add event handlers (after server is listening)
 		expressServer.on("error", (...args) => { this.onErrorEs(listener, expressServer, flagHttps, ...args); });
 		expressServer.on("listening", (...args) => { this.onListeningEs(listener, expressServer, flagHttps, ...args); });
+
+		return expressServer;
 	}
 
-
-
-	normalizePort(portval) {
-		// from nodejs express builder suggested code
-		var port = parseInt(portval, 10);
-		if (Number.isNaN(port)) {
-			// named pipe
-			return portval;
-		}
-		if (port >= 0) {
-			// port number
-			return port;
-		}
-		return false;
-	}
 	//---------------------------------------------------------------------------
 
 
@@ -1107,6 +1111,9 @@ class AppRoomServer {
 		// other model stuff
 		await this.setupAcl();
 
+		// rate limiter
+		await this.setupRateLimiters();
+
 		// cache any options for faster access
 		this.cacheMiscOptions();
 
@@ -1226,6 +1233,21 @@ class AppRoomServer {
 	async setupAcl() {
 		const AclAid = require("./aclaid");
 		await AclAid.setupAclPermissions();
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	async setupRateLimiters() {
+		await RateLimiterAid.setupRateLimiters();
+	}
+
+	getRateLimiterBasic() {
+		return RateLimiterAid.getRateLimiterBasic();
+	}
+
+	getRateLimiterApi() {
+		return RateLimiterAid.getRateLimiterApi();
 	}
 	//---------------------------------------------------------------------------
 
@@ -1661,6 +1683,62 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 
 
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// internal debugging info for internals admin
+
+	calcExpressRoutePathData() {
+		jrhelpersexpress.calcExpressRoutePathData(this.getExpressApp());
+	}
+
+
+	calcWebServerInformation() {
+		// return info about web server
+		const serverInfo = {};
+
+		// add http and https server info
+		if (this.serverHttp) {
+			serverInfo.http = this.serverHttp.address();
+		}
+		if (this.serverHttps) {
+			serverInfo.https = this.serverHttps.address();
+		}
+
+		// middleware
+		serverInfo.expressMiddleware = jrhelpersexpress.listExpressMiddleWare(this.getExpressApp());
+
+		return serverInfo;
+	}
+
+
+	async calcDatabaseResourceUse() {
+		// return info about database memory and file use, etc.
+		var retv = await jrhelpersmdb.calcDatabaseResourceUse();
+		return retv;
+	}
+
+
+	async calcDatabaseStructure() {
+		// return info about the database structure
+		const dbStrcuture = await jrhelpersmdb.jrhelpersmdb.calcDatabaseResourceUse();
+		return dbStrcuture;
+	}
+
+
+	calcAclInfo() {
+		const aclAid = require("../controllers/aclaid");
+		const aclInfo = aclAid.calcAclInfo();
+		return aclInfo;
+	}
+	//---------------------------------------------------------------------------
 
 }
 

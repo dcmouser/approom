@@ -137,6 +137,12 @@ class JrhMisc {
 
 		return rethtml;
 	}
+
+
+	jrHtmlStrigifyObject(obj) {
+		var rethtml = "<pre>" + JSON.stringify(obj, null, "  ") + "</pre>";
+		return rethtml;
+	}
 	//---------------------------------------------------------------------------
 
 

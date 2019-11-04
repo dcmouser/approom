@@ -92,6 +92,7 @@ class AclAid {
 
 		// global site admin
 		this.roleAcl.grant("siteAdmin").execute("admin").on("site");
+		this.roleAcl.grant("siteAdmin").execute("analytics").on("site");
 
 		// admin inherits the permissions of globalModerator
 		// this.roleAcl.grant("siteAdmin").extend(["globalModerator"]);
@@ -147,6 +148,15 @@ class AclAid {
 	}
 	//---------------------------------------------------------------------------
 
+
+	//---------------------------------------------------------------------------
+	calcAclInfo() {
+		// return an object with all acl info for debugging
+		var aclInfo = {};
+		aclInfo.grants = this.roleAcl.getGrants();
+		return aclInfo;
+	}
+	//---------------------------------------------------------------------------
 
 }
 

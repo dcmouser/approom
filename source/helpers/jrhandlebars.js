@@ -92,6 +92,9 @@ class JrHandlebars {
 
 		// form helper for drop down inputs
 		hbs.registerHelper("jrHtmlFormOptionList", (pairlist, selectedid) => new hbs.SafeString(jrhmisc.jrHtmlFormOptionList(pairlist, selectedid)));
+
+		// simple object debug display helper
+		hbs.registerHelper("jrHtmlDebugObj", obj => new hbs.SafeString(jrhmisc.jrHtmlStrigifyObject(obj)));
 	}
 	//---------------------------------------------------------------------------
 
