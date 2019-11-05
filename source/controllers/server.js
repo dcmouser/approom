@@ -22,11 +22,14 @@ const http = require("http");
 const bodyParser = require("body-parser");
 const https = require("https");
 
+// json web tokens
+const jsonwebtoken = require("jsonwebtoken");
 
 // passport authentication stuff
 const passport = require("passport");
 const passportLocal = require("passport-local");
 const passportFacebook = require("passport-facebook");
+const passportJwt = require("passport-jwt");
 
 // misc node core modules
 const path = require("path");
@@ -468,6 +471,11 @@ class AppRoomServer {
 
 
 
+
+
+
+
+
 	//---------------------------------------------------------------------------
 	setupExpressPassport(expressApp) {
 		// setup passport module for login authentication, etc.
@@ -513,6 +521,7 @@ class AppRoomServer {
 		// setup any login/auth strategies
 		this.setupPassportStrategyLocal();
 		this.setupPassportStrategyFacebook();
+		this.setupPassportJwt();
 	}
 
 
@@ -611,7 +620,49 @@ class AppRoomServer {
 			},
 		));
 	}
+
+
+
+	setupPassportJwt() {
+		// see http://www.passportjs.org/packages/passport-facebook/
+		const Strategy = passportJwt.Strategy;
+		const ExtractJwt = passportJwt.ExtractJwt;
+
+		var strategyOptions = {
+			secretOrKey: jrconfig.get("jwt:CRYPTOKEY"),
+			jwtFromRequest: ExtractJwt.fromUrlQueryParameter("accesstoken"),
+		};
+
+		// debug info
+		jrlog.cdebugObj(strategyOptions, "setupPassportJwt strategyOptions");
+
+		passport.use(new Strategy(
+			strategyOptions,
+			async (payload, done) => {
+				const userProfile = payload.user;
+				if (!userProfile) {
+					const errorstr = "Error decoding user data from access token";
+					return done(errorstr);
+				}
+				// return success
+				return done(null, userProfile);
+			},
+		));
+	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -789,6 +840,63 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 
 
+
+	//---------------------------------------------------------------------------
+	async loadUserFromMinimalUserProfileObj(userMinimalProfile) {
+		// load full user model given a minimal (passport) profile with just the id field
+		if (!userMinimalProfile) {
+			return null;
+		}
+		const userId = userMinimalProfile.id;
+		if (!userId) {
+			return null;
+		}
+		const UserModel = require("../models/user");
+		const user = await UserModel.findOneById(userId);
+		return user;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	// jwt token access for api access; credential passed in via access token
+
+	async getAccessTokenUserFromRequestMinimal(req, res, next) {
+		// force passport authentication from request, looking for jwt token
+		var userMinimalProfile = null;
+		//
+		const jwtPassportOptions = {
+			session: false,
+		};
+		await passport.authenticate("jwt", jwtPassportOptions, async (err, user, info) => {
+			if (err) {
+				next(err);
+			} else if (!user) {
+				userMinimalProfile = null;
+			}
+			// logged in user info
+			userMinimalProfile = user;
+		})(req, res, next);
+
+		// return fale or null
+		return userMinimalProfile;
+	}
+
+
+	async getAccessTokenUserFromRequestFull(req, res, next) {
+		// force passport authentication from request, looking for jwt token
+		var userMinimalProfile = await this.getAccessTokenUserFromRequestMinimal(req, res, next);
+		//
+		// now we have userMinimalProfile result, get full user if it was minimal one passed
+		if (userMinimalProfile) {
+			const user = await this.loadUserFromMinimalUserProfileObj(userMinimalProfile);
+			return user;
+		}
+
+		// return fale or null
+		return userMinimalProfile;
+	}
+	//---------------------------------------------------------------------------
 
 
 
@@ -1740,6 +1848,26 @@ class AppRoomServer {
 	}
 	//---------------------------------------------------------------------------
 
+
+
+
+	//---------------------------------------------------------------------------
+	createSecureToken(userData, tokenTypeStr, userDataHeaderStr) {
+		// build the payload from user data and some extra standardized fielrs
+		const payload = {
+			type: tokenTypeStr,
+			iat: new Date().getTime(),
+			iss: jrconfig.get("jwt:ISSUER"),
+			[userDataHeaderStr]: userData,
+		};
+		const serverJwtCryptoKey = jrconfig.get("jwt:CRYPTOKEY");
+		const token = jsonwebtoken.sign(payload, serverJwtCryptoKey);
+		const tokenObj = {
+			accessToken: token,
+		};
+		return tokenObj;
+	}
+	//---------------------------------------------------------------------------
 }
 
 

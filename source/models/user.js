@@ -1102,8 +1102,19 @@ class UserModel extends ModelBaseMongoose {
 
 		return rolestring;
 	}
+	//---------------------------------------------------------------------------
 
 
+
+
+	//---------------------------------------------------------------------------
+	createSecureAccessToken() {
+		// this is called from API routes to create a token that we will later use to prove user authentication
+		// we use passport and jwt tokens for this
+		const userProfile = this.getMinimalPassportProfile();
+		const token = arserver.createSecureToken(userProfile);
+		return token;
+	}
 	//---------------------------------------------------------------------------
 
 

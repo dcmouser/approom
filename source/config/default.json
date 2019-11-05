@@ -31,6 +31,11 @@
 		"FROM": "me@mydomain.com"
 	},
 
+
+	"jwt": {
+		"CRYPTOKEY": "SECRET_CRYPTO_KEY_FOR_SIGNING_JWT_TOKENS"
+	},
+
 	
 	"options": {
 		"ACCOUNTREQUIRE_PASSWORD": false,
@@ -40,5 +45,6 @@
 			"d": "monsterid"
 		}
 	}
+
 
 }
