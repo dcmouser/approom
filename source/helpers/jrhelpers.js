@@ -185,6 +185,10 @@ class JrHelpers {
 	getNiceNowString() {
 		return new Date(Date.now()).toLocaleString();
 	}
+
+	getPreciseNowString() {
+		return new Date(Date.now()).toISOString();
+	}
 	//---------------------------------------------------------------------------
 
 

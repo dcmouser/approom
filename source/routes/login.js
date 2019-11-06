@@ -53,6 +53,7 @@ function setupRouter(urlPath) {
 			return;
 		}
 
+		// handle local authentication; this is a wrapper around passport.authenticate("local" which handles a bunch of session and redirect stuff
 		await arserver.routePassportAuthenticate("local", req, res, next, "using your password", (breq, bres, jrinfo) => {
 			bres.render("account/login", {
 				reqBody: breq.body,

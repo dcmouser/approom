@@ -631,6 +631,8 @@ class AppRoomServer {
 		var strategyOptions = {
 			secretOrKey: jrconfig.get("jwt:CRYPTOKEY"),
 			jwtFromRequest: ExtractJwt.fromUrlQueryParameter("accesstoken"),
+			// we ignore expiration auto handling; we will check it ourselves
+			ignoreExpiration: true,
 		};
 
 		// debug info
@@ -639,11 +641,23 @@ class AppRoomServer {
 		passport.use(new Strategy(
 			strategyOptions,
 			async (payload, done) => {
-				const userProfile = payload.user;
+				// get the user payload from the token
+				jrlog.debugObj(payload, "API TOKEN PAYLOAD DEBUG");
+				var userProfile = payload.user;
 				if (!userProfile) {
 					const errorstr = "Error decoding user data from access token";
 					return done(errorstr);
 				}
+				// BUT we'd really like to pass on some extra token info.. so we add it to user profile object
+				userProfile.accessToken = {
+					// see createSecureToken() for fields found here
+					type: payload.type,
+					scope: payload.scope,
+					apiCode: payload.apiCode,
+					iat: payload.iat,
+					iss: payload.iss,
+					exp: payload.exp,
+				};
 				// return success
 				return done(null, userProfile);
 			},
@@ -841,62 +855,111 @@ class AppRoomServer {
 
 
 
-	//---------------------------------------------------------------------------
-	async loadUserFromMinimalUserProfileObj(userMinimalProfile) {
-		// load full user model given a minimal (passport) profile with just the id field
-		if (!userMinimalProfile) {
-			return null;
-		}
-		const userId = userMinimalProfile.id;
-		if (!userId) {
-			return null;
-		}
-		const UserModel = require("../models/user");
-		const user = await UserModel.findOneById(userId);
-		return user;
-	}
-	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 	//---------------------------------------------------------------------------
 	// jwt token access for api access; credential passed in via access token
 
-	async getAccessTokenUserFromRequestMinimal(req, res, next) {
+	async parseAccessTokenFromRequestGetMinimalPassportUserData(req, res, next, jrResult) {
 		// force passport authentication from request, looking for jwt token
 		var userMinimalProfile = null;
 		//
 		const jwtPassportOptions = {
 			session: false,
 		};
-		await passport.authenticate("jwt", jwtPassportOptions, async (err, user, info) => {
+		await passport.authenticate("jwt", jwtPassportOptions, async (err, userPassport, info) => {
 			if (err) {
+				jrResult.pushError(this.passportErrorAsString(err));
 				next(err);
-			} else if (!user) {
+			} else if (!userPassport) {
+				jrResult.pushError("Invalid access token; error code 1.");
 				userMinimalProfile = null;
+			} else {
+				// logged in user info
+				userMinimalProfile = userPassport;
 			}
-			// logged in user info
-			userMinimalProfile = user;
 		})(req, res, next);
 
-		// return fale or null
-		return userMinimalProfile;
-	}
-
-
-	async getAccessTokenUserFromRequestFull(req, res, next) {
-		// force passport authentication from request, looking for jwt token
-		var userMinimalProfile = await this.getAccessTokenUserFromRequestMinimal(req, res, next);
-		//
-		// now we have userMinimalProfile result, get full user if it was minimal one passed
-		if (userMinimalProfile) {
-			const user = await this.loadUserFromMinimalUserProfileObj(userMinimalProfile);
-			return user;
+		if (!jrResult.isError()) {
+			// let's check token validity (expiration, etc.); this may push an error into jrResult
+			// note that this does NOT check user.apiCode, that is done later
+			// jrlog.debugObj(userMinimalProfile.accessToken, "access token pre validate.");
+			this.validateSecureTokenGeneric(userMinimalProfile.accessToken, jrResult);
 		}
 
 		// return fale or null
 		return userMinimalProfile;
 	}
+
+
+	async parseAccessTokenFromRequestGetFullUserObject(req, res, next, jrResult) {
+		var [userMinimalProfile, user] = this.parseAccessTokenFromRequestGetPassportProfileAndUser(req, res, next, jrResult);
+		return user;
+	}
+
+
+
+	async parseAccessTokenFromRequestGetPassportProfileAndUser(req, res, next, jrResult) {
+		// force passport authentication from request, looking for jwt token
+		var userMinimalProfile = await this.parseAccessTokenFromRequestGetMinimalPassportUserData(req, res, next, jrResult);
+
+		if (jrResult.isError()) {
+			return [userMinimalProfile, null];
+		}
+
+		const user = await this.loadUserFromMinimalPassportUserData(userMinimalProfile, jrResult, true);
+		return [userMinimalProfile, user];
+	}
+
+
+
+	async loadUserFromMinimalPassportUserData(userMinimalPassportProfile, jrResult, flagCheckAccessCode) {
+		// load full user model given a minimal (passport) profile with just the id field
+		if (!userMinimalPassportProfile) {
+			jrResult.pushError("Invalid access token; error code 2.");
+			return null;
+		}
+		const userId = userMinimalPassportProfile.id;
+		if (!userId) {
+			jrResult.pushError("Invalid access token; error code 3.");
+			return null;
+		}
+		const UserModel = require("../models/user");
+		const user = await UserModel.findOneById(userId);
+		if (!user) {
+			jrResult.pushError("Invalid access token; error code 4 (user not found in database).");
+		}
+
+		if (flagCheckAccessCode) {
+			if (!userMinimalPassportProfile.accessToken) {
+				jrResult.pushError("Invalid access token; error code 5b (missing accesstoken data).");
+			}
+			if (!user.verifyApiCode(userMinimalPassportProfile.accessToken.apiCode)) {
+				jrResult.pushError("Invalid access token; error code 5 (found user and access token is valid but apiCode revision has been revoked).");
+			}
+		}
+
+		return user;
+	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
 
 
 
@@ -953,12 +1016,12 @@ class AppRoomServer {
 		var previousLoginId = this.getLoggedInLocalLoginIdFromSession(req);
 
 		var thisArserver = this;
-		await passport.authenticate(provider, async (err, user, info) => {
+		await passport.authenticate(provider, async (err, userPassport, info) => {
 			if (err) {
 				next(err);
 				return;
 			}
-			if (!user) {
+			if (!userPassport) {
 				// sometimes passport returns error info instead of us, when credentials are missing; this ensures we have error in format we like
 				var jrinfo = JrResult.passportInfoAsJrResult(info);
 				if (!errorCallback) {
@@ -972,7 +1035,7 @@ class AppRoomServer {
 			}
 
 			// actually login the user
-			var unusableLoginResult = await req.logIn(user, async (ierr) => {
+			var unusableLoginResult = await req.logIn(userPassport, async (ierr) => {
 				if (ierr) {
 					// error (exception) logging them in
 					// ATTN: are we sure we want to call next on ierr?
@@ -1852,20 +1915,53 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	createSecureToken(userData, tokenTypeStr, userDataHeaderStr) {
-		// build the payload from user data and some extra standardized fielrs
-		const payload = {
-			type: tokenTypeStr,
-			iat: new Date().getTime(),
-			iss: jrconfig.get("jwt:ISSUER"),
-			[userDataHeaderStr]: userData,
-		};
+	createSecureToken(payload) {
+		// add stuff to payload
+		payload.iat = Math.floor(Date.now() / 1000);
+		payload.iss = jrconfig.get("jwt:ISSUER");
+		// expiration?
+		const expirationSeconds = jrconfig.get("jwt:EXPIRATION_SECONDS");
+		if (expirationSeconds > 0) {
+			payload.exp = Math.floor(Date.now() / 1000) + expirationSeconds;
+		}
+		// make it
 		const serverJwtCryptoKey = jrconfig.get("jwt:CRYPTOKEY");
 		const token = jsonwebtoken.sign(payload, serverJwtCryptoKey);
 		const tokenObj = {
 			accessToken: token,
 		};
 		return tokenObj;
+	}
+
+
+
+	validateSecureTokenGeneric(tokenObj, jrResult) {
+		// check expiration
+		if (this.isSecureTokenExpired(tokenObj.exp)) {
+			if (tokenObj.exp) {
+				const expirationdatestr = new Date(tokenObj.exp * 1000).toLocaleString();
+				jrResult.pushError("Invalid access token; error code 6: token expired on " + expirationdatestr + ".");
+			} else {
+				jrResult.pushError("Invalid access token; error code 7: token missing expiration date.");
+			}
+		}
+
+		// check issuer or other things?
+	}
+
+
+	isSecureTokenExpired(exp) {
+		if (!exp) {
+			// what to do in this case? no expiration date?
+			// ATTN:TODO - for now we treat it as ok
+			return true;
+		}
+		if (exp <= Math.floor(Date.now() / 1000)) {
+			// it's expired
+			return true;
+		}
+		// its not expired
+		return false;
 	}
 	//---------------------------------------------------------------------------
 }

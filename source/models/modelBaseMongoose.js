@@ -922,7 +922,7 @@ class ModelBaseMongoose {
 			}
 			if (viewType === "edit") {
 				var flagExistingIsNonBlank = (obj && (obj.passwordHashed !== undefined && obj.passwordHashed !== null && obj.password !== ""));
-				return this.jrHtmlFormInputPassword("password", obj, flagRequired, flagExistingIsNonBlank);
+				return jrhmisc.jrHtmlFormInputPassword("password", obj, flagRequired, flagExistingIsNonBlank);
 			}
 			if (viewType === "list") {
 				if (isLoggedInUserSiteAdmin) {

@@ -97,6 +97,9 @@ class UserModel extends ModelBaseMongoose {
 			loginDate: {
 				type: Date,
 			},
+			apiCode: {
+				type: String,
+			},
 			roles: {
 				type: Array,
 			},
@@ -146,6 +149,9 @@ class UserModel extends ModelBaseMongoose {
 				label: "Date of last login",
 				hide: ["edit"],
 			},
+			apiCode: {
+				label: "Api Code",
+			},
 			roles: {
 				label: "Roles",
 				readOnly: ["edit"],
@@ -178,6 +184,14 @@ class UserModel extends ModelBaseMongoose {
 	}
 	//---------------------------------------------------------------------------
 
+
+
+	//---------------------------------------------------------------------------
+	// create new user obj
+	static createModel(inobj) {
+		return super.createModel(inobj);
+	}
+	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
@@ -810,7 +824,7 @@ class UserModel extends ModelBaseMongoose {
 		// NOTE: this list can be generated dynamically based on logged in user
 		var reta;
 		if (operationType === "crudAdd" || operationType === "crudEdit") {
-			reta = ["username", "realName", "email", "password", "passwordHashed", "disabled", "notes"];
+			reta = ["username", "realName", "email", "password", "passwordHashed", "apiCode", "disabled", "notes"];
 		}
 		return reta;
 	}
@@ -843,6 +857,7 @@ class UserModel extends ModelBaseMongoose {
 		await this.validateMergeAsync(jrResult, "password", "passwordHashed", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validatePlaintextPasswordConvertToHash(jrr, inVal, false, true));
 		await this.validateMergeAsync(jrResult, "realName", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal) => jrvalidators.validateRealName(jrr, keyname, inVal, false));
 		await this.validateMergeAsync(jrResult, "email", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => this.validateEmail(jrr, inVal, true, flagRrequiredEmail, obj));
+		await this.validateMergeAsync(jrResult, "apiCode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => this.validateModelFieldString(jrr, keyname, inVal));
 
 		// base fields shared between all? (notes, etc.)
 		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj);
@@ -1117,6 +1132,40 @@ class UserModel extends ModelBaseMongoose {
 	}
 	//---------------------------------------------------------------------------
 
+
+
+	//---------------------------------------------------------------------------
+	async getApiCodeEnsureValid() {
+		// if user has a valid apiCode, just return it
+		// if not, create and save one then return it
+		// this will not CHANGE a valid one
+		if (!this.apiCode) {
+			await this.resetUpdateApiCode();
+		}
+		return this.apiCode;
+	}
+
+	async resetUpdateApiCode() {
+		// update the apicode which will invalidate any previously issues api access tokens for user
+		this.apiCode = jrhelpers.getPreciseNowString();
+		// save it to database
+		var userdoc = await this.dbSave();
+		if (userdoc) {
+			// return it
+			return this.apiCode;
+		}
+		// error
+		return null;
+	}
+
+	verifyApiCode(tokenApiCode) {
+		// check if token api code matches user's latest apicode
+		if (this.apiCode === tokenApiCode) {
+			return true;
+		}
+		return false;
+	}
+	//---------------------------------------------------------------------------
 
 
 
