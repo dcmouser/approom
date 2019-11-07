@@ -65,18 +65,8 @@ function setupRouter(urlPath) {
 				csrfToken: arserver.makeCsrf(req, res),
 			});
 		} else {
-			// this case is redirected handled automatically by call
+			// this case is redirected/handled automatically by call
 		}
-
-		/*
-		await arserver.asyncRoutePassportAuthenticate("local", "using your password", req, res, next, (breq, bres, jrinfo) => {
-			bres.render("account/login", {
-				reqBody: breq.body,
-				jrResult: JrResult.sessionRenderResult(breq, bres, jrinfo),
-				csrfToken: arserver.makeCsrf(req, res),
-			});
-		});
-		*/
 	});
 	//---------------------------------------------------------------------------
 
@@ -88,6 +78,7 @@ function setupRouter(urlPath) {
 	//---------------------------------------------------------------------------
 	// facebook login start
 	router.get("/facebook",
+		// use passport authenticate as middleware
 		passport.authenticate("facebook", {
 		}));
 
@@ -105,6 +96,7 @@ function setupRouter(urlPath) {
 	//---------------------------------------------------------------------------
 	// twitter login start
 	router.get("/twitter",
+		// use passport authenticate as middleware
 		passport.authenticate("twitter", {
 		}));
 

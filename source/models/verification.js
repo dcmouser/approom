@@ -696,7 +696,7 @@ If this request was not made by you, please ignore this email.
 		var successRedirectTo;
 
 		// do the work of logging them in using this verification (addes to passport session, uses up verification model, etc.)
-		jrResult = await arserver.asyncLoginUserThroughPassport(req, user);
+		jrResult = await arserver.asyncLoginUserToSessionThroughPassport(req, user);
 		if (!jrResult.isError()) {
 			var retvResult = await this.useUpAndSave(req, true);
 			jrResult.mergeIn(retvResult);

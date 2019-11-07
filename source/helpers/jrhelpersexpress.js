@@ -5,8 +5,14 @@
 
 "use strict";
 
+// modules
+const passport = require("passport");
+
+
 // our helper modules
 const jrlog = require("../helpers/jrlog");
+const JrResult = require("../helpers/jrresult");
+
 
 
 class JrHelpersExpress {
@@ -106,6 +112,102 @@ class JrHelpersExpress {
 		return match ? match[1].replace(/\\(.)/g, "$1").split("/") : "<complex:" + thing.toString() + ">";
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// ASYNC wrapper around passport.authenticate
+	//
+	async asyncPasswordAuthenticate(authOptions, provider, providerNiceLabel, req, res, next, jrResult) {
+		// first we make a promise out of passport.authenticate then await on it
+		// see https://github.com/jaredhanson/passport/issues/605
+
+		var userPassport;
+
+		// create promise wrapper around passport.authenticate
+		const passportPromiseAuth = (ireq, ires, inext) => new Promise((resolve, reject) => {
+			passport.authenticate(provider, authOptions, async (err, inuserPassport, info) => {
+				if (err || !inuserPassport) {
+					// add error
+					jrResult.pushError("error authenticating " + providerNiceLabel + ": " + JrResult.passportErrorAsString(info) + ".");
+					// run next on error in chain
+					if (false && err) {
+						inext(err);
+					}
+					resolve(jrResult);
+				}
+				// success
+				userPassport = inuserPassport;
+				// success resolve
+				resolve(jrResult);
+			})(ireq, ires, inext);
+		});
+
+
+		// wait for promise resolution
+		try {
+			// now wait for the passport authenticate promise to run; note there is no case where it rejects; we could do this differently and catch an error
+			await passportPromiseAuth(req, res, next);
+		} catch (err) {
+			// unexpected error
+			jrResult.pushError(err.message);
+		}
+
+		// return userPassport data object
+		return userPassport;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	// ASYNC wrapper around passport req.login
+	//
+	async asyncPasswordReqLogin(userPassport, errorMessage, req, jrResult) {
+		// first we make a promise out of passport.authenticate then await on it
+		// see https://github.com/jaredhanson/passport/issues/605
+
+		// again create promise for passport req.login
+		const passportPromiseReqLogin = ireq => new Promise((resolve, reject) => {
+			// actually login the user
+			ireq.logIn(userPassport, async (ierr) => {
+				if (ierr) {
+					// error (exception) logging them in
+					jrResult.pushError(errorMessage + ": " + JrResult.passportErrorAsString(ierr));
+					resolve(jrResult);
+				}
+				// success
+				// success resolve
+				resolve(jrResult);
+			})(ireq);
+		});
+
+		try {
+			// now wait for the passport req login promise to run; note there is no case where it rejects; we could do this differently and catch an error
+			await passportPromiseReqLogin(req);
+		} catch (err) {
+			// unexpected error
+			jrResult.pushError(err.message);
+		}
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
 
 }
 

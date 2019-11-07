@@ -34,9 +34,9 @@ function setupRouter(urlPath) {
 	// see https://scotch.io/@devGson/api-authentication-with-json-web-tokensjwt-and-passport
 
 	// normally in api call they would not get a web form, but this is to help test interactively
-	router.get("/loginform", async (req, res, next) => {
+	router.get("/tokenrequest", async (req, res, next) => {
 		// render page
-		res.render("api/loginform", {
+		res.render("api/tokenrequest", {
 		});
 	});
 
@@ -44,7 +44,7 @@ function setupRouter(urlPath) {
 	// we process the login form
 	// note how this differs from normal login.js route, we are not saving logged in user in session
 	// instead we just check their credentials and give them a (jwt) access token that they can re-present to prove their identity.
-	router.all("/login", async (req, res, next) => {
+	router.post("/tokenrequest", async (req, res, next) => {
 		// api login, parse username and password in request and RETURN A TOKEN to be used in future calls (rather than setting cookie session)
 		// this authenticate expects username and password in post form; if we want to handle it differently we could pass different values or do a manual username lookup on our own
 		// we should enforce https here too
@@ -76,8 +76,7 @@ function setupRouter(urlPath) {
 		// test if user has passed user login info through api token
 
 		var jrResult = JrResult.makeNew();
-
-		var [userPassport, user] = await arserver.parseAccessTokenFromRequestGetPassportProfileAndUser(req, res, next, jrResult);
+		var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromAccessTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult);
 		if (jrResult.isError()) {
 			res.status(403).send(jrResult.getErrorsAsString());
 			return;

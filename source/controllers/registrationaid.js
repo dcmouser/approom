@@ -338,7 +338,7 @@ class RegistrationAid {
 			if (!jrResult.isError()) {
 				if (flagLogInUserAfterAccountCreate) {
 					// log them in
-					retvResult = await arserver.asyncLoginUserThroughPassport(req, user);
+					retvResult = await arserver.asyncLoginUserToSessionThroughPassport(req, user);
 					// merge errors?
 					jrResult.mergeIn(retvResult);
 					if (!jrResult.isError()) {
