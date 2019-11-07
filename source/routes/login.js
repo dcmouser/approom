@@ -54,13 +54,29 @@ function setupRouter(urlPath) {
 		}
 
 		// handle local authentication; this is a wrapper around passport.authenticate("local" which handles a bunch of session and redirect stuff
-		await arserver.routePassportAuthenticate("local", req, res, next, "using your password", (breq, bres, jrinfo) => {
+		var jrResult = JrResult.makeNew();
+		// the true,false at end says to auto handle the login success case (redirect generically), but not auto handle the error case (so that we can re-present it)
+		await arserver.asyncRoutePassportAuthenticate("local", "using your password", req, res, next, jrResult, true, false);
+		if (jrResult.isError()) {
+			// re-present the login form
+			res.render("account/login", {
+				reqBody: req.body,
+				jrResult: JrResult.sessionRenderResult(req, res, jrResult),
+				csrfToken: arserver.makeCsrf(req, res),
+			});
+		} else {
+			// this case is redirected handled automatically by call
+		}
+
+		/*
+		await arserver.asyncRoutePassportAuthenticate("local", "using your password", req, res, next, (breq, bres, jrinfo) => {
 			bres.render("account/login", {
 				reqBody: breq.body,
 				jrResult: JrResult.sessionRenderResult(breq, bres, jrinfo),
 				csrfToken: arserver.makeCsrf(req, res),
 			});
 		});
+		*/
 	});
 	//---------------------------------------------------------------------------
 
@@ -78,7 +94,7 @@ function setupRouter(urlPath) {
 	// facebook auth callback
 	router.get("/facebook/auth", async (req, res, next) => {
 		// our manual passport authentification helper, sends user to /profile on success or /login on failure
-		await arserver.routePassportAuthenticate("facebook", req, res, next, "via facebook");
+		await arserver.asyncRoutePassportAuthenticate("facebook", "via facebook", req, res, next, null, true, true);
 	});
 	//---------------------------------------------------------------------------
 
@@ -95,7 +111,7 @@ function setupRouter(urlPath) {
 	// twiter auth callback
 	router.get("/twitter/auth", async (req, res, next) => {
 		// our manual passport authentification helper, sends user to /profile on success or /login on failure
-		await arserver.routePassportAuthenticate("twitter", req, res, next, "via twitter");
+		await arserver.asyncRoutePassportAuthenticate("twitter", "via twitter", req, res, next, null, true, true);
 	});
 	//---------------------------------------------------------------------------
 

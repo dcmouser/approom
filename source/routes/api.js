@@ -46,51 +46,29 @@ function setupRouter(urlPath) {
 	// instead we just check their credentials and give them a (jwt) access token that they can re-present to prove their identity.
 	router.all("/login", async (req, res, next) => {
 		// api login, parse username and password in request and RETURN A TOKEN to be used in future calls (rather than setting cookie session)
-
-		// do a local login with passed username and password; DONT store session info
-		const passportAuthOptions = {
-			session: false,
-		};
 		// this authenticate expects username and password in post form; if we want to handle it differently we could pass different values or do a manual username lookup on our own
 		// we should enforce https here too
-		await passport.authenticate("local", passportAuthOptions, async (err, userPassport, info) => {
-			// see server.js routePassportAuthenticate() for some of this code
-			if (err) {
-				jrlog.debugObj(err, "ATTN: test error1 in api login");
-				next(err);
-				res.status(401).send("ATTN: in api login test - UNAUTHORIZED 1.");
-				// return;
-			} else if (!userPassport) {
-				// sometimes passport returns error info instead of us, when credentials are missing; this ensures we have error in format we like
-				var jrinfo = JrResult.passportInfoAsJrResult(info);
-				// ATTN: test debug info
-				jrlog.debugObj(jrinfo, "ATTN: test error2 in api login");
-				res.status(401).send("ATTN: in api login test - UNAUTHORIZED 2.");
-				// return;
-			} else {
-				// ok their username+password matches.
-				// get the full user
-				var user = await arserver.loadUserFromMinimalPassportUserData(userPassport);
-				if (!user) {
-					jrlog.debug("ATTN: test error2 in api login");
-					res.status(401).send("ATTN: in api login test - UNAUTHORIZED 2.");
-				} else {
-					// now we would like to give them a (json) token providing their identity that they can pass in future calls
-					// sign a token which is just user minimal profile and extra info that might determine expiration etc
-					// BUT FIRST, add some extra info to user object restricting use of the token
-					// add scope "api" so that the access token can only be used for safer api actions
-					const payload = {
-						type: "accessToken",
-						scope: "api",
-						apiCode: await user.getApiCodeEnsureValid(),
-						user: userPassport,
-					};
-					// add accessId -- the idea here is for every user object in database to ahve an accessId (either sequential or random); that can be changed to invalidate all previously issues access tokens
-					var secureAccessToken = arserver.createSecureToken(payload);
-					res.status(200).send(secureAccessToken);
-				}
-			}
-		})(req, res, next);
+		var jrResult = JrResult.makeNew();
+
+		// do a local login with passed username and password; DONT store session info
+		var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateNonSessionGetUserTuple("local", "with username and password", req, res, next, jrResult, true);
+		if (jrResult.isError()) {
+			var msg = "ATTN: Error during api test of login: " + jrResult.getErrorsAsString();
+			jrlog.debug(msg);
+			res.status(401).send(msg);
+			return;
+		}
+
+		// success!
+		const payload = {
+			type: "accessToken",
+			scope: "api",
+			apiCode: await user.getApiCodeEnsureValid(),
+			user: userPassport,
+		};
+		// add accessId -- the idea here is for every user object in database to ahve an accessId (either sequential or random); that can be changed to invalidate all previously issues access tokens
+		var secureAccessToken = arserver.createSecureToken(payload);
+		res.status(200).send(secureAccessToken);
 	});
 
 

@@ -857,7 +857,7 @@ class UserModel extends ModelBaseMongoose {
 		await this.validateMergeAsync(jrResult, "password", "passwordHashed", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await UserModel.validatePlaintextPasswordConvertToHash(jrr, inVal, false, true));
 		await this.validateMergeAsync(jrResult, "realName", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal) => jrvalidators.validateRealName(jrr, keyname, inVal, false));
 		await this.validateMergeAsync(jrResult, "email", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => this.validateEmail(jrr, inVal, true, flagRrequiredEmail, obj));
-		await this.validateMergeAsync(jrResult, "apiCode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => this.validateModelFieldString(jrr, keyname, inVal));
+		await this.validateMergeAsync(jrResult, "apiCode", "", source, saveFields, preValidatedFields, obj, false, async (jrr, keyname, inVal) => this.validateModelFieldString(jrr, keyname, inVal));
 
 		// base fields shared between all? (notes, etc.)
 		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj);
@@ -1122,15 +1122,6 @@ class UserModel extends ModelBaseMongoose {
 
 
 
-	//---------------------------------------------------------------------------
-	createSecureAccessToken() {
-		// this is called from API routes to create a token that we will later use to prove user authentication
-		// we use passport and jwt tokens for this
-		const userProfile = this.getMinimalPassportProfile();
-		const token = arserver.createSecureToken(userProfile);
-		return token;
-	}
-	//---------------------------------------------------------------------------
 
 
 

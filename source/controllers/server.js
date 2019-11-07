@@ -152,6 +152,8 @@ class AppRoomServer {
 	getExpressApp() { return this.expressApp; }
 
 	getJrConfig() { return jrconfig; }
+
+	getConfigVal(...args) { return jrconfig.get(...args); }
 	//---------------------------------------------------------------------------
 
 
@@ -290,7 +292,7 @@ class AppRoomServer {
 		// see https://github.com/expressjs/session
 		expressApp.use(session({
 			name: "approomconnect.sid",
-			secret: "approomsecret",
+			secret: this.getConfigVal("crypto:SESSIONSECRET"),
 			resave: false,
 			cookie: cookieOptions,
 			saveUninitialized: false,
@@ -817,6 +819,10 @@ class AppRoomServer {
 		} else {
 			const VerificationModel = require("../models/verification");
 			verification = await VerificationModel.findOneById(verificationId);
+			if (verification) {
+				// add unique code in plaintext
+				verification.setUniqueCode(this.getLastSessionedVerificationCodePlaintext(req));
+			}
 		}
 		// cache it
 		req.arCachedLastVerification = verification;
@@ -841,8 +847,13 @@ class AppRoomServer {
 		return req.session.lastVerificationId;
 	}
 
+	getLastSessionedVerificationCodePlaintext(req) {
+		return req.session.lastVerificationCodePlaintext;
+	}
+
 	forgetLastSessionVerification(req) {
 		jrhelpers.forgetSessionVar(req, "lastVerificationId");
+		jrhelpers.forgetSessionVar(req, "lastVerificationCodePlaintext");
 		jrhelpers.forgetSessionVar(req, "lastVerificationDate");
 		/*
 		if (req.session && req.session.lastVerificationId) {
@@ -875,29 +886,18 @@ class AppRoomServer {
 
 	async parseAccessTokenFromRequestGetMinimalPassportUserData(req, res, next, jrResult) {
 		// force passport authentication from request, looking for jwt token
-		var userMinimalProfile = null;
-		//
-		const jwtPassportOptions = {
-			session: false,
-		};
-		await passport.authenticate("jwt", jwtPassportOptions, async (err, userPassport, info) => {
-			if (err) {
-				jrResult.pushError(this.passportErrorAsString(err));
-				next(err);
-			} else if (!userPassport) {
-				jrResult.pushError("Invalid access token; error code 1.");
-				userMinimalProfile = null;
-			} else {
-				// logged in user info
-				userMinimalProfile = userPassport;
-			}
-		})(req, res, next);
+
+		var [userMinimalProfile, dummyNullUser] = await this.asyncRoutePassportAuthenticateNonSessionGetUserTuple("jwt", "using jwt", req, res, next, jrResult, false);
 
 		if (!jrResult.isError()) {
 			// let's check token validity (expiration, etc.); this may push an error into jrResult
 			// note that this does NOT check user.apiCode, that is done later
 			// jrlog.debugObj(userMinimalProfile.accessToken, "access token pre validate.");
 			this.validateSecureTokenGeneric(userMinimalProfile.accessToken, jrResult);
+		} else {
+			// change error code from generic to token specific or add?
+			jrResult.pushErrorOnTop("Invalid access token");
+			// jrResult.setError("Invalid access token");
 		}
 
 		// return fale or null
@@ -1002,48 +1002,125 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	//---------------------------------------------------------------------------
-	// generic passport route login helper function, invoked from login routes
+	// wrappers around passport.authenticate,
+	//  which convert(wrap) the non-promise non-async function passport.authenticate into an sync function that uses a promise
+	//  and do other stuff
+
 	// this will end up calling a passport STRATEGY above
 	// @param errorCallback is a function that takes (req,res,jrinfo) for custom error handling,
 	//  where jrinfo is the JrResult style error message created from the passport error;
 	//  normally you would use this to RE-RENDER a form from a post submission, overriding the
 	//  default behavior to redirect to the login page with flash error message
-	async routePassportAuthenticate(provider, req, res, next, providerNiceLabel, errorCallback) {
+	async asyncRoutePassportAuthenticate(provider, providerNiceLabel, req, res, next, jrResult, flagAutoRedirectSuccess, flagAutoRedirectError) {
 		// "manual" authenticate via passport (as opposed to middleware auto); allows us to get richer info about error, and better decide what to do
+
+		if (!jrResult) {
+			// they have not passed us a result object to send result to, so we create one to hold our temp results
+			jrResult = JrResult.makeNew();
+			// but we complain if flagAutoRedirect is not set to true, since in this case there is no good way for them to get result
+			assert(flagAutoRedirectSuccess || flagAutoRedirectError);
+		}
 
 		// but before we authenticate and log in the user lets see if they are already "logged in" using a Login object
 		var previousLoginId = this.getLoggedInLocalLoginIdFromSession(req);
+		const thisArserver = this;
+		var userPassport;
 
-		var thisArserver = this;
-		await passport.authenticate(provider, async (err, userPassport, info) => {
-			if (err) {
-				next(err);
-				return;
-			}
-			if (!userPassport) {
-				// sometimes passport returns error info instead of us, when credentials are missing; this ensures we have error in format we like
-				var jrinfo = JrResult.passportInfoAsJrResult(info);
-				if (!errorCallback) {
-					// save error to session (flash) and redirect to login
-					jrinfo.addToSession(req);
-					res.redirect("/login");
-					return;
-				}
-				errorCallback(req, res, jrinfo);
-				return;
-			}
 
-			// actually login the user
-			var unusableLoginResult = await req.logIn(userPassport, async (ierr) => {
-				if (ierr) {
-					// error (exception) logging them in
-					// ATTN: are we sure we want to call next on ierr?
-					next(ierr);
-					return;
+		// first we make a promise out of passport.authenticate then await on it
+		// see https://github.com/jaredhanson/passport/issues/605
+		const passportPromiseAuth = (ireq, ires, inext) => new Promise((resolve, reject) => {
+			passport.authenticate(provider, async (err, inuserPassport, info) => {
+				if (err || !inuserPassport) {
+					// add error
+					jrResult.pushError("Error authenticating " + providerNiceLabel + ": " + JrResult.passportErrorAsString(info) + ".");
+					// run next on error in chain
+					if (err) {
+						inext(err);
+					}
+					resolve(jrResult);
 				}
 				// success
-				var jrResult = JrResult.makeNew("info");
+				userPassport = inuserPassport;
+				// success resolve
+				resolve(jrResult);
+			})(ireq, ires, inext);
+		});
+
+		try {
+			// now wait for the passport authenticate promise to run; note there is no case where it rejects; we could do this differently and catch an error
+			await passportPromiseAuth(req, res, next);
+		} catch (err) {
+			// unexpected error
+			jrResult.pushError(err.message);
+		}
+
+		if (!jrResult.isError()) {
+			// again create promise for passport req.login
+			const passportPromiseReq = (ireq, ires, inext) => new Promise((resolve, reject) => {
+				// actually login the user
+				req.logIn(userPassport, async (ierr) => {
+					if (ierr) {
+						// error (exception) logging them in
+						// ATTN: are we sure we want to call next on ierr?
+						jrResult.pushError("Error while authenticating user " + providerNiceLabel + ": unable to log in user.");
+						// next(ierr);
+						resolve(jrResult);
+					}
+					// success
+					// success resolve
+					resolve(jrResult);
+				})(ireq, ires, inext);
+			});
+
+			try {
+				// now wait for the passport req login promise to run; note there is no case where it rejects; we could do this differently and catch an error
+				await passportPromiseReq(req, res, next);
+			} catch (err) {
+				// unexpected error
+				jrResult.pushError(err.message);
+			}
+		}
+
+		if (!jrResult.isError()) {
+			// success
+			try {
 				// userId we JUST signed in as -- NOTE: this could be null if its a local bridged login short of a full user account
 				var newlyLoggedInUserId = thisArserver.getLoggedInLocalUserIdFromSession(req);
 				// announce info
@@ -1052,6 +1129,7 @@ class AppRoomServer {
 				} else {
 					jrResult.pushSuccess("You have successfully connected " + providerNiceLabel + ".");
 				}
+
 				// and NOW if they were previously sessioned with a pre-account Login object, we can connect that to this account
 				if (newlyLoggedInUserId && previousLoginId) {
 					// try to connect
@@ -1061,26 +1139,194 @@ class AppRoomServer {
 						jrResult.mergeIn(jrResult2);
 					}
 				}
+
 				// add message to session.
 				jrResult.addToSession(req, true);
 
-				// check if they were waiting to go to another page
-				if (newlyLoggedInUserId && thisArserver.userLogsInCheckDiverted(req, res)) {
-					return;
-				}
+				if (flagAutoRedirectSuccess) {
+					// do some redirections..
 
-				// new full account connected?
-				if (newlyLoggedInUserId) {
-					res.redirect("/profile");
-					return;
+					// check if they were waiting to go to another page
+					if (newlyLoggedInUserId && thisArserver.userLogsInCheckDiverted(req, res)) {
+						return;
+					}
+
+					// new full account connected?
+					if (newlyLoggedInUserId) {
+						res.redirect("/profile");
+						return;
+					}
+					// no user account made yet, default send them to full account fill int
+					res.redirect("/register");
 				}
-				// no user account made yet, default send them to full account fill int
-				res.redirect("/register");
-			});
-		// ATTN: if we get here, we are back from failed login attempt?
-		})(req, res, next);
+			} catch (err) {
+				// unexpected error
+				jrResult.pushError(err.message);
+			}
+		}
+
+		// errors? if so return or redirect
+		if (jrResult.isError()) {
+			if (flagAutoRedirectError) {
+				// if caller wants us to handle error case of redirect we will
+				// save error to session (flash) and redirect to login
+				jrResult.addToSession(req);
+				res.redirect("/login");
+			}
+		}
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// wrappers around passport.authenticate,
+	//  which convert(wrap) the non-promise non-async function passport.authenticate into an sync function that uses a promise
+	//  and do other stuff
+
+	// generic passport route login helper function, invoked from login routes
+	// this will end up calling a passport STRATEGY above
+	// @param errorCallback is a function that takes (req,res,jrinfo) for custom error handling,
+	//  where jrinfo is the JrResult style error message created from the passport error;
+	//  normally you would use this to RE-RENDER a form from a post submission, overriding the
+	//  default behavior to redirect to the login page with flash error message
+	async asyncRoutePassportAuthenticateNonSessionGetUserTuple(provider, providerNiceLabel, req, res, next, jrResult, flagLookupFullUser) {
+		// "manual" authenticate via passport (as opposed to middleware auto); allows us to get richer info about error, and better decide what to do
+		// return [userPassport, user] tuple
+
+		// they need to pass us a jrResult in this case
+		assert(jrResult);
+
+		const thisArserver = this;
+		var userPassport, user;
+
+		// for this minimal version we do not want to store session data, we just want user
+		const passportAuthOptions = {
+			session: false,
+		};
+
+		// first we make a promise out of passport.authenticate then await on it
+		// see https://github.com/jaredhanson/passport/issues/605
+		const passportPromiseAuth = (ireq, ires, inext) => new Promise((resolve, reject) => {
+			passport.authenticate(provider, passportAuthOptions, async (err, inUserPassport, info) => {
+				if (err || !inUserPassport) {
+					// add error
+					jrResult.pushError("Error authenticating " + providerNiceLabel + ": " + JrResult.passportErrorAsString(info) + ".");
+					// pass to next?
+					if (err) {
+						inext(err);
+					}
+					// error resolve (note we dont reject though we could)
+					resolve(jrResult);
+				}
+				// success, load user object
+				userPassport = inUserPassport;
+				// success resolve
+				resolve(jrResult);
+			})(ireq, ires, inext);
+		});
+
+		try {
+			// now wait for the passport auth promise to run; note there is no case where it rejects; we could do this differently and catch an error
+			await passportPromiseAuth(req, res, next);
+
+			// now get user
+			if (!jrResult.isError() && flagLookupFullUser) {
+				user = await thisArserver.loadUserFromMinimalPassportUserData(userPassport, jrResult, false);
+				if (!user) {
+					jrResult.pushError("Error authenticating " + providerNiceLabel + ": could not locate user in database.");
+				}
+			}
+		} catch (err) {
+			// unexpected error
+			jrResult.pushError(err.message);
+		}
+
+		return [userPassport, user];
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	async asyncLoginUserThroughPassport(req, user) {
+		var jrResult = JrResult.makeNew();
+
+		var userPassport = user.getMinimalPassportProfile();
+
+		// wrap req.login in promise so we can run it using await
+		const passportPromiseReq = ireq => new Promise((resolve, reject) => {
+			// actually login the user
+			req.logIn(userPassport, async (ierr) => {
+				if (ierr) {
+					// error (exception) logging them in
+					jrResult.pushError("VerificationError: " + JrResult.passportErrorAsString(ierr));
+					resolve(jrResult);
+				}
+				// success resolve
+				resolve(jrResult);
+			})(ireq);
+		});
+
+		try {
+			// now wait for the passport req login promise to run; note there is no case where it rejects; we could do this differently and catch an error
+			await passportPromiseReq(req);
+
+			if (!jrResult.isError()) {
+				// update login date and save it
+				await user.updateloginDateAndSave(jrResult);
+			}
+		} catch (err) {
+			// unexpected error
+			jrResult.pushError(err.message);
+		}
+
+		return jrResult;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1546,36 +1792,7 @@ class AppRoomServer {
 
 
 
-	//---------------------------------------------------------------------------
-	async loginUserThroughPassport(req, user) {
-		var jrResult;
-		var success = false;
 
-		var userPassport = user.getMinimalPassportProfile();
-
-		var unusableLoginResult = await req.login(userPassport, (err) => {
-			if (err) {
-				jrResult = JrResult.makeError("VerificationError", JrResult.passportErrorAsString(err));
-			} else {
-				success = true;
-			}
-			// note that if we try to handle success actions in here that have to async await, like a model save,
-			//  we wind up in trouble for some reason -- weird things happen that i don't understand
-			//  so instead we drop down on success and can check jrResult
-		});
-
-		if (success) {
-			jrResult = JrResult.makeSuccess();
-			// update login date and save it
-			await user.updateloginDateAndSave(jrResult);
-		} else if (!jrResult) {
-			// unknown exception error that happened in passport login attempt?
-			jrResult = JrResult.makeError("VerificationError", "Unknown passport login error in useNowOneTimeLogin.");
-		}
-
-		return jrResult;
-	}
-	//---------------------------------------------------------------------------
 
 
 

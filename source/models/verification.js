@@ -3,6 +3,20 @@
 // v1.0.0 on 5/15/19 by mouser@donationcoder.com
 //
 // Handles things that are pending verification (user email change, registration, etc.)
+//
+// ATTN: 11/6/19
+// for additional security we store only the LONG HASHED value of the short verification uniquecode, while sending user a short plaintext version of the code
+// that protects us from database stealing (see https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html)
+// so that if someone gets access to the database, they can't "easily" reverse the uniquecodes to do the pending password resets and registrations
+// HOWEVER there are some caveats:
+//  1. the uniquecodes are SHORT (by default like 5 characters long), so they could be easily bruteforce reverses
+//  2. we are using sha512 but not deliberately slowing it down
+//  3. we are not using a unique salt, but rather a fixed site secret salt.  This is unfortunate but is needed so we can quickly search for a verification code by its code as input by the user
+// ATTN:TODO 11/6/19 - One way we could fix these weaknesses would be if the plaintext code we gave people were actually in two parts like (AAAAA-BBBBB) where the AAAAA part was stored in plaintext in the db and the BBBBB part was hashed in the database
+//  with proper bsrypt/random salt.  Then we would LOOK UP the verification using AAAAA but verify the hashed part of BBBBB.  It would double the length of the code we need to give to user, but it would make rainbow table brute force much harder..
+// ATTN: IMPORTANT: See getValidVerificationFromIdOrLastSession() , it's currently looking for and allowing the hashed value of the verification code to be provided, which bypasses this security advantage and would let someone who stole the db provide the hashed value in certain cases(!)
+
+
 
 "use strict";
 
@@ -62,7 +76,7 @@ class VerificationModel extends ModelBaseMongoose {
 	static getSchemaDefinition() {
 		return {
 			...(this.getBaseSchemaDefinition()),
-			uniqueCode: {
+			uniqueCodeHashed: {
 				type: String,
 				unique: true,
 				required: true,
@@ -94,8 +108,8 @@ class VerificationModel extends ModelBaseMongoose {
 	static getSchemaDefinitionExtra() {
 		return {
 			...(this.getBaseSchemaDefinitionExtra()),
-			uniqueCode: {
-				label: "Unique code",
+			uniqueCodeHashed: {
+				label: "Unique code (hashed)",
 			},
 			type: {
 				label: "Type",
@@ -139,7 +153,16 @@ class VerificationModel extends ModelBaseMongoose {
 	}
 
 	getUniqueCode() {
+		// ATTN: NOTE THAT this value is NOT stored in the database
 		return this.uniqueCode;
+	}
+
+	setUniqueCode(val) {
+		this.uniqueCode = val;
+	}
+
+	getUniqueCodeHashed() {
+		return this.uniqueCodeHashed;
 	}
 
 
@@ -192,8 +215,10 @@ class VerificationModel extends ModelBaseMongoose {
 		while (true) {
 			try {
 				++tryCount;
-				// generate a hopefully unique code
+				// generate a hopefully unique code (in plaintext; this will not be stored in db)
 				verification.uniqueCode = await this.generateUniqueCode();
+				// hash it
+				verification.uniqueCodeHashed = await this.calcHashOfVerificationCode(verification.uniqueCode);
 				// try to save it
 				verificationdoc = await verification.dbSave();
 				// success
@@ -391,11 +416,33 @@ If this request was not made by you, please ignore this email.
 	//---------------------------------------------------------------------------
 
 
+	//---------------------------------------------------------------------------
+	static async calcHashOfVerificationCode(verificationCode) {
+		// hash the verification code -- this is what we will store in our database
+		// this function needs to retun the SAME HASH no matter when we call it, so that we can search for result; that's why we used a fixed salt
+		return await jrcrypto.hashPlaintextStringInsecureButSearchable(verificationCode, arserver.getConfigVal("crypto:VERIFICATIONCODESALT"));
+	}
+	//---------------------------------------------------------------------------
+
 
 	//---------------------------------------------------------------------------
 	static async findOneByCode(verificationCode) {
 		// find it and return it
-		var verification = this.mongooseModel.findOne({ uniqueCode: verificationCode }).exec();
+		// hash code (predictable hash)
+		var verificationCodeHashed = await this.calcHashOfVerificationCode(verificationCode);
+		// find it
+		var verification = await this.findOneByCodeHashed(verificationCodeHashed);
+		// NOW we save in it the plaintext code, in case caller wants to refer to it (it will NOT be saved in db)
+		if (verification) {
+			verification.uniqueCode = verificationCode;
+		}
+		return verification;
+	}
+
+
+	static async findOneByCodeHashed(verificationCodeHashed) {
+		// find it and return it
+		var verification = this.mongooseModel.findOne({ uniqueCodeHashed: verificationCodeHashed }).exec();
 		return verification;
 	}
 	//---------------------------------------------------------------------------
@@ -548,9 +595,10 @@ If this request was not made by you, please ignore this email.
 	// see server.js for where this info is read
 
 	saveSessionUse(req) {
-		// add verification id to session so it can be reused
+		// add verification info to session so it can be reused
 		const idstr = this.getIdAsString();
 		req.session.lastVerificationId = idstr;
+		req.session.lastVerificationCodePlaintext = this.getUniqueCode();
 		req.session.lastVerificationDate = new Date();
 	}
 
@@ -648,7 +696,7 @@ If this request was not made by you, please ignore this email.
 		var successRedirectTo;
 
 		// do the work of logging them in using this verification (addes to passport session, uses up verification model, etc.)
-		jrResult = await arserver.loginUserThroughPassport(req, user);
+		jrResult = await arserver.asyncLoginUserThroughPassport(req, user);
 		if (!jrResult.isError()) {
 			var retvResult = await this.useUpAndSave(req, true);
 			jrResult.mergeIn(retvResult);
@@ -827,11 +875,21 @@ If this request was not made by you, please ignore this email.
 
 	//---------------------------------------------------------------------------
 	// helper
-	static async getValidVerificationFromIdOrLastSession(verificationId, req) {
+	static async getValidVerificationFromIdOrLastSession(req) {
+		// ATTN: 11/6/19 -- this is inherently DANGEROUS because it allows the verification code to be specified by providing the HASH -- which is exactly what we want to avoid for security purposes!
+		//
 		var verification;
-		if (verificationId) {
+		const verificationCode = req.body.verifyCode;
+		// security risk
+		// const verificationCodeHashed = req.body.verifyCodeHashed;
+		const verificationCodeHashed = null;
+		if (verificationCodeHashed) {
 			// first lookup verify code if code provided in form
-			verification = await VerificationModel.findOneByCode(verificationId);
+			verification = await VerificationModel.findOneByCodeHashed(verificationCodeHashed);
+		}
+		if (!verification && verificationCode) {
+			// first lookup verify code if code provided in form
+			verification = await VerificationModel.findOneByCode(verificationCode);
 		}
 		if (!verification) {
 			// not found in form, maybe there is a remembered verification id in ession regarding new account email verified, then show full

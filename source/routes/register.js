@@ -91,6 +91,12 @@ function setupRouter(urlPath) {
 
 
 
+
+
+
+
+
+
 	//---------------------------------------------------------------------------
 	// which register view we render depends on whether this is initial registration, or continuing one after they have verified an email
 	async function getRegisterViewPath(req) {
@@ -98,7 +104,7 @@ function setupRouter(urlPath) {
 
 		// get any verification code associated with this registration, to prove they own the email
 		// verifyCode can come explicitly from the form (takes priority) OR the session if not in the form
-		var verification = await VerificationModel.getValidVerificationFromIdOrLastSession(req.body.verifyCode, req);
+		var verification = await VerificationModel.getValidVerificationFromIdOrLastSession(req);
 
 		if (verification) {
 			// show full form

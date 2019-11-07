@@ -98,6 +98,16 @@ class JrResult {
 		return this.fields[key];
 	}
 
+	clearKey(key) {
+		if (this.items === undefined) {
+			return;
+		}
+		if (this.items[key] === undefined) {
+			return;
+		}
+		this.items[key].clear();
+	}
+
 	// now we have more generic lists of messages/errors
 	push(key, msg, flagOnTop) {
 		if (this.items === undefined) {
@@ -130,6 +140,17 @@ class JrResult {
 	}
 
 	pushError(msg) {
+		this.push("error", msg);
+		return this;
+	}
+
+	pushErrorOnTop(msg) {
+		this.push("error", msg, true);
+		return this;
+	}
+
+	setError(msg) {
+		this.clearKey("error");
 		this.push("error", msg);
 		return this;
 	}
@@ -277,7 +298,7 @@ class JrResult {
 	}
 
 
-	static passportInfoAsJrResult(info) {
+	static passportInfoAsJrResultError(info) {
 		if (!info) {
 			return undefined;
 		}
@@ -289,10 +310,18 @@ class JrResult {
 
 
 	static passportErrorAsString(info) {
+		if (JrResult.is(info)) {
+			return info.getErrorsAsString();
+		}
 		if (!info || !info.message) {
 			return "unknown authorization error";
 		}
 		return info.message;
+	}
+
+	addPassportInfoAsError(info) {
+		// add passport info value as an error to us
+		this.pushError(this.passportErrorAsString(info));
 	}
 	//---------------------------------------------------------------------------
 

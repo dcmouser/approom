@@ -38,7 +38,13 @@
 		"EXPIRATION_SECONDS": 60
 	},
 
-	
+
+	"crypto": {
+		"VERIFICATIONCODESALT": "your_site_salt_for_verification_token_hashing",
+		"SESSIONSECRET": "secret_for_session_cookies"
+	},
+
+
 	"options": {
 		"ACCOUNTREQUIRE_PASSWORD": false,
 		"ACCOUNTREQUIRE_EMAIL": false,
@@ -47,6 +53,5 @@
 			"d": "monsterid"
 		}
 	}
-
 
 }

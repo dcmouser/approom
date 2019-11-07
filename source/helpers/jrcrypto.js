@@ -71,25 +71,36 @@ class JrCrypto {
 		var passwordAlgorithm = DefPasswordAlgorithm;
 		var salt = "";
 		// hash it
-		var passwordHashed = await this.createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, DefCryptSaltRounds, DefLatestPasswordVersion);
+		var passwordHashed = await this.createHashedObjectFromString(passwordPlaintext, passwordAlgorithm, salt, DefCryptSaltRounds, DefLatestPasswordVersion);
 		// return it -- an OBJECT with properties not just a string
 		return passwordHashed;
 	}
 
 
+	async hashPlaintextStringSecurely(plaintextString) {
+		// algorithm to use
+		var passwordAlgorithm = DefPasswordAlgorithm;
+		var salt = "";
+		// hash it
+		var hashedObj = this.createHashedObjectFromString(plaintextString, passwordAlgorithm, salt, DefCryptSaltRounds, DefLatestPasswordVersion);
+		var hashedString = hashedObj.hash;
+		return hashedString;
+	}
 
-	async createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, saltRounds, passwordVersion) {
+
+
+	async createHashedObjectFromString(plaintextString, passwordAlgorithm, salt, saltRounds, passwordVersion) {
 		// function to hash plaintext password and return an object with hashed password properties
 
-		var passwordHashedStr;
+		var hashedString;
 		//
 		if (passwordAlgorithm === "plain") {
-			passwordHashedStr = passwordPlaintext;
+			hashedString = plaintextString;
 			salt = "";
 		} else if (passwordAlgorithm === "bcrypt") {
 			// bcrypt module hash -- the most widely recommended method
-			// note that bcrypt does not let us specify salt, and embeds extra info in passwordHashedStr string
-			passwordHashedStr = await bcrypt.hash(passwordPlaintext, saltRounds);
+			// note that bcrypt does not let us specify salt, and embeds extra info in hashedString string
+			hashedString = await bcrypt.hash(plaintextString, saltRounds);
 			// null these so we dont save them (saltRound info is embedded in the bcrypt hash)
 			salt = null;
 			saltRounds = null;
@@ -103,8 +114,8 @@ class JrCrypto {
 			}
 			//
 			var hash = crypto.createHmac("sha512", salt);
-			hash.update(passwordPlaintext);
-			passwordHashedStr = hash.digest("hex");
+			hash.update(plaintextString);
+			hashedString = hash.digest("hex");
 			// null these so we dont save them
 			saltRounds = null;
 		} else {
@@ -112,8 +123,8 @@ class JrCrypto {
 		}
 
 		// build the passwordHashed and return it
-		var passwordHashed = {
-			hash: passwordHashedStr,
+		var hashedObj = {
+			hash: hashedString,
 			alg: passwordAlgorithm,
 			// version is a numeric value we can use in case we need to force upgrade everyone with an old password algorithm, etc.
 			ver: passwordVersion,
@@ -121,13 +132,13 @@ class JrCrypto {
 			date: new Date(),
 		};
 		if (salt !== null) {
-			passwordHashed.salt = salt;
+			hashedObj.salt = salt;
 		}
 		if (saltRounds !== null) {
-			passwordHashed.saltRounds = saltRounds;
+			hashedObj.saltRounds = saltRounds;
 		}
 		//
-		return passwordHashed;
+		return hashedObj;
 	}
 
 
@@ -226,6 +237,19 @@ class JrCrypto {
 			group++;
 		}
 		return retstr;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	// this function needs to retun the SAME HASH no matter when we call it, so that we can search for result
+	// this means we dont use a random salt
+	async hashPlaintextStringInsecureButSearchable(plaintextString, salt) {
+		var hash = crypto.createHmac("sha512", salt);
+		hash.update(plaintextString);
+		var hashedString = hash.digest("hex");
+		return hashedString;
 	}
 	//---------------------------------------------------------------------------
 

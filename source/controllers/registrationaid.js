@@ -82,7 +82,15 @@ class RegistrationAid {
 		req.body.email = email;
 		req.body.realName = realName;
 		if (verification) {
-			req.body.verifyCode = verification.getUniqueCode();
+			if (true) {
+				// we dont want access to verification code plaintext, but we may have to remember the verification code
+				if (!req.body.verifyCode) {
+					req.body.verifyCode = verification.getUniqueCode();
+				}
+			}
+			if (false) {
+				req.body.verifyCodeHashed = verification.getUniqueCodeHashed();
+			}
 		}
 
 		return jrResult;
@@ -121,7 +129,7 @@ class RegistrationAid {
 
 		// get any verification code associated with this registration, to prove they own the email
 		// verifyCode can come explicitly from the form (takes priority) OR the session if not in the form
-		var verification = await VerificationModel.getValidVerificationFromIdOrLastSession(req.body.verifyCode, req);
+		var verification = await VerificationModel.getValidVerificationFromIdOrLastSession(req);
 
 		// depending on how we are invoked we may allow for missing fields
 		// ATTN: note that it may be the case that a field is REQUIRED, but does not have to be present
@@ -330,7 +338,7 @@ class RegistrationAid {
 			if (!jrResult.isError()) {
 				if (flagLogInUserAfterAccountCreate) {
 					// log them in
-					retvResult = await arserver.loginUserThroughPassport(req, user);
+					retvResult = await arserver.asyncLoginUserThroughPassport(req, user);
 					// merge errors?
 					jrResult.mergeIn(retvResult);
 					if (!jrResult.isError()) {
