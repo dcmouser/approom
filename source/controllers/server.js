@@ -631,8 +631,8 @@ class AppRoomServer {
 		const ExtractJwt = passportJwt.ExtractJwt;
 
 		var strategyOptions = {
-			secretOrKey: jrconfig.get("jwt:CRYPTOKEY"),
-			jwtFromRequest: ExtractJwt.fromUrlQueryParameter("accesstoken"),
+			secretOrKey: jrconfig.get("token:CRYPTOKEY"),
+			jwtFromRequest: ExtractJwt.fromUrlQueryParameter("token"),
 			// we ignore expiration auto handling; we will check it ourselves
 			ignoreExpiration: true,
 		};
@@ -651,7 +651,7 @@ class AppRoomServer {
 					return done(errorstr);
 				}
 				// BUT we'd really like to pass on some extra token info.. so we add it to user profile object
-				userProfile.accessToken = {
+				userProfile.token = {
 					// see createSecureToken() for fields found here
 					type: payload.type,
 					scope: payload.scope,
@@ -874,7 +874,7 @@ class AppRoomServer {
 	// jwt token access for api access; credential passed in via access token
 	// 3 ways to call depending on which data you want
 
-	async asyncRoutePassportAuthenticateFromAccessTokenNonSessionGetMinimalPassportUserData(req, res, next, jrResult) {
+	async asyncRoutePassportAuthenticateFromTokenNonSessionGetMinimalPassportUserData(req, res, next, jrResult) {
 		// force passport authentication from request, looking for jwt token
 
 		var [userMinimalProfile, dummyNullUser] = await this.asyncRoutePassportAuthenticateNonSessionGetUserTuple("jwt", "using jwt", req, res, next, jrResult, false);
@@ -882,8 +882,8 @@ class AppRoomServer {
 		if (!jrResult.isError()) {
 			// let's check token validity (expiration, etc.); this may push an error into jrResult
 			// note that this does NOT check user.apiCode, that is done later
-			// jrlog.debugObj(userMinimalProfile.accessToken, "access token pre validate.");
-			this.validateSecureTokenGeneric(userMinimalProfile.accessToken, jrResult);
+			// jrlog.debugObj(userMinimalProfile.token, "access token pre validate.");
+			this.validateSecureTokenGeneric(userMinimalProfile.token, jrResult);
 		} else {
 			// change error code from generic to token specific or add?
 			jrResult.pushErrorOnTop("Invalid access token");
@@ -895,15 +895,15 @@ class AppRoomServer {
 	}
 
 
-	async asyncRoutePassportAuthenticateFromAccessTokenNonSessionGetFullUserObject(req, res, next, jrResult) {
-		var [userMinimalProfile, user] = this.asyncRoutePassportAuthenticateFromAccessTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult);
+	async asyncRoutePassportAuthenticateFromTokenNonSessionGetFullUserObject(req, res, next, jrResult) {
+		var [userMinimalProfile, user] = this.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult);
 		return user;
 	}
 
 
-	async asyncRoutePassportAuthenticateFromAccessTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult) {
+	async asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult) {
 		// force passport authentication from request, looking for jwt token
-		var userMinimalProfile = await this.asyncRoutePassportAuthenticateFromAccessTokenNonSessionGetMinimalPassportUserData(req, res, next, jrResult);
+		var userMinimalProfile = await this.asyncRoutePassportAuthenticateFromTokenNonSessionGetMinimalPassportUserData(req, res, next, jrResult);
 
 		if (jrResult.isError()) {
 			return [userMinimalProfile, null];
@@ -937,10 +937,10 @@ class AppRoomServer {
 		}
 
 		if (flagCheckAccessCode) {
-			if (!userMinimalPassportProfile.accessToken) {
+			if (!userMinimalPassportProfile.token) {
 				jrResult.pushError("Invalid access token; error code 5b (missing accesstoken data).");
 			}
-			if (!user.verifyApiCode(userMinimalPassportProfile.accessToken.apiCode)) {
+			if (!user.verifyApiCode(userMinimalPassportProfile.token.apiCode)) {
 				jrResult.pushError("Invalid access token; error code 5 (found user and access token is valid but apiCode revision has been revoked).");
 			}
 		}
@@ -2075,17 +2075,16 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	createSecureToken(payload) {
+	createSecureToken(payload, expirationSeconds) {
 		// add stuff to payload
 		payload.iat = Math.floor(Date.now() / 1000);
-		payload.iss = jrconfig.get("jwt:ISSUER");
+		payload.iss = jrconfig.get("token:ISSUER");
 		// expiration?
-		const expirationSeconds = jrconfig.get("jwt:EXPIRATION_SECONDS");
 		if (expirationSeconds > 0) {
 			payload.exp = Math.floor(Date.now() / 1000) + expirationSeconds;
 		}
 		// make it
-		const serverJwtCryptoKey = jrconfig.get("jwt:CRYPTOKEY");
+		const serverJwtCryptoKey = jrconfig.get("token:CRYPTOKEY");
 		const token = jsonwebtoken.sign(payload, serverJwtCryptoKey);
 		const tokenObj = {
 			accessToken: token,
@@ -2107,6 +2106,10 @@ class AppRoomServer {
 		}
 
 		// check issuer or other things?
+		if (!tokenObj.type) {
+			// missing token type
+			jrResult.pushError("Invalid access token; error code 8: token missing type tag.");
+		}
 	}
 
 

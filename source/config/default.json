@@ -32,10 +32,11 @@
 	},
 
 
-	"jwt": {
+	"token": {
 		"ISSUER": "your_company_or_domain",
 		"CRYPTOKEY": "SECRET_CRYPTO_KEY_FOR_SIGNING_JWT_TOKENS",
-		"EXPIRATION_SECONDS": 60
+		"EXPIRATIONSECS_ACCESS": 60,
+		"EXPIRATIONSECS_REFRESH": 600
 	},
 
 
