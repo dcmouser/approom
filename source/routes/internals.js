@@ -127,6 +127,21 @@ function setupRouter(urlPath) {
 	});
 
 
+	router.get("/nodejs", async (req, res, next) => {
+		if (!await arserver.requireLoggedInSitePermission("admin", req, res, urlPath)) {
+			// all done
+			return;
+		}
+
+		// get database resource use
+		var rawData = arserver.calcNodeJsInfo();
+
+		res.render("internals/nodejs", {
+			rawData,
+			jrResult: JrResult.sessionRenderResult(req, res),
+		});
+	});
+
 
 
 	// important -- we must return the router variable from this function

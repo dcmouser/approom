@@ -17,7 +17,6 @@ const cookieParser = require("cookie-parser");
 const session = require("express-session");
 const csurf = require("csurf");
 const connectMongo = require("connect-mongo");
-const morgan = require("morgan");
 const http = require("http");
 const bodyParser = require("body-parser");
 const https = require("https");
@@ -61,9 +60,12 @@ const LogModel = require("../models/log");
 const RateLimiterAid = require("./rateLimiterAid");
 
 
-// ATTN: circular reference problem? so we require this only when we need it below?
-// may have to do this with other models that also bring in require("server")
 
+
+//---------------------------------------------------------------------------
+// global constants
+const DefRequiredLoginMessage = "You need to log in before you can access the requested page.";
+//---------------------------------------------------------------------------
 
 
 
@@ -170,8 +172,8 @@ class AppRoomServer {
 		// show some info about app
 		jrlog.debugf("%s v%s (%s) by %s", arGlobals.programName, arGlobals.programVersion, arGlobals.programDate, arGlobals.programAuthor);
 
-		jrlog.info("this is info");
-		jrlog.error("this is error");
+		// jrlog.info("this is info");
+		// jrlog.error("this is error");
 
 		// setup singleton jrconfig from options
 		jrconfig.setDefaultOptions(arGlobals.defaultOptions);
@@ -249,12 +251,8 @@ class AppRoomServer {
 		// logging system for express httpd server - see https://github.com/expressjs/morgan
 		// by default this is displaying to screen
 		// see https://github.com/expressjs/morgan
-		const morganMode = "combined";
-		const morganOutputAbsoluteFilePath = jrlog.calcLogFilePath("access");
-		var morganOutput = {
-			stream: fs.createWriteStream(morganOutputAbsoluteFilePath, { flags: "a" }),
-		};
-		expressApp.use(morgan(morganMode, morganOutput));
+		const morganMiddleware = jrlog.setupMorganMiddlewareForExpressWebAccessLogging();
+		expressApp.use(morganMiddleware);
 	}
 
 
@@ -291,8 +289,8 @@ class AppRoomServer {
 		// sesssion support
 		// see https://github.com/expressjs/session
 		expressApp.use(session({
-			name: "approomconnect.sid",
-			secret: this.getConfigVal("crypto:SESSIONSECRET"),
+			name: this.getConfigVal("session:SESSIONIDNAME"),
+			secret: this.getConfigVal("session:SESSIONSECRET"),
 			resave: false,
 			cookie: cookieOptions,
 			saveUninitialized: false,
@@ -333,30 +331,8 @@ class AppRoomServer {
 
 
 
+
 	//---------------------------------------------------------------------------
-	setupExpressErrorHandlers(expressApp) {
-		// catch 404 and forward to error handler
-		expressApp.use((req, res, next) => {
-			// so i think what this says is that if we get to this use handler,
-			//  nothing else has caught it, so WE push on a 404 error for the next handler
-			next(httpErrors(404));
-		});
-
-		// and then this is the fall through NEXT handler, which gets called when an error is unhandled by previous use() or pushed on with next(httperrors())
-		// error handler
-		expressApp.use((err, req, res, next) => {
-			// set locals, only providing error in development
-			res.locals.message = err.message;
-			res.locals.error = req.app.get("env") === "development" ? err : {};
-			// render the error page
-			res.status(err.status || 500);
-			res.render("error", {
-				jrResult: JrResult.sessionRenderResult(req, res),
-			});
-		});
-	}
-
-
 	setupExpressCustomMiddleware(expressApp) {
 		// setup any custom middleware
 
@@ -644,7 +620,7 @@ class AppRoomServer {
 			strategyOptions,
 			async (payload, done) => {
 				// get the user payload from the token
-				jrlog.debugObj(payload, "API TOKEN PAYLOAD DEBUG");
+				// jrlog.debugObj(payload, "API TOKEN PAYLOAD DEBUG");
 				var userProfile = payload.user;
 				if (!userProfile) {
 					const errorstr = "Error decoding user data from access token";
@@ -807,6 +783,13 @@ class AppRoomServer {
 
 	// just shortcuts to verifcationModel statics
 	async getLastSessionedVerification(req) {
+		// The idea here is that:
+		// 1. A user may hit the registration page (for example), providing a plaintext verification code (to confirm their newly provided email address)
+		// 2. At which point, rather than CONSUMING the verification code, we want to ask them for additional information before we create their account
+		// 2b. [To see example of this option try registering an account but not providing a password -- you will be asked for one after you confirm your email]
+		// 3. This creates a dilema, as we have tested the verification code and found it valid, but we need to EITHER remember it in session (makes most sense?)
+		// 4. Or pass it along with the follow up form...
+
 		// first check if we've CACHED this info in the req
 		if (req.arCachedLastVerification !== undefined) {
 			return req.arCachedLastVerification;
@@ -820,7 +803,9 @@ class AppRoomServer {
 			const VerificationModel = require("../models/verification");
 			verification = await VerificationModel.findOneById(verificationId);
 			if (verification) {
-				// add unique code in plaintext
+				// add back the plaintext unique code that we saved in session into the object
+				// in this way, we make it possible to re-process this verification code, and find it in the database, as if user was providing it
+				// ATTN:TODO - this seems wasteful; obviously if we have it in session we shouldnt need to "find" it again.
 				verification.setUniqueCode(this.getLastSessionedVerificationCodePlaintext(req));
 			}
 		}
@@ -855,12 +840,6 @@ class AppRoomServer {
 		jrhelpers.forgetSessionVar(req, "lastVerificationId");
 		jrhelpers.forgetSessionVar(req, "lastVerificationCodePlaintext");
 		jrhelpers.forgetSessionVar(req, "lastVerificationDate");
-		/*
-		if (req.session && req.session.lastVerificationId) {
-			delete req.session.lastVerificationId;
-			delete req.session.lastVerificationDate;
-		}
-		*/
 	}
 	//---------------------------------------------------------------------------
 
@@ -1462,6 +1441,11 @@ class AppRoomServer {
 		// setup express stuff
 		this.setupExpress();
 
+		// tell user if we are running in development mode
+		if (this.isDevelopmentMode()) {
+			jrlog.debug("Running in development mode (verbose errors shown to web client).");
+		}
+
 		// view/template extra stuff
 		this.setupViewTemplateExtras();
 
@@ -1550,13 +1534,6 @@ class AppRoomServer {
 			// deprecation warnings triggered by acl module
 			mongoose.set("useCreateIndex", true);
 
-			// save a log entry to db
-			var logData = {
-				mongourl: mongoUrl,
-				mongooseoptions: mongooseOptions,
-			};
-			await this.log("db", "setup database", 1, logData);
-
 			// success return value -- if we got this far it"s a success; drop down
 			bretv = true;
 		} catch (err) {
@@ -1613,20 +1590,34 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	async log(type, message, severity, extraData) {
+	async logr(req, type, message, severity, extraData) {
+		const userid = req.user ? req.user.id : undefined;
+		await this.logmanual(type, message, severity, userid, req.ip, extraData);
+	}
+
+	async logmanual(type, message, severity, userid, ip, extraData) {
 		// create a new log entry and save it to the log
 
-		// ATTN: should we async and await here or let it just run?
+		if (severity === undefined || severity == null) {
+			// default severity
+			severity = 100;
+		}
+
+		// save it to database
 		var log = LogModel.createModel({
 			type,
 			message,
 			severity,
+			userid,
+			ip,
 			extraData,
 		});
-		await log.dbSave();
 
-		// also log it using our normal system that makes us log to file?
-		jrlog.dblog(type, message, severity, extraData);
+		// first log it to file (seems less error prone) using our normal system that makes us log to file?
+		jrlog.dblog(type, message, severity, userid, ip, extraData);
+
+		// now save it to database
+		await log.dbSave();
 	}
 	//---------------------------------------------------------------------------
 
@@ -1647,12 +1638,42 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
+	async requireLoggedInSitePermission(permission, req, res, goalRelUrl) {
+		return await this.requireLoggedInPermission(permission, "site", null, req, res, goalRelUrl);
+	}
+
+	async requireLoggedInPermission(permission, permissionObjType, permissionObjId, req, res, goalRelUrl) {
+		var user = await this.getLoggedInUser(req);
+		// we just need to check if the user is non-empty
+		if (!user) {
+			// user is not logged in
+			this.handleRequireLoginFailure(req, res, user, goalRelUrl, null, this.DefRequiredLoginMessage);
+			return false;
+		}
+
+		// they are logged in, but do they have permission required
+		const hasPermission = user.hasPermission(permission, permissionObjType, permissionObjId);
+		if (!hasPermission) {
+			this.handleRequireLoginFailure(req, res, user, goalRelUrl, null, "You do not have sufficient permission to accesss that page.");
+			return false;
+		}
+
+		// they are good, so forget any previously remembered login diversions
+		this.forgetLoginDiversions(req);
+		return true;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+	//---------------------------------------------------------------------------
 	requireUserIsLoggedIn(req, res, user, goalRelUrl, failureRelUrl) {
 		// if user fails permission, remember the goalRelUrl in session and temporarily redirect to failureRelUrl and return false
 		// otherwise return true
 
 		if (!user) {
-			this.handleRequireLoginFailure(req, res, user, goalRelUrl, failureRelUrl, "You need to log in before you can access that page.");
+			this.handleRequireLoginFailure(req, res, user, goalRelUrl, failureRelUrl, this.DefRequiredLoginMessage);
 			return false;
 		}
 
@@ -1680,7 +1701,7 @@ class AppRoomServer {
 		// redirect them to login page and then back to their currently requested page
 		var failureRelUrl = "/login";
 		var goalRelUrl = req.originalUrl;
-		this.rememberDivertedRelUrlAndGo(req, res, goalRelUrl, failureRelUrl, "You need to login before you can access that page.");
+		this.rememberDivertedRelUrlAndGo(req, res, goalRelUrl, failureRelUrl, this.DefRequiredLoginMessage);
 	}
 
 
@@ -1725,11 +1746,6 @@ class AppRoomServer {
 		// call this to unset any session diversions -- this can be useful if the user tried to access a protected page but then left the login page and did other things
 		// remove it from session
 		jrhelpers.forgetSessionVar(req, "divertedUrl");
-		/*
-		if (req.session && req.session.divertedUrl) {
-			delete req.session.divertedUrl;
-		}
-		*/
 	}
 	//---------------------------------------------------------------------------
 
@@ -1844,7 +1860,6 @@ class AppRoomServer {
 			this.forgetLastSessionVerification(req);
 			// csrf?
 			this.forgetCsrfToken(req);
-			jrhelpers.forgetSessionVar(req, "views");
 		}
 	}
 	//---------------------------------------------------------------------------
@@ -1929,32 +1944,6 @@ class AppRoomServer {
 
 
 
-	//---------------------------------------------------------------------------
-	async requireLoggedInSitePermission(permission, req, res, goalRelUrl) {
-		return await this.requireLoggedInPermission(permission, "site", null, req, res, goalRelUrl);
-	}
-
-	async requireLoggedInPermission(permission, permissionObjType, permissionObjId, req, res, goalRelUrl) {
-		var user = await this.getLoggedInUser(req);
-		// we just need to check if the user is non-empty
-		if (!user) {
-			// user is not logged in
-			this.handleRequireLoginFailure(req, res, user, goalRelUrl, null, "You need to log in before you can access that page.");
-			return false;
-		}
-
-		// they are logged in, but do they have permission required
-		const hasPermission = user.hasPermission(permission, permissionObjType, permissionObjId);
-		if (!hasPermission) {
-			this.handleRequireLoginFailure(req, res, user, goalRelUrl, null, "You do not have sufficient permission to accesss that page.");
-			return false;
-		}
-
-		// they are good, so forget any previously remembered login diversions
-		this.forgetLoginDiversions(req);
-		return true;
-	}
-	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
@@ -2027,7 +2016,7 @@ class AppRoomServer {
 	// internal debugging info for internals admin
 
 	calcExpressRoutePathData() {
-		jrhelpersexpress.calcExpressRoutePathData(this.getExpressApp());
+		return jrhelpersexpress.calcExpressRoutePathData(this.getExpressApp());
 	}
 
 
@@ -2059,7 +2048,7 @@ class AppRoomServer {
 
 	async calcDatabaseStructure() {
 		// return info about the database structure
-		const dbStrcuture = await jrhelpersmdb.jrhelpersmdb.calcDatabaseResourceUse();
+		const dbStrcuture = await jrhelpersmdb.calcDatabaseResourceUse();
 		return dbStrcuture;
 	}
 
@@ -2069,7 +2058,59 @@ class AppRoomServer {
 		const aclInfo = aclAid.calcAclInfo();
 		return aclInfo;
 	}
+
+
+
+
+	calcNodeJsInfo() {
+
+		// Getting commandline
+		var comlinestr = process.execPath;
+		process.argv.forEach((val, index, array) => {
+			if (index !== 0) {
+				comlinestr += " '" + val + "'";
+			}
+		});
+
+		const nodeJsInfo = {
+			version: process.version,
+			platform: process.platform,
+			nodeExecPath: process.execPath,
+			upTime: process.upTime,
+			commandline: comlinestr,
+			memoryUsage: process.memoryUsage(),
+			resourceUsage: process.resourceUsage ? process.resourceUsage() : "Not supported by this version of nodeJs",
+		};
+
+		return nodeJsInfo;
+	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2127,7 +2168,126 @@ class AppRoomServer {
 		return false;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	isDevelopmentMode() {
+		return (this.getConfigVal("NODE_ENV") === "development");
+		// return (this.expressApp.get("env") === "development");
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+	//---------------------------------------------------------------------------
+	setupExpressErrorHandlers(expressApp) {
+		// catch 404 and forward to error handler
+		expressApp.use((req, res, next) => {
+			// if we get here, nothing else has caught the request, so WE push on a 404 error for the next handler
+			next(httpErrors(404));
+		});
+
+
+		// and then this is the fall through NEXT handler, which gets called when an error is unhandled by previous use() or pushed on with next(httperrors())
+		// error handler
+		expressApp.use((err, req, res, next) => {
+			// decide whether to show full error info
+			var errorDisplay;
+			if (this.isDevelopmentMode() && err.status !== 404) {
+				errorDisplay = this.isDevelopmentMode() ? err : {};
+			}
+			// render the error page
+			res.status(err.status || 500);
+			res.render("error", {
+				message: err.message,
+				error: errorDisplay,
+				status: err.status,
+				jrResult: JrResult.sessionRenderResult(req, res),
+			});
+		});
+
+
+
+
+		// set up some fatal exception catchers, so we can log these things
+
+
+		// most of our exceptions trigger this because they happen in an await aync with no catch block..
+		process.on("unhandledRejection", (reason, promise) => {
+
+			if (true) {
+				// just throw it to get app to crash exit
+				throw reason;
+			}
+
+			// handle it specifically
+
+			// is there a way for us to get the current request being processes
+			fs.writeSync(
+				process.stderr.fd,
+				`unhandledRejection: ${reason}\n promist: ${promise}`,
+			);
+			const err = {
+				message: "unhandledRejection",
+				reason,
+				// promise,
+			};
+
+			// report it
+			this.handleFatalError(err);
+
+			// now throw it to get app to crash exit
+			throw reason;
+		});
+
+
+		process.on("uncaughtException", (err, origin) => {
+			err.origin = origin;
+			this.handleFatalError(err);
+			// throw it up, this will display it on console and crash out of node
+			throw err;
+		});
+
+
+
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	handleFatalError(err) {
+		// ATTN: test
+		if (true) {
+			// log the critical error to file and database
+			const errString = jrlog.objToString(err, false);
+			this.logmanual("qerrorCrit", errString, 1000);
+			if (false) {
+				fs.writeSync(
+					process.stderr.fd,
+					`\n\nCaught Fatal error/exception: ${errString}\n`,
+				);
+			}
+		}
+		process.exitCode = 1;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
 }
+
+
+
+
+
+
+
 
 
 

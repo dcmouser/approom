@@ -20,6 +20,37 @@ const JrResult = require("../helpers/jrresult");
 
 class ModelBaseMongoose {
 
+
+	//---------------------------------------------------------------------------
+	// subclasses implement these
+
+	/*
+	// global static version info
+	static getVersion() { return 1; }
+
+	// collection name for this model
+	static getCollectionName() {
+		return "basemodel";
+	}
+
+	// nice name for display
+	static getNiceName() {
+		return "BaseModel";
+	}
+
+	// name for acl lookup
+	static getAclName() {
+		return "basemodel";
+	}
+
+	// name for logging
+	static getLoggingString() {
+		return "Basemodel";
+	}
+	*/
+	//---------------------------------------------------------------------------
+
+
 	//---------------------------------------------------------------------------
 	static getBaseSchemaDefinition() {
 		// some base schema properties for ALL models
@@ -147,7 +178,7 @@ class ModelBaseMongoose {
 			} else {
 				visfunc = modelSchemaExtra[key].visibleFunction;
 				if (visfunc) {
-					isVisible = await visfunc(viewType, req, null, null);
+					isVisible = await visfunc(viewType, key, req, null, null);
 					if (!isVisible) {
 						retKeys.push(key);
 					}
@@ -348,10 +379,21 @@ class ModelBaseMongoose {
 			unvalidatedVal = source[fieldNameSource];
 		}
 
-		//
+
+		// if value isnt set, but a fieldname_checkbox value is, then we know this is a case of html form processing not parsing the checkbox unchecked
+		if (validatedVal === undefined && unvalidatedVal === undefined) {
+			// no value found
+			if (source[fieldNameSource + "_checkbox"]) {
+				// found checkbox, so unvalidated value should be considered set to false
+				unvalidatedVal = false;
+			}
+		}
+
+
 		// check if the value is even set (!== undefined).  this is either an error, or a case where we return doing nothing
 		if (validatedVal === undefined && unvalidatedVal === undefined) {
-			// no value found, so do nothing; but throw error if required and it's not ALREADY in the object we are merging into
+			// no value found
+			// throw error if required and it's not ALREADY in the object we are merging into
 			if (flagRequired && obj[fieldNameTarget] === undefined) {
 				// it's an error that its not provided and not set in obj already
 				// ATTN: note that this test does *NOT* require that the field be set in source, just that it already be set in obj if not
@@ -652,6 +694,12 @@ class ModelBaseMongoose {
 		return this._id.toString();
 	}
 
+	getLogIdString() {
+		// human readable id string for use in log messages that we could parse to get a link
+		// ATTN: note we use the "this.constructor.staticfunc" syntax to access static class function from member
+		return this.constructor.getLoggingString() + "#" + this.getIdAsString();
+	}
+
 	getmodelClass() {
 		return this.constructor;
 	}
@@ -910,7 +958,7 @@ class ModelBaseMongoose {
 
 	static makeModelValueFunctionPasswordAdminEyesOnly(arserver, flagRequired) {
 		// a value function usable by model definitions
-		return async (viewType, req, obj, helperData) => {
+		return async (viewType, fieldName, req, obj, helperData) => {
 			var isLoggedInUserSiteAdmin = await arserver.isLoggedInUserSiteAdmin(req);
 			if (viewType === "view") {
 				if (isLoggedInUserSiteAdmin) {
@@ -940,9 +988,22 @@ class ModelBaseMongoose {
 
 	static makeModelValueFunctionExtraData() {
 		// a value function usable by model definitions
-		return async (viewType, req, obj, helperData) => {
-			if (obj) {
+		return async (viewType, fieldName, req, obj, helperData) => {
+			if (obj.extraData) {
 				return JSON.stringify(obj.extraData, null, " ");
+			}
+			return "";
+		};
+	}
+
+
+	static makeModelValueFunctionObjectId(modelClass) {
+		return async (viewType, fieldName, req, obj, helperData) => {
+			const objid = obj[fieldName];
+			if (objid) {
+				// jrlog.debugObj(obj, "Obj test");
+				const alink = modelClass.getCrudUrlBase("view", objid);
+				return `<a href="${alink}">${objid}</a>`;
 			}
 			return "";
 		};

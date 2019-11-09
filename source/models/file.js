@@ -36,6 +36,11 @@ class FileModel extends RoomdataModel {
 	static getAclName() {
 		return "file";
 	}
+
+	// name for logging
+	static getLoggingString() {
+		return "File";
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -67,7 +72,7 @@ class FileModel extends RoomdataModel {
 			/*
 			roomid: {
 				label: "Room Id",
-				valueFunction: (viewType, req, obj, helperData) => {
+				valueFunction: (viewType, fieldName, req, obj, helperData) => {
 					var viewUrl, roomLabel, rethtml, roomid;
 					if (viewType === "view") {
 						viewUrl = RoomModel.getCrudUrlBase("view", obj.roomid);

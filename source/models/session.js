@@ -50,6 +50,11 @@ class SessionModel extends ModelBaseMongooseMinimal {
 	static getAclName() {
 		return "session";
 	}
+
+	// name for logging
+	static getLoggingString() {
+		return "Session";
+	}
 	//---------------------------------------------------------------------------
 
 

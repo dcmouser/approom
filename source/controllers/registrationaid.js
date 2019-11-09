@@ -82,14 +82,22 @@ class RegistrationAid {
 		req.body.email = email;
 		req.body.realName = realName;
 		if (verification) {
+			// We have a verification that is still relevant for creating a new account, so we do we want to pass that along in the form? what if we don't?
 			if (true) {
-				// we dont want access to verification code plaintext, but we may have to remember the verification code
-				if (!req.body.verifyCode) {
-					req.body.verifyCode = verification.getUniqueCode();
+				// ATTN: now, as would be the case if we were re-presenting a form with errors, we might want to put the (plaintext) verification code back on the form to re-consume it on new submit
+				// however, it's not clear the best way to do this.. do we want to embed in form being passed back to user or just keep it in session...
+				// NOTE also that if they hit the registration page attempting to finish a registration, their passed verification code may ALSO be in req.body.code or req.params.code (see verify route)
+				// there are alternatives.  We could not put the already-taken verification code back in the form, and just grab it from session when we go to process the registration form (feels kludgey)
+				// Alternatively, we could not look for it in session at all, and just get keep passing it through as hidden var on form but taking it from the original very route (req.params.code)
+				//  this has advantage of not needing session to save verification code; the only real problem with this is that i think we may depend on session saving verification info when we do a bridged login.. is that true?
+				// The reason it's currently hard to pass it through as a hidden variable on the registration form after we receive it in a verify url link, is that we are REDIRECTING the user to the register page, rather than
+				//  just rendering full registration form.. So it's not easy to pass along the verification code info other than via session.
+				if (!req.body.verificationCode) {
+					req.body.verificationCode = verification.getUniqueCode();
 				}
 			}
 			if (false) {
-				req.body.verifyCodeHashed = verification.getUniqueCodeHashed();
+				req.body.verificationCodeHashed = verification.getUniqueCodeHashed();
 			}
 		}
 
@@ -128,8 +136,8 @@ class RegistrationAid {
 		var successRedirectTo;
 
 		// get any verification code associated with this registration, to prove they own the email
-		// verifyCode can come explicitly from the form (takes priority) OR the session if not in the form
-		var verification = await VerificationModel.getValidVerificationFromIdOrLastSession(req);
+		// verificationCode can come explicitly from the form (takes priority) OR the session if not in the form
+		var verification = await this.getValidNewAccountVerificationFromRequestOrLastSession(req);
 
 		// depending on how we are invoked we may allow for missing fields
 		// ATTN: note that it may be the case that a field is REQUIRED, but does not have to be present
@@ -213,9 +221,7 @@ class RegistrationAid {
 
 
 
-
-
-
+		//---------------------------------------------------------------------------
 		// user data object, used in both cases below
 		var userObj = {
 			email,
@@ -225,7 +231,7 @@ class RegistrationAid {
 		};
 		// ATTN: IMPORTANT NOTE
 		// There are 2 cases we need to deal with here
-		// Case 1: We already have verified proof they own this email, because they got here with a verifyCode that proves it (either provided in the form, or in their session)
+		// Case 1: We already have verified proof they own this email, because they got here with a verificationCode that proves it (either provided in the form, or in their session)
 		//  in which case we can create the account
 		// Case 2: They somehow are on this page requesting a new account, without proof of they own the email (maybe they lost the verification coder, etc.)
 		//  in this case, it's identical to asking for a registration
@@ -262,7 +268,7 @@ class RegistrationAid {
 				successRedirectTo = "/verify";
 			}
 		}
-
+		//---------------------------------------------------------------------------
 
 		// return tuple with result and suggested succes redirect
 		return { jrResult, successRedirectTo };
@@ -301,7 +307,7 @@ class RegistrationAid {
 	//
 	// ATTN: there is redundant code here; better would be to call the generic UseVerification process with the extra info
 	// IMPORTANT: userObj may contain an email address -- if so it MUST match the one in the verification, otherwise it is an error to complain about
-	// NOTE: verifyCode can optionally be an already resolved verification object
+	// NOTE: verificationCode can optionally be an already resolved verification object
 	//
 	async createFullNewUserAccountForLoggedInUser(jrResult, req, verification, userObj) {
 		var retvResult;
@@ -327,6 +333,8 @@ class RegistrationAid {
 			if (verification) {
 				await verification.useUpAndSave(req, true);
 			}
+			// log it
+			arserver.logr(req, "user.create", "created new account for " + user.getLogIdString());
 			// now, if they were sessioned-in with a Login, we want to connect that to the new user
 			//
 			var loginId = arserver.getLoggedInLocalLoginIdFromSession(req);
@@ -352,6 +360,44 @@ class RegistrationAid {
 		jrResult.pushError("Failed to create new user account.");
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	async getValidNewAccountVerificationFromRequestOrLastSession(req) {
+		// ATTN: In this function, we look for a (plaintext) verification code in the body of the form submitted, OR if not found, from the last session verification code checked
+		// note we only look at newaccountready verifications
+		var verification;
+
+		const verificationCode = req.body.verificationCode;
+		if (!verification && verificationCode) {
+			// first lookup verify code if code provided in form
+			verification = await VerificationModel.findOneByCode(verificationCode);
+		}
+		if (!verification) {
+			// not found in form, maybe there is a remembered verification id in ession regarding new account email verified, then show full
+			verification = await arserver.getLastSessionedVerification(req);
+		}
+
+		if (verification) {
+			if (!verification.isValidNewAccountEmailReady(req)) {
+				// not relevant for us, so clear it
+				verification = undefined;
+			}
+		}
+		return verification;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
 
 
 }

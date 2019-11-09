@@ -6,6 +6,9 @@
 
 "use strict";
 
+// modules
+const mongoose = require("mongoose");
+
 // models
 const ModelBaseMongooseMinimal = require("./modelBaseMongooseMinimal");
 
@@ -33,6 +36,11 @@ class LogModel extends ModelBaseMongooseMinimal {
 	static getAclName() {
 		return "log";
 	}
+
+	// name for logging
+	static getLoggingString() {
+		return "Log";
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -52,6 +60,12 @@ class LogModel extends ModelBaseMongooseMinimal {
 			severity: {
 				type: Number,
 			},
+			userid: {
+				type: mongoose.Schema.ObjectId,
+			},
+			ip: {
+				type: String,
+			},
 			extraData: {
 				type: Map,
 			},
@@ -59,6 +73,7 @@ class LogModel extends ModelBaseMongooseMinimal {
 	}
 
 	static getSchemaDefinitionExtra() {
+		const UserModel = require("../models/user");
 		return {
 			...(this.getBaseSchemaDefinitionExtra()),
 			creationDate: {
@@ -73,6 +88,15 @@ class LogModel extends ModelBaseMongooseMinimal {
 			},
 			severity: {
 				label: "Severity",
+			},
+			userid: {
+				label: "User",
+				readOnly: ["edit"],
+				valueFunction: this.makeModelValueFunctionObjectId(UserModel),
+			},
+			ip: {
+				label: "IP",
+				readOnly: ["edit"],
 			},
 			extraData: {
 				label: "Extra data",

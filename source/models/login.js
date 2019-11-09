@@ -39,6 +39,11 @@ class LoginModel extends ModelBaseMongoose {
 	static getAclName() {
 		return "login";
 	}
+
+	// name for logging
+	static getLoggingString() {
+		return "Login";
+	}
 	//---------------------------------------------------------------------------
 
 

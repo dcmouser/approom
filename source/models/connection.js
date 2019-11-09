@@ -30,6 +30,11 @@ class ConnectionModel extends ModelBaseMongoose {
 	static getAclName() {
 		return "connection";
 	}
+
+	// name for logging
+	static getLoggingString() {
+		return "Conn";
+	}
 	//---------------------------------------------------------------------------
 
 

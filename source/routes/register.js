@@ -103,8 +103,8 @@ function setupRouter(urlPath) {
 		var renderview;
 
 		// get any verification code associated with this registration, to prove they own the email
-		// verifyCode can come explicitly from the form (takes priority) OR the session if not in the form
-		var verification = await VerificationModel.getValidVerificationFromIdOrLastSession(req);
+		// verificationCode can come explicitly from the form (takes priority) OR the session if not in the form
+		var verification = await RegistrationAid.getValidNewAccountVerificationFromRequestOrLastSession(req);
 
 		if (verification) {
 			// show full form

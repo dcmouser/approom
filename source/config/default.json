@@ -1,6 +1,8 @@
 {
 	"DEBUG": true,
-	
+	"NODE_ENV": "development",
+
+
 	"server": {
 		"SITE_DOMAIN": "localhost",
 
@@ -36,14 +38,20 @@
 		"ISSUER": "your_company_or_domain",
 		"CRYPTOKEY": "SECRET_CRYPTO_KEY_FOR_SIGNING_JWT_TOKENS",
 		"EXPIRATIONSECS_ACCESS": 60,
-		"EXPIRATIONSECS_REFRESH": 600
+		"EXPIRATIONSECS_REFRESH": 31536000
 	},
 
 
 	"crypto": {
-		"VERIFICATIONCODESALT": "your_site_salt_for_verification_token_hashing",
-		"SESSIONSECRET": "secret_for_session_cookies"
+		"VERIFICATIONCODESALT": "your_site_salt_for_verification_token_hashing"
 	},
+
+
+	"session": {
+		"SESSIONSECRET": "secret_for_session_cookies",
+		"SESSIONIDNAME": "coookie_session_id_name"
+	},
+
 
 
 	"options": {

@@ -448,9 +448,10 @@ class JrhGrid {
 				} else {
 					var format = listHelperData.modelClass.getSchemaExtraFieldVal(key, "format");
 					val = item[key];
-					if (valFuncList[key]) {
+					valfunc = valFuncList[key];
+					if (valfunc) {
 						// use custom value resolving callback function
-						valDisplay = await valFuncList[key]("list", req, item, listHelperData);
+						valDisplay = await valfunc("list", key, req, item, listHelperData);
 					} else {
 						if (format === "checkbox") {
 							if (val) {

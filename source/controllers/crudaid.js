@@ -246,6 +246,9 @@ class CrudAid {
 				// success! drop down with new blank form, or alternatively, we could redirect to a VIEW obj._id page
 				jrResult.pushSuccess(modelClass.getNiceName() + " added on " + jrhelpers.getNiceNowString() + ".");
 
+				// log the action
+				arserver.logr(req, "crud.create", "created " + savedobj.getLogIdString());
+
 				if (!baseCrudUrl) {
 					// just return to caller saying they should take over
 					return false;
@@ -372,6 +375,10 @@ class CrudAid {
 			var savedobj = await modelClass.validateAndSave(jrResult, {}, true, req, req.body, saveFields, null, obj);
 			if (!jrResult.isError()) {
 				// success! drop down with new blank form, or alternatively, we could redirect to a VIEW obj._id page
+
+				// log the action
+				arserver.logr(req, "crud.create", "edited " + savedobj.getLogIdString());
+
 				jrResult.pushSuccess(modelClass.getNiceName() + " saved on " + jrhelpers.getNiceNowString() + ".");
 				if (!baseCrudUrl) {
 					// just return to caller saying they should take over
@@ -522,7 +529,8 @@ class CrudAid {
 		}
 
 		// object id for display.
-		var objIdString = obj.getIdAsString();
+		const objIdString = obj.getIdAsString();
+		const logIdString = obj.getLogIdString();
 
 		// process delete
 		obj.doDelete(jrResult);
@@ -531,6 +539,10 @@ class CrudAid {
 		if (!jrResult.isError()) {
 			// success
 			jrResult.pushSuccess(modelClass.getNiceName() + " #" + objIdString + " has been deleted.");
+
+			// log the action
+			arserver.logr(req, "crud.create", "deleted " + logIdString);
+
 			// redirect
 			jrResult.addToSession(req);
 			res.redirect(baseCrudUrl);
@@ -715,7 +727,7 @@ class CrudAid {
 			valfunc = modelClass.getSchemaExtraFieldVal(fieldName, "valueFunction");
 			if (valfunc) {
 				// ok we have a custom function to call to get html to show for value
-				valHtml = await valfunc("edit", req, obj, helperData);
+				valHtml = await valfunc("edit", fieldName, req, obj, helperData);
 			}
 			var format = modelClass.getSchemaExtraFieldVal(fieldName, "format", undefined);
 
@@ -771,6 +783,8 @@ class CrudAid {
 						extra = "";
 					}
 					valHtml = `<input type="checkbox" name="${fieldName}" ${extra}>`;
+					// add a hidden var to handle the cases where unchecked checkbox is not sent, stupid html form processing of checkboxes
+					valHtml += `<input type="hidden" name="${fieldName}_checkbox" value="true">`;
 				} else {
 					// default is simple text input
 					valHtml = `<input type="text" name="${fieldName}" value="${val}" size="80"/>`;
@@ -833,7 +847,7 @@ class CrudAid {
 			valfunc = modelClass.getSchemaExtraFieldVal(fieldName, "valueFunction");
 			if (valfunc) {
 				// ok we have a custom function to call to get html to show for value
-				valHtml = await valfunc("view", req, obj, helperData);
+				valHtml = await valfunc("view", fieldName, req, obj, helperData);
 			}
 			var format = modelClass.getSchemaExtraFieldVal(fieldName, "format", undefined);
 

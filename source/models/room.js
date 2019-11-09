@@ -41,6 +41,11 @@ class RoomModel extends ModelBaseMongoose {
 	static getAclName() {
 		return "room";
 	}
+
+	// name for logging
+	static getLoggingString() {
+		return "Room";
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -75,7 +80,7 @@ class RoomModel extends ModelBaseMongoose {
 			...(this.getBaseSchemaDefinitionExtra()),
 			appid: {
 				label: "App Id",
-				valueFunction: (viewType, req, obj, helperData) => {
+				valueFunction: (viewType, fieldName, req, obj, helperData) => {
 					var viewUrl, appLabel, rethtml, appid;
 					if (viewType === "view") {
 						viewUrl = AppModel.getCrudUrlBase("view", obj.appid);

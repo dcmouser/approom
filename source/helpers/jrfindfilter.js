@@ -227,7 +227,7 @@ class JrFindFilter {
 
 		if (subType === "integer") {
 			valPat = "[+-]{0,1}\\d+";
-			mongoValFunc = function mvf(strVal, jrResulti) {
+			mongoValFunc = (strVal, jrResulti) => {
 				var num = Number(strVal);
 				if (Number.isNaN(num)) {
 					jrResult.pushError("Search filter error: Not a valid number: " + strVal);
@@ -238,7 +238,7 @@ class JrFindFilter {
 		} else if (subType === "date") {
 			// eslint-disable-next-line no-useless-escape
 			valPat = "[\\d/\\.\\-]+";
-			mongoValFunc = function mvf(strVal, jrResulti) {
+			mongoValFunc = (strVal, jrResulti) => {
 				var dateVal;
 				// is it a pure number
 				if (strVal.match(/^[\d]+$/)) {
@@ -293,16 +293,15 @@ class JrFindFilter {
 		// eslint-disable-next-line no-useless-escape
 		var opChars = "=!";
 
-
 		// eslint-disable-next-line no-useless-escape
 		if (subType === "string") {
 			valPat = "[^=!]+";
-			mongoValFunc = function mvf(strVal, jrResulti) {
+			mongoValFunc = (strVal, jrResulti) => {
 				return this.convertReqQueryStringToAMongooseFindFilterMongoStrCmp(strVal, jrResult);
 			};
 		} else if (subType === "idstring") {
 			valPat = "[^=!]+";
-			mongoValFunc = function mvf(strVal, jrResulti) {
+			mongoValFunc = (strVal, jrResulti) => {
 				if (jrhelpers.isValidMongooseObjectId(strVal)) {
 					return strVal;
 				}

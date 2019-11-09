@@ -30,6 +30,11 @@ class OptionModel extends ModelBaseMongoose {
 	static getAclName() {
 		return "option";
 	}
+
+	// name for logging
+	static getLoggingString() {
+		return "Option";
+	}
 	//---------------------------------------------------------------------------
 
 

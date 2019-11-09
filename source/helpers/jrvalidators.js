@@ -51,7 +51,7 @@ class JrValidators {
 		if (val) {
 			return true;
 		}
-		if (flagRequired) {
+		if (flagRequired && (val === undefined || val === null)) {
 			jrResult.pushFieldError(keyname, keyname + " cannot be left blank");
 			return undefined;
 		}

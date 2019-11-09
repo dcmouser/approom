@@ -72,6 +72,11 @@ class UserModel extends ModelBaseMongoose {
 	static getAclName() {
 		return "user";
 	}
+
+	// name for logging
+	static getLoggingString() {
+		return "User";
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -115,7 +120,7 @@ class UserModel extends ModelBaseMongoose {
 			_id: {},
 			avatar: {
 				label: "Avatar",
-				valueFunction: async (viewType, req, obj, helperData) => { return arserver.calcAvatarHtmlImgForUser(obj); },
+				valueFunction: async (viewType, fieldName, req, obj, helperData) => { return arserver.calcAvatarHtmlImgForUser(obj); },
 				filterSize: 0,
 			},
 			...(this.getBaseSchemaDefinitionExtra()),
@@ -132,7 +137,7 @@ class UserModel extends ModelBaseMongoose {
 				label: "Bypass change verification email?",
 				// hide: ["view", "list"],
 				format: "checkbox",
-				visibleFunction: async (viewType, req, obj, helperData) => {
+				visibleFunction: async (viewType, fieldName, req, obj, helperData) => {
 					if (viewType === "edit") {
 						return await arserver.isLoggedInUserSiteAdmin(req);
 					}
@@ -155,7 +160,7 @@ class UserModel extends ModelBaseMongoose {
 			roles: {
 				label: "Roles",
 				readOnly: ["edit"],
-				valueFunction: async (viewType, req, obj, helperData) => { return this.stringifyRoles(obj.roles); },
+				valueFunction: async (viewType, fieldName, req, obj, helperData) => { return this.stringifyRoles(obj.roles); },
 			},
 		};
 	}

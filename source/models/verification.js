@@ -14,7 +14,6 @@
 //  3. we are not using a unique salt, but rather a fixed site secret salt.  This is unfortunate but is needed so we can quickly search for a verification code by its code as input by the user
 // ATTN:TODO 11/6/19 - One way we could fix these weaknesses would be if the plaintext code we gave people were actually in two parts like (AAAAA-BBBBB) where the AAAAA part was stored in plaintext in the db and the BBBBB part was hashed in the database
 //  with proper bsrypt/random salt.  Then we would LOOK UP the verification using AAAAA but verify the hashed part of BBBBB.  It would double the length of the code we need to give to user, but it would make rainbow table brute force much harder..
-// ATTN: IMPORTANT: See getValidVerificationFromIdOrLastSession() , it's currently looking for and allowing the hashed value of the verification code to be provided, which bypasses this security advantage and would let someone who stole the db provide the hashed value in certain cases(!)
 
 
 
@@ -68,6 +67,11 @@ class VerificationModel extends ModelBaseMongoose {
 	// name for acl lookup
 	static getAclName() {
 		return "verification";
+	}
+
+	// name for logging
+	static getLoggingString() {
+		return "Verification";
 	}
 	//---------------------------------------------------------------------------
 
@@ -872,39 +876,6 @@ If this request was not made by you, please ignore this email.
 
 
 
-
-	//---------------------------------------------------------------------------
-	// helper
-	static async getValidVerificationFromIdOrLastSession(req) {
-		// ATTN: 11/6/19 -- this is inherently DANGEROUS because it allows the verification code to be specified by providing the HASH -- which is exactly what we want to avoid for security purposes!
-		//
-		var verification;
-		const verificationCode = req.body.verifyCode;
-		// security risk
-		// const verificationCodeHashed = req.body.verifyCodeHashed;
-		const verificationCodeHashed = null;
-		if (verificationCodeHashed) {
-			// first lookup verify code if code provided in form
-			verification = await VerificationModel.findOneByCodeHashed(verificationCodeHashed);
-		}
-		if (!verification && verificationCode) {
-			// first lookup verify code if code provided in form
-			verification = await VerificationModel.findOneByCode(verificationCode);
-		}
-		if (!verification) {
-			// not found in form, maybe there is a remembered verification id in ession regarding new account email verified, then show full
-			verification = await arserver.getLastSessionedVerification(req);
-		}
-
-		if (verification) {
-			if (!verification.isValidNewAccountEmailReady(req)) {
-				// no good, clear it
-				verification = undefined;
-			}
-		}
-		return verification;
-	}
-	//---------------------------------------------------------------------------
 
 
 

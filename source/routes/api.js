@@ -12,6 +12,7 @@ const passport = require("passport");
 
 // modules
 const express = require("express");
+const assert = require("assert");
 
 // server
 const arserver = require("../controllers/server");
@@ -26,6 +27,93 @@ const router = express.Router();
 
 
 function setupRouter(urlPath) {
+
+
+
+	//---------------------------------------------------------------------------
+	router.get("/", async (req, res, next) => {
+		// just show index
+
+		res.render("api/index", {
+			jrResult: JrResult.sessionRenderResult(req, res),
+		});
+	});
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// generate a long-lived refresh token using username+password
+
+	router.get("/reqrefresh", async (req, res, next) => {
+		// render page
+		res.render("api/tokenuserpassform", {
+		});
+	});
+
+	// process request
+	router.post("/reqrefresh", async (req, res, next) => {
+
+		// do a local login with passed username and password; DONT store session info
+		var jrResult = JrResult.makeNew();
+		var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateNonSessionGetUserTuple("local", "with username and password", req, res, next, jrResult, true);
+		if (jrResult.isError()) {
+			var msg = "Error during api token request: " + jrResult.getErrorsAsString();
+			res.status(401).send(msg);
+			return;
+		}
+
+		// success
+		var secureToken = await makeSecureTokenRefresh(userPassport, user);
+
+		// log request
+		arserver.logr(req, "api.token", "made refresh token for " + user.getLogIdString());
+
+		// provide it
+		res.status(200).send(secureToken);
+	});
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	// generate an access token from refresh token
+	router.get("/refreshaccess", async (req, res, next) => {
+
+		// first the user has to give us a valid REFRESH token
+		var jrResult = JrResult.makeNew();
+		var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult);
+		if (jrResult.isError()) {
+			res.status(403).send(jrResult.getErrorsAsString());
+			return;
+		}
+
+		// while testing this we also want to make sure the refresh token wasn't revoked
+
+		// it's a token, but is it the right type?
+		const tokenType = userPassport.token.type;
+		if (tokenType !== "refresh") {
+			res.status(403).send("Error: A valid REFRESH token must be passed to request an access token.");
+			return;
+		}
+
+		// ok they gave us a valid refresh token, so now we generate an access token for them
+		var secureToken = await makeSecureTokenAccess(userPassport, user);
+
+		// log request
+		arserver.logr(req, "api.token", "refreshed access token for " + user.getLogIdString());
+
+		// provide it
+		res.status(200).send(secureToken);
+	});
+	//---------------------------------------------------------------------------
+
+
+
+
 
 	//---------------------------------------------------------------------------
 	// direct access token request
@@ -60,71 +148,14 @@ function setupRouter(urlPath) {
 
 		// success
 		var secureToken = await makeSecureTokenAccess(userPassport, user);
+
+		// log request
+		arserver.logr(req, "api.token", "warning: generated direct access token for " + user.getLogIdString(), 500);
+
+		// provide it
 		res.status(200).send(secureToken);
 	});
 	//---------------------------------------------------------------------------
-
-
-
-
-
-
-	//---------------------------------------------------------------------------
-	// normally in api call they would not get a web form, but this is to help test interactively
-	router.get("/reqrefresh", async (req, res, next) => {
-		// render page
-		res.render("api/tokenuserpassform", {
-		});
-	});
-
-	// process request
-	router.post("/reqrefresh", async (req, res, next) => {
-
-		// do a local login with passed username and password; DONT store session info
-		var jrResult = JrResult.makeNew();
-		var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateNonSessionGetUserTuple("local", "with username and password", req, res, next, jrResult, true);
-		if (jrResult.isError()) {
-			var msg = "Error during api token request: " + jrResult.getErrorsAsString();
-			res.status(401).send(msg);
-			return;
-		}
-
-		// success
-		var secureToken = await makeSecureTokenRefresh(userPassport, user);
-		res.status(200).send(secureToken);
-	});
-	//---------------------------------------------------------------------------
-
-
-
-	//---------------------------------------------------------------------------
-	// get an access token from refresh token
-	router.get("/refreshaccess", async (req, res, next) => {
-
-		// first the user has to give us a valid REFRESH token
-		var jrResult = JrResult.makeNew();
-		var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult);
-		if (jrResult.isError()) {
-			res.status(403).send(jrResult.getErrorsAsString());
-			return;
-		}
-
-		// it's a token, but is it the right type?
-		const tokenType = userPassport.token.type;
-		if (tokenType !== "refresh") {
-			res.status(403).send("Error: A valid REFRESH token must be passed to request an access token.");
-			return;
-		}
-
-		// ok they gave us a valid refresh token, so now we generate an access token for them
-		var secureToken = await makeSecureTokenAccess(userPassport, user);
-		res.status(200).send(secureToken);
-	});
-	//---------------------------------------------------------------------------
-
-
-
-
 
 
 

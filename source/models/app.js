@@ -40,6 +40,11 @@ class AppModel extends ModelBaseMongoose {
 	static getAclName() {
 		return "app";
 	}
+
+	// name for logging
+	static getLoggingString() {
+		return "App";
+	}
 	//---------------------------------------------------------------------------
 
 

@@ -1,7 +1,12 @@
 // jrlogger
 // v1.0.0 on 5/7/19 by mouser@donationcoder.com
 //
-// simple logging wrapper
+// simple logging wrapper class that handles BOTH logging to file and conditional debugging info to console
+//
+// Uses Winston module for logging to file
+// Uses debug module for logging to console
+// Uses Morgan for logging express web http requests
+
 
 "use strict";
 
@@ -10,21 +15,37 @@
 //---------------------------------------------------------------------------
 // we use winston to do the actual work of logging
 const winston = require("winston");
+
 // and debug for console logging
 const debugmod = require("debug");
+
+// and morgan for express web logging
+const morgan = require("morgan");
+
 // others
+const fs = require("fs");
 const util = require("util");
 const path = require("path");
 //---------------------------------------------------------------------------
 
 
-//---------------------------------------------------------------------------
-// module-global instance of winston logger for our app
-var logger;
-// module-global instance of debugmod for our app
-var debugfunc;
-//---------------------------------------------------------------------------
 
+
+
+//---------------------------------------------------------------------------
+// debugging levels
+const winstonCustomLevels = {
+	errorUnknown: 0,
+	errorAlert: 1,
+	errorCrit: 2,
+	error: 3,
+	warning: 4,
+	notice: 5,
+	info: 6,
+	debug: 7,
+	db: 6,
+};
+//---------------------------------------------------------------------------
 
 
 
@@ -33,7 +54,7 @@ class JrLog {
 	//---------------------------------------------------------------------------
 	constructor() {
 		// init
-		this.logger = undefined;
+		this.winstonLogger = undefined;
 		this.debugfunc = undefined;
 		//
 		this.debugEnabled = false;
@@ -54,16 +75,20 @@ class JrLog {
 
 	//---------------------------------------------------------------------------
 	// just pass through stuff to winston
-	log(...args) { return this.logger.log(...args); }
+	log(...args) { return this.winstonLogger.log(...args); }
 
-	info(...args) { return this.logger.info(...args); }
+	info(...args) { return this.winstonLogger.log("info", ...args); }
 
-	warning(...args) { return this.logger.warning(...args); }
+	warning(...args) { return this.winstonLogger.log("warning", ...args); }
 
-	error(...args) { return this.logger.error(...args); }
+	error(...args) { return this.winstonLogger.log("error", ...args); }
 
-	// meant as quick replacement for console.log
-	clog(...args) { return this.logger.info(...args); }
+	/*
+	// old way, but these seem to format differently
+	info(...args) { return this.winstonLogger.info(...args); }
+	warning(...args) { return this.winstonLogger.warning(...args); }
+	error(...args) { return this.winstonLogger.error(...args); }
+	*/
 	//---------------------------------------------------------------------------
 
 
@@ -72,30 +97,41 @@ class JrLog {
 	//---------------------------------------------------------------------------
 	// pass through to debug function for quick and dirty screen display
 
-	cdebug(...args) { if (this.getDebugEnable()) return this.debug(...args); return null; }
-
+	// simple debug passthrough
 	debug(...args) { return this.debugfunc(...args); }
 
-	// helper that simplifies sending a formatted string ("%s:%d", str, val)
-	cdebugf(str, ...args) { if (this.getDebugEnable()) return this.debugf(str, ...args); return null; }
-
+	// formatted string ("%s:%d", str, val)
 	debugf(str, ...args) { return this.debugfunc(util.format(str, ...args)); }
 
+	// debug dump an object with optional title
+	debugObj(obj, msg) {
+		// just helper log function
+		if (msg) {
+			this.debug(msg + ": " + this.objToString(obj, false));
+		} else {
+			this.debug(this.objToString(obj, false));
+		}
+	}
+
+
+	// conditional versions
+
+	cdebug(...args) { if (this.getDebugEnable()) return this.debug(...args); return null; }
+
+	cdebugf(str, ...args) { if (this.getDebugEnable()) return this.debugf(str, ...args); return null; }
+
+	// debug an object
 	cdebugObj(obj, msg) { if (this.getDebugEnable()) return this.debugObj(obj, msg); return null; }
 	//---------------------------------------------------------------------------
 
 
-	//---------------------------------------------------------------------------
-	calcLogFilePath(fileSuffix) {
-		var filePath = path.join(this.logDir, this.serviceName);
-		if (fileSuffix !== "") {
-			filePath += ("_" + fileSuffix + ".log");
-		} else {
-			filePath += ".log";
-		}
-		return filePath;
-	}
-	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
 
 
 	//---------------------------------------------------------------------------
@@ -103,14 +139,27 @@ class JrLog {
 		// save values
 		this.serviceName = serviceName;
 		this.logDir = logDir;
-		//
-		this.logger = this.setupWinston();
+		// create winston object
+		this.winstonLogger = this.setupWinston();
 		// create debug func that is on only in debug mode
 		this.debugfunc = this.setupDebugmod();
 	}
 	//---------------------------------------------------------------------------
 
 
+	//---------------------------------------------------------------------------
+	// just a helper function for the server to setup file logging of web http express access log
+	// it's here in this file just to have a central location for all logging setup stuff
+	setupMorganMiddlewareForExpressWebAccessLogging() {
+		const morganMode = "combined";
+		const morganOutputAbsoluteFilePath = this.calcLogFilePath("access");
+		var morganOutput = {
+			stream: fs.createWriteStream(morganOutputAbsoluteFilePath, { flags: "a" }),
+		};
+		const morganMiddleware = morgan(morganMode, morganOutput);
+		return morganMiddleware;
+	}
+	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
@@ -120,21 +169,11 @@ class JrLog {
 		// see https://github.com/winstonjs/winston/blob/master/examples/quick-start.js
 		// NOTE: we use the module global winstonLogger here, as our default
 
-		const customLevels = {
-			emerg: 0,
-			alert: 1,
-			crit: 2,
-			error: 3,
-			warning: 4,
-			notice: 5,
-			info: 6,
-			debug: 7,
-			db: 6,
-		};
+		// color system only used for console logging which we don't use yet (?)
 		const customColors = {
-			emerg: "red",
-			alert: "red",
-			crit: "red",
+			errorUnknown: "red",
+			errorAlert: "red",
+			errorCrit: "red",
 			error: "red",
 			warning: "yellow",
 			notice: "green",
@@ -144,7 +183,7 @@ class JrLog {
 		};
 
 		var winstonLogger = winston.createLogger({
-			levels: customLevels,
+			levels: winstonCustomLevels,
 			// level: "info",
 			format: winston.format.combine(
 				winston.format.timestamp({
@@ -159,6 +198,7 @@ class JrLog {
 				//
 				// - Write to all logs with level `info` and below to `.log`
 				// - Write all logs error (and below) to `error.log`.
+				// NOTE: the level catches all items from the level specified AND LOWER (more important)
 				//
 				new winston.transports.File({ filename: this.calcLogFilePath("errors"), level: "error" }),
 				new winston.transports.File({ filename: this.calcLogFilePath("") }),
@@ -167,7 +207,7 @@ class JrLog {
 
 
 		if (false) {
-			// setup console logging
+			// setup console logging?
 			winstonLogger.add(new winston.transports.Console({
 				format: winston.format.combine(
 					winston.format.colorize(),
@@ -179,9 +219,9 @@ class JrLog {
 			winston.addColors(customColors);
 		}
 
-
 		if (false) {
-			// create a db file channel just for DB log messages
+			// create a db file channel just for DB log messages?
+			// doesnt work because this catched stuff above this level too
 			winstonLogger.add(new winston.transports.File({
 				format: winston.format.combine(
 					winston.format.timestamp({
@@ -201,21 +241,17 @@ class JrLog {
 	//---------------------------------------------------------------------------
 
 
-
-
-
-
 	//---------------------------------------------------------------------------
 	setupDebugmod() {
 		// now create the simple console logger from debug module
-		debugfunc = debugmod(this.serviceName);
+		var debugfunc = debugmod(this.serviceName);
+
 		// force it on for us
 		debugmod.enable(this.serviceName);
 
 		// return it
 		return debugfunc;
 	}
-
 
 	setDebugEnable(val) {
 		this.debugEnabled = val;
@@ -234,32 +270,29 @@ class JrLog {
 
 
 
+
+
+
+
+
+
 	//---------------------------------------------------------------------------
-	// helpers
-	infoObj(obj, msg) {
-		// just helper log function
-
-		if (obj === undefined) {
-			obj = "___UNDEFINED___";
-		}
-
-		if (msg) {
-			this.info(msg + ": " + this.objToString(obj, true));
+	// log file path helper
+	calcLogFilePath(fileSuffix) {
+		var filePath = path.join(this.logDir, this.serviceName);
+		if (fileSuffix !== "") {
+			filePath += ("_" + fileSuffix + ".log");
 		} else {
-			this.info(this.objToString(obj, true));
+			filePath += ".log";
 		}
+		return filePath;
 	}
+	//---------------------------------------------------------------------------
 
 
-	debugObj(obj, msg) {
-		// just helper log function
-		if (msg) {
-			this.debug(msg + ": " + this.objToString(obj, false));
-		} else {
-			this.debug(this.objToString(obj, false));
-		}
-	}
 
+	//---------------------------------------------------------------------------
+	// helper for debugging object
 
 	// see https://stackoverflow.com/questions/10729276/how-can-i-get-the-full-object-in-node-jss-console-log-rather-than-object
 	// see https://nodejs.org/api/util.html#util_util_inspect_object_options
@@ -288,19 +321,32 @@ class JrLog {
 	//---------------------------------------------------------------------------
 
 
+
+
 	//---------------------------------------------------------------------------
-	// dblog is a mirror of our server.log function that adds log to file, so see Server object
-	dblog(type, message, severity, extraData) {
+	// dblog is a mirror of our server.log function that adds log object to file (see server.js);
+	// it basically saves a copy of a database log object to a file logger
+	dblog(type, message, severity, userid, ip, extraData) {
 		var msg;
+		const level = winstonCustomLevels[type] ? type : "errorUnknown";
 		if (extraData) {
-			msg = util.format("type='%s' severity='%s' msg='%s' data='%s'", type, severity, message, JSON.stringify(extraData));
+			msg = util.format("type='%s' severity='%s' userid='%s' ip='%s' msg='%s' data='%s'", type, severity, userid, ip, message, JSON.stringify(extraData));
 		} else {
-			msg = util.format("type='%s' severity='%s' msg='%s'", type, severity, message);
+			msg = util.format("type='%s' severity='%s' userid='%s' ip='%s' msg='%s'", type, severity, userid, ip, message);
 		}
-		this.logger.log("db", msg);
-		// console.log("dblogging "+msg);
+		this.winstonLogger.log(level, msg);
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
 
 
 }
