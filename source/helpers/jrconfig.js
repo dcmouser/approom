@@ -114,7 +114,7 @@ class JrConfig {
 		if (!fs.existsSync(filepathFixed)) {
 			if (flagErrorOnFileNotExist) {
 				// it"s an error that we couldn"t find it
-				throw ("Could not locate config file: " + filepath);
+				throw (new Error("Could not locate config file: " + filepath));
 			}
 			// not found so don"t add it
 			return false;
@@ -210,7 +210,7 @@ class JrConfig {
 		filepath = this.fixConfigFilePathName(filepath);
 		if (!fs.existsSync(filepath)) {
 			if (flagErrorOnFileNotExist) {
-				throw ("Config file does not exist: " + filepath);
+				throw (new Error("Config file does not exist: " + filepath));
 			}
 			return false;
 		}

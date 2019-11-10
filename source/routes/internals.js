@@ -51,14 +51,14 @@ function setupRouter(urlPath) {
 	});
 
 
-	router.get("/structure_path", async (req, res, next) => {
+	router.get("/routes", async (req, res, next) => {
 		if (!await arserver.requireLoggedInSitePermission("admin", req, res, urlPath)) {
 			// all done
 			return;
 		}
 
 		var rawData = arserver.calcExpressRoutePathData();
-		res.render("internals/structure_path", {
+		res.render("internals/routes", {
 			rawData,
 			jrResult: JrResult.sessionRenderResult(req, res),
 		});

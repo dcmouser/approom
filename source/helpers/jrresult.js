@@ -194,7 +194,7 @@ class JrResult {
 
 		/*
 		if (!(source instanceof JrResult)) {
-			throw ("In JrResult mergeIn with improper source result of class " + (typeof source));
+			throw (new Error("In JrResult mergeIn with improper source result of class " + (typeof source)));
 		}
 		*/
 

@@ -674,7 +674,7 @@ class CrudAid {
 			// show stats
 			rethtml = await this.buildGenericMainHtmlList(modelClass, req, obj, helperData, jrResult);
 		} else {
-			throw ("Illegal subtype (" + crudSubType + ") in buildGenericMainHtml.");
+			throw (new Error("Illegal subtype (" + crudSubType + ") in buildGenericMainHtml."));
 		}
 
 		// we need to wrap return as hbs.SafeString in order to include raw html

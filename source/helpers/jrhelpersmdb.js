@@ -46,7 +46,7 @@ class JrHelpersMdb {
 
 		// ATTN: sanity check might be nice here
 		if (!(id1 instanceof mongoose.Schema.ObjectId)) {
-			throw ("Bad check of mongoIdSame on not objectId object");
+			throw (new Error("Bad check of mongoIdSame on not objectId object"));
 		}
 
 		// not equal

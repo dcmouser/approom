@@ -16,6 +16,7 @@ var bcrypt = require("bcrypt");
 
 // our helper modules
 const jrlog = require("./jrlog");
+const jrhelpers = require("./jrhelpers");
 //---------------------------------------------------------------------------
 
 
@@ -119,7 +120,7 @@ class JrCrypto {
 			// null these so we dont save them
 			saltRounds = null;
 		} else {
-			throw ("Uknown password hash algorithm: " + passwordAlgorithm);
+			throw (new Error("Uknown password hash algorithm: " + passwordAlgorithm));
 		}
 
 		// build the passwordHashed and return it
@@ -144,18 +145,20 @@ class JrCrypto {
 
 
 
-	async testPlaintextPassword(passwordPlaintext, passwordHashed) {
+	async testPlaintextPassword(passwordPlaintext, passwordHashedObj) {
 		// see if password matches
 
-		// if passwordHashStringFromDb == "" then there is no password stored, so result is always false
-		if (!passwordPlaintext || !passwordHashed) {
+		// we allow for password stored in db to be blank.  in this case we always reject a password as not matching (ie they can't login with password)
+		// we allow for this case -- sometimes users may have no password set; in this case it
+		// but note that we WILL allow a check of a blank plaintext password (so if a blank string is hashed and stored as a valid password, we will check and approve that if it matches)
+		if (jrhelpers.isObjectIsEmpty(passwordHashedObj)) {
 			return false;
 		}
 
 		// password obj properties
-		var passwordAlgorithm = passwordHashed.alg;
-		var passwordHashedStr = passwordHashed.hash;
-		var passwordVersion = passwordHashed.ver;
+		var passwordAlgorithm = passwordHashedObj.alg;
+		var passwordHashedStr = passwordHashedObj.hash;
+		var passwordVersion = passwordHashedObj.ver;
 
 		// ok compare
 		try {
@@ -166,15 +169,22 @@ class JrCrypto {
 				return bretv;
 			}
 			// for non-bcrypt, we essentially repeat the hash process with the previously used salt and then compare
-			var salt = passwordHashed.salt;
-			var saltRounds = passwordHashed.saltRounds;
+			var salt = passwordHashedObj.salt;
+			var saltRounds = passwordHashedObj.saltRounds;
 			//
-			var passwordHashedTest = await this.createPasswordHashed(passwordPlaintext, passwordAlgorithm, salt, saltRounds, passwordVersion);
+			var passwordHashedTest = await this.createHashedObjectFromString(passwordPlaintext, passwordAlgorithm, salt, saltRounds, passwordVersion);
 			// now is the hashed version of the new plaintext the same as the hashed version of the old stored one?
 			return (passwordHashedTest.passwordHashedStr === passwordHashedStr);
 		} catch (err) {
-			jrlog.log("Error in jrhelpers exports.testPlaintextPassword while attempting to parse/compare hashed password string");
-			jrlog.log(err);
+			const emsg = "Error in jrhelpers exports.testPlaintextPassword while attempting to parse/compare hashed password string with password algorithn '" + passwordAlgorithm + "'";
+			if (true) {
+				// throw it up and let caller handle it (adding our more verbos error)
+				err.message = emsg + "; " + err.message;
+				throw err;
+			} else {
+				jrlog.error(emsg);
+				jrlog.error(err);
+			}
 		}
 
 		// no match

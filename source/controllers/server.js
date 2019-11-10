@@ -362,6 +362,8 @@ class AppRoomServer {
 		const LoginModel = require("../models/login");
 		const SessionModel = require("../models/session");
 
+
+
 		// home page
 		this.setupRoute(expressApp, "/", "index");
 
@@ -390,7 +392,15 @@ class AppRoomServer {
 		// test stuff
 		this.setupRoute(expressApp, "/membersonly", "membersonly");
 
-		// crud stuff
+		// admin
+		this.setupRoute(expressApp, "/admin", "admin");
+		// internals
+		this.setupRoute(expressApp, "/internals", "internals");
+		// analytics
+		this.setupRoute(expressApp, "/analytics", "analytics");
+
+
+		// crud routes
 		var crudUrlBase = "/crud";
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/app", AppModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/room", RoomModel);
@@ -403,17 +413,11 @@ class AppRoomServer {
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/option", OptionModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/log", LogModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/session", SessionModel);
-
-		// admin
-		this.setupRoute(expressApp, "/admin", "admin");
-		// internals
-		this.setupRoute(expressApp, "/internals", "internals");
-		// analytics
-		this.setupRoute(expressApp, "/analytics", "analytics");
 	}
 
 
 	setupRoute(expressApp, urlPath, routeFilename) {
+		// require in the file in the routes directory so we can discover its functions
 		var route = require("../routes/" + routeFilename);
 
 		// ok there are two ways that our route files can be written
@@ -423,9 +427,9 @@ class AppRoomServer {
 		if (route.setupRouter) {
 			var expressRouter = route.setupRouter(urlPath);
 			assert(expressRouter);
-			expressApp.use(urlPath, expressRouter);
+			this.useExpressRoute(expressApp, urlPath, expressRouter);
 		} else {
-			expressApp.use(urlPath, route);
+			this.useExpressRoute(expressApp, urlPath, route);
 		}
 	}
 
@@ -438,11 +442,18 @@ class AppRoomServer {
 		// setup paths on it
 		CrudAid.setupRouter(router, modelClass, urlPath);
 		// register it
-		expressApp.use(urlPath, router);
+		this.useExpressRoute(expressApp, urlPath, router);
+
 		// let app model know about its crud path
 		modelClass.setCrudBaseUrl(urlPath);
 		// now return the router for further work
 		return router;
+	}
+
+
+	useExpressRoute(expressApp, urlPath, route) {
+		// register it with the express App
+		expressApp.use(urlPath, route);
 	}
 	//---------------------------------------------------------------------------
 
@@ -730,7 +741,7 @@ class AppRoomServer {
 			return passportUser.loginId;
 		}
 
-		throw ("Unknown provider requested in getLoggedInPassportUserOfProvider");
+		throw (new Error("Unknown provider requested in getLoggedInPassportUserOfProvider"));
 	}
 
 	getLoggedInPassportUser(req) {
@@ -1652,7 +1663,7 @@ class AppRoomServer {
 		}
 
 		// they are logged in, but do they have permission required
-		const hasPermission = user.hasPermission(permission, permissionObjType, permissionObjId);
+		const hasPermission = await user.hasPermission(permission, permissionObjType, permissionObjId);
 		if (!hasPermission) {
 			this.handleRequireLoginFailure(req, res, user, goalRelUrl, null, "You do not have sufficient permission to accesss that page.");
 			return false;
@@ -1761,7 +1772,7 @@ class AppRoomServer {
 	// this would typically be called AFTER the user has verified their email with verification model
 	presentNewAccountRegisterForm(userObj, verification, req, res) {
 		// ATTN: is this ever called
-		throw ("presentNewAccountRegisterForm not implemented yet.");
+		throw (new Error("presentNewAccountRegisterForm not implemented yet."));
 	}
 	//---------------------------------------------------------------------------
 
@@ -1922,7 +1933,7 @@ class AppRoomServer {
 	async isLoggedInUserSiteAdmin(req) {
 		var loggedInUser = await this.getLoggedInUser(req);
 		if (loggedInUser) {
-			return loggedInUser.isSiteAdmin();
+			return await loggedInUser.isSiteAdmin();
 		}
 		return false;
 	}
@@ -1973,7 +1984,7 @@ class AppRoomServer {
 		}
 
 		// check permission
-		const hasPermission = user.hasPermission(permission, permissionObjType, permissionObjId);
+		const hasPermission = await user.hasPermission(permission, permissionObjType, permissionObjId);
 
 		if (!hasPermission) {
 			// tell them they don't have access
@@ -2249,6 +2260,13 @@ class AppRoomServer {
 		process.on("uncaughtException", (err, origin) => {
 			err.origin = origin;
 			this.handleFatalError(err);
+
+			// tell stderr console that we have logged the error, before we re-throw it to display it
+			fs.writeSync(
+				process.stderr.fd,
+				`\n\n\n\nFATAL ERROR: Terminating and logging uncaught exception from ${origin}:\n\n`,
+			);
+
 			// throw it up, this will display it on console and crash out of node
 			throw err;
 		});
@@ -2265,13 +2283,7 @@ class AppRoomServer {
 		if (true) {
 			// log the critical error to file and database
 			const errString = jrlog.objToString(err, false);
-			this.logmanual("qerrorCrit", errString, 1000);
-			if (false) {
-				fs.writeSync(
-					process.stderr.fd,
-					`\n\nCaught Fatal error/exception: ${errString}\n`,
-				);
-			}
+			this.logmanual("errorCrit", errString, 1000);
 		}
 		process.exitCode = 1;
 	}

@@ -702,7 +702,7 @@ class UserModel extends ModelBaseMongoose {
 		}
 
 		// we could not find a unique username (!?!?)
-		throw ("Could not create unique username.");
+		throw (new Error("Could not create unique username."));
 	}
 
 
@@ -759,7 +759,7 @@ class UserModel extends ModelBaseMongoose {
 		jrlog.debugObj(jrResult, "username validate result");
 
 		// we got an error, it's not valid syntax.. but we removed all bad characters, corrected length, etc.
-		throw ("Failed to fix imported username to comply with username syntax.");
+		throw (new Error("Failed to fix imported username to comply with username syntax."));
 	}
 
 
@@ -1078,7 +1078,7 @@ class UserModel extends ModelBaseMongoose {
 	}
 
 
-	hasPermission(permission, objectType = null, objectId = null, flagCheckNonObjectSpecificRoles = true) {
+	async hasPermission(permission, objectType = null, objectId = null, flagCheckNonObjectSpecificRoles = true) {
 		// return true if user has permission on (optional) objectId
 		// permissions are derived from roles
 		// by checking nonObjectSpecificRoles it means if the user is a GlobalModerator with no specific object, we will check permissions for that role too
@@ -1088,13 +1088,13 @@ class UserModel extends ModelBaseMongoose {
 		const objectRoles = this.getRolesOnObject(objectType, objectId, flagAddNoneRole, flagCheckNonObjectSpecificRoles);
 
 		// now ask if any of these rules imply the permission
-		return aclAid.anyRolesImplyPermission(objectRoles, permission, objectType);
+		return await aclAid.anyRolesImplyPermission(objectRoles, permission, objectType);
 	}
 
 
-	isSiteAdmin() {
+	async isSiteAdmin() {
 		// just check if user has permission to admin the site
-		return this.hasPermission("admin", "site");
+		return await this.hasPermission("admin", "site");
 	}
 
 

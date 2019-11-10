@@ -14,6 +14,7 @@
 //  3. we are not using a unique salt, but rather a fixed site secret salt.  This is unfortunate but is needed so we can quickly search for a verification code by its code as input by the user
 // ATTN:TODO 11/6/19 - One way we could fix these weaknesses would be if the plaintext code we gave people were actually in two parts like (AAAAA-BBBBB) where the AAAAA part was stored in plaintext in the db and the BBBBB part was hashed in the database
 //  with proper bsrypt/random salt.  Then we would LOOK UP the verification using AAAAA but verify the hashed part of BBBBB.  It would double the length of the code we need to give to user, but it would make rainbow table brute force much harder..
+// ATTN: TODO 11/10/19 - Do we want to do more loops of hashing to make brute force more time consuming?
 
 
 

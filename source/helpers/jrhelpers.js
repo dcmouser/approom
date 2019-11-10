@@ -99,6 +99,20 @@ class JrHelpers {
 	//---------------------------------------------------------------------------
 
 
+	//---------------------------------------------------------------------------
+	// we want to check if its an empty {}
+	// see https://stackoverflow.com/questions/679915/how-do-i-test-for-an-empty-javascript-object
+	isObjectIsEmpty(obj) {
+		if (!obj || (Object.entries(obj).length === 0 && obj.constructor === Object)) {
+			return true;
+		}
+		if (!obj || Object.keys(obj).length === 0) {
+			return true;
+		}
+		return false;
+	}
+	//---------------------------------------------------------------------------
+
 
 	//---------------------------------------------------------------------------
 	DateNowPlusMinutes(expirationMinutes) {
