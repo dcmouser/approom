@@ -20,29 +20,48 @@ const arserver = require("../controllers/server");
 const router = express.Router();
 
 
+// module variable to remember base url path of router
+var routerBaseUrlPath;
+
+
+//---------------------------------------------------------------------------
 function setupRouter(urlPath) {
+	// save urlPath (in module locals)
+	routerBaseUrlPath = urlPath;
 
-	router.get("/", async (req, res, next) => {
+	// setup routes
+	router.get("/", routerGetIndex);
 
-		// require them to be logged in, or creates a redirect
-		var user = await arserver.getLoggedInUser(req);
-		if (!arserver.requireUserIsLoggedIn(req, res, user, "/membersonly")) {
-			// all done
-			return;
-		}
-
-		res.render("user/membersonly", {
-			// jrResult: JrResult.sessionRenderResult(req, res, jrResult, true),
-			jrResult: JrResult.sessionRenderResult(req, res),
-			username: user.getUsername(),
-			id: user.getIdAsString(),
-		});
-	});
-
-
-	// need to return router
+	// return router
 	return router;
 }
+//---------------------------------------------------------------------------
+
+
+
+
+//---------------------------------------------------------------------------
+// router functions
+
+async function routerGetIndex(req, res, next) {
+
+	// require them to be logged in, or creates a redirect
+	var user = await arserver.getLoggedInUser(req);
+	if (!arserver.requireUserIsLoggedIn(req, res, user, "/membersonly")) {
+		// all done
+		return;
+	}
+
+	res.render("user/membersonly", {
+		// jrResult: JrResult.sessionRenderResult(req, res, jrResult, true),
+		jrResult: JrResult.sessionRenderResult(req, res),
+		username: user.getUsername(),
+		id: user.getIdAsString(),
+	});
+}
+//---------------------------------------------------------------------------
+
+
 
 
 

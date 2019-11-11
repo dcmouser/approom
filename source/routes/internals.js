@@ -22,129 +22,27 @@ const arserver = require("../controllers/server");
 const router = express.Router();
 
 
+// module variable to remember base url path of router
+var routerBaseUrlPath;
+
+
+
 //---------------------------------------------------------------------------
 function setupRouter(urlPath) {
+	// save urlPath (in module locals)
+	routerBaseUrlPath = urlPath;
 
-	router.get("/", async (req, res, next) => {
-		if (!await arserver.requireLoggedInSitePermission("admin", req, res, urlPath)) {
-			// all done
-			return;
-		}
+	// setup routes
+	router.get("/", routerGetIndex);
+	router.get("/config_options", routerGetConfigOptions);
+	router.get("/routes", routerGetRoutes);
+	router.get("/structure_db", routerGetStructureDb);
+	router.get("/resourceuse", routerGetResourceuse);
+	router.get("/serverinfo", routerGetServerinfo);
+	router.get("/aclinfo", routerGetAclinfo);
+	router.get("/nodejs", routerGetNodejs);
 
-		res.render("internals/index", {
-			jrResult: JrResult.sessionRenderResult(req, res),
-		});
-	});
-
-
-	router.get("/site_options", async (req, res, next) => {
-		if (!await arserver.requireLoggedInSitePermission("admin", req, res, urlPath)) {
-			// all done
-			return;
-		}
-
-		var rawData = arserver.getJrConfig().getDebugObj();
-		res.render("internals/site_options", {
-			rawData,
-			jrResult: JrResult.sessionRenderResult(req, res),
-		});
-	});
-
-
-	router.get("/routes", async (req, res, next) => {
-		if (!await arserver.requireLoggedInSitePermission("admin", req, res, urlPath)) {
-			// all done
-			return;
-		}
-
-		var rawData = arserver.calcExpressRoutePathData();
-		res.render("internals/routes", {
-			rawData,
-			jrResult: JrResult.sessionRenderResult(req, res),
-		});
-	});
-
-
-	router.get("/structure_db", async (req, res, next) => {
-		if (!await arserver.requireLoggedInSitePermission("admin", req, res, urlPath)) {
-			// all done
-			return;
-		}
-
-		var rawData = await arserver.calcDatabaseStructure();
-		res.render("internals/structure_db", {
-			rawData,
-			jrResult: JrResult.sessionRenderResult(req, res),
-		});
-	});
-
-
-	router.get("/resourceuse", async (req, res, next) => {
-		if (!await arserver.requireLoggedInSitePermission("admin", req, res, urlPath)) {
-			// all done
-			return;
-		}
-
-		// get database resource use
-		var rawDataDb = await arserver.calcDatabaseResourceUse();
-
-		res.render("internals/resourceuse", {
-			rawDataDb,
-			jrResult: JrResult.sessionRenderResult(req, res),
-		});
-	});
-
-
-	router.get("/serverinfo", async (req, res, next) => {
-		if (!await arserver.requireLoggedInSitePermission("admin", req, res, urlPath)) {
-			// all done
-			return;
-		}
-
-		// get database resource use
-		var rawData = await arserver.calcWebServerInformation();
-
-		res.render("internals/serverinfo", {
-			rawData,
-			jrResult: JrResult.sessionRenderResult(req, res),
-		});
-	});
-
-
-	router.get("/aclinfo", async (req, res, next) => {
-		if (!await arserver.requireLoggedInSitePermission("admin", req, res, urlPath)) {
-			// all done
-			return;
-		}
-
-		// get database resource use
-		var rawData = arserver.calcAclInfo();
-
-		res.render("internals/aclinfo", {
-			rawData,
-			jrResult: JrResult.sessionRenderResult(req, res),
-		});
-	});
-
-
-	router.get("/nodejs", async (req, res, next) => {
-		if (!await arserver.requireLoggedInSitePermission("admin", req, res, urlPath)) {
-			// all done
-			return;
-		}
-
-		// get database resource use
-		var rawData = arserver.calcNodeJsInfo();
-
-		res.render("internals/nodejs", {
-			rawData,
-			jrResult: JrResult.sessionRenderResult(req, res),
-		});
-	});
-
-
-
-	// important -- we must return the router variable from this function
+	// return router
 	return router;
 }
 //---------------------------------------------------------------------------
@@ -152,6 +50,127 @@ function setupRouter(urlPath) {
 
 
 
+//---------------------------------------------------------------------------
+// router functions
+
+
+async function routerGetIndex(req, res, next) {
+	if (!await arserver.requireLoggedInSitePermission("admin", req, res, routerBaseUrlPath)) {
+		// all done
+		return;
+	}
+
+	res.render("internals/index", {
+		jrResult: JrResult.sessionRenderResult(req, res),
+	});
+}
+
+
+async function routerGetConfigOptions(req, res, next) {
+	if (!await arserver.requireLoggedInSitePermission("admin", req, res, routerBaseUrlPath)) {
+		// all done
+		return;
+	}
+
+	var rawData = arserver.getJrConfig().getDebugObj();
+	res.render("internals/config_options", {
+		rawData,
+		jrResult: JrResult.sessionRenderResult(req, res),
+	});
+}
+
+
+async function routerGetRoutes(req, res, next) {
+	if (!await arserver.requireLoggedInSitePermission("admin", req, res, routerBaseUrlPath)) {
+		// all done
+		return;
+	}
+
+	var rawData = arserver.calcExpressRoutePathData();
+	res.render("internals/routes", {
+		rawData,
+		jrResult: JrResult.sessionRenderResult(req, res),
+	});
+}
+
+
+async function routerGetStructureDb(req, res, next) {
+	if (!await arserver.requireLoggedInSitePermission("admin", req, res, routerBaseUrlPath)) {
+		// all done
+		return;
+	}
+
+	var rawData = await arserver.calcDatabaseStructure();
+	res.render("internals/structure_db", {
+		rawData,
+		jrResult: JrResult.sessionRenderResult(req, res),
+	});
+}
+
+
+async function routerGetResourceuse(req, res, next) {
+	if (!await arserver.requireLoggedInSitePermission("admin", req, res, routerBaseUrlPath)) {
+		// all done
+		return;
+	}
+
+	// get database resource use
+	var rawDataDb = await arserver.calcDatabaseResourceUse();
+
+	res.render("internals/resourceuse", {
+		rawDataDb,
+		jrResult: JrResult.sessionRenderResult(req, res),
+	});
+}
+
+
+async function routerGetServerinfo(req, res, next) {
+	if (!await arserver.requireLoggedInSitePermission("admin", req, res, routerBaseUrlPath)) {
+		// all done
+		return;
+	}
+
+	// get database resource use
+	var rawData = await arserver.calcWebServerInformation();
+
+	res.render("internals/serverinfo", {
+		rawData,
+		jrResult: JrResult.sessionRenderResult(req, res),
+	});
+}
+
+
+async function routerGetAclinfo(req, res, next) {
+	if (!await arserver.requireLoggedInSitePermission("admin", req, res, routerBaseUrlPath)) {
+		// all done
+		return;
+	}
+
+	// get database resource use
+	var rawData = arserver.calcAclInfo();
+
+	res.render("internals/aclinfo", {
+		rawData,
+		jrResult: JrResult.sessionRenderResult(req, res),
+	});
+}
+
+
+async function routerGetNodejs(req, res, next) {
+	if (!await arserver.requireLoggedInSitePermission("admin", req, res, routerBaseUrlPath)) {
+		// all done
+		return;
+	}
+
+	// get database resource use
+	var rawData = arserver.calcNodeJsInfo();
+
+	res.render("internals/nodejs", {
+		rawData,
+		jrResult: JrResult.sessionRenderResult(req, res),
+	});
+}
+//---------------------------------------------------------------------------
 
 
 

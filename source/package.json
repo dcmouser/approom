@@ -13,7 +13,9 @@
     "UNUSED_configtest": "cross-env fun=cli node approom.js runserver",
     "UNUSED_configtest2": "cross-env config=debug,dev node approom.js runserver",
     "eslint": "eslint .",
-    "npmcheck": "cls && npm-check || exit 0"
+    "npmcheck": "cls && npm audit || npm-check || exit 0",
+    "makedoc": "node_modules/.bin/jsdoc -c jsdoc.json && copyfiles -u 3 ../docs/jsdoc/**/* static/jsdoc",
+    "copydoc": "copyfiles -u 3 --verbose ../docs/jsdoc/**/* static/jsdoc"
   },
   "author": "jesse reichler / mouser (mouser@donationcoder.com)",
   "license": "UNLICENSED",

@@ -138,7 +138,8 @@ class JrHelpers {
 	//---------------------------------------------------------------------------
 	makeClonedObjFromEnumerableProperties(source) {
 		// just a simple wrapper to make code easier to understand
-		var obj = Object.assign({}, source);
+		// var obj = Object.assign({}, source);
+		var obj = { ...source };
 		return obj;
 	}
 
@@ -309,6 +310,65 @@ class JrHelpers {
 	}
 	//---------------------------------------------------------------------------
 
+
+	//---------------------------------------------------------------------------
+	// ATTN: untested and unreliable
+	getServerIpAddress() {
+		// var ip = require("ip");
+		// return ip.address();
+		// see https://stackoverflow.com/questions/3653065/get-local-ip-address-in-node-js
+		var os = require("os");
+
+		var ifaces = os.networkInterfaces();
+		var ifacesKeys = Object.keys(ifaces);
+		var iface, ifname, ifaceset;
+		var bestip;
+		var alias = 0;
+
+		// jrlog.debugObj(ifaces, "ifaces");
+		// jrlog.debugObj(ifacesKeys, "ifacesKeys");
+
+		for (var j = 0; j < ifacesKeys.length; ++j) {
+			ifname = ifacesKeys[j];
+
+			ifaceset = ifaces[ifname];
+			// jrlog.debugObj(ifaceset, "ifaceset");
+
+			alias = 0;
+			for (var i = 0; i < ifaceset.length; ++i) {
+				iface = ifaceset[i];
+				// jrlog.debugObj(iface, "iface[" + ifname + "]");
+				if (iface.family !== "IPv4" || iface.internal !== false) {
+					// skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
+					bestip = iface.address;
+				} else if (alias >= 1) {
+					// this single interface has multiple ipv4 addresses
+					bestip = iface.address;
+					break;
+				} else {
+					// this interface has only one ipv4 adress
+					bestip = iface.address;
+					break;
+				}
+				++alias;
+			}
+			if (bestip) {
+				return bestip;
+			}
+		}
+		// not found;
+		return "";
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	ipStringToSafeString(val) {
+		// replace . and : with _
+		val = val.replace(/[.:]+/g, "_");
+		return val;
+	}
+	//---------------------------------------------------------------------------
 
 
 }

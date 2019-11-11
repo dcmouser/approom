@@ -23,7 +23,7 @@
     ],
     "rules": {
         "mocha/no-exclusive-tests": "error",
-        "MY CUSTOM ELINT OVERRIDES": "",
+
         "indent": [2, "tab", { "SwitchCase": 1, "VariableDeclarator": 1 }],
         "quotes": ["error", "double"],
         "max-len": [2, 256, 4, {"ignoreUrls": true}],
@@ -62,5 +62,12 @@
         "no-useless-constructor": 0,
         "no-empty-function": 0,
         "no-unreachable": 0
+    },
+
+    "settings": {
+        "react": {
+            "version": "999.999.999"
+        }
     }
+
 }

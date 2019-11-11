@@ -21,24 +21,40 @@ const arserver = require("../controllers/server");
 // express router
 const router = express.Router();
 
+// module variable to remember base url path of router
+var routerBaseUrlPath;
+
+
 
 //---------------------------------------------------------------------------
 function setupRouter(urlPath) {
+	// save urlPath (in module locals)
+	routerBaseUrlPath = urlPath;
 
-	router.get("/", async (req, res, next) => {
-		if (!await arserver.requireLoggedInSitePermission("admin", req, res, urlPath)) {
-			// all done
-			return;
-		}
+	// setup routes
+	router.get("/", routerGetIndex);
 
-		res.render("analytics/index", {
-			jrResult: JrResult.sessionRenderResult(req, res),
-		});
-	});
-
-
-	// important -- we must return the router variable from this function
+	// return router
 	return router;
+}
+//---------------------------------------------------------------------------
+
+
+
+
+//---------------------------------------------------------------------------
+// router functions
+
+
+async function routerGetIndex(req, res, next) {
+	if (!await arserver.requireLoggedInSitePermission("admin", req, res, routerBaseUrlPath)) {
+		// all done
+		return;
+	}
+
+	res.render("analytics/index", {
+		jrResult: JrResult.sessionRenderResult(req, res),
+	});
 }
 //---------------------------------------------------------------------------
 

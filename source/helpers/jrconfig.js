@@ -27,7 +27,7 @@ const jrlog = require("./jrlog");
 // constants
 const envListDefault = ["NODE_ENV"];
 // default files we always look for -- note that earlier dominates later in this list
-const configFilesDefault = ["defaultPrivate", "default"];
+const configFilesDefault = ["sitePrivate", "defaultPrivate", "default"];
 //---------------------------------------------------------------------------
 
 
@@ -65,6 +65,16 @@ class JrConfig {
 	//---------------------------------------------------------------------------
 
 
+	//---------------------------------------------------------------------------
+	setServerIp(val) {
+		val = jrhelpers.ipStringToSafeString(val);
+		this.serverIp = val;
+	}
+
+	getServerIp() {
+		return this.serverIp;
+	}
+	//---------------------------------------------------------------------------
 
 	//---------------------------------------------------------------------------
 	setConfigDir(configDirPath) {
@@ -76,6 +86,9 @@ class JrConfig {
 			configDirPath = configDirPathPlus;
 		}
 		this.configDirPath = configDirPath;
+
+		// add ip-based config files to default list
+		this.addIpBasedDefaultConfigFiles();
 
 		// now that we have the config fir, we can se the default a default configfile to process before others
 		configFilesDefault.forEach((filepath) => {
@@ -117,14 +130,36 @@ class JrConfig {
 				throw (new Error("Could not locate config file: " + filepath));
 			}
 			// not found so don"t add it
+			this.configFiles.push({
+				path: filepathFixed,
+				found: false,
+			});
 			return false;
 		}
-		this.configFiles.push(filepathFixed);
+		this.configFiles.push({
+			path: filepathFixed,
+			found: true,
+		});
 		return true;
 	}
 	//---------------------------------------------------------------------------
 
 
+
+	//---------------------------------------------------------------------------
+	addIpBasedDefaultConfigFiles() {
+		// try to read config files specific to ip of server.. this makes it easier to use same file sets running on different (local and remote) servers
+		const ipPrefix = this.serverIp;
+		if (!ipPrefix || ipPrefix === "") {
+			return;
+		}
+		var ipbases = ["private", "public"];
+		ipbases.forEach((filepath) => {
+			filepath = ipPrefix + "_" + filepath;
+			this.addConfigFile(filepath, false);
+		});
+	}
+	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
@@ -168,8 +203,10 @@ class JrConfig {
 		this.nconfMergeCliConfigFiles();
 
 		// 5. now merge in any explicit list of config files
-		this.configFiles.forEach((filepath) => {
-			this.nconfMergeConfigFile(filepath, false);
+		this.configFiles.forEach((fileObj) => {
+			if (fileObj.found) {
+				this.nconfMergeConfigFile(fileObj.path, false);
+			}
 		});
 
 		// 6*. DEFAULT config file, if it exists.
@@ -343,7 +380,12 @@ class JrConfig {
 
 	//---------------------------------------------------------------------------
 	getDebugObj() {
-		var debugObj = nconf.get();
+
+		var configFileList = this.configFiles;
+		var debugObj = {
+			nconfData: nconf.get(),
+			configFiles: configFileList,
+		};
 		return debugObj;
 	}
 	//---------------------------------------------------------------------------

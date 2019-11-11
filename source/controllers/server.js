@@ -172,6 +172,11 @@ class AppRoomServer {
 		// show some info about app
 		jrlog.debugf("%s v%s (%s) by %s", arGlobals.programName, arGlobals.programVersion, arGlobals.programDate, arGlobals.programAuthor);
 
+		// try to get server ip
+		var serverIp = jrhelpers.getServerIpAddress();
+		jrconfig.setServerIp(serverIp);
+		jrlog.debugf("Running on server: %s", serverIp);
+
 		// jrlog.info("this is info");
 		// jrlog.error("this is error");
 
@@ -1842,7 +1847,7 @@ class AppRoomServer {
 
 	testCsrfNoThrow(req, res) {
 		// just return any error don't call next
-		return this.csrfInstance(req, res, err => err);
+		return this.csrfInstance(req, res, (err) => err);
 	}
 
 

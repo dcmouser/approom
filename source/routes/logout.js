@@ -19,23 +19,39 @@ const JrResult = require("../helpers/jrresult");
 const router = express.Router();
 
 
+// module variable to remember base url path of router
+var routerBaseUrlPath;
+
+
+//---------------------------------------------------------------------------
 function setupRouter(urlPath) {
+	// save urlPath (in module locals)
+	routerBaseUrlPath = urlPath;
 
-	router.get("/", (req, res, next) => {
+	// setup routes
+	router.get("/", routerGetIndex);
 
-		// remove all?most? session data that the user might want forgotten and log them out
-		arserver.logoutForgetSessionData(req);
-
-		// session message
-		JrResult.makeNew("info").pushSuccess("You have been logged out.").addToSession(req);
-
-		res.redirect("/");
-	});
-
-
-	// need to return router
+	// return router
 	return router;
 }
+//---------------------------------------------------------------------------
+
+
+
+
+//---------------------------------------------------------------------------
+// router functions
+async function routerGetIndex(req, res, next) {
+
+	// remove all?most? session data that the user might want forgotten and log them out
+	arserver.logoutForgetSessionData(req);
+
+	// session message
+	JrResult.makeNew("info").pushSuccess("You have been logged out.").addToSession(req);
+
+	res.redirect("/");
+}
+//---------------------------------------------------------------------------
 
 
 

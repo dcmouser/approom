@@ -177,7 +177,7 @@ class JrHelpersExpress {
 		// see https://github.com/jaredhanson/passport/issues/605
 
 		// again create promise for passport req.login
-		const passportPromiseReqLogin = ireq => new Promise((resolve, reject) => {
+		const passportPromiseReqLogin = (ireq) => new Promise((resolve, reject) => {
 			// actually login the user
 			ireq.logIn(userPassport, async (ierr) => {
 				if (ierr) {

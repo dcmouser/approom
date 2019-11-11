@@ -15,20 +15,38 @@ const JrResult = require("../helpers/jrresult");
 // express router
 const router = express.Router();
 
+// module variable to remember base url path of router
+var routerBaseUrlPath;
 
+
+
+//---------------------------------------------------------------------------
 function setupRouter(urlPath) {
+	// save urlPath (in module locals)
+	routerBaseUrlPath = urlPath;
 
-	router.get("/", async (req, res, next) => {
-		res.render("app/index", {
-			jrResult: JrResult.sessionRenderResult(req, res),
-			title: "App Route",
-		});
-	});
+	// setup routes
+	router.get("/", routerGetIndex);
 
-
-	// need to return router
+	// return router
 	return router;
 }
+//---------------------------------------------------------------------------
+
+
+
+
+
+//---------------------------------------------------------------------------
+// router functions
+
+async function routerGetIndex(req, res, next) {
+	res.render("app/index", {
+		jrResult: JrResult.sessionRenderResult(req, res),
+		title: "App Route",
+	});
+}
+//---------------------------------------------------------------------------
 
 
 

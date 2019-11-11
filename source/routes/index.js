@@ -19,26 +19,45 @@ const JrResult = require("../helpers/jrresult");
 const router = express.Router();
 
 
+// module variable to remember base url path of router
+var routerBaseUrlPath;
+
+
+
+//---------------------------------------------------------------------------
 function setupRouter(urlPath) {
+	// save urlPath (in module locals)
+	routerBaseUrlPath = urlPath;
 
-	// Get home page
-	router.get("/", (req, res, next) => {
+	// setup routes
+	router.get("/", routerGetIndex);
 
-		// ignore any previous login diversions
-		// NOTE: we have to be careful about this to make sure nothing like the email token onetime login redirects here after login token sent, or we will forget diverted url info
-		arserver.forgetLoginDiversions(req);
-
-		// render view
-		res.render("index", {
-			jrResult: JrResult.sessionRenderResult(req, res),
-			title: "AppRoom",
-		});
-	});
-
-
-	// need to return router
+	// return router
 	return router;
 }
+//---------------------------------------------------------------------------
+
+
+
+
+//---------------------------------------------------------------------------
+// router functions
+
+// homepage
+async function routerGetIndex(req, res, next) {
+
+	// ignore any previous login diversions
+	// NOTE: we have to be careful about this to make sure nothing like the email token onetime login redirects here after login token sent, or we will forget diverted url info
+	arserver.forgetLoginDiversions(req);
+
+	// render view
+	res.render("index", {
+		jrResult: JrResult.sessionRenderResult(req, res),
+		title: "AppRoom",
+	});
+}
+//---------------------------------------------------------------------------
+
 
 
 
