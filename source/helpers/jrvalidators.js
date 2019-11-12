@@ -7,61 +7,93 @@
 
 
 
-class JrValidators {
 
-	//---------------------------------------------------------------------------
-	constructor() {
-	}
 
-	// global singleton request
-	static getSingleton(...args) {
-		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
-		if (this.globalSingleton === undefined) {
-			this.globalSingleton = new JrValidators(...args);
+//---------------------------------------------------------------------------
+function validateString(jrResult, keyname, str, flagRequired) {
+	if (!str) {
+		if (!flagRequired) {
+			return str;
 		}
-		return this.globalSingleton;
+		jrResult.pushFieldError(keyname, keyname + " cannot be left blank");
+		return undefined;
 	}
-	//---------------------------------------------------------------------------
+
+	// anything else is good for now
+	return str;
+}
 
 
+function validateRealName(jrResult, keyname, str, flagRequired) {
+	return validateString(jrResult, keyname, str, flagRequired);
+}
 
-	//---------------------------------------------------------------------------
-	validateString(jrResult, keyname, str, flagRequired) {
-		if (!str) {
-			if (!flagRequired) {
-				return str;
-			}
+
+function validateCheckbox(jrResult, keyname, val, flagRequired) {
+	if (val) {
+		return true;
+	}
+	if (flagRequired && (val === undefined || val === null)) {
+		jrResult.pushFieldError(keyname, keyname + " cannot be left blank");
+		return undefined;
+	}
+	return false;
+}
+
+
+function validateInteger(jrResult, keyname, val, flagRequired) {
+	// check for missing
+	if (val === undefined || val === null) {
+		if (flagRequired) {
 			jrResult.pushFieldError(keyname, keyname + " cannot be left blank");
 			return undefined;
 		}
-
-		// anything else is good for now
-		return str;
+		return 0;
 	}
 
-
-	validateRealName(jrResult, keyname, str, flagRequired) {
-		return this.validateString(jrResult, keyname, str, flagRequired);
+	const num = parseInt(val, 10);
+	if (Number.isNaN(num)) {
+		jrResult.pushFieldError(keyname, keyname + " must be a valid integer value");
+		return null;
 	}
-	//---------------------------------------------------------------------------
-
-
-	//---------------------------------------------------------------------------
-	validateCheckbox(jrResult, keyname, val, flagRequired) {
-		if (val) {
-			return true;
-		}
-		if (flagRequired && (val === undefined || val === null)) {
-			jrResult.pushFieldError(keyname, keyname + " cannot be left blank");
-			return undefined;
-		}
-		return false;
-	}
-	//---------------------------------------------------------------------------
-
+	return num;
 }
 
 
 
-// export the class as the sole export
-module.exports = JrValidators.getSingleton();
+function validateIntegerRange(jrResult, keyname, val, min, max, flagRequired) {
+	// check for missing
+	if (val === undefined || val === null) {
+		if (flagRequired) {
+			jrResult.pushFieldError(keyname, keyname + " cannot be left blank");
+			return undefined;
+		}
+		return undefined;
+	}
+
+	const num = parseInt(val, 10);
+	if (Number.isNaN(num)) {
+		jrResult.pushFieldError(keyname, keyname + " must be a valid integer value");
+		return null;
+	}
+
+	if (num < min || num > max) {
+		jrResult.pushFieldError(keyname, keyname + " must be an integer in the range [%d,%d]".format(min, max));
+		return null;
+	}
+
+	return num;
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+module.exports = {
+	validateString,
+	validateRealName,
+	validateCheckbox,
+	validateInteger,
+	validateIntegerRange,
+};

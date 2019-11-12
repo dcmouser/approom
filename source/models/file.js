@@ -16,6 +16,9 @@ const RoomdataModel = require("./roomdata");
 // our helper modules
 const jrhelpers = require("../helpers/jrhelpers");
 const jrlog = require("../helpers/jrlog");
+const jrvalidators = require("../helpers/jrvalidators");
+
+
 
 class FileModel extends RoomdataModel {
 
@@ -170,9 +173,9 @@ class FileModel extends RoomdataModel {
 
 		// now our specific derived class fields
 		if (!jrResult.isError()) {
-			await this.validateMergeAsync(jrResult, "path", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => await this.validateModelFieldString(jrr, keyname, inVal, obj));
-			await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldString(jrr, keyname, inVal));
-			await this.validateMergeAsync(jrResult, "sizeInBytes", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldInteger(jrr, keyname, inVal));
+			await this.validateMergeAsync(jrResult, "path", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateString(jrr, keyname, inVal, flagRequired));
+			await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateString(jrr, keyname, inVal, flagRequired));
+			await this.validateMergeAsync(jrResult, "sizeInBytes", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateInteger(jrr, keyname, inVal, flagRequired));
 		}
 
 		// any validation errors?

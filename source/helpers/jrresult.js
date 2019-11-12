@@ -8,10 +8,9 @@
 // modules
 const assert = require("assert");
 
-//---------------------------------------------------------------------------
-// modules
+// helper modules
 const jrhelpers = require("./jrhelpers");
-//---------------------------------------------------------------------------
+
 
 
 
@@ -23,6 +22,7 @@ class JrResult {
 	constructor(typestr) {
 		this.typestr = typestr;
 	}
+
 
 	//---------------------------------------------------------------------------
 	static makeNew(typestr) {
@@ -420,7 +420,7 @@ class JrResult {
 	//      }
 	// this old code does NOT do a merge combine of session data with manual jrresult, so can no longer be used
 	//
-	static unusedCodeExpressMiddlewareInjectSessionResult(options) {
+	static _unusedCodeExpressMiddlewareInjectSessionResult(options) {
 		options = options || {};
 		// var safe = (options.unsafe === undefined) ? true : !options.unsafe;
 		return (req, res, next) => {

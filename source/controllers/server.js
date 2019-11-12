@@ -116,25 +116,25 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	// getting options via jrconfig
 	//
-	getOptionDbUrl() { return jrconfig.get("server:DB_URL"); }
+	getOptionDbUrl() { return jrconfig.getVal("server:DB_URL"); }
 
-	getOptionHttp() { return jrconfig.get("server:HTTP"); }
+	getOptionHttp() { return jrconfig.getVal("server:HTTP"); }
 
-	getOptionHttpPort() { return jrconfig.get("server:HTTP_PORT"); }
+	getOptionHttpPort() { return jrconfig.getVal("server:HTTP_PORT"); }
 
-	getOptionHttps() { return jrconfig.get("server:HTTPS"); }
+	getOptionHttps() { return jrconfig.getVal("server:HTTPS"); }
 
-	getOptionHttpsKey() { return jrconfig.get("server:HTTPS_KEY"); }
+	getOptionHttpsKey() { return jrconfig.getVal("server:HTTPS_KEY"); }
 
-	getOptionHttpsCert() { return jrconfig.get("server:HTTPS_CERT"); }
+	getOptionHttpsCert() { return jrconfig.getVal("server:HTTPS_CERT"); }
 
-	getOptionHttpsPort() { return jrconfig.get("server:HTTPS_PORT"); }
+	getOptionHttpsPort() { return jrconfig.getVal("server:HTTPS_PORT"); }
 
-	getOptionSiteDomain() { return jrconfig.get("server:SITE_DOMAIN"); }
+	getOptionSiteDomain() { return jrconfig.getVal("server:SITE_DOMAIN"); }
 
-	getOptionDebugEnabled() { return jrconfig.getDefault("DEBUG", false); }
+	getOptionDebugEnabled() { return jrconfig.getValDefault("DEBUG", false); }
 
-	getOptionUseFullRegistrationForm() { return jrconfig.getDefault("options:SIGNUP_FULLREGISTRATIONFORM", false); }
+	getOptionUseFullRegistrationForm() { return jrconfig.getValDefault("options:SIGNUP_FULLREGISTRATIONFORM", false); }
 
 	// see https://stackoverflow.com/questions/2683803/gravatar-is-there-a-default-image
 	/*
@@ -146,7 +146,7 @@ class AppRoomServer {
 		retro: awesome generated, 8-bit arcade-style pixelated faces
 		blank: a transparent PNG image (border added to HTML below for demonstration purposes)
 	*/
-	getOptionsGravatar() { return jrconfig.getDefault("options:GRAVATAR_OPTIONS", {}); }
+	getOptionsGravatar() { return jrconfig.getValDefault("options:GRAVATAR_OPTIONS", {}); }
 	//---------------------------------------------------------------------------
 
 
@@ -155,7 +155,7 @@ class AppRoomServer {
 
 	getJrConfig() { return jrconfig; }
 
-	getConfigVal(...args) { return jrconfig.get(...args); }
+	getConfigVal(...args) { return jrconfig.getVal(...args); }
 	//---------------------------------------------------------------------------
 
 
@@ -174,7 +174,7 @@ class AppRoomServer {
 
 		// try to get server ip
 		var serverIp = jrhelpers.getServerIpAddress();
-		jrconfig.setServerIp(serverIp);
+		jrconfig.setServerIpSafeStringFromServerIp(serverIp);
 		jrlog.debugf("Running on server: %s", serverIp);
 
 		// jrlog.info("this is info");
@@ -190,9 +190,9 @@ class AppRoomServer {
 	}
 
 
-	configFromJrConfig(ajrconfig) {
+	parseConfig() {
 		// now parse commandline/config/env/ etc.
-		ajrconfig.parseIfNotYetParsed();
+		jrconfig.parse();
 
 		// enable debugging based on DEBUG field
 		jrlog.setDebugEnable(this.getOptionDebugEnabled());
@@ -571,8 +571,8 @@ class AppRoomServer {
 		const Strategy = passportFacebook.Strategy;
 
 		var strategyOptions = {
-			clientID: jrconfig.get("passport:FACEBOOK_APP_ID"),
-			clientSecret: jrconfig.get("passport:FACEBOOK_APP_SECRET"),
+			clientID: jrconfig.getVal("passport:FACEBOOK_APP_ID"),
+			clientSecret: jrconfig.getVal("passport:FACEBOOK_APP_SECRET"),
 			callbackURL: this.calcAbsoluteSiteUrlPreferHttps("/login/facebook/auth"),
 			passReqToCallback: true,
 		};
@@ -623,7 +623,7 @@ class AppRoomServer {
 		const ExtractJwt = passportJwt.ExtractJwt;
 
 		var strategyOptions = {
-			secretOrKey: jrconfig.get("token:CRYPTOKEY"),
+			secretOrKey: jrconfig.getVal("token:CRYPTOKEY"),
 			jwtFromRequest: ExtractJwt.fromUrlQueryParameter("token"),
 			// we ignore expiration auto handling; we will check it ourselves
 			ignoreExpiration: true,
@@ -1302,19 +1302,19 @@ class AppRoomServer {
 		// see https://nodemailer.com/about/
 		// see https://medium.com/@SeanChenU/send-mail-using-node-js-with-nodemailer-in-2-mins-c3f3e23f4a1
 		this.mailTransport = nodemailer.createTransport({
-			host: jrconfig.get("mailer:HOST"),
-			port: jrconfig.get("mailer:PORT"),
-			secure: jrconfig.get("mailer:SECURE"),
+			host: jrconfig.getVal("mailer:HOST"),
+			port: jrconfig.getVal("mailer:PORT"),
+			secure: jrconfig.getVal("mailer:SECURE"),
 			auth: {
-				user: jrconfig.get("mailer:USERNAME"),
-				pass: jrconfig.get("mailer:PASSWORD"),
+				user: jrconfig.getVal("mailer:USERNAME"),
+				pass: jrconfig.getVal("mailer:PASSWORD"),
 			},
 		});
 
-		jrlog.cdebugf("Setting up mail transport through %s.", jrconfig.get("mailer:HOST"));
+		jrlog.cdebugf("Setting up mail transport through %s.", jrconfig.getVal("mailer:HOST"));
 
 		// verify it?
-		if (jrconfig.get("DEBUG")) {
+		if (this.getOptionDebugEnabled()) {
 			await this.mailTransport.verify();
 		}
 	}
@@ -1329,7 +1329,7 @@ class AppRoomServer {
 	async sendMail(mailobj) {
 		// add from field
 		if (!mailobj.from) {
-			mailobj.from = jrconfig.get("mailer:FROM");
+			mailobj.from = jrconfig.getVal("mailer:FROM");
 		}
 
 		var result = await this.mailTransport.sendMail(mailobj);
@@ -1663,7 +1663,7 @@ class AppRoomServer {
 		// we just need to check if the user is non-empty
 		if (!user) {
 			// user is not logged in
-			this.handleRequireLoginFailure(req, res, user, goalRelUrl, null, this.DefRequiredLoginMessage);
+			this.handleRequireLoginFailure(req, res, user, goalRelUrl, null, DefRequiredLoginMessage);
 			return false;
 		}
 
@@ -1689,7 +1689,7 @@ class AppRoomServer {
 		// otherwise return true
 
 		if (!user) {
-			this.handleRequireLoginFailure(req, res, user, goalRelUrl, failureRelUrl, this.DefRequiredLoginMessage);
+			this.handleRequireLoginFailure(req, res, user, goalRelUrl, failureRelUrl, DefRequiredLoginMessage);
 			return false;
 		}
 
@@ -1717,7 +1717,7 @@ class AppRoomServer {
 		// redirect them to login page and then back to their currently requested page
 		var failureRelUrl = "/login";
 		var goalRelUrl = req.originalUrl;
-		this.rememberDivertedRelUrlAndGo(req, res, goalRelUrl, failureRelUrl, this.DefRequiredLoginMessage);
+		this.rememberDivertedRelUrlAndGo(req, res, goalRelUrl, failureRelUrl, DefRequiredLoginMessage);
 	}
 
 
@@ -2135,13 +2135,13 @@ class AppRoomServer {
 	createSecureToken(payload, expirationSeconds) {
 		// add stuff to payload
 		payload.iat = Math.floor(Date.now() / 1000);
-		payload.iss = jrconfig.get("token:ISSUER");
+		payload.iss = jrconfig.getVal("token:ISSUER");
 		// expiration?
 		if (expirationSeconds > 0) {
 			payload.exp = Math.floor(Date.now() / 1000) + expirationSeconds;
 		}
 		// make it
-		const serverJwtCryptoKey = jrconfig.get("token:CRYPTOKEY");
+		const serverJwtCryptoKey = jrconfig.getVal("token:CRYPTOKEY");
 		const token = jsonwebtoken.sign(payload, serverJwtCryptoKey);
 		const tokenObj = {
 			accessToken: token,

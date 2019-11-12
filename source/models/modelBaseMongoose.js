@@ -14,7 +14,7 @@ const jrlog = require("../helpers/jrlog");
 const jrhelpers = require("../helpers/jrhelpers");
 const jrhmisc = require("../helpers/jrhmisc");
 const JrResult = require("../helpers/jrresult");
-
+const jrvalidators = require("../helpers/jrvalidators");
 
 
 
@@ -410,7 +410,7 @@ class ModelBaseMongoose {
 
 		// now resolve it if its not yet resolved
 		if (validatedVal === undefined) {
-			validatedVal = await valFunc(jrResult, fieldNameSource, unvalidatedVal);
+			validatedVal = await valFunc(jrResult, fieldNameSource, unvalidatedVal, flagRequired);
 			// if its an error, for example during validation, we are done
 			if (jrResult.isError()) {
 				return undefined;
@@ -596,24 +596,9 @@ class ModelBaseMongoose {
 		return val;
 	}
 
-
-	static validateModelFieldNotEmpty(jrResult, key, val) {
-		if (!val) {
-			jrResult.pushFieldError(key, "Value for " + key + " cannot be blank.");
-			return null;
-		}
-		return val;
-	}
-
-	static validateModelFielDisbled(jrResult, key, val) {
-		if (!Number.isNaN(val)) {
-			val = parseInt(val, 10);
-		}
-		if (Number.isNaN(val) || val < 0) {
-			jrResult.pushFieldError(key, "Value for " + key + " is mandatory and must be an integer great or equal to  0");
-			return null;
-		}
-		return val;
+	static validateModelFielDisbled(jrResult, key, val, flagRequired) {
+		// the disabled field for resource models must be a postitive integer (0 meaning not disabled, higher than 0 various flavors of being a disabled resource)
+		return jrvalidators.validateIntegerRange(jrResult, key, val, 0, 999999, flagRequired);
 	}
 
 	static validateModelFieldId(jrResult, val) {
@@ -645,31 +630,11 @@ class ModelBaseMongoose {
 		// valid
 		return val;
 	}
-
-
-	static validateModelFieldString(jrResult, key, val) {
-		// ATTN: TODO - test for certain characters?
-		return val;
-	}
-
-	static validateModelFieldInteger(jrResult, key, val) {
-		const num = parseInt(val, 10);
-		if (Number.isNaN(num)) {
-			jrResult.pushFieldError(key, "Expected integer value");
-			return null;
-		}
-		return num;
-	}
-
-	static validateModelFieldBoolean(jrResult, key, val) {
-		const num = parseInt(val, 10);
-		if (Number.isNaN(num)) {
-			jrResult.pushFieldError(key, "Expected boolean value");
-			return null;
-		}
-		return num;
-	}
 	//---------------------------------------------------------------------------
+
+
+
+
 
 
 
@@ -942,8 +907,8 @@ class ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	static async validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj) {
 		// base fields shared among most models
-		await this.validateMergeAsync(jrResult, "disabled", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFielDisbled(jrr, keyname, inVal));
-		await this.validateMergeAsync(jrResult, "notes", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal) => this.validateModelFieldString(jrr, keyname, inVal));
+		await this.validateMergeAsync(jrResult, "disabled", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => this.validateModelFielDisbled(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrResult, "notes", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateString(jrr, keyname, inVal, flagRequired));
 	}
 	//---------------------------------------------------------------------------
 

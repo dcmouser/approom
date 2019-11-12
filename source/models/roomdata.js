@@ -160,7 +160,7 @@ class RoomdataModel extends ModelBaseMongoose {
 		// ATTN: not all of these file fields are currently validated correctly, because they should not be user-editable
 
 		// set fields from form and validate
-		await this.validateMergeAsync(jrResult, "roomid", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal) => this.validateModelFieldRoomId(jrr, keyname, inVal, user));
+		await this.validateMergeAsync(jrResult, "roomid", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => this.validateModelFieldRoomId(jrr, keyname, inVal, user));
 
 		// base fields shared between all? (notes, etc.)
 		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj);

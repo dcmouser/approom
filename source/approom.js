@@ -47,7 +47,7 @@ jrconfig.setYargs(createYargsObj());
 arserver.setupConfigAndLoggingEnvironment();
 
 // configure server instance (jrconfig should be parsed first)
-arserver.configFromJrConfig(jrconfig);
+arserver.parseConfig();
 //---------------------------------------------------------------------------
 
 
@@ -67,12 +67,12 @@ processJrConfigAndCommandline();
 //---------------------------------------------------------------------------
 // commandline process
 function processJrConfigAndCommandline() {
-	if (jrconfig.get("debug")) {
+	if (jrconfig.getValDefault("debug", false)) {
 		// testing
 		var nconfobj = jrconfig.getNconf();
 		var dataobj = nconfobj.get();
 		jrlog.logObj(dataobj, "dataobj");
-		jrlog.logObj(jrconfig.get("debug"), "jrconfig.debug");
+		jrlog.logObj(jrconfig.getValDefault("debug", false), "jrconfig.debug");
 	}
 
 	// run commandline callbacks (show help if none found)

@@ -24,7 +24,7 @@ const jrconfig = require("../helpers/jrconfig");
 arserver.setupConfigAndLoggingEnvironment();
 
 // configure server instance
-arserver.configFromJrConfig(jrconfig);
+arserver.parseConfig();
 //---------------------------------------------------------------------------
 
 

@@ -4,7 +4,11 @@
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 10/28/19
  * @description
+ * ##### Overview
  * This file handles all requests related to the programmatic API interface for accessing the system.
+ * ##### ToDo
+ * These routes are all intended to be called programmatically by other code, and so should all return json replies.
+ * But currently some return standard web pages for testing.
 */
 
 
@@ -24,9 +28,6 @@ const arserver = require("../controllers/server");
 const JrResult = require("../helpers/jrresult");
 const jrlog = require("../helpers/jrlog");
 
-// express router
-const router = express.Router();
-
 
 // module variable to remember base url path of router
 var routerBaseUrlPath;
@@ -34,17 +35,22 @@ var routerBaseUrlPath;
 
 
 //---------------------------------------------------------------------------
+/**
+ * Add the API routes
+ *
+ * @param {string} urlPath - the base path of these relative paths
+ * @returns router object
+ */
 function setupRouter(urlPath) {
 	// save urlPath (in module locals)
 	routerBaseUrlPath = urlPath;
 
 	// setup routes
+	const router = express.Router();
 	router.get("/", routerGetIndex);
 	router.get("/reqrefresh", routerGetReqrefresh);
 	router.post("/reqrefresh", routerPostReqrefresh);
 	router.get("/refreshaccess", routerGetRefreshaccess);
-	router.get("/reqaccess", routerGetReqaccess);
-	router.post("/reqaccess", routerPostReqaccess);
 	router.all("/tokentest", routerAllTokentest);
 	router.get("*", routerGetWildcard);
 
@@ -59,7 +65,13 @@ function setupRouter(urlPath) {
 //---------------------------------------------------------------------------
 // router functions
 
-// show api index
+/**
+ * @description
+ * Handle the request for the api index page,
+ *  which currently just shows a web page index of links to all of the api functions.
+ * ##### ToDo
+ * * Replace the template with some json reply, since api should only be machine callable.
+ */
 async function routerGetIndex(req, res, next) {
 	// just show index
 	res.render("api/index", {
@@ -68,7 +80,13 @@ async function routerGetIndex(req, res, next) {
 }
 
 
-// generate a long-lived refresh token using username+password
+/**
+ * @description
+ * Present user with form for their username and password,
+ * so they may request a long-lived Refresh token (JWT).
+ * ##### ToDo
+ * * Note that this web page we present is useful for debugging, but should not be necesary in production use, because we expect code to be posting to us programmatically.
+ */
 async function routerGetReqrefresh(req, res, next) {
 	// render page
 	res.render("api/tokenuserpassform", {
@@ -76,7 +94,14 @@ async function routerGetReqrefresh(req, res, next) {
 }
 
 
-// process request
+/**
+ * @description
+ * Process request for a long-lived Refresh token (JWT), after checking user's username and password in post data.
+ * If username and password match, they will be issued a JWT refresh token that they can use to generate short-lived access tokens.
+ * ##### Notes
+ * * The refresh token is coded with scope "api" and cannot be used to perform arbitrary actions on the site; it can only be used for api-like actions.
+ * * The refresh token should only be used to request access tokens, which are short-lived tokens that can be use to perform actual api functions.
+ */
 async function routerPostReqrefresh(req, res, next) {
 
 	// do a local login with passed username and password; DONT store session info
@@ -99,7 +124,14 @@ async function routerPostReqrefresh(req, res, next) {
 }
 
 
-// generate an access token from refresh token
+/**
+ * @description
+ * Get a short-lived (JWT) Access token, using a Refresh token.  Here the user passes us a Refresh token and we give them (after verifying it's validity) an Access token.
+ * ##### TODO
+ * * It gets token from the query string (token parameter); eventually we want this to be (only) retrieved from headers or post data.  This just makes it easier to test initially.
+ * ##### NOTES
+ * * see <a href="https://scotch.io/@devGson/api-authentication-with-json-web-tokensjwt-and-passport">using refresh tokens with jwt</a>
+ */
 async function routerGetRefreshaccess(req, res, next) {
 
 	// first the user has to give us a valid REFRESH token
@@ -132,45 +164,13 @@ async function routerGetRefreshaccess(req, res, next) {
 }
 
 
-// direct access token request
-// see https://scotch.io/@devGson/api-authentication-with-json-web-tokensjwt-and-passport
-// normally in api call they would not get a web form, but this is to help test interactively
-async function routerGetReqaccess(req, res, next) {
-	// render page
-	res.render("api/tokenuserpassform", {
-	});
-}
-
-
-// we process the login form
-// note how this differs from normal login.js route, we are not saving logged in user in session
-// instead we just check their credentials and give them a (jwt) access token that they can re-present to prove their identity.
-async function routerPostReqaccess(req, res, next) {
-	// api login, parse username and password in request and RETURN A TOKEN to be used in future calls (rather than setting cookie session)
-	// this authenticate expects username and password in post form; if we want to handle it differently we could pass different values or do a manual username lookup on our own
-	// we should enforce https here too
-
-	// do a local login with passed username and password; DONT store session info
-	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateNonSessionGetUserTuple("local", "with username and password", req, res, next, jrResult, true);
-	if (jrResult.isError()) {
-		var msg = "Error during api token request: " + jrResult.getErrorsAsString();
-		res.status(401).send(msg);
-		return;
-	}
-
-	// success
-	var secureToken = await makeSecureTokenAccess(userPassport, user, "api");
-
-	// log request
-	arserver.logr(req, "api.token", "warning: generated direct access token for " + user.getLogIdString(), 500);
-
-	// provide it
-	res.status(200).send(secureToken);
-}
-
-
-// token test
+/**
+ * @description
+ * Evaluate a refresh or access token, and report on its contents and validity; useful for testing.
+ * ##### TODO
+ * * This should probably not be present in production version
+ * * It gets token from the query string (token parameter); we probably want it in header or post data eventually.
+ */
 async function routerAllTokentest(req, res, next) {
 	// test if user has passed user login info through api token
 
@@ -187,6 +187,12 @@ async function routerAllTokentest(req, res, next) {
 }
 
 
+/**
+ * @description
+ * Test function, catches all other api routes (so no 404s), and just complains and checks for rate limiting.
+ * ##### NOTES
+ * * Currently this function is just used to test rate limiting for DOS type attacks.
+ */
 // test rate limiting of generic 404s at api route
 async function routerGetWildcard(req, res, next) {
 	var msg;
@@ -229,27 +235,27 @@ async function routerGetWildcard(req, res, next) {
 // helper functions
 
 
-
+/**
+ * Helper function to make a secure access token from a refresh token
+ *
+ * @param {Object} userPassport - minimal object with properties of the user
+ * @param {UserModel} user - full model object of User class
+ * @param {String} refreshToken - the refresh token object to use to generate access token
+ * @returns a token object.
+ */
 async function makeSecureTokenAccessFromRefreshToken(userPassport, user, refreshToken) {
 	// make an access token with SAME scope as refresh token
 	return await makeSecureTokenAccess(userPassport, user, refreshToken.scope);
 }
 
 
-async function makeSecureTokenAccess(userPassport, user, scope) {
-	const payload = {
-		type: "access",
-		scope,
-		apiCode: await user.getApiCodeEnsureValid(),
-		user: userPassport,
-	};
-	// add accessId -- the idea here is for every user object in database to ahve an accessId (either sequential or random); that can be changed to invalidate all previously issues access tokens
-	const expirationSeconds = arserver.getConfigVal("token:EXPIRATIONSECS_ACCESS");
-	const secureToken = arserver.createSecureToken(payload, expirationSeconds);
-	return secureToken;
-}
-
-
+/**
+ * Helper function to make a Refresh token
+ *
+ * @param {Object} userPassport - minimal object with properties of the user
+ * @param {UserModel} user - full model object of User class
+ * @returns a token object
+ */
 async function makeSecureTokenRefresh(userPassport, user) {
 	const payload = {
 		type: "refresh",
@@ -262,17 +268,29 @@ async function makeSecureTokenRefresh(userPassport, user) {
 	const secureToken = arserver.createSecureToken(payload, expirationSeconds);
 	return secureToken;
 }
+
+
+/**
+ * Helper function to make a generic secure token
+ *
+ * @param {Object} userPassport - minimal object with properties of the user
+ * @param {UserModel} user - full model object of User class
+ * @param {String} scope - the refresh token object to use to generate access token
+ * @returns a token object
+ */
+async function makeSecureTokenAccess(userPassport, user, scope) {
+	const payload = {
+		type: "access",
+		scope,
+		apiCode: await user.getApiCodeEnsureValid(),
+		user: userPassport,
+	};
+	// add accessId -- the idea here is for every user object in database to ahve an accessId (either sequential or random); that can be changed to invalidate all previously issues access tokens
+	const expirationSeconds = arserver.getConfigVal("token:EXPIRATIONSECS_ACCESS");
+	const secureToken = arserver.createSecureToken(payload, expirationSeconds);
+	return secureToken;
+}
 //---------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
 
 
 
