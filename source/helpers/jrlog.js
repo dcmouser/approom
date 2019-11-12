@@ -34,6 +34,8 @@ const path = require("path");
 
 //---------------------------------------------------------------------------
 // debugging levels
+// ideally every kind of log message type coming from app would be entered here
+// if we try to log one not here it will go into log as "errorUnknown" and log to error file
 const winstonCustomLevels = {
 	errorUnknown: 0,
 	errorAlert: 1,
@@ -44,9 +46,9 @@ const winstonCustomLevels = {
 	info: 6,
 	debug: 7,
 	db: 6,
-
 	"crud.create": 6,
 	"api.token": 6,
+	"user.create": 6,
 };
 //---------------------------------------------------------------------------
 
@@ -57,7 +59,6 @@ var winstonLogger;
 var debugfunc;
 var serviceName;
 var logDir;
-//
 var debugEnabled = false;
 //---------------------------------------------------------------------------
 
@@ -96,11 +97,11 @@ function setupMorganMiddlewareForExpressWebAccessLogging() {
 
 
 //---------------------------------------------------------------------------
-function setDebugEnable(val) {
+function setDebugEnabled(val) {
 	debugEnabled = val;
 }
 
-function getDebugEnable() {
+function getDebugEnabled() {
 	return debugEnabled;
 }
 //---------------------------------------------------------------------------
@@ -151,12 +152,12 @@ function debugObj(obj, msg) {
 
 // conditional versions
 
-function cdebug(...args) { if (getDebugEnable()) return debug(...args); return null; }
+function cdebug(...args) { if (getDebugEnabled()) return debug(...args); return null; }
 
-function cdebugf(str, ...args) { if (getDebugEnable()) return debugf(str, ...args); return null; }
+function cdebugf(str, ...args) { if (getDebugEnabled()) return debugf(str, ...args); return null; }
 
 // debug an object
-function cdebugObj(obj, msg) { if (getDebugEnable()) return debugObj(obj, msg); return null; }
+function cdebugObj(obj, msg) { if (getDebugEnabled()) return debugObj(obj, msg); return null; }
 //---------------------------------------------------------------------------
 
 
@@ -200,12 +201,21 @@ function objToString(obj, flagCompact) {
 // it basically saves a copy of a database log object to a file logger
 function dblog(type, message, severity, userid, ip, extraData) {
 	var msg;
-	const level = type;
-	// const level = isErrorTypeValidWinstonLevel(type) ? type : "errorUnknown";
-	if (extraData) {
-		msg = util.format("severity='%s' userid='%s' ip='%s' msg='%s' data='%s'", severity, userid, ip, message, JSON.stringify(extraData));
+
+	// if winston has a registered error level matching the type, we use it
+	// if NOT, we consider this an unknownError type of message (it will got to error log)
+	var level;
+	var extras = "";
+	if (isErrorTypeValidWinstonLevel(type)) {
+		level = type;
 	} else {
-		msg = util.format("severity='%s' userid='%s' ip='%s' msg='%s'", severity, userid, ip, message);
+		level = "errorUnknown";
+		extras = util.format(" type='%s'", type);
+	}
+	if (extraData) {
+		msg = util.format("severity='%s' userid='%s' ip='%s' msg='%s' data='%s'%s", severity, userid, ip, message, JSON.stringify(extraData), extras);
+	} else {
+		msg = util.format("severity='%s' userid='%s' ip='%s' msg='%s'%s", severity, userid, ip, message, extras);
 	}
 	winstonLogger.log(level, msg);
 }
@@ -393,7 +403,7 @@ module.exports = {
 	setup,
 	setupMorganMiddlewareForExpressWebAccessLogging,
 
-	setDebugEnable, getDebugEnable,
+	setDebugEnabled, getDebugEnabled,
 
 	log, info, warning, error,
 	debug, debugf, debugObj,

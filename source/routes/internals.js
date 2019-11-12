@@ -12,8 +12,6 @@ const express = require("express");
 // helpers
 const JrResult = require("../helpers/jrresult");
 const jrlog = require("../helpers/jrlog");
-const jrhmisc = require("../helpers/jrhmisc");
-const AdminAid = require("../controllers/adminaid");
 
 // models
 const arserver = require("../controllers/server");

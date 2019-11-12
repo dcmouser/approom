@@ -36,7 +36,7 @@ const configFilesDefault = ["sitePrivate", "defaultPrivate", "default"];
 //---------------------------------------------------------------------------
 // module variables
 var configDirPath;
-var serverIpSafeString;
+var serverFilenamePrefix;
 var envList;
 var yargsObj;
 var configFileCount = 0;
@@ -189,7 +189,7 @@ function setConfigDir(val) {
 	}
 
 	// add ip-based config files to default list
-	addIpBasedDefaultConfigFiles();
+	addServerPrefixedDefaultConfigFiles();
 
 	// now that we have the config fir, we can se the default a default configfile to process before others
 	configFilesDefault.forEach((filepath) => {
@@ -257,15 +257,14 @@ function addConfigFile(filepath, flagErrorOnFileNotExist) {
 }
 
 
-function addIpBasedDefaultConfigFiles() {
+function addServerPrefixedDefaultConfigFiles() {
 	// try to read config files specific to ip of server.. this makes it easier to use same file sets running on different (local and remote) servers
-	const ipPrefix = serverIpSafeString;
-	if (!ipPrefix || ipPrefix === "") {
+	if (!serverFilenamePrefix || serverFilenamePrefix === "") {
 		return;
 	}
 	var ipbases = ["private", "public"];
 	ipbases.forEach((filepath) => {
-		filepath = ipPrefix + "_" + filepath;
+		filepath = serverFilenamePrefix + "_" + filepath;
 		addConfigFile(filepath, false);
 	});
 }
@@ -321,11 +320,6 @@ function fixConfigFilePathName(filepath) {
 	}
 	return filepath;
 }
-
-
-function getServerIpSafeString() {
-	return serverIpSafeString;
-}
 //---------------------------------------------------------------------------
 
 
@@ -359,11 +353,16 @@ function getValDefault(arg, defaultVal) {
 	return val;
 }
 
-function setServerIpSafeStringFromServerIp(val) {
-	val = jrhelpers.ipStringToSafeString(val);
-	serverIpSafeString = val;
+function setServerFilenamePrefixFromServerIp(val) {
+	val = ipStringToSafeFilenameString(val);
+	serverFilenamePrefix = val;
 }
 
+function ipStringToSafeFilenameString(val) {
+	// replace . and : with _
+	val = val.replace(/[.:]+/g, "_");
+	return val;
+}
 
 function getDebugObj() {
 	// for debug introspection
@@ -401,7 +400,7 @@ module.exports = {
 	getNconf,
 	getVal,
 	getValDefault,
-	setServerIpSafeStringFromServerIp,
+	setServerFilenamePrefixFromServerIp,
 	getDebugObj,
 };
 

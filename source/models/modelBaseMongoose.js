@@ -12,6 +12,7 @@ const mongoose = require("mongoose");
 // our helper modules
 const jrlog = require("../helpers/jrlog");
 const jrhelpers = require("../helpers/jrhelpers");
+const jrhelpersmdb = require("../helpers/jrhelpersmdb");
 const jrhmisc = require("../helpers/jrhmisc");
 const JrResult = require("../helpers/jrresult");
 const jrvalidators = require("../helpers/jrvalidators");
@@ -602,7 +603,7 @@ class ModelBaseMongoose {
 	}
 
 	static validateModelFieldId(jrResult, val) {
-		if (!jrhelpers.isValidMongooseObjectId(val)) {
+		if (!jrhelpersmdb.isValidMongooseObjectId(val)) {
 			jrResult.pushError("No valid id specified.");
 			return null;
 		}

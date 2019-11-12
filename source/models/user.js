@@ -18,7 +18,6 @@ const jrlog = require("../helpers/jrlog");
 const jrcrypto = require("../helpers/jrcrypto");
 const JrResult = require("../helpers/jrresult");
 const jrvalidators = require("../helpers/jrvalidators");
-const jrhmisc = require("../helpers/jrhmisc");
 
 // controllers
 const arserver = require("../controllers/server");

@@ -174,7 +174,7 @@ class AppRoomServer {
 
 		// try to get server ip
 		var serverIp = jrhelpers.getServerIpAddress();
-		jrconfig.setServerIpSafeStringFromServerIp(serverIp);
+		jrconfig.setServerFilenamePrefixFromServerIp(serverIp);
 		jrlog.debugf("Running on server: %s", serverIp);
 
 		// jrlog.info("this is info");
@@ -195,7 +195,7 @@ class AppRoomServer {
 		jrconfig.parse();
 
 		// enable debugging based on DEBUG field
-		jrlog.setDebugEnable(this.getOptionDebugEnabled());
+		jrlog.setDebugEnabled(this.getOptionDebugEnabled());
 	}
 	//---------------------------------------------------------------------------
 
@@ -853,9 +853,9 @@ class AppRoomServer {
 	}
 
 	forgetLastSessionVerification(req) {
-		jrhelpers.forgetSessionVar(req, "lastVerificationId");
-		jrhelpers.forgetSessionVar(req, "lastVerificationCodePlaintext");
-		jrhelpers.forgetSessionVar(req, "lastVerificationDate");
+		jrhelpersexpress.forgetSessionVar(req, "lastVerificationId");
+		jrhelpersexpress.forgetSessionVar(req, "lastVerificationCodePlaintext");
+		jrhelpersexpress.forgetSessionVar(req, "lastVerificationDate");
 	}
 	//---------------------------------------------------------------------------
 
@@ -1761,7 +1761,7 @@ class AppRoomServer {
 	forgetLoginDiversions(req) {
 		// call this to unset any session diversions -- this can be useful if the user tried to access a protected page but then left the login page and did other things
 		// remove it from session
-		jrhelpers.forgetSessionVar(req, "divertedUrl");
+		jrhelpersexpress.forgetSessionVar(req, "divertedUrl");
 	}
 	//---------------------------------------------------------------------------
 
@@ -1856,7 +1856,7 @@ class AppRoomServer {
 	}
 
 	forgetCsrfToken(req) {
-		jrhelpers.forgetSessionVar(req, "csrfSecret");
+		jrhelpersexpress.forgetSessionVar(req, "csrfSecret");
 	}
 	//---------------------------------------------------------------------------
 
@@ -2049,7 +2049,7 @@ class AppRoomServer {
 		}
 
 		// middleware
-		serverInfo.expressMiddleware = jrhelpersexpress.listExpressMiddleWare(this.getExpressApp());
+		serverInfo.expressMiddleware = jrhelpersexpress.calcExpressMiddleWare(this.getExpressApp());
 
 		return serverInfo;
 	}
