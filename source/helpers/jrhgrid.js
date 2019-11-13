@@ -1,7 +1,11 @@
-// jrhgrid
-// v1.0.0 on 6/21/19 by mouser@donationcoder.com
-//
-// html helpers fro grid
+/**
+ * @module helpers/jrhgrid
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 6/21/19
+
+ * @description
+ * Collection of my helper functions for creating general purpose html grids of data
+*/
 
 "use strict";
 
@@ -15,7 +19,15 @@ const jrhmisc = require("./jrhmisc");
 
 
 
-//---------------------------------------------------------------------------
+/**
+ * Builds a grid table/list and form inputs for working with it
+ * ##### ToDo
+ *  * Add info about where listHelperData comes from
+ *
+ * @param {object} req - express request object
+ * @param {obj} listHelperData - data to put in the grid
+ * @returns raw html string
+ */
 async function jrGridList(req, listHelperData) {
 	var rethtml = "";
 
@@ -66,9 +78,8 @@ async function jrGridList(req, listHelperData) {
 		</form>
 		`;
 
-	// debug stuff
+	// debug extra stuff
 	rethtml += "\n<br/><hr/>\n" + jrhmisc.jrBootstrapCollapseBox("Table Debug", listHelperData, "");
-
 
 	// return it as raw html
 	return rethtml;
@@ -77,9 +88,31 @@ async function jrGridList(req, listHelperData) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //---------------------------------------------------------------------------
 // private helper functions
-
+/**
+ * Build the html that represents the main area of the grid table
+ * @private
+ * @param {object} req
+ * @param {object} listHelperData
+ * @param {object} queryUrlData
+ * @returns raw html string
+ */
 async function jrGridListTable(req, listHelperData, queryUrlData) {
 	var rethtml = "";
 
@@ -105,6 +138,15 @@ async function jrGridListTable(req, listHelperData, queryUrlData) {
 }
 
 
+
+/**
+ * Builds the core internal html table data
+ * @private
+ * @param {object} req
+ * @param {object} listHelperData
+ * @param {object} queryUrlData
+ * @returns raw html string
+ */
 async function jrGridListTableData(req, listHelperData, queryUrlData) {
 	var rethtml = "";
 
@@ -224,7 +266,13 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 
 
 
-//---------------------------------------------------------------------------
+/**
+ * Builds html for implementing a pager area for the grid
+ *
+ * @private
+ * @param {object} queryUrlData
+ * @returns raw html string
+ */
 function jrGridListPager(queryUrlData) {
 	// see https://www.tutorialrepublic.com/twitter-bootstrap-tutorial/bootstrap-pagination.php
 	var rethtml = "";
@@ -295,7 +343,17 @@ function jrGridListPager(queryUrlData) {
 	return rethtml;
 }
 
-
+/**
+ * Builds a single pager item.
+ *
+ * @private
+ * @param {string} label
+ * @param {int} pageIndex - current page
+ * @param {boolean} flagLink - whether pager item should be a working link
+ * @param {boolean} flagActive - whether this pager item represents current page
+ * @param {object} queryUrlData
+ * @returns raw html string
+ */
 function jrGridListPagerItem(label, pageIndex, flagLink, flagActive, queryUrlData) {
 	// make an item for pager
 	var liclass = "";
@@ -319,12 +377,23 @@ function jrGridListPagerItem(label, pageIndex, flagLink, flagActive, queryUrlDat
 }
 
 
-function jrGridListPagerItemPerPage(label, newPageSize, oldPageSize, flagLink, queryUrlData) {
-	// make an item for pager
+/**
+ * Helper function that creates the per-page dropdown option select
+ *
+ * @private
+ * @param {string} label
+ * @param {int} newPageSize - the new page size that this item selects
+ * @param {int} currentPageSize - the current page size of the currently viewed page
+ * @param {boolean} flagLink - whether to link it
+ * @param {object} queryUrlData
+ * @returns raw html string
+ */
+function jrGridListPagerItemPerPage(label, newPageSize, currentPageSize, flagLink, queryUrlData) {
+	// make an item for pager page size control
 	if (label === null) {
 		label = newPageSize.toString();
 	}
-	var flagActive = (newPageSize === oldPageSize);
+	var flagActive = (newPageSize === currentPageSize);
 	var liclass = "";
 	if (flagActive) {
 		liclass += " active";
@@ -347,7 +416,13 @@ function jrGridListPagerItemPerPage(label, newPageSize, oldPageSize, flagLink, q
 }
 
 
-
+/**
+ * Generates the header for a table with sortable columns, and filters
+ * @private
+ * @param {object} listHelperData
+ * @param {object} queryUrlData
+ * @returns raw html string
+ */
 function jrGridListTableHeader(listHelperData, queryUrlData) {
 	// defaults
 	const defaultFilterInputSize = 20;
@@ -489,7 +564,13 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 	return rethtml;
 }
 
-
+/**
+ * Returns the sort direction of a column key, based on previously parsed data
+ * @private
+ * @param {*} key
+ * @param {*} queryUrlData
+ * @returns string sort direction (asc|desc|null)
+ */
 function jrGridListTableHeaderSortDir(key, queryUrlData) {
 	if (queryUrlData.sortField === key) {
 		return queryUrlData.sortDir;
@@ -499,7 +580,12 @@ function jrGridListTableHeaderSortDir(key, queryUrlData) {
 
 
 
-
+/**
+ * Get keys (columnns) for the header, adding our special ones for checkbox column and actions icons column
+ * @private
+ * @param {object} gridSchema
+ * @returns raw html string
+ */
 function calcHeaderKeysNicely(gridSchema) {
 	var headerKeys = Object.keys(gridSchema);
 

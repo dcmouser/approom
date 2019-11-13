@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>controllers/aclaid.js - Documentation</title>
+    <title>helpers/jrhelpersexpress.js - Documentation</title>
     
     
     <script src="scripts/prettify/prettify.js"></script>
@@ -32,7 +32,7 @@
 
 <div id="main">
     
-    <h1 class="page-title">controllers/aclaid.js</h1>
+    <h1 class="page-title">helpers/jrhelpersexpress.js</h1>
     
 
     
@@ -43,172 +43,387 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>/**
- * @module controllers/aclaid
+ * @module helpers/jrhelpersexpress
  * @author jesse reichler &lt;mouser@donationcoder.com>
- * @copyright 9/6/19
+ * @copyright 11/2/19
 
  * @description
- * Philosophy:\
- * We use a RBAC (role-based access control) approach.\
- * RBAC (Role based access control) is based on defining a list of business roles, and adding each user in the system to one or more roles.\
- * Permissions and privileges are then granted to each role, and users receive them via their membership in the role (pretty much equivalent to a group).\
- * Applications will typically test the user for membership in a specific role, and grant or deny access based on that.\
- * Users are assigned to roles that govern their basic allowed operations\
- * Often we will be answering questions such as, can User U perform some action A on a particular Object O\
- * Where the answer to that question will depend on the users's relation to object O.\
- * That is, are they the OWNER/MODERATOR of the object or not.\
- * One way we could handle this would be to have the caller be ignorant of the details, and simply ask the ACL system whether User U can perform action A on object O.\
- * Then rely on the ACL system to determin the user's relation to object O in order to resolve it.\
- * This query would look something like "Can user U perform action EditProfile on object User U", or "Can user U perform action EditProfile on object User U2"\
- * But another way is for the caller to determine the least onerous contextual relationship between user U and object O and simply ask the ACL system whether user U can perform action [A,C].\
- * This query looks something like: "Can user U perform action [Edit,OwnProfile]" if the user tries to edit their own profile, or "Can user U perform action [Edit,AnyProfile]" if the user tries to edit someone else's profile.\
- * We choose to use the second approach.
- * ##### Notes
- *  * @see &lt;a href="https://security.stackexchange.com/questions/346/what-is-the-difference-between-rbac-and-dac-acl"> rbac vs acl&lt;/a>
- *  * @see &lt;a href=" https://dinolai.com/notes/others/authorization-models-acl-dac-mac-rbac-abac.html">comparing authorization approaches&lt;/a>
- */
+ * Collection of helper functions for use with the nodejs express web framework
+*/
 
 "use strict";
 
 
-// misc node core modules
-const assert = require("assert");
-
-// role-acl
-const roleAcl = require("role-acl");
+// modules
+const passport = require("passport");
 
 // our helper modules
-const jrlog = require("../helpers/jrlog");
+const JrResult = require("../helpers/jrresult");
 
 
+
+
+
+
+
+
+//---------------------------------------------------------------------------
 /**
- * Helps manage access control functions and data
+ * Async Wrapper around the express/passport passport.authenticate function
  *
- * @class AclAid
+ * The passport library uses callbacks instead of promises and aync functions, so we wrap it here in a function that let's us use it like an async function for ease of use.
+ * @see &lt;a href="https://github.com/jaredhanson/passport/issues/605">passport docs&lt;/a>
+ *
+ * @param {*} authOptions
+ * @param {*} provider
+ * @param {*} providerNiceLabel
+ * @param {*} req
+ * @param {*} res
+ * @param {*} next
+ * @param {*} jrResult - our JrResult class with info about success or errors; pass in a valid instance and it is updated
+ * @returns a simple object with passport user data
  */
-class AclAid {
+async function asyncPasswordAuthenticate(authOptions, provider, providerNiceLabel, req, res, next, jrResult) {
+	// first we make a promise out of passport.authenticate then await on it
 
-	//---------------------------------------------------------------------------
-	constructor() {
-	}
+	var userPassport;
 
-	// global singleton request
-	static getSingleton(...args) {
-		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
-		if (this.globalSingleton === undefined) {
-			this.globalSingleton = new AclAid(...args);
-		}
-		return this.globalSingleton;
-	}
-	//---------------------------------------------------------------------------
-
-
-
-	//---------------------------------------------------------------------------
-	async setupAclPermissions() {
-
-		// create role-acl module system
-		this.roleAcl = new roleAcl();
-
-		// ATTN: 9/3/19 - below are working thought experiments rbac stuff, i am still experimenting
-
-		// create permissions for the different resources
-		this.createAclEditViewGrantsForResource("app");
-		this.createAclEditViewGrantsForResource("room");
-
-		//
-		this.createAclEditViewGrantsForResource("file");
-		// files can be viewed by friends of the ROOM
-		this.roleAcl.grant("roomFriend").execute("view").on("file");
-		//
-		this.createAclEditViewGrantsForResource("roomdata");
-		// files can be viewed by friends of the ROOM
-		this.roleAcl.grant("roomFriend").execute("view").on("roomdata");
-
-		//
-		this.createAclEditViewGrantsForResource("log");
-		this.createAclEditViewGrantsForResource("option");
-		this.createAclEditViewGrantsForResource("connection");
-		this.createAclEditViewGrantsForResource("verification");
-		this.createAclEditViewGrantsForResource("login");
-		this.createAclEditViewGrantsForResource("session");
-
-		//
-		this.createAclEditViewGrantsForResource("user");
-
-		// global site admin
-		this.roleAcl.grant("siteAdmin").execute("admin").on("site");
-		this.roleAcl.grant("siteAdmin").execute("analytics").on("site");
-
-		// admin inherits the permissions of globalModerator
-		// this.roleAcl.grant("siteAdmin").extend(["globalModerator"]);
-		this.roleAcl.extendRole("siteAdmin", "globalModerator");
-
-		// visitor role is for people not logged in
-		this.roleAcl.grant("visitor");
-
-		// test
-		// jrlog.debugObj(this.roleAcl.getGrants(), "TEST of ACL permission grants");
-
-		return true;
-	}
-
-
-	createAclEditViewGrantsForResource(resourceName) {
-		// give global moderator permission
-		this.roleAcl.grant("globalModerator").execute(["add", "edit", "view", "list", "delete"]).on(resourceName);
-		// now owner, friend, none
-		this.roleAcl.grant(resourceName + "Owner").execute(["add", "edit", "view", "list"]).on(resourceName);
-		this.roleAcl.grant(resourceName + "Moderator").execute(["add", "edit", "view", "list"]).on(resourceName);
-		this.roleAcl.grant(resourceName + "Friend").execute("view").on(resourceName);
-		//
-		this.roleAcl.grant("none").execute(["view", "list"]).when({ Fn: "EQUALS", args: { public: true } }).on(resourceName);
-	}
-	//---------------------------------------------------------------------------
-
-
-
-
-
-	//---------------------------------------------------------------------------
-	async anyRolesImplyPermission(roles, action, target) {
-		// return true if any of the specified roles (array) have permission
-		for (var key in roles) {
-			if (await this.roleImpliesPermission(roles[key], action, target) === true) {
-				// yes!
-				return true;
+	// create promise wrapper around passport.authenticate
+	const passportPromiseAuth = (ireq, ires, inext) => new Promise((resolve, reject) => {
+		passport.authenticate(provider, authOptions, async (err, inuserPassport, info) => {
+			if (err || !inuserPassport) {
+				// add error
+				jrResult.pushError("error authenticating " + providerNiceLabel + ": " + JrResult.passportErrorAsString(info) + ".");
+				// run next on error in chain
+				if (false &amp;&amp; err) {
+					inext(err);
+				}
+				resolve(jrResult);
 			}
+			// success
+			userPassport = inuserPassport;
+			// success resolve
+			resolve(jrResult);
+		})(ireq, ires, inext);
+	});
+
+
+	// wait for promise resolution
+	try {
+		// now wait for the passport authenticate promise to run; note there is no case where it rejects; we could do this differently and catch an error
+		await passportPromiseAuth(req, res, next);
+	} catch (err) {
+		// unexpected error
+		jrResult.pushError(err.message);
+	}
+
+	// return userPassport data object
+	return userPassport;
+}
+//---------------------------------------------------------------------------
+
+
+
+//---------------------------------------------------------------------------
+// ASYNC wrapper around passport req.login
+/**
+ * Async Wrapper around the express req.logIn function
+ *
+ * The express library uses callbacks instead of promises and aync functions, so we wrap it here in a function that let's us use it like an async function for ease of use.
+ * @see &lt;a href="https://github.com/jaredhanson/passport/issues/605">passport docs&lt;/a>
+ *
+ * @param {*} userPassport - simple object with user data to log in the user
+ * @param {*} errorMessage - text of errror message added to jrResult on error
+ * @param {*} req - express request
+ * @param {*} jrResult - our JrResult class with info about success or errors; pass in a valid instance and it is updated
+ */
+async function asyncPasswordReqLogin(userPassport, errorMessage, req, jrResult) {
+	// first we make a promise out of req.logIn then await on it
+
+	// again create promise for passport req.login
+	const passportPromiseReqLogin = (ireq) => new Promise((resolve, reject) => {
+		// actually login the user
+		ireq.logIn(userPassport, async (ierr) => {
+			if (ierr) {
+				// error (exception) logging them in
+				jrResult.pushError(errorMessage + ": " + JrResult.passportErrorAsString(ierr));
+				resolve(jrResult);
+			}
+			// success
+			// success resolve
+			resolve(jrResult);
+		})(ireq);
+	});
+
+	try {
+		// now wait for the passport req login promise to run; note there is no case where it rejects; we could do this differently and catch an error
+		await passportPromiseReqLogin(req);
+	} catch (err) {
+		// unexpected error
+		jrResult.pushError(err.message);
+	}
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+//---------------------------------------------------------------------------
+/**
+ * Suggested code from express builder sample applications; used when creating server and binding it to ip+port
+ *
+ * @param {*} portval
+ * @returns port value (possibly provided as string), converted to an integer if possible
+ */
+function normalizePort(portval) {
+	var port = parseInt(portval, 10);
+	if (Number.isNaN(port)) {
+		// named pipe
+		return portval;
+	}
+	if (port >= 0) {
+		// port number
+		return port;
+	}
+	return false;
+}
+//---------------------------------------------------------------------------
+
+
+
+
+//---------------------------------------------------------------------------
+/**
+ * Helper debug function that generates a list (object) of express middleware for display
+ * @see &lt;a href="https://github.com/yshing/express-list-middleware/blob/master/index.js">github code&lt;/a>
+ * @see &lt;a href="https://github.com/yshing/express-repl-toolkit/tree/master/tools">github code&lt;/a>
+ * ##### Notes
+ *  * Uses an interesting trick to get file and line number where the middleware is located
+ *
+ * @param {object} app - the express app object
+ * @returns object containing all middleware, suitable for json stringifcation to console, etc.
+ */
+function calcExpressMiddleWare(app) {
+	var appStack = app._router.stack;
+	return Array.prototype.map.call(appStack, (middleware, index) => {
+		return index + ". " + (middleware.handle.name || "&lt;anonymous function>") + " " + getFileLine(middleware.handle);
+	});
+	// force the middleware to produce an error to locate the file.
+	function getFileLine(handler) {
+		try {
+			handler(undefined);
+		} catch (e) {
+			return e.stack.split("\n")[1];
 		}
-
-		// nope, none do
-		return false;
+		return null;
 	}
-
-
-	async roleImpliesPermission(role, action, target) {
-		// return true if the role implies the action
-
-		var permission = await this.roleAcl.can(role).execute(action).on(target);
-		var granted = (permission.granted === true);
-		return granted;
-	}
-	//---------------------------------------------------------------------------
-
-
-	//---------------------------------------------------------------------------
-	calcAclInfo() {
-		// return an object with all acl info for debugging
-		var aclInfo = {};
-		aclInfo.grants = this.roleAcl.getGrants();
-		return aclInfo;
-	}
-	//---------------------------------------------------------------------------
-
 }
 
 
+/**
+ * Helper debug function the generates a list (object) of all paths registered to the express app
+ *
+ * @param {object} expressApp
+ * @returns object containing all routes (and whether they are get|post|all)
+ */
+function calcExpressRoutePathData(expressApp) {
+	var siteRoutes = expressApp._router.stack;
+
+	var routes = [];
+	siteRoutes.forEach(calcExpressRoutePathDataRouteArray.bind(this, routes, []));
+	return routes;
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+//---------------------------------------------------------------------------
+/**
+ * Internal helper debug function the helps to generate a list (object) of all paths registered to the express app
+ * @private
+ * @param {*} routes
+ * @param {*} routepath
+ * @param {*} layer
+ */
+function calcExpressRoutePathDataRouteArray(routes, routepath, layer) {
+	if (layer.route) {
+		layer.route.stack.forEach(calcExpressRoutePathDataRouteArray.bind(this, routes, routepath.concat(calcExpressRoutePathDataSplit(layer.route.path))));
+	} else if (layer.name === "router" &amp;&amp; layer.handle.stack) {
+		routes.push("");
+		layer.handle.stack.forEach(calcExpressRoutePathDataRouteArray.bind(this, routes, routepath.concat(calcExpressRoutePathDataSplit(layer.regexp))));
+	} else if (layer.method) {
+		var pathstr = layer.method.toUpperCase() + " /" + routepath.concat(calcExpressRoutePathDataSplit(layer.regexp)).filter(Boolean).join("/");
+		routes.push(pathstr);
+	}
+}
+
+
+/**
+ * Internal helper debug function the helps to generate a list (object) of all paths registered to the express app.
+ * Splits on path separator.
+ * @private
+ * @see &lt;a href="https://github.com/expressjs/express/issues/3308">github code&lt;/a>
+ *
+ * @param {*} thing
+ * @returns split of path
+ */
+function calcExpressRoutePathDataSplit(thing) {
+	if (typeof thing === "string") {
+		return thing.split("/");
+	}
+	if (thing.fast_slash) {
+		return "";
+	}
+	var match = thing.toString().replace("\\/?", "").replace("(?=\\/|$)", "$").match(/^\/\^((?:\\[.*+?^${}()|[\]\\/]|[^.*+?^${}()|[\]\\/])*)\$\//);
+	return match ? match[1].replace(/\\(.)/g, "$1").split("/") : "&lt;complex:" + thing.toString() + ">";
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+/**
+ * Express helper function to look for property in request BODY or QUERY and return it, or defaultVal if not present
+ *
+ * @param {object} req - express request object
+ * @param {string} key - key to look for in request body or query
+ * @param {*} defaultVal - to return if key not found in request
+ * @returns req.body[key] or req.query[key] or defaultVal
+ */
+function reqVal(req, key, defaultVal) {
+	// return query param or post val or default
+	if (req.body[key] !== undefined &amp;&amp; req.body[key] !== null) {
+		return req.body[key];
+	}
+	if (req.query[key] !== undefined &amp;&amp; req.query[key] !== null) {
+		return req.query[key];
+	}
+	return defaultVal;
+}
+
+
+/**
+ * Express helper to look for property in request BODY or QUERY and return it, or defaultVal if not present
+ *
+ * @param {object} req - express request object
+ * @param {string} key - key to look for in request body or query
+ * @param {int} min - min int to floor the value to
+ * @param {int} max - max int to ceil the value to
+ * @param {int} defaultVal - to return if key not found in request
+ * @returns req.body[key] or req.query[key] cast to int in range [min,max] or defaultVal
+ */
+function reqValAsInt(req, key, min, max, defaultVal) {
+	// get val as int and min and max it
+	var val = Number(reqVal(req, key, defaultVal));
+	if (min !== null) {
+		val = Math.max(val, min);
+	}
+	if (max !== null) {
+		val = Math.min(val, max);
+	}
+	return val;
+}
+
+
+/**
+ * Express helper to look for property in request BODY or QUERY and return it, or defaultVal if not present
+ *
+ * @param {object} req - express request object
+ * @param {string} key - key to look for in request body or query
+ * @param {array} valueList - list of values that are acceptable
+ * @param {*} defaultVal - to return if key not found in request
+ * @returns req.body[key] or req.query[key] as long as they are present in valueList, otherwise defaultVal
+ */
+function reqValFromList(req, key, valueList, defaultVal) {
+	var val = reqVal(req, key, defaultVal);
+	if (valueList.indexOf(val) > -1) {
+		return val;
+	}
+	return defaultVal;
+}
+
+
+/**
+ * Express helper to look for all properties with a given prefix
+ *
+ * @param {*} req - express request object
+ * @param {string} prefix - the prefix string
+ * @param {*} keyList
+ * @returns an associative array of all key=>value pairs of request properties where key starts with "prefix_key" and key is in keyList
+ */
+function reqPrefixedValueArray(req, prefix, keyList) {
+	// look for ALL values for prefix+"_"+key and return an associative array of them
+	var valArray = {};
+	var fieldName;
+	var val;
+	keyList.forEach((key) => {
+		fieldName = prefix + "_" + key;
+		val = reqVal(req, fieldName, undefined);
+		if (val !== undefined &amp;&amp; val !== "") {
+			// store it
+			valArray[key] = val;
+		}
+	});
+
+	return valArray;
+}
+
+
+/**
+ * Deletes the varname from session data
+ *
+ * @param {obj} req
+ * @param {string} varName
+ */
+function forgetSessionVar(req, varName) {
+	if (req.session &amp;&amp; req.session[varName] !== undefined) {
+		delete req.session[varName];
+	}
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // export the class as the sole export
-module.exports = AclAid.getSingleton();
+module.exports = {
+	asyncPasswordAuthenticate,
+	asyncPasswordReqLogin,
+
+	normalizePort,
+
+	calcExpressMiddleWare,
+	calcExpressRoutePathData,
+
+	reqVal,
+	reqValAsInt,
+	reqValFromList,
+	reqPrefixedValueArray,
+	forgetSessionVar,
+};
 </code></pre>
         </article>
     </section>

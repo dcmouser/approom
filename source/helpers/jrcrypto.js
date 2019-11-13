@@ -1,7 +1,11 @@
-// jrcrypto
-// v1.0.0 on 5/19/19 by mouser@donationcoder.com
-//
-// password hashing functions
+/**
+ * @module helpers/jrcrypto
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/19/19
+
+ * @description
+ * Collection of my helper functions for crypto related stuff
+*/
 
 "use strict";
 
@@ -39,8 +43,6 @@ const DefCryptSaltRounds = 11;
 // in addition we store password creation dates, so we can filter based on some date of db compromise
 const DefLatestPasswordVersion = 2;
 
-// ATTN: TODO -- we might add support to automatically fail any password check falling below some configured date or passwordVersion
-
 // for humaneasy codes (all uppercase, no I no O no Z no 0 no 1 no 2)
 const DefHumanEasyCharactersArray = ["ABCDEFGHJKLMNPQRSTUVWXY", "3456789"];
 const DefHumanEasyCharacters = DefHumanEasyCharactersArray[0] + DefHumanEasyCharactersArray[1];
@@ -50,30 +52,33 @@ const DefHumanEasyCharacters = DefHumanEasyCharactersArray[0] + DefHumanEasyChar
 
 
 
-//---------------------------------------------------------------------------
+/**
+ * Take a plaintext string and hash it.
+ * A random salt is automatically generated and added to the hash object
+ *
+ * @param {string} passwordPlaintext
+ * @returns passwordHashedObj, an object with property fields for the hashed password, including hash (the hashed string), and other meta properties describing the hash operation
+ */
 async function hashPlaintextPasswordToObj(passwordPlaintext) {
 	// algorithm to use
 	var passwordAlgorithm = DefPasswordAlgorithm;
+	// a salt of "" means to use a random salt and include it in the hash
 	var salt = "";
 	// hash it
-	var passwordHashed = await createHashedObjectFromString(passwordPlaintext, passwordAlgorithm, salt, DefCryptSaltRounds, DefLatestPasswordVersion);
+	var passwordHashedObj = await createHashedObjectFromString(passwordPlaintext, passwordAlgorithm, salt, DefCryptSaltRounds, DefLatestPasswordVersion);
 	// return it -- an OBJECT with properties not just a string
-	return passwordHashed;
+	return passwordHashedObj;
 }
 
 
-async function hashPlaintextStringSecurely(plaintextString) {
-	// algorithm to use
-	var passwordAlgorithm = DefPasswordAlgorithm;
-	var salt = "";
-	// hash it
-	var hashedObj = createHashedObjectFromString(plaintextString, passwordAlgorithm, salt, DefCryptSaltRounds, DefLatestPasswordVersion);
-	var hashedString = hashedObj.hash;
-	return hashedString;
-}
-
-
-
+/**
+ * Test a plaintext string (user entered password) against a stored passwordHashed object.
+ * The passwordHashedObj will contain the random salt to use and the algorithm used.
+ *
+ * @param {string} passwordPlaintext
+ * @param {object} passwordHashedObj
+ * @returns true if they match, false if they don't, or throws ERROR if something else goes wrong (password algorithm not supported, etc.)
+ */
 async function testPlaintextPassword(passwordPlaintext, passwordHashedObj) {
 	// see if password matches
 
@@ -109,11 +114,8 @@ async function testPlaintextPassword(passwordPlaintext, passwordHashedObj) {
 		if (true) {
 			// throw it up and let caller handle it (adding our more verbos error)
 			err.message = emsg + "; " + err.message;
-			throw err;
-		} else {
-			jrlog.error(emsg);
-			jrlog.error(err);
 		}
+		throw err;
 	}
 
 	// no match
@@ -127,7 +129,16 @@ async function testPlaintextPassword(passwordPlaintext, passwordHashedObj) {
 
 
 
-//---------------------------------------------------------------------------
+/**
+ * More specific function to created hashed object from a plaintext string
+ *
+ * @param {string} plaintextString
+ * @param {string} passwordAlgorithm - from bcrypt|crypto_sha512|plain (just returns string itself)
+ * @param {string} salt - the salt to use, incorporated in return object; if blank a random one is generated
+ * @param {int} saltRounds - the number of rounds of salting
+ * @param {int} passwordVersion - password version number; passed to hash function, slows down hashing making brute forcing harder
+ * @returns hashed object with .hash containing the hashed string with salt info, etc. and other meta properties
+ */
 async function createHashedObjectFromString(plaintextString, passwordAlgorithm, salt, saltRounds, passwordVersion) {
 	// function to hash plaintext password and return an object with hashed password properties
 
@@ -186,18 +197,22 @@ async function createHashedObjectFromString(plaintextString, passwordAlgorithm, 
 
 
 //---------------------------------------------------------------------------
+/**
+ * Generate a random salt of a default langth (DefCryptSaltLength const)
+  * @returns hex string of length DefCryptSaltLength
+ */
 function generateRandomSalt() {
 	// private func
 	return genRandomStringHex(DefCryptSaltLength);
 }
 
 
-
-// see https://ciphertrick.com/2016/01/18/salt-hash-passwords-using-nodejs-crypto/
 /**
- * generates random string of characters i.e salt
- * @function
- * @param {number} length - Length of the random string.
+ * Generate a random hex string of a specified length, cryptographically random bytes used as data
+ * @see <a href="https://ciphertrick.com/2016/01/18/salt-hash-passwords-using-nodejs-crypto/">salting hash passwords</a>
+ *
+ * @param {int} length - the number of characters
+ * @returns random string of characters of specified length
  */
 function genRandomStringHex(length) {
 	return crypto.randomBytes(Math.ceil(length / 2))
@@ -206,6 +221,17 @@ function genRandomStringHex(length) {
 }
 
 
+/**
+ * This generates a random string using only characters and digits that are easy for humans to recognize and differentiate
+ * @see <a href="https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript">stackoverflow</a>
+ * ##### Notes
+ *  * This is not cryptographically secure random numbers, as it uses Math.random
+ * ##### ToDo
+ *  * Replace with crypto secure prng
+ *
+ * @param {int} length
+ * @returns random string of specified characters consisting of only characters and digits found in DefHumanEasyCharacters
+ */
 function genRandomStringHumanEasy(length) {
 	// generate a string of letters and numbers that is hard for humans to mistake
 	// so all uppercase and avoid letters that could be duplicates
@@ -221,11 +247,19 @@ function genRandomStringHumanEasy(length) {
 }
 
 
+/**
+ * This generates a random string using only characters and digits that are easy for humans to recognize and differentiate,
+ * and also alternates numbers and digits for even easier to remember codes.
+ * @see <a href="https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript">stackoverflow</a>
+ * ##### Notes
+ *  * This is not cryptographically secure random numbers, as it uses Math.random
+ * ##### ToDo
+ *  * Replace with crypto secure prng
+ *
+ * @param {int} length
+ * @returns random string consisting of only characters and digits found in DefHumanEasyCharacters
+ */
 function genRandomStringHumanEasier(length) {
-	// generate a string of letters and numbers that is hard for humans to mistake
-	// so all uppercase and avoid letters that could be duplicates
-	// see https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
-	// this version alternates digits and letters for even easier to read codes
 	var retstr = "";
 	var charlen, charpos;
 	var group = 0;
@@ -246,8 +280,21 @@ function genRandomStringHumanEasier(length) {
 
 
 //---------------------------------------------------------------------------
-// this function needs to retun the SAME HASH no matter when we call it, so that we can search for result
-// this means we dont use a random salt
+/**
+ * Hash a string, but this time using a specific salt, returning a simple hashed string as result.
+ * ##### Notes
+ *  * This function needs to retun the SAME HASH no matter when we call it, so that we can search for result this means we dont use a random salt
+ *  * And we always use sha51 algorithm.
+ *  * This helper function is used to hash verification codes in database so that if db is compromised it will be harder to retrieve plaintext verificaiton code
+ *  * We can't use random salt because we need to be able to look up matching items by the hashed version.
+ * ##### ToDo
+ *  * In future we might use a two-part verification code, where first part is unique plaintext id, and second part is hashed string
+ *  * In that way we could look up items by their plaintext part, and use any crypto for the hashed part.
+ *
+ * @param {string} plaintextString
+ * @param {string} salt
+ * @returns hashed string
+ */
 async function hashPlaintextStringInsecureButSearchable(plaintextString, salt) {
 	var hash = crypto.createHmac("sha512", salt);
 	hash.update(plaintextString);
@@ -265,7 +312,6 @@ async function hashPlaintextStringInsecureButSearchable(plaintextString, salt) {
 
 module.exports = {
 	hashPlaintextPasswordToObj,
-	hashPlaintextStringSecurely,
 	testPlaintextPassword,
 
 	genRandomStringHumanEasy,

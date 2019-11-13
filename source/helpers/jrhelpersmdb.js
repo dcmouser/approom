@@ -1,7 +1,11 @@
-// jrhelpersmdb
-// v1.0.0 on 5/7/19 by mouser@donationcoder.com
-//
-// mongo db helper functions
+/**
+ * @module helpers/jrhelpersmdb
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/7/19
+
+ * @description
+ * Collection of my general helper functions for mongo and mongoose database framework
+*/
 
 "use strict";
 
@@ -12,7 +16,15 @@ const mongoose = require("mongoose");
 
 
 
-//---------------------------------------------------------------------------
+/**
+ * Check if two mongo object ids are identical, with support for ids being undefined/null.
+ * ##### Note
+ *  * returns false if EITHER id is undefined/null.
+ *
+ * @param {*} id1
+ * @param {*} id2
+ * @returns true if they are equal mongo ids, and neither is null or undefined
+ */
 function mongoIdEqual(id1, id2) {
 
 	// return false if either is null (even if both null)
@@ -39,8 +51,12 @@ function mongoIdEqual(id1, id2) {
 
 
 
-
 //---------------------------------------------------------------------------
+/**
+ * Helper function that generates an object with debug diagnostic info about mongoose/mongo database
+ *
+ * @returns object with diagnostic info
+ */
 async function calcDatabaseStructure() {
 	// return info about the database structure
 	const dbStrcuture = await mongoose.connection.db.listCollections().toArray();
@@ -48,6 +64,11 @@ async function calcDatabaseStructure() {
 }
 
 
+/**
+ * Helper function that generates an object with debug diagnostic info about mongoose/mongo database resource use
+ *
+ * @returns object with diagnostic info
+ */
 async function calcDatabaseResourceUse() {
 	// get overall db memory use (in kb)
 	const statsOptions = {
@@ -85,7 +106,16 @@ async function calcDatabaseResourceUse() {
 
 
 //---------------------------------------------------------------------------
-// see https://github.com/Automattic/mongoose/issues/1959
+/**
+ * Checks if a mongo/mongoose id is valid.
+ * @see <a href="https://github.com/Automattic/mongoose/issues/1959">github issue</a>
+ * ##### Notes
+ *  * It may be unwise to use this strict a function, because if mongo id syntax changes it will fail.
+ *  * This function is used to check if a certain string referes to a valid mongo id
+ *
+ * @param {string} str
+ * @returns true if the passed str is a string and matches mongoose/mongo id format
+ */
 function isValidMongooseObjectId(str) {
 	if (typeof str !== "string") {
 		return false;

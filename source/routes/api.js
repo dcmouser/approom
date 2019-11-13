@@ -1,5 +1,4 @@
 /**
- * API Routes
  * @module routes/api
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 10/28/19

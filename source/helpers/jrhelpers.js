@@ -1,19 +1,11 @@
 /**
- * Generic Helper Function Module
  * @module helpers/jrhelpers
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 5/7/19
 
  * @description
- * Just a collection of my general purpose helper functions that could be used in various projects.
+ * Collection of my general purpose helper functions that could be used in various projects.
 */
-
-
-
-// jrhelpers
-// v1.0.0 on 5/7/19 by mouser@donationcoder.com
-//
-// some of my generic helper functions
 
 "use strict";
 

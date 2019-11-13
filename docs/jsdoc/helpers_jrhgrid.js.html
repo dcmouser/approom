@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>helpers/jrhgrid.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="module-controllers_aclaid-AclAid.html">AclAid</a></li></ul><h3>Modules</h3><ul><li><a href="module-controllers_aclaid.html">controllers/aclaid</a></li><li><a href="module-helpers_jrcrypto.html">helpers/jrcrypto</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrcrypto.html#~createHashedObjectFromString">createHashedObjectFromString</a></li><li data-type='method'><a href="module-helpers_jrcrypto.html#~generateRandomSalt">generateRandomSalt</a></li><li data-type='method'><a href="module-helpers_jrcrypto.html#~genRandomStringHex">genRandomStringHex</a></li><li data-type='method'><a href="module-helpers_jrcrypto.html#~genRandomStringHumanEasier">genRandomStringHumanEasier</a></li><li data-type='method'><a href="module-helpers_jrcrypto.html#~genRandomStringHumanEasy">genRandomStringHumanEasy</a></li><li data-type='method'><a href="module-helpers_jrcrypto.html#~hashPlaintextPasswordToObj">hashPlaintextPasswordToObj</a></li><li data-type='method'><a href="module-helpers_jrcrypto.html#~hashPlaintextStringInsecureButSearchable">hashPlaintextStringInsecureButSearchable</a></li><li data-type='method'><a href="module-helpers_jrcrypto.html#~testPlaintextPassword">testPlaintextPassword</a></li></ul></li><li><a href="module-helpers_jrhandlebars.html">helpers/jrhandlebars</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrhandlebars.html#~loadPartialFiles">loadPartialFiles</a></li><li data-type='method'><a href="module-helpers_jrhandlebars.html#~setupJrHandlebarHelpers">setupJrHandlebarHelpers</a></li></ul></li><li><a href="module-helpers_jrhelpers.html">helpers/jrhelpers</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrhelpers.html#~asyncAwaitForEachFunctionCall">asyncAwaitForEachFunctionCall</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~createObjectFromJsonParse">createObjectFromJsonParse</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~DateNowPlusMinutes">DateNowPlusMinutes</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~deepIterationCopy">deepIterationCopy</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~firstCoercedTrueValue">firstCoercedTrueValue</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~getNiceNowString">getNiceNowString</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~getNonFalseValueOrDefault">getNonFalseValueOrDefault</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~getPreciseNowString">getPreciseNowString</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~getServerIpAddress">getServerIpAddress</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~isInAnyArray">isInAnyArray</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~isObjectEmpty">isObjectEmpty</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~isPromise">isPromise</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~isSimpleObject">isSimpleObject</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~makeSafeForFormInput">makeSafeForFormInput</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~mergeArraysDedupe">mergeArraysDedupe</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~mergeArraysKeepDupes">mergeArraysKeepDupes</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~regexEscapeStr">regexEscapeStr</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~shallowCopy">shallowCopy</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~stringArrayToNiceString">stringArrayToNiceString</a></li></ul></li><li><a href="module-helpers_jrhelpersexpress.html">helpers/jrhelpersexpress</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrhelpersexpress.html#~asyncPasswordAuthenticate">asyncPasswordAuthenticate</a></li><li data-type='method'><a href="module-helpers_jrhelpersexpress.html#~asyncPasswordReqLogin">asyncPasswordReqLogin</a></li><li data-type='method'><a href="module-helpers_jrhelpersexpress.html#~calcExpressMiddleWare">calcExpressMiddleWare</a></li><li data-type='method'><a href="module-helpers_jrhelpersexpress.html#~calcExpressRoutePathData">calcExpressRoutePathData</a></li><li data-type='method'><a href="module-helpers_jrhelpersexpress.html#~calcExpressRoutePathDataRouteArray">calcExpressRoutePathDataRouteArray</a></li><li data-type='method'><a href="module-helpers_jrhelpersexpress.html#~calcExpressRoutePathDataSplit">calcExpressRoutePathDataSplit</a></li><li data-type='method'><a href="module-helpers_jrhelpersexpress.html#~forgetSessionVar">forgetSessionVar</a></li><li data-type='method'><a href="module-helpers_jrhelpersexpress.html#~normalizePort">normalizePort</a></li><li data-type='method'><a href="module-helpers_jrhelpersexpress.html#~reqPrefixedValueArray">reqPrefixedValueArray</a></li><li data-type='method'><a href="module-helpers_jrhelpersexpress.html#~reqVal">reqVal</a></li><li data-type='method'><a href="module-helpers_jrhelpersexpress.html#~reqValAsInt">reqValAsInt</a></li><li data-type='method'><a href="module-helpers_jrhelpersexpress.html#~reqValFromList">reqValFromList</a></li></ul></li><li><a href="module-helpers_jrhelpersmdb.html">helpers/jrhelpersmdb</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrhelpersmdb.html#~calcDatabaseResourceUse">calcDatabaseResourceUse</a></li><li data-type='method'><a href="module-helpers_jrhelpersmdb.html#~calcDatabaseStructure">calcDatabaseStructure</a></li><li data-type='method'><a href="module-helpers_jrhelpersmdb.html#~isValidMongooseObjectId">isValidMongooseObjectId</a></li><li data-type='method'><a href="module-helpers_jrhelpersmdb.html#~mongoIdEqual">mongoIdEqual</a></li></ul></li><li><a href="module-helpers_jrhgrid.html">helpers/jrhgrid</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrhgrid.html#~calcHeaderKeysNicely">calcHeaderKeysNicely</a></li><li data-type='method'><a href="module-helpers_jrhgrid.html#~jrGridList">jrGridList</a></li><li data-type='method'><a href="module-helpers_jrhgrid.html#~jrGridListPager">jrGridListPager</a></li><li data-type='method'><a href="module-helpers_jrhgrid.html#~jrGridListPagerItem">jrGridListPagerItem</a></li><li data-type='method'><a href="module-helpers_jrhgrid.html#~jrGridListPagerItemPerPage">jrGridListPagerItemPerPage</a></li><li data-type='method'><a href="module-helpers_jrhgrid.html#~jrGridListTable">jrGridListTable</a></li><li data-type='method'><a href="module-helpers_jrhgrid.html#~jrGridListTableData">jrGridListTableData</a></li><li data-type='method'><a href="module-helpers_jrhgrid.html#~jrGridListTableHeader">jrGridListTableHeader</a></li><li data-type='method'><a href="module-helpers_jrhgrid.html#~jrGridListTableHeaderSortDir">jrGridListTableHeaderSortDir</a></li></ul></li><li><a href="module-helpers_jrhmisc.html">helpers/jrhmisc</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrhmisc.html#~jrBootstrapCollapseBox">jrBootstrapCollapseBox</a></li><li data-type='method'><a href="module-helpers_jrhmisc.html#~jrHtmlFormInputPassword">jrHtmlFormInputPassword</a></li><li data-type='method'><a href="module-helpers_jrhmisc.html#~jrHtmlFormOptionList">jrHtmlFormOptionList</a></li><li data-type='method'><a href="module-helpers_jrhmisc.html#~jrHtmlFormOptionListSelect">jrHtmlFormOptionListSelect</a></li><li data-type='method'><a href="module-helpers_jrhmisc.html#~jrHtmlNiceOptionFromList">jrHtmlNiceOptionFromList</a></li><li data-type='method'><a href="module-helpers_jrhmisc.html#~jrHtmlStrigifyObject">jrHtmlStrigifyObject</a></li><li data-type='method'><a href="module-helpers_jrhmisc.html#~jrPluralize">jrPluralize</a></li><li data-type='method'><a href="module-helpers_jrhmisc.html#~jrPluralizeCount">jrPluralizeCount</a></li></ul></li><li><a href="module-helpers_jrvalidators.html">helpers/jrvalidators</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrvalidators.html#~validateInteger">validateInteger</a></li><li data-type='method'><a href="module-helpers_jrvalidators.html#~validateIntegerRange">validateIntegerRange</a></li><li data-type='method'><a href="module-helpers_jrvalidators.html#~validateRealName">validateRealName</a></li><li data-type='method'><a href="module-helpers_jrvalidators.html#~validateString">validateString</a></li><li data-type='method'><a href="module-helpers_jrvalidators.html#~validateTrueFalse">validateTrueFalse</a></li></ul></li><li><a href="module-routes_api.html">routes/api</a><ul class='methods'><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenAccess">makeSecureTokenAccess</a></li><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenAccessFromRefreshToken">makeSecureTokenAccessFromRefreshToken</a></li><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenRefresh">makeSecureTokenRefresh</a></li><li data-type='method'><a href="module-routes_api.html#~routerAllTokentest">routerAllTokentest</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetIndex">routerGetIndex</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetRefreshaccess">routerGetRefreshaccess</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetReqrefresh">routerGetReqrefresh</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetWildcard">routerGetWildcard</a></li><li data-type='method'><a href="module-routes_api.html#~routerPostReqrefresh">routerPostReqrefresh</a></li><li data-type='method'><a href="module-routes_api.html#~setupRouter">setupRouter</a></li></ul></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">helpers/jrhgrid.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @module helpers/jrhgrid
+ * @author jesse reichler &lt;mouser@donationcoder.com>
+ * @copyright 6/21/19
+
+ * @description
+ * Collection of my helper functions for creating general purpose html grids of data
+*/
+
+"use strict";
+
+
+// our helper modules
+const jrhelpers = require("./jrhelpers");
+const jrhmisc = require("./jrhmisc");
+
+
+
+
+
+
+/**
+ * Builds a grid table/list and form inputs for working with it
+ * ##### ToDo
+ *  * Add info about where listHelperData comes from
+ *
+ * @param {object} req - express request object
+ * @param {obj} listHelperData - data to put in the grid
+ * @returns raw html string
+ */
+async function jrGridList(req, listHelperData) {
+	var rethtml = "";
+
+	// destructure parts
+	const queryUrlData = listHelperData.queryUrlData;
+
+	// form wrapper start
+	rethtml += `
+		&lt;form id="jrGridList_${queryUrlData.tableId}" action="#">
+		`;
+
+	// insert data object for the table
+	var gridListDataJson = JSON.stringify(queryUrlData);
+	rethtml += `&lt;script>
+			var jrGridListData_${queryUrlData.tableId} = ${gridListDataJson};
+		&lt;/script>
+		`;
+
+	var pagerHtml = jrGridListPager(queryUrlData);
+
+	// ADD link
+	var addUrl = queryUrlData.baseUrl + "/add";
+	var addLabel = listHelperData.modelClass.getNiceName();
+	rethtml += `
+			&lt;div class="float-right">&lt;h4>&lt;a href="${addUrl}">Add ${addLabel}&lt;/a>&lt;/h4>&lt;/div>
+		`;
+
+	// add pager at top
+	if (false) {
+		rethtml += pagerHtml;
+	}
+
+	// build table
+	rethtml += await jrGridListTable(req, listHelperData, queryUrlData);
+
+	// add pager at bottom
+	rethtml += pagerHtml;
+
+	// debug info
+	if (false) {
+		rethtml += "&lt;br/>&lt;hr/>";
+		var debugHtml = "&lt;pre>listHelperData: " + JSON.stringify(listHelperData, null, "  ") + "&lt;/pre>";
+		rethtml += debugHtml;
+	}
+
+	// form wrapper start
+	rethtml += `
+		&lt;/form>
+		`;
+
+	// debug extra stuff
+	rethtml += "\n&lt;br/>&lt;hr/>\n" + jrhmisc.jrBootstrapCollapseBox("Table Debug", listHelperData, "");
+
+	// return it as raw html
+	return rethtml;
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//---------------------------------------------------------------------------
+// private helper functions
+/**
+ * Build the html that represents the main area of the grid table
+ * @private
+ * @param {object} req
+ * @param {object} listHelperData
+ * @param {object} queryUrlData
+ * @returns raw html string
+ */
+async function jrGridListTable(req, listHelperData, queryUrlData) {
+	var rethtml = "";
+
+	// beginning stuff
+	rethtml += `
+		&lt;div class="table-responsive">
+			&lt;table class="table table-striped w-auto table-bordered">
+		`;
+
+	// header
+	rethtml += jrGridListTableHeader(listHelperData, queryUrlData);
+
+	// data
+	rethtml += await jrGridListTableData(req, listHelperData, queryUrlData);
+
+	// ending stuff
+	rethtml += `
+			&lt;/table>
+		&lt;/div>
+		`;
+
+	return rethtml;
+}
+
+
+
+/**
+ * Builds the core internal html table data
+ * @private
+ * @param {object} req
+ * @param {object} listHelperData
+ * @param {object} queryUrlData
+ * @returns raw html string
+ */
+async function jrGridListTableData(req, listHelperData, queryUrlData) {
+	var rethtml = "";
+
+	// data body start
+	rethtml += `
+			&lt;tbody>
+		`;
+
+	// data content
+	var schemaExtra = listHelperData.schemaExtra;
+	var headerKeys = calcHeaderKeysNicely(schemaExtra);
+	const gridItems = listHelperData.gridItems;
+
+	//
+	var filterOptions = listHelperData.filterOptions;
+	var protectedFields = filterOptions.protectedFields;
+	var hiddenFields = filterOptions.hiddenFields;
+
+	// cache header field custom display hints
+	var valFuncList = {};
+	var valfunc;
+	headerKeys.forEach((key) => {
+		valfunc = listHelperData.modelClass.getSchemaExtraFieldVal(key, "valueFunction");
+		if (valfunc) {
+			valFuncList[key] = valfunc;
+		}
+	});
+
+	var val, valDisplay, crudLink;
+	var item;
+	var numItems = gridItems.length;
+	for (var i = 0; i &lt; numItems; i += 1) {
+		item = gridItems[i];
+		// start
+		rethtml += `
+				&lt;tr>
+				`;
+		// item row
+		await jrhelpers.asyncAwaitForEachFunctionCall(headerKeys, async (key) => {
+			if (jrhelpers.isInAnyArray(key, hiddenFields)) {
+				return;
+			}
+
+			if (key === "_checkbox") {
+				// checkbox for batch actions
+				rethtml += `
+						&lt;td scope="col"> &lt;input type="checkbox" name="checkboxid_${item._id}"> &lt;/td>
+					`;
+			} else if (key === "_actions") {
+				// action column
+				var urlEdit = queryUrlData.baseUrl + "/edit/" + item._id;
+				var urlDelete = queryUrlData.baseUrl + "/delete/" + item._id;
+				rethtml += `
+						&lt;td scope="col"> &lt;a href="${urlEdit}" title="edit">&amp;#9998;&lt;/a>  &lt;a href="${urlDelete}" title="delete">&amp;#10008;&lt;/a> &lt;/td>
+					`;
+			} else {
+				var format = listHelperData.modelClass.getSchemaExtraFieldVal(key, "format");
+				val = item[key];
+				valfunc = valFuncList[key];
+				if (valfunc) {
+					// use custom value resolving callback function
+					valDisplay = await valfunc("list", key, req, item, listHelperData);
+				} else {
+					if (format === "checkbox") {
+						if (val) {
+							valDisplay = "true";
+						} else {
+							valDisplay = "false";
+						}
+					} else if (val === undefined) {
+						valDisplay = "";
+					} else if (val === null) {
+						valDisplay = "null";
+					} else {
+						valDisplay = val.toString();
+					}
+					//
+					crudLink = listHelperData.modelClass.getSchemaExtraFieldVal(key, "crudLink");
+					if (crudLink) {
+						valDisplay = `&lt;a href="${crudLink}/view/${val}">${valDisplay}&lt;/a>`;
+					}
+				}
+				//
+				if (key === "_id") {
+					var url = queryUrlData.baseUrl + "/view/" + val;
+					rethtml += `
+							&lt;td scope="col"> &lt;a href="${url}">${valDisplay}&lt;/a> &lt;/td>
+						`;
+				} else {
+					rethtml += `
+							&lt;td scope="col"> ${valDisplay} &lt;/td>
+						`;
+				}
+			}
+		});
+		// end
+		rethtml += `
+				&lt;/tr>
+				`;
+	}
+
+	// data body end
+	rethtml += `
+			&lt;/tbody>
+		`;
+
+	return rethtml;
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+/**
+ * Builds html for implementing a pager area for the grid
+ *
+ * @private
+ * @param {object} queryUrlData
+ * @returns raw html string
+ */
+function jrGridListPager(queryUrlData) {
+	// see https://www.tutorialrepublic.com/twitter-bootstrap-tutorial/bootstrap-pagination.php
+	var rethtml = "";
+
+	var pageNum = queryUrlData.pageNum;
+	var resultCount = queryUrlData.resultCount;
+	var pageSize = queryUrlData.pageSize;
+	//
+	var pageCount = Math.ceil(resultCount / pageSize);
+	var pageSurroundCount = 3;
+	//
+	var pageStart = Math.max(1, pageNum - pageSurroundCount);
+	var pageEnd = Math.min(pageCount, pageNum + pageSurroundCount);
+	var pageUp = Math.max(1, pageNum - ((pageSurroundCount * 2) + 1));
+	var pageDown = Math.min(pageCount, pageNum + ((pageSurroundCount * 2) + 1));
+	var flagActive;
+	//
+	// we want like:  FIRST | PREVIOUS | ... | 4 | 5 | 6 | 7 | 8 | ... | NEXT | LAST
+
+	rethtml += `
+		&lt;nav>
+			&lt;ul class="pagination">
+			`;
+
+	// build the items before current pages
+	rethtml += jrGridListPagerItem("First", 1, (pageNum !== 1), false, queryUrlData);
+	rethtml += jrGridListPagerItem("Previous", pageNum - 1, (pageNum > 1), false, queryUrlData);
+	rethtml += jrGridListPagerItem("...", pageUp, (pageUp &lt; pageNum), false, queryUrlData);
+	// surrounding numbers around current page
+	for (var i = pageStart; i &lt;= pageEnd; i += 1) {
+		if (i === pageNum) {
+			flagActive = true;
+		} else {
+			flagActive = false;
+		}
+		rethtml += jrGridListPagerItem(i.toString(), i, true, flagActive, queryUrlData);
+	}
+	// after current pages
+	rethtml += jrGridListPagerItem("...", pageDown, (pageDown > pageNum), false, queryUrlData);
+	rethtml += jrGridListPagerItem("Next", pageNum + 1, (pageNum &lt; pageCount), false, queryUrlData);
+	rethtml += jrGridListPagerItem("Last (" + pageCount + ")", pageCount, (pageNum &lt; pageCount), false, queryUrlData);
+
+	rethtml += `
+		&lt;/ul>
+		&lt;/nav>
+		`;
+
+	// page size selector
+	rethtml += `
+		&lt;nav>
+			&lt;ul class="pagination">
+		`;
+	//
+	rethtml += jrGridListPagerItemPerPage("Items per page", 0, pageSize, false, queryUrlData);
+	rethtml += jrGridListPagerItemPerPage(null, 10, pageSize, true, queryUrlData);
+	rethtml += jrGridListPagerItemPerPage(null, 50, pageSize, true, queryUrlData);
+	rethtml += jrGridListPagerItemPerPage(null, 100, pageSize, true, queryUrlData);
+	rethtml += jrGridListPagerItemPerPage(null, 250, pageSize, true, queryUrlData);
+	rethtml += jrGridListPagerItemPerPage(null, 500, pageSize, true, queryUrlData);
+	rethtml += jrGridListPagerItemPerPage(null, 1000, pageSize, true, queryUrlData);
+	//
+	rethtml += `
+			&lt;/ul>
+			&lt;/nav>
+		`;
+
+	// return it
+	return rethtml;
+}
+
+/**
+ * Builds a single pager item.
+ *
+ * @private
+ * @param {string} label
+ * @param {int} pageIndex - current page
+ * @param {boolean} flagLink - whether pager item should be a working link
+ * @param {boolean} flagActive - whether this pager item represents current page
+ * @param {object} queryUrlData
+ * @returns raw html string
+ */
+function jrGridListPagerItem(label, pageIndex, flagLink, flagActive, queryUrlData) {
+	// make an item for pager
+	var liclass = "";
+	if (flagActive) {
+		liclass += " active";
+	}
+	if (!flagLink) {
+		liclass += " disabled";
+	}
+	var url = "#";
+	var updateObjString = "{pageNum: '" + pageIndex.toString() + "'}";
+	var onclick = "requestGridUpdate('" + queryUrlData.tableId + "', " + updateObjString + ");return false;";
+
+	var rethtml = `
+		&lt;li class="page-item${liclass}">
+			&lt;a href="${url}" onclick="${onclick}" class="page-link">${label}&lt;/a>
+		&lt;/li>
+		`;
+
+	return rethtml;
+}
+
+
+/**
+ * Helper function that creates the per-page dropdown option select
+ *
+ * @private
+ * @param {string} label
+ * @param {int} newPageSize - the new page size that this item selects
+ * @param {int} currentPageSize - the current page size of the currently viewed page
+ * @param {boolean} flagLink - whether to link it
+ * @param {object} queryUrlData
+ * @returns raw html string
+ */
+function jrGridListPagerItemPerPage(label, newPageSize, currentPageSize, flagLink, queryUrlData) {
+	// make an item for pager page size control
+	if (label === null) {
+		label = newPageSize.toString();
+	}
+	var flagActive = (newPageSize === currentPageSize);
+	var liclass = "";
+	if (flagActive) {
+		liclass += " active";
+	}
+	if (!flagLink) {
+		liclass += " disabled";
+	}
+
+	var url = "#"; // queryUrlData.baseUrl + "?pageSize=" + newPageSize.toString();
+	var updateObjString = "{pageSize: '" + newPageSize.toString() + "'}";
+	var onclick = "requestGridUpdate('" + queryUrlData.tableId + "', " + updateObjString + ");return false;";
+
+	var rethtml = `
+		&lt;li class="page-item${liclass}">
+			&lt;a href="${url}" onclick="${onclick}" class="page-link">${label}&lt;/a>
+		&lt;/li>
+		`;
+
+	return rethtml;
+}
+
+
+/**
+ * Generates the header for a table with sortable columns, and filters
+ * @private
+ * @param {object} listHelperData
+ * @param {object} queryUrlData
+ * @returns raw html string
+ */
+function jrGridListTableHeader(listHelperData, queryUrlData) {
+	// defaults
+	const defaultFilterInputSize = 20;
+	const flagUseLabel = true;
+
+	// header start
+	var rethtml = "";
+	rethtml += `
+			&lt;thead>
+		`;
+
+	// main header content
+	rethtml += `
+				&lt;tr>
+		`;
+
+	// data content
+	var schemaExtra = listHelperData.schemaExtra;
+	var headerKeys = calcHeaderKeysNicely(schemaExtra);
+	var filterOptions = listHelperData.filterOptions;
+	var protectedFields = filterOptions.protectedFields;
+	var hiddenFields = filterOptions.hiddenFields;
+
+	var onclick;
+	headerKeys.forEach((key) => {
+		if (jrhelpers.isInAnyArray(key, hiddenFields)) {
+			return;
+		}
+		//
+		if (key === "_checkbox") {
+			// toggle check all button
+			onclick = "jrGridToggleCheckboxes('" + queryUrlData.tableId + "');return false;";
+			rethtml += `
+					&lt;th scope="col"> &lt;input type="checkbox" name="_checkbox_all" onclick="${onclick}" title="toggle all checkboxes"> &lt;/th>
+				`;
+		} else if (key === "_actions") {
+			// actions column for edit/delete buttons
+			rethtml += `
+					&lt;th scope="col"> &amp;nbsp; &lt;/th>
+				`;
+		} else if (false &amp;&amp; jrhelpers.isInAnyArray(key, protectedFields)) {
+			rethtml += `
+					&lt;th scope="col">${key}&lt;/th>
+				`;
+		} else {
+			var sortDir = jrGridListTableHeaderSortDir(key, queryUrlData);
+			var extraLabel = "";
+			var updateObjString;
+			var title;
+			var keyLabel;
+			if (sortDir) {
+				if (sortDir === "asc") {
+					extraLabel = " &amp;#9660;";
+					updateObjString = "{sortDir: 'desc'}";
+				} else {
+					extraLabel = " &amp;#9650;";
+					updateObjString = "{sortDir: 'asc'}";
+				}
+				title = "change sort direction";
+			} else {
+				updateObjString = "{sortField:'" + key + "', sortDir: 'asc'}";
+				title = "sort on this variable";
+			}
+			onclick = "requestGridUpdate('" + queryUrlData.tableId + "', " + updateObjString + ");return false;";
+			//
+			// use label?
+			if (flagUseLabel) {
+				keyLabel = listHelperData.modelClass.getSchemaExtraFieldVal(key, "label", key);
+			} else {
+				if (key === "_id") {
+					// fixup for id
+					keyLabel = "id";
+				} else {
+					keyLabel = key;
+				}
+			}
+			rethtml += `
+					&lt;th scope="col"> &lt;a href="#" onclick="${onclick}" title="${title}"> ${keyLabel}${extraLabel} &lt;/a>&lt;/th>
+				`;
+		}
+	});
+	//
+	rethtml += `
+				&lt;/tr>
+		`;
+
+	// filter row
+	rethtml += `
+				&lt;tr>
+		`;
+	headerKeys.forEach((key) => {
+		if (jrhelpers.isInAnyArray(key, hiddenFields)) {
+			return;
+		}
+		if (key === "_checkbox") {
+			onclick = "jrGridClearFilters('" + queryUrlData.tableId + "'); requestGridUpdate('" + queryUrlData.tableId + "', {}); return false;";
+			rethtml += `
+					&lt;th scope="col"> &lt;a href="#" onclick="${onclick}" title="clear all filters"> &amp;#x2717; &lt;/a> &lt;/th>
+				`;
+		} else if (key === "_actions") {
+			// action column
+			rethtml += `
+					&lt;th scope="col"> &amp;nbsp; &lt;/th>
+				`;
+		} else if (jrhelpers.isInAnyArray(key, protectedFields)) {
+			rethtml += `
+					&lt;th scope="col">&amp;nbsp;&lt;/th>
+				`;
+		} else {
+			var val = queryUrlData.fieldFilters[key];
+			if (val === undefined) {
+				val = "";
+			} else {
+				val = jrhelpers.makeSafeForFormInput(val);
+			}
+			var onkeydown = "jrGridGenericOnEnterRefresh(event, '" + queryUrlData.tableId + "', this)";
+			var size = listHelperData.modelClass.getSchemaExtraFieldVal(key, "filterSize", defaultFilterInputSize);
+			if (!size) {
+				rethtml += `
+						&lt;th scope="col"> &amp;nbsp; &lt;/th>
+					`;
+			} else {
+				rethtml += `
+						&lt;th scope="col"> &lt;input type="text" name="filter_${key}" value="${val}" size="${size}" onkeydown="${onkeydown}" title="type search filter and hit Enter to refresh"> &lt;/th>
+					`;
+			}
+		}
+	});
+	//
+	rethtml += `
+				&lt;/tr>
+		`;
+
+	// header end
+	rethtml += `
+			&lt;/thead>
+		`;
+
+	return rethtml;
+}
+
+/**
+ * Returns the sort direction of a column key, based on previously parsed data
+ * @private
+ * @param {*} key
+ * @param {*} queryUrlData
+ * @returns string sort direction (asc|desc|null)
+ */
+function jrGridListTableHeaderSortDir(key, queryUrlData) {
+	if (queryUrlData.sortField === key) {
+		return queryUrlData.sortDir;
+	}
+	return null;
+}
+
+
+
+/**
+ * Get keys (columnns) for the header, adding our special ones for checkbox column and actions icons column
+ * @private
+ * @param {object} gridSchema
+ * @returns raw html string
+ */
+function calcHeaderKeysNicely(gridSchema) {
+	var headerKeys = Object.keys(gridSchema);
+
+	// add checkbox
+	headerKeys.unshift("_checkbox");
+
+	// add column for actions at end
+	headerKeys.push("_actions");
+
+	// return it
+	return headerKeys;
+}
+//---------------------------------------------------------------------------
+
+
+
+
+// export the class as the sole export
+module.exports = {
+	jrGridList,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.3</a> on Wed Nov 13 2019 06:59:20 GMT-0600 (Central Standard Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

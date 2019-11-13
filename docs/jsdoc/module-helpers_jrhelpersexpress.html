@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>helpers/jrhelpers - Documentation</title>
+    <title>helpers/jrhelpersexpress - Documentation</title>
     
     
     <script src="scripts/prettify/prettify.js"></script>
@@ -32,7 +32,7 @@
 
 <div id="main">
     
-    <h1 class="page-title">helpers/jrhelpers</h1>
+    <h1 class="page-title">helpers/jrhelpersexpress</h1>
     
 
     
@@ -55,7 +55,7 @@
         <div class="container-overview">
         
             
-                <div class="description"><p>Collection of my general purpose helper functions that could be used in various projects.</p></div>
+                <div class="description"><p>Collection of helper functions for use with the nodejs express web framework</p></div>
             
 
             
@@ -69,7 +69,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line1">line 1</a>
+        <a href="helpers_jrhelpersexpress.js.html">helpers/jrhelpersexpress.js</a>, <a href="helpers_jrhelpersexpress.js.html#line1">line 1</a>
     </li></ul></dd>
     
 
@@ -100,7 +100,7 @@
 
     
     <dt class="tag-copyright">Copyright:</dt>
-    <dd class="tag-copyright"><ul class="dummy"><li>5/7/19</li></ul></dd>
+    <dd class="tag-copyright"><ul class="dummy"><li>11/2/19</li></ul></dd>
     
 
     
@@ -172,7 +172,7 @@
 
     
 
-    <h4 class="name" id="~asyncAwaitForEachFunctionCall"><span class="type-signature">(async, inner) </span>asyncAwaitForEachFunctionCall<span class="signature">(array, func)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~asyncPasswordAuthenticate"><span class="type-signature">(async, inner) </span>asyncPasswordAuthenticate<span class="signature">(authOptions, provider, providerNiceLabel, req, res, next, jrResult)</span><span class="type-signature"></span></h4>
 
     
 
@@ -184,1457 +184,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line68">line 68</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-<div class="description">
-    <p>Take an iteratble (array) of objects and a function to call on each, and do an await function on each.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Example</h5>
-    
-    <pre class="prettyprint"><code>asyncAwaitForEachFunctionCall([1 2 3], (x) => {console.log(x)})</code></pre>
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>array</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">array</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>func</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="~createObjectFromJsonParse"><span class="type-signature">(inner) </span>createObjectFromJsonParse<span class="signature">(str, defaultVal)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-
-<dl class="details">
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line319">line 319</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-<div class="description">
-    <p>Simple wrapper around JSON.parse, which parses a json string and creates an object.
-Only thing extra we do is check for being passed in an empty string/null/undefined and return {} in that case</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>str</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>defaultVal</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">*</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>result of JSON.parse on string or  if string is &quot;&quot; or undefined or null</p>
-</div>
-
-
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="~DateNowPlusMinutes"><span class="type-signature">(inner) </span>DateNowPlusMinutes<span class="signature">(expirationMinutes)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-
-<dl class="details">
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line147">line 147</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-<div class="description">
-    <p>return a new Date() whose date is a certain number of minutes in the future; useful for setting expiration times</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>expirationMinutes</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">int</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>Date</p>
-</div>
-
-
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="~deepIterationCopy"><span class="type-signature">(inner) </span>deepIterationCopy<span class="signature">(src)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-
-<dl class="details">
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line187">line 187</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-<div class="description">
-    <p>Performs a deep copy of an object, recursing into sub properties to clone them instead of reuse references</p>
-<h5>Notes</h5>
-<p>See <a href="https://medium.com/better-programming/3-ways-to-clone-objects-in-javascript-f752d148054d">Medium.com post on different ways to copy objects</a></p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>src</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">*</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>new object deep copy of the source</p>
-</div>
-
-
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="~firstCoercedTrueValue"><span class="type-signature">(inner) </span>firstCoercedTrueValue<span class="signature">(&hellip;args)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-
-<dl class="details">
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line104">line 104</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-<div class="description">
-    <p>Accepts a variadic list of arguments and returns the first one that can be coerced to true.</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>args</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">*</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                    &lt;repeatable><br>
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>variadic list of arguments</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>the first arg that evaluates to true (e.g. not null, undefined, false, &quot;&quot;); if none found returns undefined</p>
-</div>
-
-
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="~getNiceNowString"><span class="type-signature">(inner) </span>getNiceNowString<span class="signature">()</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-
-<dl class="details">
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line223">line 223</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-<div class="description">
-    <p>Return current date as a string in a nice format, in local time zone</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>current date as string</p>
-</div>
-
-
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="~getNonFalseValueOrDefault"><span class="type-signature">(inner) </span>getNonFalseValueOrDefault<span class="signature">(val, defaultVal)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-
-<dl class="details">
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line90">line 90</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-<div class="description">
-    <p>If val evaluates to false (which will happen on values of null, undefined, false, and &quot;&quot;), return defaultVal, otherwise return val.</p>
-<h5>Notes</h5>
-<ul>
-<li>The intention of this function is to be used to check if a value was provided for some option, and use a default if not.</li>
-<li>This can be confusing if the false value is passed in and caller expects to get it back instead of the defaultVal</li>
-<li>In previous version we explicitly tested val against null, undefined, and &quot;&quot;</li>
-<li>The main reason to use a function for this instead of just using a line in code testing truthiness of val, is to help us locate these kind of tests in code via a search, since they are prone to issues.</li>
-</ul>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>val</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">*</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>defaultVal</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">*</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>val [if it evaluates to true] else defaultVal</p>
-</div>
-
-
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="~getPreciseNowString"><span class="type-signature">(inner) </span>getPreciseNowString<span class="signature">()</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-
-<dl class="details">
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line232">line 232</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-<div class="description">
-    <p>Return the current date in a standardized string format with precise timing; suitable for timestampign to seconds accuracy</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>current date and time as string with seconds precision</p>
-</div>
-
-
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="~getServerIpAddress"><span class="type-signature">(inner) </span>getServerIpAddress<span class="signature">()</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-
-<dl class="details">
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line341">line 341</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-<div class="description">
-    <p>Try to figure out the servers ip address, and return it as a string.</p>
-<h5>Notes</h5>
-<ul>
-<li>see <a href="https://stackoverflow.com/questions/3653065/get-local-ip-address-in-node-js">stackoverflow post</a></li>
-<li>This function has barely been tested and should not be considered reliable.</li>
-<li>We are currently using it only to get a string that we can use to look for a site-specific configuration file based on the current server ip, and just to display on screen and in logs.</li>
-<li>So our goal is simply to return a string that is different on different servers, but always the same on a given server</li>
-<li>You cannot assume that the returned value is of a particular format; we dont check for that.</li>
-</ul>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>string representation of ip address</p>
-</div>
-
-
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="~isInAnyArray"><span class="type-signature">(inner) </span>isInAnyArray<span class="signature">(val, &hellip;arrays)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-
-<dl class="details">
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line48">line 48</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-<div class="description">
-    <p>Check if a value is present in any arrays</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>val</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">*</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>arrays</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">array</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                    &lt;repeatable><br>
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>(1 or more arrays passed as variadic arguements)</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>true if val is found in any of the arrays</p>
-</div>
-
-
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="~isObjectEmpty"><span class="type-signature">(inner) </span>isObjectEmpty<span class="signature">(obj)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-
-<dl class="details">
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line126">line 126</a>
+        <a href="helpers_jrhelpersexpress.js.html">helpers/jrhelpersexpress.js</a>, <a href="helpers_jrhelpersexpress.js.html#line42">line 42</a>
     </li></ul></dd>
     
 
@@ -1668,7 +218,7 @@ Only thing extra we do is check for being passed in an empty string/null/undefin
     <dt class="tag-see">See:</dt>
     <dd class="tag-see">
         <ul>
-            <li><a href="https://stackoverflow.com/questions/679915/how-do-i-test-for-an-empty-javascript-object">stackoverflow question on testing for empty objects</a></li>
+            <li><a href="https://github.com/jaredhanson/passport/issues/605">passport docs</a></li>
         </ul>
     </dd>
     
@@ -1681,7 +231,8 @@ Only thing extra we do is check for being passed in an empty string/null/undefin
 
 
 <div class="description">
-    <p>Checks if the passed argument is an empty object/array/list by checking its length</p>
+    <p>Async Wrapper around the express/passport passport.authenticate function</p>
+<p>The passport library uses callbacks instead of promises and aync functions, so we wrap it here in a function that let's us use it like an async function for ease of use.</p>
 </div>
 
 
@@ -1719,7 +270,7 @@ Only thing extra we do is check for being passed in an empty string/null/undefin
 
         <tr>
             
-                <td class="name"><code>obj</code></td>
+                <td class="name"><code>authOptions</code></td>
             
 
             <td class="type">
@@ -1735,7 +286,145 @@ Only thing extra we do is check for being passed in an empty string/null/undefin
 
             
 
-            <td class="description last"><p>an array, object, or iterable with length property, OR an undefined/null valued variable</p></td>
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>provider</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>providerNiceLabel</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>req</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>next</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>jrResult</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>our JrResult class with info about success or errors; pass in a valid instance and it is updated</p></td>
         </tr>
 
     
@@ -1761,7 +450,7 @@ Only thing extra we do is check for being passed in an empty string/null/undefin
 
         
 <div class="param-desc">
-    <p>true if the passed obj evaluates to false (null, undefined, &quot;&quot;, false) OR is an object/array with no properties.</p>
+    <p>a simple object with passport user data</p>
 </div>
 
 
@@ -1775,7 +464,7 @@ Only thing extra we do is check for being passed in an empty string/null/undefin
 
     
 
-    <h4 class="name" id="~isPromise"><span class="type-signature">(inner) </span>isPromise<span class="signature">(value)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~asyncPasswordReqLogin"><span class="type-signature">(async, inner) </span>asyncPasswordReqLogin<span class="signature">(userPassport, errorMessage, req, jrResult)</span><span class="type-signature"></span></h4>
 
     
 
@@ -1787,7 +476,7 @@ Only thing extra we do is check for being passed in an empty string/null/undefin
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line302">line 302</a>
+        <a href="helpers_jrhelpersexpress.js.html">helpers/jrhelpersexpress.js</a>, <a href="helpers_jrhelpersexpress.js.html#line96">line 96</a>
     </li></ul></dd>
     
 
@@ -1821,7 +510,7 @@ Only thing extra we do is check for being passed in an empty string/null/undefin
     <dt class="tag-see">See:</dt>
     <dd class="tag-see">
         <ul>
-            <li><a href="https://stackoverflow.com/questions/27746304/how-do-i-tell-if-an-object-is-a-promise">stackoverflow post</a></li>
+            <li><a href="https://github.com/jaredhanson/passport/issues/605">passport docs</a></li>
         </ul>
     </dd>
     
@@ -1834,7 +523,8 @@ Only thing extra we do is check for being passed in an empty string/null/undefin
 
 
 <div class="description">
-    <p>Returns true if the object passed is a promise</p>
+    <p>Async Wrapper around the express req.logIn function</p>
+<p>The express library uses callbacks instead of promises and aync functions, so we wrap it here in a function that let's us use it like an async function for ease of use.</p>
 </div>
 
 
@@ -1872,7 +562,7 @@ Only thing extra we do is check for being passed in an empty string/null/undefin
 
         <tr>
             
-                <td class="name"><code>value</code></td>
+                <td class="name"><code>userPassport</code></td>
             
 
             <td class="type">
@@ -1888,144 +578,14 @@ Only thing extra we do is check for being passed in an empty string/null/undefin
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>simple object with user data to log in the user</p></td>
         </tr>
 
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>true if the passed value is a promise</p>
-</div>
-
-
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="~isSimpleObject"><span class="type-signature">(inner) </span>isSimpleObject<span class="signature">(maybeObj)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-
-<dl class="details">
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line288">line 288</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-<div class="description">
-    <p>Returns true if the passed value is derived from the Object class/constructor.</p>
-<h5>Notes</h5>
-<ul>
-<li>This will return false for object that are more elaborate classes, and is only meant to be used for doing deep copies of simple {} objects</li>
-<li>This will return false if the passed value is null or undefined</li>
-<li>This will return false if the passed object is a function (unlike the code it was based on)</li>
-<li>see <a href="https://stackoverflow.com/questions/8511281/check-if-a-value-is-an-object-in-javascript">stackoverflow on checking if a value is an object</a></li>
-</ul>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
     
 
         <tr>
             
-                <td class="name"><code>maybeObj</code></td>
+                <td class="name"><code>errorMessage</code></td>
             
 
             <td class="type">
@@ -2041,7 +601,200 @@ Only thing extra we do is check for being passed in an empty string/null/undefin
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>text of errror message added to jrResult on error</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>req</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>express request</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>jrResult</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>our JrResult class with info about success or errors; pass in a valid instance and it is updated</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~calcExpressMiddleWare"><span class="type-signature">(inner) </span>calcExpressMiddleWare<span class="signature">(app)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrhelpersexpress.js.html">helpers/jrhelpersexpress.js</a>, <a href="helpers_jrhelpersexpress.js.html#line167">line 167</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="https://github.com/yshing/express-list-middleware/blob/master/index.js">github code</a></li>
+        
+            <li><a href="https://github.com/yshing/express-repl-toolkit/tree/master/tools">github code</a>
+##### Notes
+ * Uses an interesting trick to get file and line number where the middleware is located</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Helper debug function that generates a list (object) of express middleware for display</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>app</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the express app object</p></td>
         </tr>
 
     
@@ -2067,7 +820,7 @@ Only thing extra we do is check for being passed in an empty string/null/undefin
 
         
 <div class="param-desc">
-    <p>true if the passed value is a (simple) object</p>
+    <p>object containing all middleware, suitable for json stringifcation to console, etc.</p>
 </div>
 
 
@@ -2081,7 +834,7 @@ Only thing extra we do is check for being passed in an empty string/null/undefin
 
     
 
-    <h4 class="name" id="~makeSafeForFormInput"><span class="type-signature">(inner) </span>makeSafeForFormInput<span class="signature">(str)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~calcExpressRoutePathData"><span class="type-signature">(inner) </span>calcExpressRoutePathData<span class="signature">(expressApp)</span><span class="type-signature"></span></h4>
 
     
 
@@ -2093,7 +846,7 @@ Only thing extra we do is check for being passed in an empty string/null/undefin
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line268">line 268</a>
+        <a href="helpers_jrhelpersexpress.js.html">helpers/jrhelpersexpress.js</a>, <a href="helpers_jrhelpersexpress.js.html#line190">line 190</a>
     </li></ul></dd>
     
 
@@ -2133,11 +886,7 @@ Only thing extra we do is check for being passed in an empty string/null/undefin
 
 
 <div class="description">
-    <p>Escape any characters or remove them, that would be illegal to have inside a form input value</p>
-<h5>Notes</h5>
-<ul>
-<li>Replaces double quote characters with &quot;</li>
-</ul>
+    <p>Helper debug function the generates a list (object) of all paths registered to the express app</p>
 </div>
 
 
@@ -2175,649 +924,7 @@ Only thing extra we do is check for being passed in an empty string/null/undefin
 
         <tr>
             
-                <td class="name"><code>str</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>version of string with double quotes replaced, etc.</p>
-</div>
-
-
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="~mergeArraysDedupe"><span class="type-signature">(inner) </span>mergeArraysDedupe<span class="signature">(array1, array2)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-
-<dl class="details">
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line37">line 37</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-<div class="description">
-    <p>Combine two arrays and return the combined array, removing all duplicates</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>array1</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">array</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>array2</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">array</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>the combined de-duped array</p>
-</div>
-
-
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="~mergeArraysKeepDupes"><span class="type-signature">(inner) </span>mergeArraysKeepDupes<span class="signature">(array1, array2)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-
-<dl class="details">
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line26">line 26</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-<div class="description">
-    <p>Combine two arrays and return the concatenation; duplicates are <em>not</em> removed</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>array1</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">array</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>array2</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">array</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>concatenated array</p>
-</div>
-
-
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="~regexEscapeStr"><span class="type-signature">(inner) </span>regexEscapeStr<span class="signature">(str)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-
-<dl class="details">
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line255">line 255</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-<div class="description">
-    <p>Replace special characters in string so it can be used in regex.
-This is useful when we want to use a user-provided string in a regular expression and so we need to validate/escape it first.
-It is used in our admin crud area filters to convert a simple user substring into a wildcard search string</p>
-<h5>TODO</h5>
-<ul>
-<li>check this for any security vulnerabilities</li>
-</ul>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>str</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>escaped version of string suitable for use inside a regular expression (i.e. no unescaped regex characters)</p>
-</div>
-
-
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="~shallowCopy"><span class="type-signature">(inner) </span>shallowCopy<span class="signature">(source)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-
-<dl class="details">
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line171">line 171</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-<div class="description">
-    <p>Copies an objects properties, in a shallow fashion (nested objects/arrays reuse the references)</p>
-<h5>Notes</h5>
-<ul>
-<li>This is not a deep copy, it will reuse any sub object/array properties</li>
-<li>We use a function instead of one-line of code to make it easier to find places in code where this happens</li>
-<li>See <a href="https://medium.com/better-programming/3-ways-to-clone-objects-in-javascript-f752d148054d">Medium.com post on different ways to copy objects</a></li>
-</ul>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>source</code></td>
+                <td class="name"><code>expressApp</code></td>
             
 
             <td class="type">
@@ -2859,7 +966,7 @@ It is used in our admin crud area filters to convert a simple user substring int
 
         
 <div class="param-desc">
-    <p>new object with cloned properties</p>
+    <p>object containing all routes (and whether they are get|post|all)</p>
 </div>
 
 
@@ -2873,7 +980,7 @@ It is used in our admin crud area filters to convert a simple user substring int
 
     
 
-    <h4 class="name" id="~stringArrayToNiceString"><span class="type-signature">(inner) </span>stringArrayToNiceString<span class="signature">(arr)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="~calcExpressRoutePathDataRouteArray"><span class="type-signature">(private, inner) </span>calcExpressRoutePathDataRouteArray<span class="signature">(routes, routepath, layer)</span><span class="type-signature"></span></h4>
 
     
 
@@ -2885,7 +992,7 @@ It is used in our admin crud area filters to convert a simple user substring int
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="helpers_jrhelpers.js.html">helpers/jrhelpers.js</a>, <a href="helpers_jrhelpers.js.html#line211">line 211</a>
+        <a href="helpers_jrhelpersexpress.js.html">helpers/jrhelpersexpress.js</a>, <a href="helpers_jrhelpersexpress.js.html#line216">line 216</a>
     </li></ul></dd>
     
 
@@ -2925,7 +1032,7 @@ It is used in our admin crud area filters to convert a simple user substring int
 
 
 <div class="description">
-    <p>Simple wrapper arround array.toString that returns blank string if passed value is null, undefined, or empty</p>
+    <p>Internal helper debug function the helps to generate a list (object) of all paths registered to the express app</p>
 </div>
 
 
@@ -2963,13 +1070,13 @@ It is used in our admin crud area filters to convert a simple user substring int
 
         <tr>
             
-                <td class="name"><code>arr</code></td>
+                <td class="name"><code>routes</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">array</span>
+<span class="param-type">*</span>
 
 
             
@@ -2979,7 +1086,197 @@ It is used in our admin crud area filters to convert a simple user substring int
 
             
 
-            <td class="description last"><p>an array or null or undefined</p></td>
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>routepath</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>layer</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~calcExpressRoutePathDataSplit"><span class="type-signature">(private, inner) </span>calcExpressRoutePathDataSplit<span class="signature">(thing)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrhelpersexpress.js.html">helpers/jrhelpersexpress.js</a>, <a href="helpers_jrhelpersexpress.js.html#line238">line 238</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="https://github.com/expressjs/express/issues/3308">github code</a></li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Internal helper debug function the helps to generate a list (object) of all paths registered to the express app.
+Splits on path separator.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>thing</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
         </tr>
 
     
@@ -3005,7 +1302,1149 @@ It is used in our admin crud area filters to convert a simple user substring int
 
         
 <div class="param-desc">
-    <p>arr.toString() if there are items in the array, otherwise empty string &quot;&quot;</p>
+    <p>split of path</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~forgetSessionVar"><span class="type-signature">(inner) </span>forgetSessionVar<span class="signature">(req, varName)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrhelpersexpress.js.html">helpers/jrhelpersexpress.js</a>, <a href="helpers_jrhelpersexpress.js.html#line347">line 347</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Deletes the varname from session data</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>req</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">obj</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>varName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~normalizePort"><span class="type-signature">(inner) </span>normalizePort<span class="signature">(portval)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrhelpersexpress.js.html">helpers/jrhelpersexpress.js</a>, <a href="helpers_jrhelpersexpress.js.html#line139">line 139</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Suggested code from express builder sample applications; used when creating server and binding it to ip+port</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>portval</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>port value (possibly provided as string), converted to an integer if possible</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~reqPrefixedValueArray"><span class="type-signature">(inner) </span>reqPrefixedValueArray<span class="signature">(req, prefix, keyList)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrhelpersexpress.js.html">helpers/jrhelpersexpress.js</a>, <a href="helpers_jrhelpersexpress.js.html#line323">line 323</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Express helper to look for all properties with a given prefix</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>req</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>express request object</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>prefix</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the prefix string</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>keyList</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>an associative array of all key=&gt;value pairs of request properties where key starts with &quot;prefix_key&quot; and key is in keyList</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~reqVal"><span class="type-signature">(inner) </span>reqVal<span class="signature">(req, key, defaultVal)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrhelpersexpress.js.html">helpers/jrhelpersexpress.js</a>, <a href="helpers_jrhelpersexpress.js.html#line262">line 262</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Express helper function to look for property in request BODY or QUERY and return it, or defaultVal if not present</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>req</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>express request object</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>key</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>key to look for in request body or query</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defaultVal</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>to return if key not found in request</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>req.body[key] or req.query[key] or defaultVal</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~reqValAsInt"><span class="type-signature">(inner) </span>reqValAsInt<span class="signature">(req, key, min, max, defaultVal)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrhelpersexpress.js.html">helpers/jrhelpersexpress.js</a>, <a href="helpers_jrhelpersexpress.js.html#line284">line 284</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Express helper to look for property in request BODY or QUERY and return it, or defaultVal if not present</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>req</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>express request object</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>key</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>key to look for in request body or query</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>min</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">int</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>min int to floor the value to</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>max</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">int</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>max int to ceil the value to</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defaultVal</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">int</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>to return if key not found in request</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>req.body[key] or req.query[key] cast to int in range [min,max] or defaultVal</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~reqValFromList"><span class="type-signature">(inner) </span>reqValFromList<span class="signature">(req, key, valueList, defaultVal)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrhelpersexpress.js.html">helpers/jrhelpersexpress.js</a>, <a href="helpers_jrhelpersexpress.js.html#line306">line 306</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Express helper to look for property in request BODY or QUERY and return it, or defaultVal if not present</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>req</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>express request object</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>key</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>key to look for in request body or query</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>valueList</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">array</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>list of values that are acceptable</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defaultVal</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>to return if key not found in request</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>req.body[key] or req.query[key] as long as they are present in valueList, otherwise defaultVal</p>
 </div>
 
 

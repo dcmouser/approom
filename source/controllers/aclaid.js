@@ -1,11 +1,7 @@
 /**
- * Access Control Module
  * @module controllers/aclaid
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 9/6/19
-
- * @see <a href="https://security.stackexchange.com/questions/346/what-is-the-difference-between-rbac-and-dac-acl"> rbac vs acl</a>
- * @see <a href=" https://dinolai.com/notes/others/authorization-models-acl-dac-mac-rbac-abac.html">comparing authorization approaches</a>
 
  * @description
  * Philosophy:\
@@ -23,10 +19,13 @@
  * But another way is for the caller to determine the least onerous contextual relationship between user U and object O and simply ask the ACL system whether user U can perform action [A,C].\
  * This query looks something like: "Can user U perform action [Edit,OwnProfile]" if the user tries to edit their own profile, or "Can user U perform action [Edit,AnyProfile]" if the user tries to edit someone else's profile.\
  * We choose to use the second approach.
-*/
-
+ * ##### Notes
+ *  * @see <a href="https://security.stackexchange.com/questions/346/what-is-the-difference-between-rbac-and-dac-acl"> rbac vs acl</a>
+ *  * @see <a href=" https://dinolai.com/notes/others/authorization-models-acl-dac-mac-rbac-abac.html">comparing authorization approaches</a>
+ */
 
 "use strict";
+
 
 // misc node core modules
 const assert = require("assert");
@@ -38,10 +37,14 @@ const roleAcl = require("role-acl");
 const jrlog = require("../helpers/jrlog");
 
 
+/**
+ * Helps manage access control functions and data
+ *
+ * @class AclAid
+ */
 class AclAid {
 
 	//---------------------------------------------------------------------------
-	// constructor
 	constructor() {
 	}
 

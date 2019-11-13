@@ -1,7 +1,11 @@
-// jrhandlebars
-// v1.0.0 on 5/24/19 by mouser@donationcoder.com
-//
-// some general purpose handlebars temlate helpers
+/**
+ * @module helpers/jrhandlebars
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/24/19
+
+ * @description
+ * Collection of my general helper functions for handlebars template system
+*/
 
 "use strict";
 
@@ -21,7 +25,10 @@ const jrhmisc = require("./jrhmisc");
 
 
 //---------------------------------------------------------------------------
-// these are registered with handlebar template system so they can be called as functions from hbs view files
+/**
+ * Register some custom helper functions that become available in handlebar template view files (.hbs)
+ *
+ */
 function setupJrHandlebarHelpers() {
 
 	// pluralizing helpers
@@ -42,12 +49,16 @@ function setupJrHandlebarHelpers() {
 
 
 
-//---------------------------------------------------------------------------
+/**
+ * Walk a directory for all files with extensions hbs and register them as partials for handlebars.
+ * This helper function makes it easy for us to quickly register a directory of partials (includable files) for use in our handlebar view templates
+ *
+ * @see <a href="https://gist.github.com/benw/3824204">github code</a>
+ * @see <a href="http://stackoverflow.com/questions/8059914/express-js-hbs-module-register-partials-from-hbs-file">stackoverflow</a>
+ * @param {string} partialsDir - file path
+ * @param {string} prefix
+ */
 function loadPartialFiles(partialsDir, prefix) {
-	// walk a directory for all files with extensions hbs and register them as partials for handlebars
-	// see https://gist.github.com/benw/3824204
-	// see http://stackoverflow.com/questions/8059914/express-js-hbs-module-register-partials-from-hbs-file
-
 	var filenames = fs.readdirSync(partialsDir);
 
 	filenames.forEach((name) => {

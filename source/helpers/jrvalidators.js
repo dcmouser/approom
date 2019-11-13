@@ -1,7 +1,11 @@
-// jrvalidator
-// v1.0.0 on 6/27/19 by mouser@donationcoder.com
-//
-// validation helper funcs
+/**
+ * @module helpers/jrvalidators
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 6/27/19
+
+ * @description
+ * Collection of my general helper functions for handlebars template system
+*/
 
 "use strict";
 
@@ -9,7 +13,15 @@
 
 
 
-//---------------------------------------------------------------------------
+/**
+ * Validate a string.  Just check that it's non-blank if so requested.
+ *
+ * @param {obj} jrResult - existing JrResult objec to push errors into
+ * @param {string} keyname - name of the property we are validating, used only for error generation
+ * @param {string} str - the value we are validating
+ * @param {boolean} flagRequired - if true, it will be an error if value is blank
+ * @returns validated string or undefined if invalid (with JrResult containing error)
+ */
 function validateString(jrResult, keyname, str, flagRequired) {
 	if (!str) {
 		if (!flagRequired) {
@@ -24,12 +36,30 @@ function validateString(jrResult, keyname, str, flagRequired) {
 }
 
 
+/**
+ * Validate a name.  This code currently just calls validateString.
+ *
+ * @param {obj} jrResult - existing JrResult objec to push errors into
+ * @param {string} keyname - name of the property we are validating, used only for error generation
+ * @param {string} str - the value we are validating
+ * @param {boolean} flagRequired - if true, it will be an error if value is blank
+ * @returns validated string or undefined if invalid (with JrResult containing error)
+ */
 function validateRealName(jrResult, keyname, str, flagRequired) {
 	return validateString(jrResult, keyname, str, flagRequired);
 }
 
 
-function validateCheckbox(jrResult, keyname, val, flagRequired) {
+/**
+ * Validate a true|false value.
+ *
+ * @param {obj} jrResult - existing JrResult objec to push errors into
+ * @param {string} keyname - name of the property we are validating, used only for error generation
+ * @param {boolean} val - the value we are validating
+ * @param {boolean} flagRequired - if true, it will be an error if value is undefined or null
+ * @returns true or false, or undefined if invalid (with JrResult containing error)
+ */
+function validateTrueFalse(jrResult, keyname, val, flagRequired) {
 	if (val) {
 		return true;
 	}
@@ -41,6 +71,15 @@ function validateCheckbox(jrResult, keyname, val, flagRequired) {
 }
 
 
+/**
+ * Validate a number.
+ *
+ * @param {obj} jrResult - existing JrResult objec to push errors into
+ * @param {string} keyname - name of the property we are validating, used only for error generation
+ * @param {int} val - the value we are validating
+ * @param {boolean} flagRequired - if true, it will be an error if value is undefined or null
+ * @returns integer value, or undefined if invalid (with JrResult containing error)
+ */
 function validateInteger(jrResult, keyname, val, flagRequired) {
 	// check for missing
 	if (val === undefined || val === null) {
@@ -60,7 +99,17 @@ function validateInteger(jrResult, keyname, val, flagRequired) {
 }
 
 
-
+/**
+ * Validate a number in a [min,max] range
+ *
+ * @param {obj} jrResult - existing JrResult objec to push errors into
+ * @param {string} keyname - name of the property we are validating, used only for error generation
+ * @param {int} val - the value we are validating
+ * @param {int} min - minimum value considered valid
+ * @param {int} max - maximum value considered valid
+ * @param {boolean} flagRequired - if true, it will be an error if value is undefined or null
+ * @returns integer value, or undefined if invalid (with JrResult containing error)
+ */
 function validateIntegerRange(jrResult, keyname, val, min, max, flagRequired) {
 	// check for missing
 	if (val === undefined || val === null) {
@@ -93,7 +142,7 @@ function validateIntegerRange(jrResult, keyname, val, min, max, flagRequired) {
 module.exports = {
 	validateString,
 	validateRealName,
-	validateCheckbox,
+	validateTrueFalse,
 	validateInteger,
 	validateIntegerRange,
 };

@@ -15,7 +15,7 @@
         "encoding": "utf8",
         "destination": "../docs/jsdoc",
         "recurse": true,
-        "verbose": true
+        "verbose": false
     },
     "templates": {
         "cleverLinks": false,

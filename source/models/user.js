@@ -874,7 +874,7 @@ class UserModel extends ModelBaseMongoose {
 			flagTrustEmailChange = true;
 		} else if (flagUserIsSiteAdmin) {
 			var keynameEmailBypass = "emailBypassVerify";
-			flagTrustEmailChange = jrvalidators.validateCheckbox(jrResult, keynameEmailBypass, source[keynameEmailBypass], false);
+			flagTrustEmailChange = jrvalidators.validateTrueFalse(jrResult, keynameEmailBypass, source[keynameEmailBypass], false);
 		}
 
 		if (flagIsNew && !flagTrustEmailChange) {

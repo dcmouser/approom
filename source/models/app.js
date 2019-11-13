@@ -132,8 +132,8 @@ class AppModel extends ModelBaseMongoose {
 		await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateString(jrr, keyname, inVal, flagRequired));
 		await this.validateMergeAsync(jrResult, "description", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateString(jrr, keyname, inVal, flagRequired));
 		//
-		await this.validateMergeAsync(jrResult, "isPublic", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateCheckbox(jrResult, keyname, inVal, flagRequired));
-		await this.validateMergeAsync(jrResult, "supportsFiles", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateCheckbox(jrResult, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrResult, "isPublic", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateTrueFalse(jrResult, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrResult, "supportsFiles", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateTrueFalse(jrResult, keyname, inVal, flagRequired));
 
 		// base fields shared between all? (notes, etc.)
 		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj);
