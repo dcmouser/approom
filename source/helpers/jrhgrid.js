@@ -143,7 +143,7 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 				<tr>
 				`;
 		// item row
-		await jrhelpers.asyncForEach(headerKeys, async (key) => {
+		await jrhelpers.asyncAwaitForEachFunctionCall(headerKeys, async (key) => {
 			if (jrhelpers.isInAnyArray(key, hiddenFields)) {
 				return;
 			}

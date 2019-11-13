@@ -741,8 +741,8 @@ If this request was not made by you, please ignore this email.
 
 		// properties
 		var email = this.val;
-		var username = jrhelpers.firstNonEmptyValue(this.getExtraData("username"), extraValues.username);
-		var realName = jrhelpers.firstNonEmptyValue(this.getExtraData("realName"), extraValues.realName);
+		var username = jrhelpers.firstCoercedTrueValue(this.getExtraData("username"), extraValues.username);
+		var realName = jrhelpers.firstCoercedTrueValue(this.getExtraData("realName"), extraValues.realName);
 		var passwordHashed = this.getExtraData("passwordHashed");
 
 		// first step, let's check if the email has alread been used by someone, if so then we can just redirect them to try to sign up again and cancel this verification

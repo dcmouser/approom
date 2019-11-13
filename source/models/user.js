@@ -352,7 +352,7 @@ class UserModel extends ModelBaseMongoose {
 	}
 
 	static passwordHashToObj(passwordHashed) {
-		var passwordObj = jrhelpers.parseJsonObj(passwordHashed, {});
+		var passwordObj = jrhelpers.createObjectFromJsonParse(passwordHashed, {});
 		return passwordObj;
 	}
 
@@ -619,9 +619,9 @@ class UserModel extends ModelBaseMongoose {
 	static async createUniqueUserFromBridgedLogin(bridgedLoginObj, flagUpdateLoginDate) {
 		// this could be tricky because we may have collisions in our desired username, email, etc.
 		var userObj = {
-			username: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.getExtraData("username"), undefined),
-			realName: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.getExtraData("realName"), undefined),
-			email: jrhelpers.getNonEmptyPropertyOrDefault(bridgedLoginObj.getExtraData("email"), undefined),
+			username: jrhelpers.getNonFalseValueOrDefault(bridgedLoginObj.getExtraData("username"), undefined),
+			realName: jrhelpers.getNonFalseValueOrDefault(bridgedLoginObj.getExtraData("realName"), undefined),
+			email: jrhelpers.getNonFalseValueOrDefault(bridgedLoginObj.getExtraData("email"), undefined),
 			passwordHashed: undefined,
 		};
 		// modify or tweak username if its not unique

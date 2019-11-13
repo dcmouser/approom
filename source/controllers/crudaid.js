@@ -703,7 +703,7 @@ class CrudAid {
 		var visfunc, isVisible, isReadOnly;
 		var extra;
 		var err;
-		await jrhelpers.asyncForEach(schemaKeys, async (fieldName) => {
+		await jrhelpers.asyncAwaitForEachFunctionCall(schemaKeys, async (fieldName) => {
 
 			// type of this field
 			schemaType = modelClass.getBaseSchemaType(fieldName);
@@ -833,7 +833,7 @@ class CrudAid {
 		var visfunc, isVisible;
 		var crudLink;
 
-		await jrhelpers.asyncForEach(schemaKeys, async (fieldName) => {
+		await jrhelpers.asyncAwaitForEachFunctionCall(schemaKeys, async (fieldName) => {
 
 			// type of this field
 			schemaType = modelClass.getBaseSchemaType(fieldName);

@@ -1,7 +1,51 @@
-/**
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>helpers/jrhelpers.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-controllers_aclaid.html">controllers/aclaid</a></li><li><a href="module-helpers_jrhelpers.html">helpers/jrhelpers</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrhelpers.html#~asyncAwaitForEachFunctionCall">asyncAwaitForEachFunctionCall</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~createObjectFromJsonParse">createObjectFromJsonParse</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~DateNowPlusMinutes">DateNowPlusMinutes</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~deepIterationCopy">deepIterationCopy</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~firstCoercedTrueValue">firstCoercedTrueValue</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~getNiceNowString">getNiceNowString</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~getNonFalseValueOrDefault">getNonFalseValueOrDefault</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~getPreciseNowString">getPreciseNowString</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~getServerIpAddress">getServerIpAddress</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~isInAnyArray">isInAnyArray</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~isObjectEmpty">isObjectEmpty</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~isPromise">isPromise</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~isSimpleObject">isSimpleObject</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~makeSafeForFormInput">makeSafeForFormInput</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~mergeArraysDedupe">mergeArraysDedupe</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~mergeArraysKeepDupes">mergeArraysKeepDupes</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~regexEscapeStr">regexEscapeStr</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~shallowCopy">shallowCopy</a></li><li data-type='method'><a href="module-helpers_jrhelpers.html#~stringArrayToNiceString">stringArrayToNiceString</a></li></ul></li><li><a href="module-routes_api.html">routes/api</a><ul class='methods'><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenAccess">makeSecureTokenAccess</a></li><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenAccessFromRefreshToken">makeSecureTokenAccessFromRefreshToken</a></li><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenRefresh">makeSecureTokenRefresh</a></li><li data-type='method'><a href="module-routes_api.html#~routerAllTokentest">routerAllTokentest</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetIndex">routerGetIndex</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetRefreshaccess">routerGetRefreshaccess</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetReqrefresh">routerGetReqrefresh</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetWildcard">routerGetWildcard</a></li><li data-type='method'><a href="module-routes_api.html#~routerPostReqrefresh">routerPostReqrefresh</a></li><li data-type='method'><a href="module-routes_api.html#~setupRouter">setupRouter</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#genRandomStringHex">genRandomStringHex</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">helpers/jrhelpers.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
  * Generic Helper Function Module
  * @module helpers/jrhelpers
- * @author jesse reichler <mouser@donationcoder.com>
+ * @author jesse reichler &lt;mouser@donationcoder.com>
  * @copyright 5/7/19
 
  * @description
@@ -55,7 +99,7 @@ function mergeArraysDedupe(array1, array2) {
  */
 function isInAnyArray(val, ...arrays) {
 	for (var ar of arrays) {
-		if (ar && ar.indexOf(val) !== -1) {
+		if (ar &amp;&amp; ar.indexOf(val) !== -1) {
 			return true;
 		}
 	}
@@ -74,7 +118,7 @@ function isInAnyArray(val, ...arrays) {
  * @param {function} func
  */
 async function asyncAwaitForEachFunctionCall(array, func) {
-	for (let index = 0; index < array.length; index++) {
+	for (let index = 0; index &lt; array.length; index++) {
 		await func(array[index], index, array);
 	}
 }
@@ -129,10 +173,10 @@ function firstCoercedTrueValue(...args) {
  *
  * @param {*} obj - an array, object, or iterable with length property, OR an undefined/null valued variable
  * @returns true if the passed obj evaluates to false (null, undefined, "", false) OR is an object/array with no properties.
- * @see <a href="https://stackoverflow.com/questions/679915/how-do-i-test-for-an-empty-javascript-object">stackoverflow question on testing for empty objects</a>
+ * @see &lt;a href="https://stackoverflow.com/questions/679915/how-do-i-test-for-an-empty-javascript-object">stackoverflow question on testing for empty objects&lt;/a>
  */
 function isObjectEmpty(obj) {
-	if (!obj || (Object.entries(obj).length === 0 && obj.constructor === Object)) {
+	if (!obj || (Object.entries(obj).length === 0 &amp;&amp; obj.constructor === Object)) {
 		return true;
 	}
 	if (!obj || Object.keys(obj).length === 0) {
@@ -171,7 +215,7 @@ function DateNowPlusMinutes(expirationMinutes) {
  * ##### Notes
  *  * This is not a deep copy, it will reuse any sub object/array properties
  *  * We use a function instead of one-line of code to make it easier to find places in code where this happens
- *  * See <a href="https://medium.com/better-programming/3-ways-to-clone-objects-in-javascript-f752d148054d">Medium.com post on different ways to copy objects</a>
+ *  * See &lt;a href="https://medium.com/better-programming/3-ways-to-clone-objects-in-javascript-f752d148054d">Medium.com post on different ways to copy objects&lt;/a>
  *
  * @param {object} source
  * @returns new object with cloned properties
@@ -188,7 +232,7 @@ function shallowCopy(source) {
 /**
  * Performs a deep copy of an object, recursing into sub properties to clone them instead of reuse references
  * ##### Notes
- * See <a href="https://medium.com/better-programming/3-ways-to-clone-objects-in-javascript-f752d148054d">Medium.com post on different ways to copy objects</a>
+ * See &lt;a href="https://medium.com/better-programming/3-ways-to-clone-objects-in-javascript-f752d148054d">Medium.com post on different ways to copy objects&lt;/a>
  * @param {*} src
  * @returns new object deep copy of the source
  */
@@ -261,20 +305,20 @@ function getPreciseNowString() {
  * @returns escaped version of string suitable for use inside a regular expression (i.e. no unescaped regex characters)
  */
 function regexEscapeStr(str) {
-	str = str.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+	str = str.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&amp;");
 	return str;
 }
 
 /**
  * Escape any characters or remove them, that would be illegal to have inside a form input value
  * ##### Notes
- *  * Replaces double quote characters with &quot;
+ *  * Replaces double quote characters with &amp;quot;
  *
  * @param {string} str
  * @returns version of string with double quotes replaced, etc.
  */
 function makeSafeForFormInput(str) {
-	return str.replace(/"/g, "&quot;");
+	return str.replace(/"/g, "&amp;quot;");
 }
 //---------------------------------------------------------------------------
 
@@ -288,27 +332,27 @@ function makeSafeForFormInput(str) {
  *  * This will return false for object that are more elaborate classes, and is only meant to be used for doing deep copies of simple {} objects
  *  * This will return false if the passed value is null or undefined
  *  * This will return false if the passed object is a function (unlike the code it was based on)
- *  * see <a href="https://stackoverflow.com/questions/8511281/check-if-a-value-is-an-object-in-javascript">stackoverflow on checking if a value is an object</a>
+ *  * see &lt;a href="https://stackoverflow.com/questions/8511281/check-if-a-value-is-an-object-in-javascript">stackoverflow on checking if a value is an object&lt;/a>
  *
  * @param {*} maybeObj
  * @returns true if the passed value is a (simple) object
  */
 function isSimpleObject(maybeObj) {
-	// return (maybeObj !== undefined && maybeObj !== null && maybeObj.constructor === Object);
+	// return (maybeObj !== undefined &amp;&amp; maybeObj !== null &amp;&amp; maybeObj.constructor === Object);
 	var type = typeof maybeObj;
-	return type === "object" && !!maybeObj;
+	return type === "object" &amp;&amp; !!maybeObj;
 }
 
 
 /**
  * Returns true if the object passed is a promise
- * @see <a href="https://stackoverflow.com/questions/27746304/how-do-i-tell-if-an-object-is-a-promise">stackoverflow post</a>
+ * @see &lt;a href="https://stackoverflow.com/questions/27746304/how-do-i-tell-if-an-object-is-a-promise">stackoverflow post&lt;/a>
  *
  * @param {*} value
  * @returns true if the passed value is a promise
  */
 function isPromise(value) {
-	return Boolean(value && typeof value.then === "function");
+	return Boolean(value &amp;&amp; typeof value.then === "function");
 }
 //---------------------------------------------------------------------------
 
@@ -339,7 +383,7 @@ function createObjectFromJsonParse(str, defaultVal) {
 /**
  * Try to figure out the servers ip address, and return it as a string.
  * ##### Notes
- *  * see <a href="https://stackoverflow.com/questions/3653065/get-local-ip-address-in-node-js">stackoverflow post</a>
+ *  * see &lt;a href="https://stackoverflow.com/questions/3653065/get-local-ip-address-in-node-js">stackoverflow post&lt;/a>
  *  * This function has barely been tested and should not be considered reliable.
  *  * We are currently using it only to get a string that we can use to look for a site-specific configuration file based on the current server ip, and just to display on screen and in logs.
  *  * So our goal is simply to return a string that is different on different servers, but always the same on a given server
@@ -358,14 +402,14 @@ function getServerIpAddress() {
 	// jrlog.debugObj(ifaces, "ifaces");
 	// jrlog.debugObj(ifacesKeys, "ifacesKeys");
 
-	for (var j = 0; j < ifacesKeys.length; ++j) {
+	for (var j = 0; j &lt; ifacesKeys.length; ++j) {
 		ifname = ifacesKeys[j];
 
 		ifaceset = ifaces[ifname];
 		// jrlog.debugObj(ifaceset, "ifaceset");
 
 		alias = 0;
-		for (var i = 0; i < ifaceset.length; ++i) {
+		for (var i = 0; i &lt; ifaceset.length; ++i) {
 			iface = ifaceset[i];
 			// jrlog.debugObj(iface, "iface[" + ifname + "]");
 			if (iface.family !== "IPv4" || iface.internal !== false) {
@@ -428,3 +472,28 @@ module.exports = {
 	getServerIpAddress,
 
 };
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.3</a> on Wed Nov 13 2019 03:51:40 GMT-0600 (Central Standard Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

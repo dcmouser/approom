@@ -201,7 +201,7 @@ class JrResult {
 		// for fields, each keyed item should be a string; on the rare occasion we have an entry in both our field and source field with same key, we can append them.
 		if (source.fields) {
 			if (!this.fields) {
-				this.fields = jrhelpers.makeClonedObjFromEnumerableProperties(source.fields);
+				this.fields = jrhelpers.shallowCopy(source.fields);
 			} else {
 				for (key in source.fields) {
 					if (!this.fields[key]) {
@@ -220,11 +220,11 @@ class JrResult {
 		if (source.items) {
 			// but items need to be concatenated
 			if (!this.items) {
-				this.items = jrhelpers.makeClonedObjFromEnumerableProperties(source.items);
+				this.items = jrhelpers.shallowCopy(source.items);
 			} else {
 				for (key in source.items) {
 					if (!this.items[key]) {
-						this.items[key] = jrhelpers.makeClonedObjFromEnumerableProperties(source.items[key]);
+						this.items[key] = jrhelpers.shallowCopy(source.items[key]);
 					} else {
 						if (flagMergeSourceToTop) {
 							this.items[key] = (source.items[key]).concat(this.items[key]);

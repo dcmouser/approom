@@ -172,7 +172,7 @@ class ModelBaseMongoose {
 		var keyHideArray;
 		var visfunc, isVisible;
 
-		await jrhelpers.asyncForEach(keys, async (key) => {
+		await jrhelpers.asyncAwaitForEachFunctionCall(keys, async (key) => {
 			keyHideArray = modelSchemaExtra[key].hide;
 			if (jrhelpers.isInAnyArray(viewType, keyHideArray)) {
 				retKeys.push(key);
