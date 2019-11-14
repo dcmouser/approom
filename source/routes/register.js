@@ -12,8 +12,8 @@ const express = require("express");
 // models
 const UserModel = require("../models/user");
 const VerificationModel = require("../models/verification");
-const arserver = require("../controllers/server");
-const RegistrationAid = require("../controllers/registrationaid");
+const arserver = require("../controllers/arserver");
+const registrationAid = require("../controllers/registrationaid");
 
 // helpers
 const JrResult = require("../helpers/jrresult");
@@ -57,7 +57,7 @@ async function routerGetIndex(req, res, next) {
 
 	// initialize req.body with default values for form if we find them in a session field
 	//  (for example if they just verified their new account), similar to as if they had submitted values and we were re-presenting with errors
-	var jrResult = await RegistrationAid.fillReqBodyWithSessionedFieldValues(req);
+	var jrResult = await registrationAid.fillReqBodyWithSessionedFieldValues(req);
 
 	// render
 	var viewpath = await getRegisterViewPath(req);
@@ -88,7 +88,7 @@ async function routerPostIndex(req, res, next) {
 	}
 
 	// ok hand off processing of the registration form
-	var { jrResult, successRedirectTo } = await RegistrationAid.processAccountAllInOneForm(req);
+	var { jrResult, successRedirectTo } = await registrationAid.processAccountAllInOneForm(req);
 
 	// any errors, re-render form with errors
 	if (jrResult.isError()) {
@@ -121,7 +121,7 @@ async function getRegisterViewPath(req) {
 
 	// get any verification code associated with this registration, to prove they own the email
 	// verificationCode can come explicitly from the form (takes priority) OR the session if not in the form
-	var verification = await RegistrationAid.getValidNewAccountVerificationFromRequestOrLastSession(req);
+	var verification = await registrationAid.getValidNewAccountVerificationFromRequestOrLastSession(req);
 
 	if (verification) {
 		// show full form

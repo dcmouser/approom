@@ -12,7 +12,7 @@ const express = require("express");
 
 // models
 const VerificationModel = require("../models/verification");
-const arserver = require("../controllers/server");
+const arserver = require("../controllers/arserver");
 
 // helpers
 const JrResult = require("../helpers/jrresult");

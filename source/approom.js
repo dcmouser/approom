@@ -13,7 +13,7 @@
 const pkg = require("./package.json");
 
 // code files
-const arserver = require("./controllers/server");
+const arserver = require("./controllers/arserver");
 
 // our helper modules
 const jrconfig = require("./helpers/jrconfig");

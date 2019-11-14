@@ -11,10 +11,10 @@ const express = require("express");
 // helpers
 const JrResult = require("../helpers/jrresult");
 const jrlog = require("../helpers/jrlog");
-const AdminAid = require("../controllers/adminaid");
+const adminAid = require("../controllers/adminaid");
 
 // models
-const arserver = require("../controllers/server");
+const arserver = require("../controllers/arserver");
 
 // express router
 const router = express.Router();
@@ -101,7 +101,7 @@ async function routerPostTestingMakeappsrooms(req, res, next) {
 	// do it using adminaid
 	const addCountApps = 5;
 	const addCountRooms = 25;
-	var bretv = await AdminAid.addTestAppsAndRooms(req, addCountApps, addCountRooms);
+	var bretv = await adminAid.addTestAppsAndRooms(req, addCountApps, addCountRooms);
 	//
 	if (bretv) {
 		// return them to admin testing page

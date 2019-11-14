@@ -1,9 +1,11 @@
-// approom
-// rate limiter aid class
-// v1.0.0 on 11/4/19 by mouser@donationcoder.com
-//
-// see https://www.npmjs.com/package/rate-limiter-flexible
-
+/**
+ * @module controllers/ratelimiteraid
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 11/4/19
+ * @description
+ * This module defines RateLimiterAid class, which provides support functions for rate limiting activities
+ * @see <a href="https://www.npmjs.com/package/rate-limiter-flexible"></a>
+ */
 
 "use strict";
 
@@ -19,6 +21,13 @@ const jrlog = require("../helpers/jrlog");
 
 
 
+
+
+/**
+ * Provides support functions for rate limiting activities
+ *
+ * @class RateLimiterAid
+ */
 class RateLimiterAid {
 
 	//---------------------------------------------------------------------------
@@ -73,6 +82,11 @@ class RateLimiterAid {
 	//---------------------------------------------------------------------------
 
 }
+
+
+
+
+
 
 
 // export the class as the sole export

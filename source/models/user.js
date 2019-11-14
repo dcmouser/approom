@@ -20,7 +20,7 @@ const JrResult = require("../helpers/jrresult");
 const jrhValidate = require("../helpers/jrh_validates");
 
 // controllers
-const arserver = require("../controllers/server");
+const arserver = require("../controllers/arserver");
 const aclAid = require("../controllers/aclaid");
 
 

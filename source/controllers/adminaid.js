@@ -1,8 +1,10 @@
-// approom
-// admin aid class
-// v1.0.0 on 5/1/19 by mouser@donationcoder.com
-//
-// Helps out with registration processing
+/**
+ * @module controllers/adminaid
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/1/19
+ * @description
+ * This module defines the AdminAid class, which provides support for backend administration activities
+ */
 
 "use strict";
 
@@ -11,11 +13,15 @@ const jrhMisc = require("../helpers/jrh_misc");
 const JrResult = require("../helpers/jrresult");
 
 // models
-const arserver = require("./server");
+const arserver = require("./arserver");
 const AppModel = require("../models/app");
 const RoomModel = require("../models/room");
 
-
+/**
+ * Provides support for backend administrative activities
+ *
+ * @class AdminAid
+ */
 class AdminAid {
 
 	//---------------------------------------------------------------------------
@@ -34,6 +40,7 @@ class AdminAid {
 	//---------------------------------------------------------------------------
 
 
+	//---------------------------------------------------------------------------
 	async addTestAppsAndRooms(req, addCountApps, addCountRooms) {
 		// add some test apps and rooms
 		var successMessage1, successMessage2;
@@ -89,6 +96,8 @@ class AdminAid {
 		// return success
 		return true;
 	}
+	//---------------------------------------------------------------------------
+
 
 }
 

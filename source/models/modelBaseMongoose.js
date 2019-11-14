@@ -891,7 +891,7 @@ class ModelBaseMongoose {
 		var id = this.validateModelFieldId(jrResult, val);
 
 		// models
-		const arserver = require("../controllers/server");
+		const arserver = require("../controllers/arserver");
 
 		if (!jrResult.isError()) {
 			// acl test

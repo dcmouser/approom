@@ -13,7 +13,7 @@ const mongoose = require("mongoose");
 
 // models
 const ModelBaseMongoose = require("./modelBaseMongoose");
-const arserver = require("../controllers/server");
+const arserver = require("../controllers/arserver");
 
 // our helper modules
 const jrhMisc = require("../helpers/jrh_misc");

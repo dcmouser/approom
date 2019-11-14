@@ -27,7 +27,7 @@ const mongoose = require("mongoose");
 const ModelBaseMongoose = require("./modelBaseMongoose");
 const UserModel = require("./user");
 const LoginModel = require("./login");
-const arserver = require("../controllers/server");
+const arserver = require("../controllers/arserver");
 
 // our helper modules
 const jrhMisc = require("../helpers/jrh_misc");
@@ -415,7 +415,7 @@ If this request was not made by you, please ignore this email.
 		if (!baseUrl) {
 			baseUrl = "verify";
 		}
-		// const arserver = require("../controllers/server");
+		// const arserver = require("../controllers/arserver");
 		return arserver.calcAbsoluteSiteUrlPreferHttps(baseUrl + "/code/" + this.uniqueCode);
 	}
 	//---------------------------------------------------------------------------
@@ -462,7 +462,7 @@ If this request was not made by you, please ignore this email.
 		mailobj.to = emailAddress;
 		//
 		// require here to avoid circular reference problem
-		// const arserver = require("../controllers/server");
+		// const arserver = require("../controllers/arserver");
 		var retv = await arserver.sendMail(mailobj);
 		//
 		return retv;
@@ -737,7 +737,7 @@ If this request was not made by you, please ignore this email.
 		var retvResult;
 
 		// controllers
-		const RegistrationAid = require("../controllers/registrationaid");
+		const registrationAid = require("../controllers/registrationaid");
 
 		// properties
 		var email = this.val;
@@ -769,7 +769,7 @@ If this request was not made by you, please ignore this email.
 
 		// do they NEED full register form?
 		var readyToCreateUser = true;
-		var requiredFields = RegistrationAid.calcRequiredRegistrationFieldsFinal();
+		var requiredFields = registrationAid.calcRequiredRegistrationFieldsFinal();
 		if (requiredFields.includes("username") && !username) {
 			readyToCreateUser = false;
 		}
@@ -803,7 +803,7 @@ If this request was not made by you, please ignore this email.
 			};
 			// temporary non-fatal test to determine if we have enough info to create user right now
 			retvResult = JrResult.makeNew();
-			await RegistrationAid.createFullNewUserAccountForLoggedInUser(retvResult, req, this, userData);
+			await registrationAid.createFullNewUserAccountForLoggedInUser(retvResult, req, this, userData);
 			if (!retvResult.isError()) {
 				// success creating user, so let them know, log them in and redirect to profile
 				successRedirectTo = "/profile";

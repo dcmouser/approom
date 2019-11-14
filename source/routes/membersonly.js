@@ -14,7 +14,7 @@ const JrResult = require("../helpers/jrresult");
 const jrlog = require("../helpers/jrlog");
 
 // models
-const arserver = require("../controllers/server");
+const arserver = require("../controllers/arserver");
 
 // express router
 const router = express.Router();

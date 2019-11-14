@@ -17,8 +17,8 @@ const jrlog = require("../helpers/jrlog");
 const UserModel = require("../models/user");
 
 // controllers
-const arserver = require("../controllers/server");
-const CrudAid = require("../controllers/crudaid");
+const arserver = require("../controllers/arserver");
+const crudAid = require("../controllers/crudaid");
 
 // express router
 const router = express.Router();
@@ -77,8 +77,8 @@ async function routerGetEdit(req, res, next) {
 	req.body._id = user.getIdAsString();
 	req.params.id = req.body._id;
 
-	// hand off work to CrudAid
-	var bretv = await CrudAid.handleEditGet(req, res, next, UserModel, "", viewFilePathEdit, extraViewData);
+	// hand off work to crudAid
+	var bretv = await crudAid.handleEditGet(req, res, next, UserModel, "", viewFilePathEdit, extraViewData);
 }
 
 
@@ -103,8 +103,8 @@ async function routerPostEdit(req, res, next) {
 	req.body._id = user.getIdAsString();
 	req.params.id = req.body._id;
 
-	// hand off work to CrudAid
-	var bretv = await CrudAid.handleEditPost(req, res, next, UserModel, "", viewFilePathEdit, extraViewData);
+	// hand off work to crudAid
+	var bretv = await crudAid.handleEditPost(req, res, next, UserModel, "", viewFilePathEdit, extraViewData);
 	if (!bretv) {
 		// just send them back to profile edit
 		res.redirect(routerBaseUrlPath + "/edit");

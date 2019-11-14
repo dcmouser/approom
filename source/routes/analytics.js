@@ -12,10 +12,10 @@ const express = require("express");
 // helpers
 const JrResult = require("../helpers/jrresult");
 const jrlog = require("../helpers/jrlog");
-const AdminAid = require("../controllers/adminaid");
+const adminAid = require("../controllers/adminaid");
 
 // models
-const arserver = require("../controllers/server");
+const arserver = require("../controllers/arserver");
 
 // express router
 const router = express.Router();

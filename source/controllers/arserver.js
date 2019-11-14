@@ -1,10 +1,14 @@
-// approom
-// server model
-// v1.0.0 on 5/1/19 by mouser@donationcoder.com
-//
-// The Server model is a singleton object that manages general settings for the server system
+/**
+ * @module controllers/arserver
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/1/19
+ * @description
+ * This module defines the main class representing the server system that sets up the web server and handles all requests.
+ * It is the central object in the project.
+ */
 
 "use strict";
+
 
 
 // database imports
@@ -58,7 +62,8 @@ const arGlobals = require("../approomglobals");
 const LogModel = require("../models/log");
 
 // rate limiter
-const RateLimiterAid = require("./rateLimiterAid");
+const rateLimiterAid = require("./ratelimiteraid");
+
 
 
 
@@ -70,6 +75,16 @@ const DefRequiredLoginMessage = "You need to log in before you can access the re
 
 
 
+
+
+
+
+
+/**
+ * The main class representing the server system that sets up the web server and handles all requests.
+ *
+ * @class AppRoomServer
+ */
 class AppRoomServer {
 
 
@@ -442,11 +457,11 @@ class AppRoomServer {
 
 	setupRouteGenericCrud(expressApp, urlPath, modelClass) {
 		// function to set up crud paths for a model
-		const CrudAid = require("../controllers/crudaid");
+		const crudAid = require("./crudaid");
 		// create router using express
 		const router = express.Router();
 		// setup paths on it
-		CrudAid.setupRouter(router, modelClass, urlPath);
+		crudAid.setupRouter(router, modelClass, urlPath);
 		// register it
 		this.useExpressRoute(expressApp, urlPath, router);
 
@@ -1588,23 +1603,23 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	async setupAcl() {
-		const AclAid = require("./aclaid");
-		await AclAid.setupAclPermissions();
+		const aclAid = require("./aclaid");
+		await aclAid.setupAclPermissions();
 	}
 	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
 	async setupRateLimiters() {
-		await RateLimiterAid.setupRateLimiters();
+		await rateLimiterAid.setupRateLimiters();
 	}
 
 	getRateLimiterBasic() {
-		return RateLimiterAid.getRateLimiterBasic();
+		return rateLimiterAid.getRateLimiterBasic();
 	}
 
 	getRateLimiterApi() {
-		return RateLimiterAid.getRateLimiterApi();
+		return rateLimiterAid.getRateLimiterApi();
 	}
 	//---------------------------------------------------------------------------
 
@@ -2148,7 +2163,7 @@ class AppRoomServer {
 
 
 	calcAclInfo() {
-		const aclAid = require("../controllers/aclaid");
+		const aclAid = require("./aclaid");
 		const aclInfo = aclAid.calcAclInfo();
 		return aclInfo;
 	}

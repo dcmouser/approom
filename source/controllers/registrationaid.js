@@ -1,10 +1,13 @@
-// approom
-// registration aid class
-// v1.0.0 on 5/1/19 by mouser@donationcoder.com
-//
-// Helps out with registration processing
+/**
+ * @module controllers/registrationaid
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/1/19
+ * @description
+ * This module defines the RegistrationAid class, which provides support functions for user registration
+ */
 
 "use strict";
+
 
 // our helper modules
 const jrhMisc = require("../helpers/jrh_misc");
@@ -12,12 +15,20 @@ const JrResult = require("../helpers/jrresult");
 const jrhValidate = require("../helpers/jrh_validates");
 
 // require models
-const arserver = require("../controllers/server");
+const arserver = require("../controllers/arserver");
 const VerificationModel = require("../models/verification");
 const UserModel = require("../models/user");
 const LoginModel = require("../models/login");
 
 
+
+
+
+/**
+ * Provides support functions for user registration
+ *
+ * @class RegistrationAid
+ */
 class RegistrationAid {
 
 	//---------------------------------------------------------------------------

@@ -8,7 +8,7 @@
 const assert = require("assert");
 
 // our modules
-const arserver = require("../controllers/server");
+const arserver = require("../controllers/arserver");
 const UserModel = require("../models/user");
 
 // helpers

@@ -19,7 +19,7 @@ const express = require("express");
 const assert = require("assert");
 
 // server
-const arserver = require("../controllers/server");
+const arserver = require("../controllers/arserver");
 
 // helpers
 const JrResult = require("../helpers/jrresult");

@@ -168,7 +168,7 @@ class LoginModel extends ModelBaseMongoose {
 
 
 		// is there already a user logged into this section? if so we will bridge the new login bridge to the existing logged in user
-		const arserver = require("../controllers/server");
+		const arserver = require("../controllers/arserver");
 		const VerificationModel = require("./verification");
 		var existingUserId = arserver.getLoggedInLocalUserIdFromSession(req);
 

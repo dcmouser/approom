@@ -1,10 +1,13 @@
-// approom
-// crud aid class
-// v1.0.0 on 6/5/19 by mouser@donationcoder.com
-//
-// Helps out with CRUD processing in routes
+/**
+ * @module controllers/crudaid
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 6/5/19
+ * @description
+ * This module defines CrudAid class, which provides support functions for crud (Create, Update, Delete, List) actions on model data in the database
+ */
 
 "use strict";
+
 
 // modules
 const fs = require("fs");
@@ -20,10 +23,16 @@ const jrhMisc = require("../helpers/jrh_misc");
 const jrhGrid = require("../helpers/jrh_grid");
 
 // models
-const arserver = require("./server");
+const arserver = require("./arserver");
 
 
 
+
+/**
+ * Povides support functions for crud (Create, Update, Delete, List) actions on model data in the database
+ *
+ * @class CrudAid
+ */
 class CrudAid {
 
 	//---------------------------------------------------------------------------
@@ -630,13 +639,6 @@ class CrudAid {
 
 
 
-
-
-
-
-
-
-
 	//---------------------------------------------------------------------------
 	// helper to determine which view file to show
 	// checks first for model specific view, then defaults to crud generic if the specific one not found
@@ -685,6 +687,7 @@ class CrudAid {
 		// we need to wrap return as hbs.SafeString in order to include raw html
 		return new hbs.SafeString(rethtml);
 	}
+
 
 	async buildGenericMainHtmlAddEdit(modelClass, req, obj, helperData, jrResult) {
 		var rethtml = "";
@@ -814,8 +817,6 @@ class CrudAid {
 	}
 
 
-
-
 	async buildGenericMainHtmlView(modelClass, req, obj, helperData, jrResult) {
 		var rethtml = "";
 
@@ -935,11 +936,13 @@ class CrudAid {
 	//---------------------------------------------------------------------------
 
 
+
 	//---------------------------------------------------------------------------
 	buildChoiceHtmlForAddEdit(fieldName, choices, val) {
 		var rethtml = jrhText.jrHtmlFormOptionListSelect(fieldName, choices, val);
 		return rethtml;
 	}
+
 
 	buildChoiceHtmlForView(choices, val) {
 		var rethtml = jrhText.jrHtmlNiceOptionFromList(choices, val, "[NOT SET]");
