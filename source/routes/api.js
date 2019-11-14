@@ -8,8 +8,8 @@
  * @todo These routes are all intended to be called programmatically by other code, and so should all return json replies, but currently some return standard web pages for testing.
 */
 
-
 "use strict";
+
 
 // passport
 const passport = require("passport");
@@ -26,8 +26,14 @@ const JrResult = require("../helpers/jrresult");
 const jrlog = require("../helpers/jrlog");
 
 
-// module variable to remember base url path of router
+
+//---------------------------------------------------------------------------
+// module variables
+
+// remember base url path of router
 var routerBaseUrlPath;
+//---------------------------------------------------------------------------
+
 
 
 

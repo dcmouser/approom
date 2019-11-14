@@ -1,16 +1,19 @@
-// approom
-// login model
-// v1.0.0 on 5/15/19 by mouser@donationcoder.com
-//
-// Handles bridged login data (e.g. facebook login, etc.)
+/**
+ * @module models/login
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/15/19
+ * @description
+ * The database object that represents information about bridged (facebook, etc.) logins
+ */
 
 "use strict";
+
 
 // modules
 const mongoose = require("mongoose");
 
 // models
-const ModelBaseMongoose = require("./modelBaseMongoose");
+const ModelBaseMongoose = require("./model_base_mongoose");
 const UserModel = require("./user");
 
 // helpers
@@ -20,6 +23,12 @@ const jrhMongo = require("../helpers/jrh_mongo");
 
 
 
+/**
+ * The database object that represents information about bridged (facebook, etc.) logins
+ *
+ * @class LoginModel
+ * @extends {ModelBaseMongoose}
+ */
 class LoginModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------

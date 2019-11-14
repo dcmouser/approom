@@ -1,7 +1,10 @@
-// approom
-// logout route
-// v1.0.0 on 5/1/19 by mouser@donationcoder.com
-//
+/**
+ * @module routes/logout
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/1/19
+ * @description
+ * logout route
+ */
 
 "use strict";
 
@@ -19,8 +22,15 @@ const JrResult = require("../helpers/jrresult");
 const router = express.Router();
 
 
-// module variable to remember base url path of router
+
+//---------------------------------------------------------------------------
+// module variables
+
+// remember base url path of router
 var routerBaseUrlPath;
+//---------------------------------------------------------------------------
+
+
 
 
 //---------------------------------------------------------------------------

@@ -1,11 +1,13 @@
-// approom
-// file model
-// v1.0.0 on 5/1/19 by mouser@donationcoder.com
-//
-// The File model helps us track data files that are created by users/apps within the system
-//  a File model object represents meta information for an actual filesystem file
+/**
+ * @module models/file
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/1/19
+ * @description
+ * The File model helps us track data files that are created by users/apps within the system, and references real file system files.
+ */
 
 "use strict";
+
 
 // modules
 const mongoose = require("mongoose");
@@ -20,6 +22,12 @@ const jrhValidate = require("../helpers/jrh_validates");
 
 
 
+/**
+ * The File model helps us track data files that are created by users/apps within the system, and references real file system files.
+ *
+ * @class FileModel
+ * @extends {RoomdataModel}
+ */
 class FileModel extends RoomdataModel {
 
 	//---------------------------------------------------------------------------

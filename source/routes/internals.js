@@ -1,10 +1,13 @@
-// approom
-// internals route
-// v1.0.0 on 10/31/19 by mouser@donationcoder.com
-//
-// route for admins to find info about the site
+/**
+ * @module routes/app
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 10/28/19
+ * @description
+ * routes for admins to discover diagnostic internal structure info about the system
+ */
 
 "use strict";
+
 
 // modules
 const express = require("express");
@@ -20,8 +23,14 @@ const arserver = require("../controllers/arserver");
 const router = express.Router();
 
 
-// module variable to remember base url path of router
+
+//---------------------------------------------------------------------------
+// module variables
+
+// remember base url path of router
 var routerBaseUrlPath;
+//---------------------------------------------------------------------------
+
 
 
 

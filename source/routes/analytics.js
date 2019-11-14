@@ -1,10 +1,13 @@
-// approom
-// analytics route
-// v1.0.0 on 10/31/19 by mouser@donationcoder.com
-//
-// route for admins to find info about the site
+/**
+ * @module routes/analytics
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 10/31/19
+ * @description
+ * Provides analytics/stats for the site
+ */
 
 "use strict";
+
 
 // modules
 const express = require("express");
@@ -20,8 +23,15 @@ const arserver = require("../controllers/arserver");
 // express router
 const router = express.Router();
 
-// module variable to remember base url path of router
+
+
+//---------------------------------------------------------------------------
+// module variables
+
+// remember base url path of router
 var routerBaseUrlPath;
+//---------------------------------------------------------------------------
+
 
 
 

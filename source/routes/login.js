@@ -1,7 +1,10 @@
-// approom
-// login route
-// v1.0.0 on 5/1/19 by mouser@donationcoder.com
-//
+/**
+ * @module routes/login
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/1/19
+ * @description
+ * login-related routes
+ */
 
 "use strict";
 
@@ -24,8 +27,14 @@ const arserver = require("../controllers/arserver");
 const router = express.Router();
 
 
-// module variable to remember base url path of router
+
+//---------------------------------------------------------------------------
+// module variables
+
+// remember base url path of router
 var routerBaseUrlPath;
+//---------------------------------------------------------------------------
+
 
 
 

@@ -1,7 +1,10 @@
-// approom
-// app route
-// v1.0.0 on 10/28/19 by mouser@donationcoder.com
-//
+/**
+ * @module routes/app
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 10/28/19
+ * @description
+ * app related routes
+ */
 
 "use strict";
 
@@ -15,8 +18,15 @@ const JrResult = require("../helpers/jrresult");
 // express router
 const router = express.Router();
 
-// module variable to remember base url path of router
+
+
+//---------------------------------------------------------------------------
+// module variables
+
+// remember base url path of router
 var routerBaseUrlPath;
+//---------------------------------------------------------------------------
+
 
 
 

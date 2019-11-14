@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>models/user.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="JrResult.JrResult.html">JrResult</a></li><li><a href="module-controllers_aclaid-AclAid.html">AclAid</a></li><li><a href="module-controllers_adminaid-AdminAid.html">AdminAid</a></li><li><a href="module-controllers_arserver-AppRoomServer.html">AppRoomServer</a></li><li><a href="module-controllers_crudaid-CrudAid.html">CrudAid</a></li><li><a href="module-controllers_ratelimiteraid-RateLimiterAid.html">RateLimiterAid</a></li><li><a href="module-controllers_registrationaid-RegistrationAid.html">RegistrationAid</a></li><li><a href="module-helpers_jrresult-JrResult.html">JrResult</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#._unusedCodeExpressMiddlewareInjectSessionResult">_unusedCodeExpressMiddlewareInjectSessionResult</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.getMergeSessionResultAndClear">getMergeSessionResultAndClear</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.isBlank">isBlank</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.isJrResult">isJrResult</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.makeAndRemoveFromSession">makeAndRemoveFromSession</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.makeClone">makeClone</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.makeError">makeError</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.makeMessage">makeMessage</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.makeNew">makeNew</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.makeSuccess">makeSuccess</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.passportOrJrResultErrorAsString">passportOrJrResultErrorAsString</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.undefinedIfBlank">undefinedIfBlank</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#addToSession">addToSession</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#clear">clear</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#clearSection">clearSection</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#copyFrom">copyFrom</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#getDoneRendering">getDoneRendering</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#getErrorsAsString">getErrorsAsString</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#getExtraData">getExtraData</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#getFieldError">getFieldError</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#getType">getType</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#isError">isError</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#mergeIn">mergeIn</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#push">push</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#pushBiFieldError">pushBiFieldError</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#pushError">pushError</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#pushErrorOnTop">pushErrorOnTop</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#pushFieldError">pushFieldError</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#pushMessage">pushMessage</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#pushSuccess">pushSuccess</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#setDoneRendering">setDoneRendering</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#setError">setError</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#setExtraData">setExtraData</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#setFieldError">setFieldError</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#setType">setType</a></li></ul></li><li><a href="module-models_app-AppModel.html">AppModel</a></li><li><a href="module-models_connection-ConnectionModel.html">ConnectionModel</a></li><li><a href="module-models_file-FileModel.html">FileModel</a></li><li><a href="module-models_login-LoginModel.html">LoginModel</a></li><li><a href="module-models_log-LogModel.html">LogModel</a></li><li><a href="module-models_model_base_mongoose_minimal-ModelBaseMongooseMinimal.html">ModelBaseMongooseMinimal</a></li><li><a href="module-models_modelBaseMongoose-ModelBaseMongoose.html">ModelBaseMongoose</a></li><li><a href="module-models_option-OptionModel.html">OptionModel</a></li><li><a href="module-models_roomdata-RoomdataModel.html">RoomdataModel</a></li><li><a href="module-models_room-RoomModel.html">RoomModel</a></li><li><a href="module-models_session-SessionModel.html">SessionModel</a></li><li><a href="module-models_user-UserModel.html">UserModel</a></li><li><a href="module-models_verification-VerificationModel.html">VerificationModel</a></li></ul><h3>Modules</h3><ul><li><a href="module-controllers_aclaid.html">controllers/aclaid</a></li><li><a href="module-controllers_adminaid.html">controllers/adminaid</a></li><li><a href="module-controllers_arserver.html">controllers/arserver</a></li><li><a href="module-controllers_crudaid.html">controllers/crudaid</a></li><li><a href="module-controllers_ratelimiteraid.html">controllers/ratelimiteraid</a></li><li><a href="module-controllers_registrationaid.html">controllers/registrationaid</a></li><li><a href="module-helpers_jrconfig.html">helpers/jrconfig</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrconfig.html#~addConfigFile">addConfigFile</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~findQueuedCommand">findQueuedCommand</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~fixConfigFilePathName">fixConfigFilePathName</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~getDebugObj">getDebugObj</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~getVal">getVal</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~getValDefault">getValDefault</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~ipStringToSafeFilenameString">ipStringToSafeFilenameString</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~nconfMergeCliConfigFiles">nconfMergeCliConfigFiles</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~nconfMergeConfigFile">nconfMergeConfigFile</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~parse">parse</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~popQueuedCommand">popQueuedCommand</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~queueYargsCommand">queueYargsCommand</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~runQueuedCommands">runQueuedCommands</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setConfigDirAndDiscoverFiles">setConfigDirAndDiscoverFiles</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setDefaultOptions">setDefaultOptions</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setEnvList">setEnvList</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setOverrideOptions">setOverrideOptions</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setServerFilenamePrefixFromServerIp">setServerFilenamePrefixFromServerIp</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setYargs">setYargs</a></li></ul></li><li><a href="module-helpers_jrh_crypto.html">helpers/jrh_crypto</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_crypto.html#~createHashedObjectFromString">createHashedObjectFromString</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~generateRandomSalt">generateRandomSalt</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~genRandomStringHex">genRandomStringHex</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~genRandomStringHumanEasier">genRandomStringHumanEasier</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~genRandomStringHumanEasy">genRandomStringHumanEasy</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~hashPlaintextPasswordToObj">hashPlaintextPasswordToObj</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~hashPlaintextStringInsecureButSearchable">hashPlaintextStringInsecureButSearchable</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~testPlaintextPassword">testPlaintextPassword</a></li></ul></li><li><a href="module-helpers_jrh_express.html">helpers/jrh_express</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_express.html#~asyncPasswordAuthenticate">asyncPasswordAuthenticate</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~asyncPasswordReqLogin">asyncPasswordReqLogin</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressMiddleWare">calcExpressMiddleWare</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressRoutePathData">calcExpressRoutePathData</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressRoutePathDataRouteArray">calcExpressRoutePathDataRouteArray</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressRoutePathDataSplit">calcExpressRoutePathDataSplit</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~forgetSessionVar">forgetSessionVar</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~normalizePort">normalizePort</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqPrefixedValueArray">reqPrefixedValueArray</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqVal">reqVal</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqValAsInt">reqValAsInt</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqValFromList">reqValFromList</a></li></ul></li><li><a href="module-helpers_jrh_grid.html">helpers/jrh_grid</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_grid.html#~calcHeaderKeysNicely">calcHeaderKeysNicely</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridList">jrGridList</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListPager">jrGridListPager</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListPagerItem">jrGridListPagerItem</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListPagerItemPerPage">jrGridListPagerItemPerPage</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTable">jrGridListTable</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTableData">jrGridListTableData</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTableHeader">jrGridListTableHeader</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTableHeaderSortDir">jrGridListTableHeaderSortDir</a></li></ul></li><li><a href="module-helpers_jrh_handlebars.html">helpers/jrh_handlebars</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_handlebars.html#~loadPartialFiles">loadPartialFiles</a></li><li data-type='method'><a href="module-helpers_jrh_handlebars.html#~setupJrHandlebarHelpers">setupJrHandlebarHelpers</a></li></ul></li><li><a href="module-helpers_jrh_misc.html">helpers/jrh_misc</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_misc.html#~asyncAwaitForEachFunctionCall">asyncAwaitForEachFunctionCall</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~createObjectFromJsonParse">createObjectFromJsonParse</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~DateNowPlusMinutes">DateNowPlusMinutes</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~deepIterationCopy">deepIterationCopy</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~firstCoercedTrueValue">firstCoercedTrueValue</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getNiceNowString">getNiceNowString</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getNonFalseValueOrDefault">getNonFalseValueOrDefault</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getNonNullValueOrDefault">getNonNullValueOrDefault</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getPreciseNowString">getPreciseNowString</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getServerIpAddress">getServerIpAddress</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isInAnyArray">isInAnyArray</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isObjectEmpty">isObjectEmpty</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isPromise">isPromise</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isSimpleObject">isSimpleObject</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~makeSafeForFormInput">makeSafeForFormInput</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~mergeArraysDedupe">mergeArraysDedupe</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~mergeArraysKeepDupes">mergeArraysKeepDupes</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~regexEscapeStr">regexEscapeStr</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~shallowCopy">shallowCopy</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~stringArrayToNiceString">stringArrayToNiceString</a></li></ul></li><li><a href="module-helpers_jrh_mongo.html">helpers/jrh_mongo</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_mongo.html#~calcDatabaseResourceUse">calcDatabaseResourceUse</a></li><li data-type='method'><a href="module-helpers_jrh_mongo.html#~calcDatabaseStructure">calcDatabaseStructure</a></li><li data-type='method'><a href="module-helpers_jrh_mongo.html#~isValidMongooseObjectId">isValidMongooseObjectId</a></li><li data-type='method'><a href="module-helpers_jrh_mongo.html#~mongoIdEqual">mongoIdEqual</a></li></ul></li><li><a href="module-helpers_jrh_mongo_filter.html">helpers/jrh_mongo_filter</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_mongo_filter.html#~buildMongooseQueryFromReq">buildMongooseQueryFromReq</a></li><li data-type='method'><a href="module-helpers_jrh_mongo_filter.html#~convertReqQueryStringToAMongooseFindFilter">convertReqQueryStringToAMongooseFindFilter</a></li><li data-type='method'><a href="module-helpers_jrh_mongo_filter.html#~convertReqQueryStringToAMongooseFindFilterBoolean">convertReqQueryStringToAMongooseFindFilterBoolean</a></li><li data-type='method'><a href="module-helpers_jrh_mongo_filter.html#~convertReqQueryStringToAMongooseFindFilterGenericOperator">convertReqQueryStringToAMongooseFindFilterGenericOperator</a></li><li data-type='method'><a href="module-helpers_jrh_mongo_filter.html#~convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal">convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal</a></li><li data-type='method'><a href="module-helpers_jrh_mongo_filter.html#~convertReqQueryStringToAMongooseFindFilterMongoStrCmp">convertReqQueryStringToAMongooseFindFilterMongoStrCmp</a></li><li data-type='method'><a href="module-helpers_jrh_mongo_filter.html#~convertReqQueryStringToAMongooseFindFilterNumeric">convertReqQueryStringToAMongooseFindFilterNumeric</a></li><li data-type='method'><a href="module-helpers_jrh_mongo_filter.html#~convertReqQueryStringToAMongooseFindFilterStringic">convertReqQueryStringToAMongooseFindFilterStringic</a></li></ul></li><li><a href="module-helpers_jrh_text.html">helpers/jrh_text</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_text.html#~jrBootstrapCollapseBox">jrBootstrapCollapseBox</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlFormInputPassword">jrHtmlFormInputPassword</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlFormOptionList">jrHtmlFormOptionList</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlFormOptionListSelect">jrHtmlFormOptionListSelect</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlNiceOptionFromList">jrHtmlNiceOptionFromList</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlStrigifyObject">jrHtmlStrigifyObject</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrPluralize">jrPluralize</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrPluralizeCount">jrPluralizeCount</a></li></ul></li><li><a href="module-helpers_jrh_validate.html">helpers/jrh_validate</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateInteger">validateInteger</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateIntegerRange">validateIntegerRange</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateRealName">validateRealName</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateString">validateString</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateTrueFalse">validateTrueFalse</a></li></ul></li><li><a href="module-helpers_jrlog.html">helpers/jrlog</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrlog.html#~calcLogFilePath">calcLogFilePath</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~cdebug">cdebug</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~cdebugf">cdebugf</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~cdebugObj">cdebugObj</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~convertErrorTypeToWinstonLevel">convertErrorTypeToWinstonLevel</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~debug">debug</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~debugf">debugf</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~debugObj">debugObj</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~error">error</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~getDebugEnabled">getDebugEnabled</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~info">info</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~log">log</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~logStdDbMessage">logStdDbMessage</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~objToString">objToString</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setDebugEnabled">setDebugEnabled</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setup">setup</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setupDebugmod">setupDebugmod</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setupMorganMiddlewareForExpressWebAccessLogging">setupMorganMiddlewareForExpressWebAccessLogging</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setupWinston">setupWinston</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~warning">warning</a></li></ul></li><li><a href="module-helpers_jrresult.html">helpers/jrresult</a></li><li><a href="module-models_app.html">models/app</a></li><li><a href="module-models_connection.html">models/connection</a></li><li><a href="module-models_file.html">models/file</a></li><li><a href="module-models_log.html">models/log</a></li><li><a href="module-models_login.html">models/login</a></li><li><a href="module-models_model_base_mongoose_minimal.html">models/model_base_mongoose_minimal</a></li><li><a href="module-models_modelBaseMongoose.html">models/modelBaseMongoose</a></li><li><a href="module-models_option.html">models/option</a></li><li><a href="module-models_room.html">models/room</a></li><li><a href="module-models_roomdata.html">models/roomdata</a></li><li><a href="module-models_session.html">models/session</a></li><li><a href="module-models_user.html">models/user</a></li><li><a href="module-models_verification.html">models/verification</a></li><li><a href="module-routes_admin.html">routes/admin</a></li><li><a href="module-routes_analytics.html">routes/analytics</a></li><li><a href="module-routes_api.html">routes/api</a><ul class='methods'><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenAccess">makeSecureTokenAccess</a></li><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenAccessFromRefreshToken">makeSecureTokenAccessFromRefreshToken</a></li><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenRefresh">makeSecureTokenRefresh</a></li><li data-type='method'><a href="module-routes_api.html#~routerAllTokentest">routerAllTokentest</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetIndex">routerGetIndex</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetRefreshaccess">routerGetRefreshaccess</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetReqrefresh">routerGetReqrefresh</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetWildcard">routerGetWildcard</a></li><li data-type='method'><a href="module-routes_api.html#~routerPostReqrefresh">routerPostReqrefresh</a></li><li data-type='method'><a href="module-routes_api.html#~setupRouter">setupRouter</a></li></ul></li><li><a href="module-routes_app.html">routes/app</a></li><li></li><li><a href="module-routes_index.html">routes/index</a></li><li><a href="module-routes_login.html">routes/login</a></li><li><a href="module-routes_logout.html">routes/logout</a></li><li><a href="module-routes_membersonly.html">routes/membersonly</a></li><li><a href="module-routes_profile.html">routes/profile</a></li><li><a href="module-routes_register.html">routes/register</a></li><li><a href="module-routes_room.html">routes/room</a></li><li><a href="module-routes_verify.html">routes/verify</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">models/user.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @module models/user
+ * @author jesse reichler &lt;mouser@donationcoder.com>
+ * @copyright 5/1/19
+ * @description
+ * The User model handles the database of users (members) who can log into the system
+ */
+
+"use strict";
+
+
+//---------------------------------------------------------------------------
+// misc node core modules
+const assert = require("assert");
+
+// models
+const ModelBaseMongoose = require("./model_base_mongoose");
+
+// our helper modules
+const jrhMisc = require("../helpers/jrh_misc");
+const jrlog = require("../helpers/jrlog");
+const jrhCrypto = require("../helpers/jrh_crypto");
+const JrResult = require("../helpers/jrresult");
+const jrhValidate = require("../helpers/jrh_validates");
+
+// controllers
+const arserver = require("../controllers/arserver");
+const aclAid = require("../controllers/aclaid");
+//---------------------------------------------------------------------------
+
+
+//---------------------------------------------------------------------------
+// constants
+const DefDefaultUsername = "Usr";
+const DefRandomUsernameRandomSuffixLength = 4;
+//
+const DefPasswordAdminPlaintextDefault = "test";
+//
+const DefRegexUsernamePattern = /^[A-Za-z][A-Za-z0-9_-]{3,16}$/;
+const DefRegexUsernameExplanation = "Must start with a letter (a-z), followed by a string of letters,"
+	+ " digits, and the symbols _ and -, minimum length of 3, maximum length of 16 (no spaces).";
+
+// username legal properties, which we use to help us FIX imported usernames or report errors, etc.
+// these should coincide with the regex check above, but are used to explicitly FIX usernames
+const DefUsernameMinLength = 3;
+const DefUsernameMaxLength = 16;
+const DefUsernameAlwaysLowercase = false;
+const DefUsernameAllowedStartingCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const DefUsernameAllowedCharacters = DefUsernameAllowedStartingCharacters + "0123456789-_";
+//
+const DefRegexPasswordPattern = /^.{3,64}$/;
+const DefRegexPasswordExplanation = "Must be a string of letters, numbers, and symbols, with a minimum length of 3, maximum length of 64.";
+const DefDisallowedUsernameList = ["admin*", "root", "guest", "user", "moderator*"];
+//---------------------------------------------------------------------------
+
+
+
+
+
+/**
+ * The User model handles the database of users (members) who can log into the system
+ *
+ * @class UserModel
+ * @extends {ModelBaseMongoose}
+ */
+class UserModel extends ModelBaseMongoose {
+
+	//---------------------------------------------------------------------------
+	// global static version info
+	static getVersion() { return 1; }
+
+	// collection name for this model
+	static getCollectionName() {
+		return "users";
+	}
+
+	// nice name for display
+	static getNiceName() {
+		return "User";
+	}
+
+	// name for acl lookup
+	static getAclName() {
+		return "user";
+	}
+
+	// name for logging
+	static getLoggingString() {
+		return "User";
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	static getSchemaDefinition() {
+		return {
+			...(this.getBaseSchemaDefinition()),
+			username: {
+				type: String,
+				unique: true,
+				required: true,
+			},
+			realName: {
+				type: String,
+			},
+			email: {
+				type: String,
+			},
+			passwordHashed: {
+				type: String,
+			},
+			loginDate: {
+				type: Date,
+			},
+			apiCode: {
+				type: String,
+			},
+			roles: {
+				type: Array,
+			},
+			// additional fields we may add dynamically for in-memory use, but not saved to db
+			// loginId : { type: ObjectId },
+		};
+	}
+
+
+	static getSchemaDefinitionExtra() {
+		return {
+			// we start with id, its contents will be overwritten by the getBaseSchemaDefinitionExtra call below, but this will enforce order at top
+			_id: {},
+			avatar: {
+				label: "Avatar",
+				valueFunction: async (viewType, fieldName, req, obj, helperData) => { return arserver.calcAvatarHtmlImgForUser(obj); },
+				filterSize: 0,
+			},
+			...(this.getBaseSchemaDefinitionExtra()),
+			username: {
+				label: "Username",
+			},
+			realName: {
+				label: "Real name",
+			},
+			email: {
+				label: "Email",
+			},
+			emailBypassVerify: {
+				label: "Bypass change verification email?",
+				// hide: ["view", "list"],
+				format: "checkbox",
+				visibleFunction: async (viewType, fieldName, req, obj, helperData) => {
+					if (viewType === "edit") {
+						return await arserver.isLoggedInUserSiteAdmin(req);
+					}
+					return false;
+				},
+			},
+			passwordHashed: {
+				label: "Password",
+				format: "password",
+				valueFunction: this.makeModelValueFunctionPasswordAdminEyesOnly(arserver, false),
+				filterSize: 0,
+			},
+			loginDate: {
+				label: "Date of last login",
+				hide: ["edit"],
+			},
+			apiCode: {
+				label: "Api Code",
+			},
+			roles: {
+				label: "Roles",
+				readOnly: ["edit"],
+				valueFunction: async (viewType, fieldName, req, obj, helperData) => { return this.stringifyRoles(obj.roles); },
+			},
+		};
+	}
+
+
+	static safeDisplayPasswordInfoFromPasswordHashed(passwordHashed) {
+		// regex way
+		if (true) {
+			if (!passwordHashed) {
+				return "";
+			}
+			const regexCensor = /"hash":"[^"]*"/;
+			var safeStr = passwordHashed.replace(regexCensor, "\"hash\":[HIDDEN]");
+			return safeStr;
+		}
+
+		// old way, dejson then rejson
+		var passwordObj = this.passwordHashToObj(passwordHashed);
+		if (!passwordObj) {
+			return "";
+		}
+		if (passwordObj.hash) {
+			passwordObj.hash = "***";
+		}
+		return (JSON.stringify(passwordObj));
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	// create new user obj
+	static createModel(inobj) {
+		return super.createModel(inobj);
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	// database init
+	static async dbInit(mongooser) {
+		jrlog.cdebug("Inside User dbInit");
+
+		await this.createAdminUser();
+		await this.createVisitorUser();
+		await this.createTestUser();
+	}
+
+	static async createAdminUser() {
+		// see if admin user exists, if not add it
+		var doc = await this.mongooseModel.findOne({ username: "admin" }).exec();
+		if (!doc) {
+			// create admin object
+			jrlog.cdebug("  Creating admin user");
+			// hash password
+			var passwordObj = await this.hashPlaintextPasswordToObj(this.getPasswordAdminPlaintextDefault());
+			var passwordHashed = this.passwordObjToHash(passwordObj);
+			// create generic new object
+			var userAdminObj = {
+				username: "admin",
+				realName: "jesse reichler",
+				email: "mouser@donationcoder.com",
+				passwordHashed,
+				notes: "Global site admin user created at setup",
+			};
+			// now create model (this will also add default properties to it)
+			var user = UserModel.createModel(userAdminObj);
+			// set some permissions for it
+			user.addRole("siteAdmin", "site");
+			// test acl roles
+			user.addRole("owner", "app", "A1234");
+			// and save it
+			var userdoc = await user.dbSave();
+			//
+			jrlog.cdebugObj(userdoc, "  userAdmin");
+		} else {
+			jrlog.cdebug("  Found admin user.");
+		}
+	}
+
+	static async createTestUser() {
+		// see if testuser user exists, if not add it
+		var doc = await this.mongooseModel.findOne({ username: "testuser" }).exec();
+		if (!doc) {
+			// create admin object
+			jrlog.cdebug("  Creating testuser user");
+			// hash password
+			var passwordObj = await this.hashPlaintextPasswordToObj("test");
+			var passwordHashed = this.passwordObjToHash(passwordObj);
+			// create generic new object
+			var userAdminObj = {
+				username: "testuser",
+				realName: "j reichler",
+				email: "mouser-test@donationcoder.com",
+				passwordHashed,
+				notes: "Test user created at setup",
+			};
+			// now create model (this will also add default properties to it)
+			var user = UserModel.createModel(userAdminObj);
+			// set some permissions for it
+			// test acl roles
+			user.addRole("moderator", "app", "A1234");
+			// and save it
+			var userdoc = await user.dbSave();
+			//
+			jrlog.cdebugObj(userdoc, "  testuser");
+		} else {
+			jrlog.cdebug("  Found testuser user.");
+		}
+	}
+
+	static async createVisitorUser() {
+		// this is a user object shared between all non-logged-in visitors
+		var doc = await this.mongooseModel.findOne({ username: "visitor" }).exec();
+		if (!doc) {
+			// create admin object
+			jrlog.cdebug("  Creating testuser user");
+			// hash password -- plain text password of "" will not be usable to log in
+			// var passwordObj = await this.hashPlaintextPasswordToObj("");
+			// var passwordHashed = this.passwordObjToHash(passwordObj);
+			var passwordHashed = "";
+			// create generic new object
+			var userAdminObj = {
+				username: "visitor",
+				realName: "visitor",
+				email: "",
+				passwordHashed,
+				notes: "Visitor user shared between all non-logged in visitors",
+			};
+			// now create model (this will also add default properties to it)
+			var user = UserModel.createModel(userAdminObj);
+			// add visitor role
+			user.addRole("visitor", "site");
+			// and save it
+			var userdoc = await user.dbSave();
+			//
+			jrlog.cdebugObj(userdoc, "  visitor");
+		} else {
+			jrlog.cdebug("  Found visitor user.");
+		}
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+	//---------------------------------------------------------------------------
+	// accessors
+	getUsername() {
+		return this.username;
+	}
+
+	updateloginDate() {
+		// update login date
+		this.loginDate = new Date();
+	}
+
+	async updateloginDateAndSave(jrResult) {
+		this.updateloginDate();
+		await this.dbSave(jrResult);
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// test password on a LOADED user object
+	async testPlaintextPassword(passwordPlaintext) {
+		// return true if password matches, false if not or if any error
+		var passwordObj = this.getPasswordObj();
+		var bretv = await jrhCrypto.testPlaintextPassword(passwordPlaintext, passwordObj);
+		return bretv;
+	}
+
+
+	// static hash password helper
+	static async hashPlaintextPasswordToObj(passwordPlaintext) {
+		var oretv = await jrhCrypto.hashPlaintextPasswordToObj(passwordPlaintext);
+		return oretv;
+	}
+
+
+	static passwordObjToHash(passwordObj) {
+		if (!passwordObj) {
+			return undefined;
+		}
+		return JSON.stringify(passwordObj);
+	}
+
+	static passwordHashToObj(passwordHashed) {
+		var passwordObj = jrhMisc.createObjectFromJsonParse(passwordHashed, {});
+		return passwordObj;
+	}
+
+	// test
+	static getPasswordAdminPlaintextDefault() { return DefPasswordAdminPlaintextDefault; }
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	getPasswordObj() {
+		// helper to get unstringified password obj from hash
+		return UserModel.passwordHashToObj(this.passwordHashed);
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	static async findOneByUsernameEmail(usernameEmail) {
+		// find a user by their username and return the matching model
+		// return null if not found
+		// ATTN: Note that it is very important that our syntax forbids anyone having a username formatted like an email, or an email formatted like a username, otherwise
+		// we will have 2 users with different info.
+		if (!usernameEmail) {
+			return null;
+		}
+		var user = await this.mongooseModel.findOne({
+			$or: [
+				{ username: usernameEmail },
+				{ email: usernameEmail },
+			],
+		}).exec();
+
+		return user;
+	}
+
+
+	// lookup user by their username
+	static async findOneByUsername(username) {
+		// find a user by their username and return the matching model
+		// return null if not found
+		if (!username) {
+			return null;
+		}
+		var user = await this.mongooseModel.findOne({ username }).exec();
+		jrlog.cdebugObj(user, "in findOneByUsername");
+		return user;
+	}
+
+	// lookup user by their id
+	static async findOneById(id, flagUpdateLoginDate) {
+		// return null if not found
+		if (!id) {
+			return null;
+		}
+		//
+		var user;
+		if (flagUpdateLoginDate) {
+			user = await this.mongooseModel.findOneAndUpdate({ _id: id }, { $set: { loginDate: new Date() } }).exec();
+		} else {
+			user = await this.mongooseModel.findOne({ _id: id }).exec();
+		}
+		//
+		return user;
+	}
+
+	// fine user by email
+	static async findOneByEmail(email) {
+		if (!email) {
+			return null;
+		}
+		// ask user model to find user by email
+		// return null if not found
+		var user = await this.mongooseModel.findOne({ email }).exec();
+		return user;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	// validate email
+	static async validateEmail(jrResult, email, flagMustBeUnique, flagRequired, existingUser) {
+		// existingUser can be passed to avoid complaint about flagMustBeUnique
+		// return JrResult with error set if error, or blank one on success
+
+		// validation helper
+		const validator = require("validator");
+
+		if (!email) {
+			if (!flagRequired) {
+				return email;
+			}
+			jrResult.pushFieldError("email", "Email cannot be blank.");
+			return undefined;
+		}
+
+		// valid syntax?
+		// see https://github.com/chriso/validator.js
+		const isEmailOptions = {};
+		if (!validator.isEmail(email, isEmailOptions)) {
+			jrResult.pushFieldError("email", "Not a properly formatted email address.");
+			return undefined;
+		}
+
+		// check if used by someone already
+		if (flagMustBeUnique) {
+			var user = await this.findOneByEmail(email);
+			if (user &amp;&amp; (!existingUser || existingUser.id !== user.id)) {
+				jrResult.pushFieldError("email", "Email already in use (" + email + ").");
+				return undefined;
+			}
+		}
+
+		// it's good
+		return email;
+	}
+
+
+	// validate username
+	static async validateUsername(jrResult, username, flagMustBeUnique, flagRequired, flagCheckDisallowed, existingUser) {
+		// return JrResult with error set if error, or blank one on success
+		// ATTN: unfinished
+
+		// validation helper
+		const validator = require("validator");
+
+		if (!username) {
+			if (!flagRequired) {
+				return username;
+			}
+			jrResult.pushFieldError("username", "Username cannot be blank.");
+			return undefined;
+		}
+
+		// valid syntax?
+		// see https://github.com/chriso/validator.js
+		if (!validator.matches(username, DefRegexUsernamePattern)) {
+			jrResult.pushBiFieldError("username", "Not a legal username.", "Not a legal username: " + DefRegexUsernameExplanation);
+			return undefined;
+		}
+
+		// check against some blacklisted username
+		if (flagCheckDisallowed) {
+			this.checkDisallowedNewUsername(jrResult, username);
+			if (jrResult.isError()) {
+				return undefined;
+			}
+		}
+
+		// check if used by someone already
+		if (flagMustBeUnique) {
+			var user = await this.findOneByUsername(username);
+			if (user &amp;&amp; (!existingUser || existingUser.id !== user.id)) {
+				jrResult.pushFieldError("username", "Username already in use.");
+				return undefined;
+			}
+		}
+
+		// it's good
+		return username;
+	}
+
+	static checkDisallowedNewUsername(jrResult, username) {
+		// return true if the str is not allowed for new users
+		// note that his may include usernames or emails that admins are allowed to set up, just not users
+		var errorStr;
+		for (var word of DefDisallowedUsernameList) {
+			if (word[word.length - 1] === "*") {
+				// match against it or prefix
+				word = word.substring(0, word.length - 1);
+				if (username.startsWith(word)) {
+					errorStr = "Cannot start with the reserved word '" + word + "'";
+					break;
+				}
+			} else {
+				if (username === word) {
+					errorStr = "Cannot use the reserved word '" + word + "'";
+					break;
+				}
+			}
+		}
+
+		if (errorStr) {
+			// error
+			jrResult.pushBiFieldError("username", "Invalid username", "Invalid username: " + errorStr);
+			return undefined;
+		}
+		// success
+		return username;
+	}
+
+
+	// validate password
+	static async validatePlaintextPasswordConvertToHash(jrResult, passwordPlaintext, flagRequired, flagAllowClearDash) {
+		// return JrResult with error set if error, or blank one on success
+		// ATTN: unfinished
+
+		// validation helper
+		const validator = require("validator");
+
+		if (!passwordPlaintext) {
+			if (flagRequired) {
+				jrResult.pushFieldError("password", "Password cannot be blank.");
+			}
+			return undefined;
+		}
+
+		// they can specify - as password which is a special meaning that we should CLEAR the password to "" which is ONLY legal if we are passed flagAllowClearDash
+		if (flagAllowClearDash &amp;&amp; passwordPlaintext === "-") {
+			return null;
+		}
+
+		// valid syntax?
+		// see https://github.com/chriso/validator.js
+		if (!validator.matches(passwordPlaintext, DefRegexPasswordPattern)) {
+			jrResult.pushBiFieldError("password", "Not a legal password.", "Not a legal password: " + DefRegexPasswordExplanation);
+		}
+
+		// it's good
+		var passwordObj = await UserModel.hashPlaintextPasswordToObj(passwordPlaintext);
+		var passwordHashed = this.passwordObjToHash(passwordObj);
+		return passwordHashed;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	getMinimalPassportProfile() {
+		// return identifier for passport to track to know what user is logged in
+		// if user is a real db model, then provider is "localUser"; otherwise it
+		//  can be a minimal proxy for a bridged login or a verification based id, which is more like a pre-account login
+		var provider;
+		if (this.id) {
+			provider = "localUser";
+		} else if (this.loginId) {
+			provider = "localLogin";
+		}
+		var profile = {
+			// any time we are getting passport profile from a USER, it is local
+			provider,
+			id: this.id,
+			username: this.username,
+			loginId: this.loginId,
+		};
+
+		return profile;
+	}
+
+
+
+	// create a unique user based on bridged login info
+	static async createUniqueUserFromBridgedLogin(bridgedLoginObj, flagUpdateLoginDate) {
+		// this could be tricky because we may have collisions in our desired username, email, etc.
+		var userObj = {
+			username: jrhMisc.getNonFalseValueOrDefault(bridgedLoginObj.getExtraData("username"), undefined),
+			realName: jrhMisc.getNonFalseValueOrDefault(bridgedLoginObj.getExtraData("realName"), undefined),
+			email: jrhMisc.getNonFalseValueOrDefault(bridgedLoginObj.getExtraData("email"), undefined),
+			passwordHashed: undefined,
+		};
+		// modify or tweak username if its not unique
+		await this.uniqueifyUserObj(userObj, bridgedLoginObj.providerName + "_" + bridgedLoginObj.providerId);
+		// now create model (this will also add default properties to it)
+		var user = UserModel.createModel(userObj);
+		// set login date to now?
+		if (flagUpdateLoginDate) {
+			user.loginDate = new Date();
+		}
+		// and save it
+		await user.dbSave();
+		//
+		return user;
+	}
+
+
+	static async uniqueifyUserObj(userObj, providerUniqueUserName) {
+		// ensure userObj has a unique username (and any other fields? modifying properties as needed)
+
+		// first initialize username
+		var username = userObj.username;
+		if (!username) {
+			// is there a real name for this person
+			username = userObj.realName;
+		}
+		if (!username) {
+			// maybe providername is something we can use
+			username = providerUniqueUserName;
+		}
+		if (!username) {
+			// fall back on default username
+			username = DefDefaultUsername;
+		}
+
+		// get a unique version of this
+		// exception will be thrown if we cannot
+		username = await this.fixImportedUsername(username);
+
+		// store it
+		userObj.username = username;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	static async fixImportedUsername(username) {
+		// we may have cases where we are importing a username, or getting one from a bridged login
+		// here we need to ensure it meets our rules
+		const MAXTRIES = 100;
+		var jrResult = JrResult.makeNew();
+
+		var flagCheckDisallowedUsername = true;
+
+		// part 1 is getting a syntax conforming username, short enough for us to add random suffix
+		username = await this.fixImportedUsernameSyntaxLength(username);
+
+		// remember name so we can add suffix if we need to in order to make unique
+		var baseUsername = username;
+		if (baseUsername.length + 1 + DefRandomUsernameRandomSuffixLength > DefUsernameMaxLength) {
+			baseUsername = baseUsername.substring(0, DefUsernameMaxLength - (1 + DefRandomUsernameRandomSuffixLength));
+		}
+
+		// part 2 will be to add random suffixes if needed, until we get a unique one
+
+		// ok now loop trying to fix unique username by adding suffixes to uniqueify
+		for (var i = 1; i &lt; MAXTRIES; ++i) {
+			// see if user with username already exists (or if this is base default username we are pretending already exists)
+			jrResult.clear();
+			await this.validateUsername(jrResult, username, true, false, flagCheckDisallowedUsername, null);
+			if (!jrResult.isError()) {
+				// got a good unique username, so return it
+				return username;
+			}
+			// already exists or unacceptable name, so randomize suffic and try again
+			username = baseUsername + "_" + this.randomUsernameSuffix();
+		}
+
+		// we could not find a unique username (!?!?)
+		throw (new Error("Could not create unique username."));
+	}
+
+
+	static async fixImportedUsernameSyntaxLength(username) {
+		// needs to be a valid username
+		// we don't care if it is unique, but it must be short enough to add random suffix to
+		// we may have to be clever to automate the process of "fixing" an illegal username
+
+		if (!username) {
+			// fall back on default username
+			username = DefDefaultUsername;
+		}
+
+		// force lowercase?
+		if (DefUsernameAlwaysLowercase) {
+			username = username.toLowerCase();
+		}
+
+		var flagCheckDisallowedUsername = true;
+
+		// REMOVE bad characters
+
+		// loop through the username
+		var c;
+		const allowedStartChars = DefUsernameAllowedStartingCharacters;
+		const allowedChars = DefUsernameAllowedCharacters;
+		for (var i = 0; i &lt; username.length; ++i) {
+			c = username.charAt(i);
+			if ((i === 0 &amp;&amp; DefUsernameAllowedStartingCharacters.indexOf(c) === -1) || (i > 0 &amp;&amp; DefUsernameAllowedCharacters.indexOf(c) === -1)) {
+				// not in our list of allowed characters, so splice it out
+				username = username.substring(0, i) + username.substring(i + 1);
+				// backup i so we look at next char in this position and continue
+				--i;
+			}
+		}
+
+		// fix length
+		if (username.length > DefUsernameMaxLength) {
+			// too long
+			username = username.substring(0, DefUsernameMaxLength);
+		} else if (username.length &lt; DefUsernameMinLength) {
+			// just add random characters
+			username += this.randomUsernameSuffix();
+		}
+
+		// ok let's take an early try at validating it -- IT SHOULD be good.
+		var jrResult = JrResult.makeNew();
+		await this.validateUsername(jrResult, username, false, false, flagCheckDisallowedUsername, null);
+		if (!jrResult.isError()) {
+			// good!
+			return username;
+		}
+
+		jrlog.debugObj(jrResult, "username validate result");
+
+		// we got an error, it's not valid syntax.. but we removed all bad characters, corrected length, etc.
+		throw (new Error("Failed to fix imported username to comply with username syntax."));
+	}
+
+
+	static randomUsernameSuffix() {
+		// just return some random letters to add to a username that has a clash with an existing one
+		var str = jrhCrypto.genRandomStringHumanEasy(DefRandomUsernameRandomSuffixLength);
+		if (DefUsernameAlwaysLowercase) {
+			str = str.toLowerCase();
+		}
+		return str;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// error helper
+	static makeJrResultErrorNoUserFromField(key, value) {
+		var msgShort, msgLong;
+		var keylabel = (key === "usernameEmail") ? "username or email" : key;
+		if (!value) {
+			msgShort = "Specify " + keylabel;
+			msgLong = "No " + keylabel + " specified to search for.";
+		} else {
+			msgShort = "User not found.";
+			msgLong = "No user found with user " + keylabel + " matching " + value + ".";
+		}
+		var jrResult = JrResult.makeNew();
+		jrResult.pushBiFieldError(key, msgShort, msgLong);
+		return jrResult;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	static getSaveFields(req, operationType) {
+		// operationType is commonly "crudAdd", "crudEdit"
+		// return an array of field names that the user can modify when saving an object
+		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
+		// subclasses implement; by default we return empty array
+		// NOTE: this list can be generated dynamically based on logged in user
+		var reta;
+		if (operationType === "crudAdd" || operationType === "crudEdit") {
+			reta = ["username", "realName", "email", "password", "passwordHashed", "apiCode", "disabled", "notes"];
+		}
+		return reta;
+	}
+
+
+
+	// crud add/edit
+	static async validateAndSave(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj) {
+		// parse form and extrace validated object properies; return if error
+		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
+		// ATTN: TODO there is duplication with code in registrationaid.js currently, because we are trying to decide where best to do these things - ELIMINATE
+		var objdoc;
+		//
+		var flagCheckDisallowedUsername = true;
+		var flagTrustEmailChange = false;
+		var flagRrequiredEmail = false;
+		var flagUserIsSiteAdmin = await arserver.isLoggedInUserSiteAdmin(req);
+		var flagIsNew = obj.getIsNew();
+
+		// super users can do some things others cannot
+		if (flagUserIsSiteAdmin) {
+			flagCheckDisallowedUsername = false;
+		}
+
+		// REMEMBER old email addresss
+		var emailAddressOld = obj.email;
+
+		// set fields from form and validate
+		await this.validateMergeAsync(jrResult, "username", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await UserModel.validateUsername(jrr, inVal, true, flagRequired, flagCheckDisallowedUsername, obj));
+
+		// note that when validate password, we ALLOW it to be provided blank, BUT we tell validateMergeAsync that it is required field FOR THE OBJECT; normally flagRequired is passed from validateMergeAsync to form validate function, but in this case it's different since we don't want user to be able to REMOVE password
+		await this.validateMergeAsync(jrResult, "password", "passwordHashed", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await UserModel.validatePlaintextPasswordConvertToHash(jrr, inVal, false, true));
+
+		await this.validateMergeAsync(jrResult, "realName", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateRealName(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrResult, "email", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => this.validateEmail(jrr, inVal, true, flagRrequiredEmail, obj));
+		await this.validateMergeAsync(jrResult, "apiCode", "", source, saveFields, preValidatedFields, obj, false, async (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+
+		// base fields shared between all? (notes, etc.)
+		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj);
+
+		// can we trust them to bypass verification email
+		if (options.flagTrustEmailChange) {
+			flagTrustEmailChange = true;
+		} else if (flagUserIsSiteAdmin) {
+			var keynameEmailBypass = "emailBypassVerify";
+			flagTrustEmailChange = jrhValidate.validateTrueFalse(jrResult, keynameEmailBypass, source[keynameEmailBypass], false);
+		}
+
+		if (flagIsNew &amp;&amp; !flagTrustEmailChange) {
+			jrResult.pushError("When creating a new user object directly, you *must* bypass the email verification setting.");
+		}
+
+		// any validation errors?
+		if (jrResult.isError()) {
+			return null;
+		}
+
+		// new email address we are about to save
+		var emailAddressNew = obj.email;
+
+
+		// do this last because it may send a verification email
+		if (flagTrustEmailChange || emailAddressNew === "") {
+			// nothing special to do, drop down to save new object with new email address
+		} else {
+			// we do NOT auto merge in an email change, instead send them a change of email address
+			if (!jrResult.isError() &amp;&amp; emailAddressNew !== emailAddressOld) {
+				// they want to change their email address, dont do it yet; instead put it back to what it was
+				obj.email = emailAddressOld;
+				// send them a change of email verification
+				await obj.createAndSendVerificationEmailChange(emailAddressNew);
+				if (obj.getId() === arserver.getLoggedInLocalUserIdFromSession(req)) {
+					jrResult.pushSuccess(`Your new E-mail address is pending.  Please check ${emailAddressNew} for a verification link.  Your new email address will only take effect after you confirm it.`);
+				} else {
+					jrResult.pushSuccess(`The E-mail address for user ${obj.username} will need to be verified before it is accepted.  The user should check ${emailAddressNew} for a verification link.`);
+				}
+			}
+		}
+
+		// ATTN: unfinished - need to verify email changes
+		// ATTN: unfinished - complains about reserved usernames for admin-only-usernames
+		// ATTN: duslicateive code found in registrationaid and related files
+
+		// any errors saving?
+		if (jrResult.isError()) {
+			return null;
+		}
+
+		// validated successfully
+
+		if (flagSave) {
+			// save it (success message will be pushed onto jrResult)
+			objdoc = await obj.dbSave(jrResult);
+		}
+
+		// return the saved object
+		return objdoc;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	async createAndSendVerificationEmailChange(emailAddressNew) {
+		const VerificationModel = require("./verification");
+		var emailAddressOld = this.email;
+		var userId = this.getId();
+		return await VerificationModel.createAndSendVerificationEmailChange(emailAddressOld, emailAddressNew, userId);
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// ACL stuff
+
+	getRolesOnObject(objectType, objectId, flagAddNoneRole, flagCheckNonObjectSpecificRoles) {
+		// get any roles the user is assigned to this ojbectId
+		// if objectId is null then get roles unrelated to object
+		var rolesFound = [];
+
+		// simple walk of roles array
+		var matchesRole;
+		for (var key in this.roles) {
+			matchesRole = false;
+			// ATTN: this second test looks weird and we need to rething if the thing we true'd as tautology is important
+			if ((this.roles[key].t === objectType &amp;&amp; this.roles[key].i === objectId)) {
+				matchesRole = true;
+			} else if (flagCheckNonObjectSpecificRoles &amp;&amp; this.roles[key].i === null &amp;&amp; (true || objectId !== null) &amp;&amp; (this.roles[key].t === objectType || this.roles[key].t === "site" || this.roles[key].t === null)) {
+				matchesRole = true;
+			}
+
+			if (matchesRole) {
+				// found a role on this object, OR found a role that doesnt refer to an object but with flagCheckNonObjectSpecificRoles set
+				rolesFound.push(this.roles[key].r);
+			}
+		}
+
+		if (flagAddNoneRole) {
+			// add 'none' role, to help when looking for permissions related when we have no role on this object
+			rolesFound.push("none");
+		}
+
+		return rolesFound;
+	}
+
+
+	setExclusiveRole(role, objectType = null, objectId = null) {
+		// set that the user has role on objectId, removing any other roles that the user previously had on objectId)
+
+		// remove other roles on this object
+		this.removeAllRolesForObject(objectType, objectId);
+
+		// now add this one by handing off to addRole function
+		this.addRole(role, objectType, objectId);
+	}
+
+
+	hasRole(role, objectType = null, objectId = null) {
+		// return true if user has role on (optional) objectId
+
+		// simple walk of roles array
+		for (var key in this.roles) {
+			if (this.roles[key].r === role &amp;&amp; this.roles[key].t === objectType &amp;&amp; this.roles[key].i === objectId) {
+				// found it
+				return true;
+			}
+		}
+
+		// not found
+		return false;
+	}
+
+
+	addRole(role, objectType = null, objectId = null) {
+		// add that the user has role on objectId
+
+		// first check if it already exists
+		if (this.roles.length > 0 &amp;&amp; this.hasRole(role, objectType, objectId)) {
+			// already set
+			return;
+		}
+		// add it
+		this.roles.push({ r: role, t: objectType, i: objectId });
+	}
+
+
+	removeRole(role, objectType = null, objectId = null) {
+		// remove any record that user has role on objectId
+
+		// simple walk of roles array, but backwards
+		var foundCount = 0;
+		for (var key = this.roles.length - 1; key >= 0; key--) {
+			if (this.roles[key].r === role &amp;&amp; this.roles[key].t === objectType &amp;&amp; this.roles[key].i === objectId) {
+				// found it
+				this.splice(key, 1);
+				++foundCount;
+			}
+		}
+
+		return foundCount;
+	}
+
+	removeAllRolesForObject(objectType = null, objectId = null) {
+		// remove all roles for the user and this object
+		// simple walk of roles array, but backwards
+		var foundCount = 0;
+		for (var key = this.roles.length - 1; key >= 0; key--) {
+			if (this.roles[key].t === objectType &amp;&amp; this.roles[key].i === objectId) {
+				// found it
+				this.splice(key, 1);
+				++foundCount;
+			}
+		}
+
+		return foundCount;
+	}
+
+	removeAllRoles() {
+		// remove all roles for the user
+		var foundCount = this.roles.length;
+		this.roles = [];
+		return foundCount;
+	}
+
+
+	async hasPermission(permission, objectType = null, objectId = null, flagCheckNonObjectSpecificRoles = true) {
+		// return true if user has permission on (optional) objectId
+		// permissions are derived from roles
+		// by checking nonObjectSpecificRoles it means if the user is a GlobalModerator with no specific object, we will check permissions for that role too
+
+		// get roles held on the object in question (optional)
+		const flagAddNoneRole = true;
+		const objectRoles = this.getRolesOnObject(objectType, objectId, flagAddNoneRole, flagCheckNonObjectSpecificRoles);
+
+		// now ask if any of these rules imply the permission
+		return await aclAid.anyRolesImplyPermission(objectRoles, permission, objectType);
+	}
+
+
+	async isSiteAdmin() {
+		// just check if user has permission to admin the site
+		return await this.hasPermission("admin", "site");
+	}
+
+
+	static stringifyRoles(roles) {
+		// nice stringify of user roles
+		if (!roles) {
+			return "none";
+		}
+		if (roles.length === 0) {
+			return "none";
+		}
+
+		var rolestring = "";
+		for (var key in roles) {
+			if (rolestring !== "") {
+				rolestring += " | ";
+			}
+			rolestring += roles[key].r;
+			if (roles[key].t != null) {
+				if (roles[key].i != null) {
+					const objectLink = arserver.makeAlinkHtmlToAclModel(roles[key].t, roles[key].i);
+					rolestring += " (" + objectLink + ")";
+				} else {
+					rolestring += " (" + roles[key].t + ")";
+				}
+			}
+		}
+
+		return rolestring;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	async getApiCodeEnsureValid() {
+		// if user has a valid apiCode, just return it
+		// if not, create and save one then return it
+		// this will not CHANGE a valid one
+		if (!this.apiCode) {
+			await this.resetUpdateApiCode();
+		}
+		return this.apiCode;
+	}
+
+	async resetUpdateApiCode() {
+		// update the apicode which will invalidate any previously issues api access tokens for user
+		this.apiCode = jrhMisc.getPreciseNowString();
+		// save it to database
+		var userdoc = await this.dbSave();
+		if (userdoc) {
+			// return it
+			return this.apiCode;
+		}
+		// error
+		return null;
+	}
+
+	verifyApiCode(tokenApiCode) {
+		// check if token api code matches user's latest apicode
+		if (this.apiCode === tokenApiCode) {
+			return true;
+		}
+		return false;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+}
+
+
+
+
+
+// export the class as the sole export
+module.exports = UserModel;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.3</a> on Thu Nov 14 2019 07:39:49 GMT-0600 (Central Standard Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

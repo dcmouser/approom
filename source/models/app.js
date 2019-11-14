@@ -1,10 +1,13 @@
-// approom
-// app model
-// v1.0.0 on 5/1/19 by mouser@donationcoder.com
-//
-// All data in our system is organized at the highest level into a collection of "Apps".
-// The App model represents a top-level collections.
-// It may contain options for the app, permission requirements, etc.
+/**
+ * @module models/app
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/1/19
+ * @description
+ * All data in our system is organized at the highest level into a collection of "Apps".
+ * The App model represents a top-level collections.
+ * It is the central object in the project.
+ * It may contain options for the app, permission requirements, etc.
+ */
 
 "use strict";
 
@@ -14,12 +17,17 @@ const jrlog = require("../helpers/jrlog");
 const jrhValidate = require("../helpers/jrh_validates");
 
 // models
-const ModelBaseMongoose = require("./modelBaseMongoose");
+const ModelBaseMongoose = require("./model_base_mongoose");
 
 
 
 
-
+/**
+ * Mongoose database model representing Apps in the system, the top level objects.
+ *
+ * @class AppModel
+ * @extends {ModelBaseMongoose}
+ */
 class AppModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------

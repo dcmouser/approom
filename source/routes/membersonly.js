@@ -1,7 +1,12 @@
-// approom
-// membersonly test route
-// v1.0.0 on 5/28/19 by mouser@donationcoder.com
-//
+/**
+ * @module routes/membersonly
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/1/19
+ * @description
+ * members only test route
+ * @todo
+ * remove this route eventually
+ */
 
 "use strict";
 
@@ -20,8 +25,15 @@ const arserver = require("../controllers/arserver");
 const router = express.Router();
 
 
-// module variable to remember base url path of router
+
+//---------------------------------------------------------------------------
+// module variables
+
+// remember base url path of router
 var routerBaseUrlPath;
+//---------------------------------------------------------------------------
+
+
 
 
 //---------------------------------------------------------------------------

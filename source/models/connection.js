@@ -1,16 +1,25 @@
-// approom
-// connection model
-// v1.0.0 on 5/1/19 by mouser@donationcoder.com
-//
-// A Connection model represents someone who is connected into the system, whethther they are a logged-in "User" or just an anonymous guest
+/**
+ * @module models/connection
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/1/19
+ * @description
+ * A Connection model represents someone who is connected into the system, whethther they are a logged-in "User" or just an anonymous guest
+ */
 
 "use strict";
 
+
 // models
-const ModelBaseMongoose = require("./modelBaseMongoose");
+const ModelBaseMongoose = require("./model_base_mongoose");
 
 
 
+/**
+ * A Connection model represents someone who is connected into the system, whethther they are a logged-in "User" or just an anonymous guest
+ *
+ * @class ConnectionModel
+ * @extends {ModelBaseMongoose}
+ */
 class ConnectionModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------

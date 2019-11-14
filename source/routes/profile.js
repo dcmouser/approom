@@ -1,7 +1,10 @@
-// approom
-// profile route
-// v1.0.0 on 5/1/19 by mouser@donationcoder.com
-//
+/**
+ * @module routes/profile
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/1/19
+ * @description
+ * user profile route
+ */
 
 "use strict";
 
@@ -24,10 +27,18 @@ const crudAid = require("../controllers/crudaid");
 const router = express.Router();
 
 
-// module variable to remember base url path of router
+
+//---------------------------------------------------------------------------
+// module variables
+
+// remember base url path of router
 var routerBaseUrlPath;
+
 // others
 var viewFilePathEdit;
+//---------------------------------------------------------------------------
+
+
 
 
 function setupRouter(urlPath) {

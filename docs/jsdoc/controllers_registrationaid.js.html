@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>controllers/registrationaid.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="JrResult.JrResult.html">JrResult</a></li><li><a href="module-controllers_aclaid-AclAid.html">AclAid</a></li><li><a href="module-controllers_adminaid-AdminAid.html">AdminAid</a></li><li><a href="module-controllers_arserver-AppRoomServer.html">AppRoomServer</a></li><li><a href="module-controllers_crudaid-CrudAid.html">CrudAid</a></li><li><a href="module-controllers_ratelimiteraid-RateLimiterAid.html">RateLimiterAid</a></li><li><a href="module-controllers_registrationaid-RegistrationAid.html">RegistrationAid</a></li><li><a href="module-helpers_jrresult-JrResult.html">JrResult</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#._unusedCodeExpressMiddlewareInjectSessionResult">_unusedCodeExpressMiddlewareInjectSessionResult</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.getMergeSessionResultAndClear">getMergeSessionResultAndClear</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.isBlank">isBlank</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.isJrResult">isJrResult</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.makeAndRemoveFromSession">makeAndRemoveFromSession</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.makeClone">makeClone</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.makeError">makeError</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.makeMessage">makeMessage</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.makeNew">makeNew</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.makeSuccess">makeSuccess</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.passportOrJrResultErrorAsString">passportOrJrResultErrorAsString</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#.undefinedIfBlank">undefinedIfBlank</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#addToSession">addToSession</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#clear">clear</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#clearSection">clearSection</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#copyFrom">copyFrom</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#getDoneRendering">getDoneRendering</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#getErrorsAsString">getErrorsAsString</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#getExtraData">getExtraData</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#getFieldError">getFieldError</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#getType">getType</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#isError">isError</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#mergeIn">mergeIn</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#push">push</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#pushBiFieldError">pushBiFieldError</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#pushError">pushError</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#pushErrorOnTop">pushErrorOnTop</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#pushFieldError">pushFieldError</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#pushMessage">pushMessage</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#pushSuccess">pushSuccess</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#setDoneRendering">setDoneRendering</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#setError">setError</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#setExtraData">setExtraData</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#setFieldError">setFieldError</a></li><li data-type='method'><a href="module-helpers_jrresult-JrResult.html#setType">setType</a></li></ul></li><li><a href="module-models_app-AppModel.html">AppModel</a></li><li><a href="module-models_connection-ConnectionModel.html">ConnectionModel</a></li><li><a href="module-models_file-FileModel.html">FileModel</a></li><li><a href="module-models_login-LoginModel.html">LoginModel</a></li><li><a href="module-models_log-LogModel.html">LogModel</a></li><li><a href="module-models_model_base_mongoose_minimal-ModelBaseMongooseMinimal.html">ModelBaseMongooseMinimal</a></li><li><a href="module-models_modelBaseMongoose-ModelBaseMongoose.html">ModelBaseMongoose</a></li><li><a href="module-models_option-OptionModel.html">OptionModel</a></li><li><a href="module-models_roomdata-RoomdataModel.html">RoomdataModel</a></li><li><a href="module-models_room-RoomModel.html">RoomModel</a></li><li><a href="module-models_session-SessionModel.html">SessionModel</a></li><li><a href="module-models_user-UserModel.html">UserModel</a></li><li><a href="module-models_verification-VerificationModel.html">VerificationModel</a></li></ul><h3>Modules</h3><ul><li><a href="module-controllers_aclaid.html">controllers/aclaid</a></li><li><a href="module-controllers_adminaid.html">controllers/adminaid</a></li><li><a href="module-controllers_arserver.html">controllers/arserver</a></li><li><a href="module-controllers_crudaid.html">controllers/crudaid</a></li><li><a href="module-controllers_ratelimiteraid.html">controllers/ratelimiteraid</a></li><li><a href="module-controllers_registrationaid.html">controllers/registrationaid</a></li><li><a href="module-helpers_jrconfig.html">helpers/jrconfig</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrconfig.html#~addConfigFile">addConfigFile</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~findQueuedCommand">findQueuedCommand</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~fixConfigFilePathName">fixConfigFilePathName</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~getDebugObj">getDebugObj</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~getVal">getVal</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~getValDefault">getValDefault</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~ipStringToSafeFilenameString">ipStringToSafeFilenameString</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~nconfMergeCliConfigFiles">nconfMergeCliConfigFiles</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~nconfMergeConfigFile">nconfMergeConfigFile</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~parse">parse</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~popQueuedCommand">popQueuedCommand</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~queueYargsCommand">queueYargsCommand</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~runQueuedCommands">runQueuedCommands</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setConfigDirAndDiscoverFiles">setConfigDirAndDiscoverFiles</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setDefaultOptions">setDefaultOptions</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setEnvList">setEnvList</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setOverrideOptions">setOverrideOptions</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setServerFilenamePrefixFromServerIp">setServerFilenamePrefixFromServerIp</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setYargs">setYargs</a></li></ul></li><li><a href="module-helpers_jrh_crypto.html">helpers/jrh_crypto</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_crypto.html#~createHashedObjectFromString">createHashedObjectFromString</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~generateRandomSalt">generateRandomSalt</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~genRandomStringHex">genRandomStringHex</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~genRandomStringHumanEasier">genRandomStringHumanEasier</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~genRandomStringHumanEasy">genRandomStringHumanEasy</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~hashPlaintextPasswordToObj">hashPlaintextPasswordToObj</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~hashPlaintextStringInsecureButSearchable">hashPlaintextStringInsecureButSearchable</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~testPlaintextPassword">testPlaintextPassword</a></li></ul></li><li><a href="module-helpers_jrh_express.html">helpers/jrh_express</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_express.html#~asyncPasswordAuthenticate">asyncPasswordAuthenticate</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~asyncPasswordReqLogin">asyncPasswordReqLogin</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressMiddleWare">calcExpressMiddleWare</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressRoutePathData">calcExpressRoutePathData</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressRoutePathDataRouteArray">calcExpressRoutePathDataRouteArray</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressRoutePathDataSplit">calcExpressRoutePathDataSplit</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~forgetSessionVar">forgetSessionVar</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~normalizePort">normalizePort</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqPrefixedValueArray">reqPrefixedValueArray</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqVal">reqVal</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqValAsInt">reqValAsInt</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqValFromList">reqValFromList</a></li></ul></li><li><a href="module-helpers_jrh_grid.html">helpers/jrh_grid</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_grid.html#~calcHeaderKeysNicely">calcHeaderKeysNicely</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridList">jrGridList</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListPager">jrGridListPager</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListPagerItem">jrGridListPagerItem</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListPagerItemPerPage">jrGridListPagerItemPerPage</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTable">jrGridListTable</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTableData">jrGridListTableData</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTableHeader">jrGridListTableHeader</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTableHeaderSortDir">jrGridListTableHeaderSortDir</a></li></ul></li><li><a href="module-helpers_jrh_handlebars.html">helpers/jrh_handlebars</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_handlebars.html#~loadPartialFiles">loadPartialFiles</a></li><li data-type='method'><a href="module-helpers_jrh_handlebars.html#~setupJrHandlebarHelpers">setupJrHandlebarHelpers</a></li></ul></li><li><a href="module-helpers_jrh_misc.html">helpers/jrh_misc</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_misc.html#~asyncAwaitForEachFunctionCall">asyncAwaitForEachFunctionCall</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~createObjectFromJsonParse">createObjectFromJsonParse</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~DateNowPlusMinutes">DateNowPlusMinutes</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~deepIterationCopy">deepIterationCopy</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~firstCoercedTrueValue">firstCoercedTrueValue</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getNiceNowString">getNiceNowString</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getNonFalseValueOrDefault">getNonFalseValueOrDefault</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getNonNullValueOrDefault">getNonNullValueOrDefault</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getPreciseNowString">getPreciseNowString</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getServerIpAddress">getServerIpAddress</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isInAnyArray">isInAnyArray</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isObjectEmpty">isObjectEmpty</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isPromise">isPromise</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isSimpleObject">isSimpleObject</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~makeSafeForFormInput">makeSafeForFormInput</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~mergeArraysDedupe">mergeArraysDedupe</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~mergeArraysKeepDupes">mergeArraysKeepDupes</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~regexEscapeStr">regexEscapeStr</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~shallowCopy">shallowCopy</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~stringArrayToNiceString">stringArrayToNiceString</a></li></ul></li><li><a href="module-helpers_jrh_mongo.html">helpers/jrh_mongo</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_mongo.html#~calcDatabaseResourceUse">calcDatabaseResourceUse</a></li><li data-type='method'><a href="module-helpers_jrh_mongo.html#~calcDatabaseStructure">calcDatabaseStructure</a></li><li data-type='method'><a href="module-helpers_jrh_mongo.html#~isValidMongooseObjectId">isValidMongooseObjectId</a></li><li data-type='method'><a href="module-helpers_jrh_mongo.html#~mongoIdEqual">mongoIdEqual</a></li></ul></li><li><a href="module-helpers_jrh_mongo_filter.html">helpers/jrh_mongo_filter</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_mongo_filter.html#~buildMongooseQueryFromReq">buildMongooseQueryFromReq</a></li><li data-type='method'><a href="module-helpers_jrh_mongo_filter.html#~convertReqQueryStringToAMongooseFindFilter">convertReqQueryStringToAMongooseFindFilter</a></li><li data-type='method'><a href="module-helpers_jrh_mongo_filter.html#~convertReqQueryStringToAMongooseFindFilterBoolean">convertReqQueryStringToAMongooseFindFilterBoolean</a></li><li data-type='method'><a href="module-helpers_jrh_mongo_filter.html#~convertReqQueryStringToAMongooseFindFilterGenericOperator">convertReqQueryStringToAMongooseFindFilterGenericOperator</a></li><li data-type='method'><a href="module-helpers_jrh_mongo_filter.html#~convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal">convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal</a></li><li data-type='method'><a href="module-helpers_jrh_mongo_filter.html#~convertReqQueryStringToAMongooseFindFilterMongoStrCmp">convertReqQueryStringToAMongooseFindFilterMongoStrCmp</a></li><li data-type='method'><a href="module-helpers_jrh_mongo_filter.html#~convertReqQueryStringToAMongooseFindFilterNumeric">convertReqQueryStringToAMongooseFindFilterNumeric</a></li><li data-type='method'><a href="module-helpers_jrh_mongo_filter.html#~convertReqQueryStringToAMongooseFindFilterStringic">convertReqQueryStringToAMongooseFindFilterStringic</a></li></ul></li><li><a href="module-helpers_jrh_text.html">helpers/jrh_text</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_text.html#~jrBootstrapCollapseBox">jrBootstrapCollapseBox</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlFormInputPassword">jrHtmlFormInputPassword</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlFormOptionList">jrHtmlFormOptionList</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlFormOptionListSelect">jrHtmlFormOptionListSelect</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlNiceOptionFromList">jrHtmlNiceOptionFromList</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlStrigifyObject">jrHtmlStrigifyObject</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrPluralize">jrPluralize</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrPluralizeCount">jrPluralizeCount</a></li></ul></li><li><a href="module-helpers_jrh_validate.html">helpers/jrh_validate</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateInteger">validateInteger</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateIntegerRange">validateIntegerRange</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateRealName">validateRealName</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateString">validateString</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateTrueFalse">validateTrueFalse</a></li></ul></li><li><a href="module-helpers_jrlog.html">helpers/jrlog</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrlog.html#~calcLogFilePath">calcLogFilePath</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~cdebug">cdebug</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~cdebugf">cdebugf</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~cdebugObj">cdebugObj</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~convertErrorTypeToWinstonLevel">convertErrorTypeToWinstonLevel</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~debug">debug</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~debugf">debugf</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~debugObj">debugObj</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~error">error</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~getDebugEnabled">getDebugEnabled</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~info">info</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~log">log</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~logStdDbMessage">logStdDbMessage</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~objToString">objToString</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setDebugEnabled">setDebugEnabled</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setup">setup</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setupDebugmod">setupDebugmod</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setupMorganMiddlewareForExpressWebAccessLogging">setupMorganMiddlewareForExpressWebAccessLogging</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setupWinston">setupWinston</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~warning">warning</a></li></ul></li><li><a href="module-helpers_jrresult.html">helpers/jrresult</a></li><li><a href="module-models_app.html">models/app</a></li><li><a href="module-models_connection.html">models/connection</a></li><li><a href="module-models_file.html">models/file</a></li><li><a href="module-models_log.html">models/log</a></li><li><a href="module-models_login.html">models/login</a></li><li><a href="module-models_model_base_mongoose_minimal.html">models/model_base_mongoose_minimal</a></li><li><a href="module-models_modelBaseMongoose.html">models/modelBaseMongoose</a></li><li><a href="module-models_option.html">models/option</a></li><li><a href="module-models_room.html">models/room</a></li><li><a href="module-models_roomdata.html">models/roomdata</a></li><li><a href="module-models_session.html">models/session</a></li><li><a href="module-models_user.html">models/user</a></li><li><a href="module-models_verification.html">models/verification</a></li><li><a href="module-routes_admin.html">routes/admin</a></li><li><a href="module-routes_analytics.html">routes/analytics</a></li><li><a href="module-routes_api.html">routes/api</a><ul class='methods'><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenAccess">makeSecureTokenAccess</a></li><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenAccessFromRefreshToken">makeSecureTokenAccessFromRefreshToken</a></li><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenRefresh">makeSecureTokenRefresh</a></li><li data-type='method'><a href="module-routes_api.html#~routerAllTokentest">routerAllTokentest</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetIndex">routerGetIndex</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetRefreshaccess">routerGetRefreshaccess</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetReqrefresh">routerGetReqrefresh</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetWildcard">routerGetWildcard</a></li><li data-type='method'><a href="module-routes_api.html#~routerPostReqrefresh">routerPostReqrefresh</a></li><li data-type='method'><a href="module-routes_api.html#~setupRouter">setupRouter</a></li></ul></li><li><a href="module-routes_app.html">routes/app</a></li><li></li><li><a href="module-routes_index.html">routes/index</a></li><li><a href="module-routes_login.html">routes/login</a></li><li><a href="module-routes_logout.html">routes/logout</a></li><li><a href="module-routes_membersonly.html">routes/membersonly</a></li><li><a href="module-routes_profile.html">routes/profile</a></li><li><a href="module-routes_register.html">routes/register</a></li><li><a href="module-routes_room.html">routes/room</a></li><li><a href="module-routes_verify.html">routes/verify</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">controllers/registrationaid.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @module controllers/registrationaid
+ * @author jesse reichler &lt;mouser@donationcoder.com>
+ * @copyright 5/1/19
+ * @description
+ * This module defines the RegistrationAid class, which provides support functions for user registration
+ */
+
+"use strict";
+
+
+// our helper modules
+const jrhMisc = require("../helpers/jrh_misc");
+const JrResult = require("../helpers/jrresult");
+const jrhValidate = require("../helpers/jrh_validates");
+
+// require models
+const arserver = require("../controllers/arserver");
+const VerificationModel = require("../models/verification");
+const UserModel = require("../models/user");
+const LoginModel = require("../models/login");
+
+
+
+
+
+/**
+ * Provides support functions for user registration
+ *
+ * @class RegistrationAid
+ */
+class RegistrationAid {
+
+	//---------------------------------------------------------------------------
+	// constructor
+	constructor() {
+	}
+
+	// global singleton request
+	static getSingleton(...args) {
+		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
+		if (this.globalSingleton === undefined) {
+			this.globalSingleton = new RegistrationAid(...args);
+		}
+		return this.globalSingleton;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	// this function is used to initialize form variables when presenting registration form
+	// it gets values from session related if they have a bridged login or a session-remembered validation of their emai, etc.
+	// which allows us to have multi-step registration
+	async fillReqBodyWithSessionedFieldValues(req) {
+		// option fields
+		var username, email, realName;
+		var jrResult = JrResult.makeNew();
+
+		// initial values for the form to present them with
+
+		// ok now let's check if they are sessioned with a LoginId; if so we might get initial values from that
+		var login = await arserver.getLoggedInLogin(req);
+		if (login) {
+			// bridged login, get their requested (or default) username
+			email = login.getExtraData("email");
+			realName = login.getExtraData("realName");
+			username = login.getExtraData("username", realName);
+			if (username) {
+				username = await UserModel.fixImportedUsername(username);
+			}
+			// show them about their bridged login
+			jrResult.pushSuccess("After your complete your registration, you will be able to login using " + login.getProviderLabel() + ".");
+		}
+
+		// previously sessioned with a verificationId? if so we could get initial values from that
+		var verification = await arserver.getLastSessionedVerification(req);
+		if (verification &amp;&amp; verification.isValidNewAccountEmailReady(req)) {
+			// ok we can get their initial registration data from their verification they already verified
+			if (verification.key === "email") {
+				email = verification.val;
+				jrResult.pushSuccess("With your email address verified, you may now complete your registration.");
+			}
+			realName = verification.getExtraData("realName", realName);
+			username = verification.getExtraData("username", username);
+			email = verification.getExtraData("email", email);
+		} else {
+			// not relevant for us
+			verification = null;
+		}
+
+		// store initial values for form in req.body, just as they would be if were were re-presending a failed form
+		req.body.username = username;
+		req.body.email = email;
+		req.body.realName = realName;
+		if (verification) {
+			// We have a verification that is still relevant for creating a new account, so we do we want to pass that along in the form? what if we don't?
+			if (true) {
+				// ATTN: now, as would be the case if we were re-presenting a form with errors, we might want to put the (plaintext) verification code back on the form to re-consume it on new submit
+				// however, it's not clear the best way to do this.. do we want to embed in form being passed back to user or just keep it in session...
+				// NOTE also that if they hit the registration page attempting to finish a registration, their passed verification code may ALSO be in req.body.code or req.params.code (see verify route)
+				// there are alternatives.  We could not put the already-taken verification code back in the form, and just grab it from session when we go to process the registration form (feels kludgey)
+				// Alternatively, we could not look for it in session at all, and just get keep passing it through as hidden var on form but taking it from the original very route (req.params.code)
+				//  this has advantage of not needing session to save verification code; the only real problem with this is that i think we may depend on session saving verification info when we do a bridged login.. is that true?
+				// The reason it's currently hard to pass it through as a hidden variable on the registration form after we receive it in a verify url link, is that we are REDIRECTING the user to the register page, rather than
+				//  just rendering full registration form.. So it's not easy to pass along the verification code info other than via session.
+				if (!req.body.verificationCode) {
+					req.body.verificationCode = verification.getUniqueCode();
+				}
+			}
+			if (false) {
+				req.body.verificationCodeHashed = verification.getUniqueCodeHashed();
+			}
+		}
+
+		return jrResult;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// New all in one registration/account form helper
+	async processAccountAllInOneForm(req) {
+		var jrResult = JrResult.makeNew();
+		var successRedirectTo;
+
+		// get any verification code associated with this registration, to prove they own the email
+		// verificationCode can come explicitly from the form (takes priority) OR the session if not in the form
+		var verification = await this.getValidNewAccountVerificationFromRequestOrLastSession(req);
+
+		// depending on how we are invoked we may allow for missing fields
+		// ATTN: note that it may be the case that a field is REQUIRED, but does not have to be present
+		//  on the form if it is present in the verification record (e.g. they have verified their email)
+		var requiredFields;
+		if (verification) {
+			// when we are following up on a verification, then this is a final registration
+			requiredFields = this.calcRequiredRegistrationFieldsFinal();
+		} else {
+			// new registration, we may only need certain info, because we aren't creating user account yet, just pre-account verification without account to be created after they verify their email
+			requiredFields = this.calcRequiredRegistrationFieldsInitial();
+		}
+		var flagEmailRequired = requiredFields.includes("email");
+		var flagUsernameRequired = requiredFields.includes("username");
+		var flagPasswordRequired = requiredFields.includes("password");
+		var flagCheckDisallowedUsername = true;
+
+
+		// get values from form submission, falling back on verification if there is one that is verified
+		var email = req.body.email;
+		var username = req.body.username;
+		var password = req.body.password;
+		var realName = req.body.realName;
+		var passwordHashed;
+		var flagVerifiedEmail = false;
+
+		// blank values in form can assume verification values
+		// this is so that when they signed up pre-account creation they could have supplies some of these as requested (but not guaranteed) values
+		if (verification) {
+			if (!email) {
+				email = verification.getVerifiedValue("email");
+				flagVerifiedEmail = true;
+			} else {
+				// they have provided an email -- if it doesn't match verificaiton email, then the verification is moot
+				if (email !== verification.getVerifiedValue("email")) {
+					flagVerifiedEmail = false;
+				} else {
+					flagVerifiedEmail = true;
+				}
+			}
+			if (!username) {
+				username = verification.getExtraData("username");
+			}
+			if (!password) {
+				passwordHashed = verification.getExtraData("passwordHashed");
+			}
+			if (!realName) {
+				realName = verification.getExtraData("realName");
+			}
+		}
+
+
+
+
+
+		// ok now we want to validate fields
+		// ATTN: there is some duplicated overlapping code here from user.js validateAndSaveNew() that we would ideally like to merge
+
+		// valid email?
+		email = await UserModel.validateEmail(jrResult, email, true, flagEmailRequired, null);
+
+		// valid username?
+		username = await UserModel.validateUsername(jrResult, username, true, flagUsernameRequired, flagCheckDisallowedUsername, null);
+
+		// valid realName
+		realName = await jrhValidate.validateRealName(jrResult, "realName", realName, false);
+
+		// valid password?
+		if (passwordHashed) {
+			// we already have a valid hashed password for them, previously calculated and stored in verification object (and no new password specified), so we'll use that
+		} else {
+			passwordHashed = await UserModel.validatePlaintextPasswordConvertToHash(jrResult, password, flagPasswordRequired, false);
+		}
+
+		if (jrResult.isError()) {
+			// error case, we can return now
+			return { jrResult, successRedirectTo };
+		}
+		//---------------------------------------------------------------------------
+
+
+
+
+		//---------------------------------------------------------------------------
+		// user data object, used in both cases below
+		var userObj = {
+			email,
+			username,
+			realName,
+			passwordHashed,
+		};
+		// ATTN: IMPORTANT NOTE
+		// There are 2 cases we need to deal with here
+		// Case 1: We already have verified proof they own this email, because they got here with a verificationCode that proves it (either provided in the form, or in their session)
+		//  in which case we can create the account
+		// Case 2: They somehow are on this page requesting a new account, without proof of they own the email (maybe they lost the verification coder, etc.)
+		//  in this case, it's identical to asking for a registration
+		// in case 1 we will complain if they try to use an email address in userObj that does not match the one in the verification;
+		//  but alternately we could take a mismatch of email as a sign of case 2, and rather than complaining, just begin the email verification process again.
+		//
+		if (verification &amp;&amp; flagVerifiedEmail) {
+			// case 1, we can create the full account
+			await this.createFullNewUserAccountForLoggedInUser(jrResult, req, verification, userObj);
+			if (!jrResult.isError()) {
+				if (arserver.getLoggedInLocalUserIdFromSession(req)) {
+					// they have been logged in after verifying, so send them to their profile.
+					successRedirectTo = "/profile";
+				} else {
+					// not logged in, so send them to login page to login
+					successRedirectTo = "/login";
+				}
+				// drop down whether success or error
+			}
+		} else {
+			// case 2, it's an initial registration attempt for which we need to send them a verification
+			//
+			// session user data (userId should be blank, but loginId might not be if they are doing this after a bridged login)
+			var userId = arserver.getLoggedInLocalUserIdFromSession(req);
+			var loginId = arserver.getLoggedInLocalLoginIdFromSession(req);
+
+			// create the email verification and mail it
+			jrResult = await VerificationModel.createVerificationNewAccountEmail(email, userId, loginId, userObj);
+
+			// add message on success
+			if (!jrResult.isError()) {
+				// success
+				jrResult.pushSuccess("Please check for the verification email.  You will need to confirm that you have received it before your account can be created.");
+				successRedirectTo = "/verify";
+			}
+		}
+		//---------------------------------------------------------------------------
+
+		// return tuple with result and suggested succes redirect
+		return { jrResult, successRedirectTo };
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+	//---------------------------------------------------------------------------
+	calcRequiredRegistrationFieldsInitial() {
+		// we can change this stuff if we want to force user to provide different info on initial registration
+		// if we only require email, then we can't create account until they verify email, and thereafter fill in another form with username, etc.
+		// wheras if we gather full info (username, pass) now, we can remember it and create full account after they verify their email
+		var requiredFields = ["email"];
+		return requiredFields;
+	}
+
+	calcRequiredRegistrationFieldsFinal() {
+		// what fields we require to create the full user account
+		// ATTN: note that you can't put just any arbitrary list of fields here, only certain ones are checked in processAccountAllInOneForm() above
+		var requiredFields = ["email", "username", "password"];
+		return requiredFields;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// this is the function called when user submits their username and password to create their account
+	// AFTER they have confirmed their email address
+	// it is called from the account route
+	// there is very similar code elsewhere that we would like to combine
+	//
+	// ATTN: there is redundant code here; better would be to call the generic UseVerification process with the extra info
+	// IMPORTANT: userObj may contain an email address -- if so it MUST match the one in the verification, otherwise it is an error to complain about
+	// NOTE: verificationCode can optionally be an already resolved verification object
+	//
+	async createFullNewUserAccountForLoggedInUser(jrResult, req, verification, userObj) {
+		var retvResult;
+
+		// log them in automatically after we create their account?
+		var flagLogInUserAfterAccountCreate = true;
+
+		// create user (passwordHashed is pre-validated)
+		// ATTN: this function is typically called by caller who has already validated username, email, etc, so we COULD list these all (or *) in the preValidated list
+		// but for safety we ask ValidateAndSaveNew to revalidate everything EXCEPT passwordHash which cannot be re-validated since the plaintext may be gone to the wind
+		var saveFields = ["username", "email", "realName", "passwordHashed"];
+		// trust the email since we just verified it
+		var options = {
+			flagTrustEmailChange: true,
+		};
+		var user = await UserModel.validateAndSaveNew(jrResult, options, true, req, userObj, saveFields, ["passwordHashed"]);
+
+		// success?
+		if (!jrResult.isError()) {
+			// success
+			jrResult.pushSuccess("Your new account with username '" + user.username + "' has been created.");
+			// mark that verification is used
+			if (verification) {
+				await verification.useUpAndSave(req, true);
+			}
+			// log it
+			arserver.logr(req, "user.create", "created new account for " + user.getLogIdString());
+			// now, if they were sessioned-in with a Login, we want to connect that to the new user
+			//
+			var loginId = arserver.getLoggedInLocalLoginIdFromSession(req);
+			if (loginId) {
+				retvResult = await LoginModel.connectUserToLogin(user, loginId, false);
+				jrResult.mergeIn(retvResult);
+			}
+			// if successfullly created new account, should we actually log them in at this point?
+			if (!jrResult.isError()) {
+				if (flagLogInUserAfterAccountCreate) {
+					// log them in
+					retvResult = await arserver.asyncLoginUserToSessionThroughPassport(req, user);
+					// merge errors?
+					jrResult.mergeIn(retvResult);
+					if (!jrResult.isError()) {
+						jrResult.pushSuccess("You have been logged in.");
+					}
+				}
+			}
+			return;
+		}
+
+		jrResult.pushError("Failed to create new user account.");
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	async getValidNewAccountVerificationFromRequestOrLastSession(req) {
+		// ATTN: In this function, we look for a (plaintext) verification code in the body of the form submitted, OR if not found, from the last session verification code checked
+		// note we only look at newaccountready verifications
+		var verification;
+
+		const verificationCode = req.body.verificationCode;
+		if (!verification &amp;&amp; verificationCode) {
+			// first lookup verify code if code provided in form
+			verification = await VerificationModel.findOneByCode(verificationCode);
+		}
+		if (!verification) {
+			// not found in form, maybe there is a remembered verification id in ession regarding new account email verified, then show full
+			verification = await arserver.getLastSessionedVerification(req);
+		}
+
+		if (verification) {
+			if (!verification.isValidNewAccountEmailReady(req)) {
+				// not relevant for us, so clear it
+				verification = undefined;
+			}
+		}
+		return verification;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+}
+
+
+// export the class as the sole export
+module.exports = RegistrationAid.getSingleton();
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.3</a> on Thu Nov 14 2019 07:39:49 GMT-0600 (Central Standard Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

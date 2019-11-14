@@ -1,8 +1,10 @@
-// verify
-// route for processing verifications
-// v1.0.0 on 5/1/19 by mouser@donationcoder.com
-//
-// verify route is for when users are proving they can receive an email, etc.
+/**
+ * @module routes/verify
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/1/19
+ * @description
+ * verify route for when users prove that they own an email, etc.
+ */
 
 "use strict";
 
@@ -21,8 +23,14 @@ const JrResult = require("../helpers/jrresult");
 const router = express.Router();
 
 
-// module variable to remember base url path of router
+
+//---------------------------------------------------------------------------
+// module variables
+
+// remember base url path of router
 var routerBaseUrlPath;
+//---------------------------------------------------------------------------
+
 
 
 

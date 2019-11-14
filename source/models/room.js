@@ -1,18 +1,20 @@
-// approom
-// room model
-// v1.0.0 on 5/1/19 by mouser@donationcoder.com
-//
-// All data in our system is organized at the highest level into a collection of "Apps",
-// and then for each App we have "Rooms", which allow a number of users to communicate / share data with each other.
-// The Room model manages the data for each virtual room.
+/**
+ * @module models/room
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/15/19
+ * @description
+ * All data in our system is organized at the highest level into a collection of "Apps", and then for each App we have "Rooms", which allow a number of users to communicate / share data with each other.
+ * The Room model manages the data for each virtual room.
+ */
 
 "use strict";
+
 
 // modules
 const mongoose = require("mongoose");
 
 // models
-const ModelBaseMongoose = require("./modelBaseMongoose");
+const ModelBaseMongoose = require("./model_base_mongoose");
 const arserver = require("../controllers/arserver");
 
 // our helper modules
@@ -23,6 +25,12 @@ const jrhValidate = require("../helpers/jrh_validates");
 
 
 
+/**
+ * The Room model manages the data for each virtual room.
+ *
+ * @class RoomModel
+ * @extends {ModelBaseMongoose}
+ */
 class RoomModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------

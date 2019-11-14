@@ -1,16 +1,20 @@
-// approom
-// user model
-// v1.0.0 on 5/1/19 by mouser@donationcoder.com
-//
-// The User model handles the database of users (members) who can log into the system
+/**
+ * @module models/user
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/1/19
+ * @description
+ * The User model handles the database of users (members) who can log into the system
+ */
 
 "use strict";
 
+
+//---------------------------------------------------------------------------
 // misc node core modules
 const assert = require("assert");
 
 // models
-const ModelBaseMongoose = require("./modelBaseMongoose");
+const ModelBaseMongoose = require("./model_base_mongoose");
 
 // our helper modules
 const jrhMisc = require("../helpers/jrh_misc");
@@ -22,6 +26,7 @@ const jrhValidate = require("../helpers/jrh_validates");
 // controllers
 const arserver = require("../controllers/arserver");
 const aclAid = require("../controllers/aclaid");
+//---------------------------------------------------------------------------
 
 
 //---------------------------------------------------------------------------
@@ -51,6 +56,13 @@ const DefDisallowedUsernameList = ["admin*", "root", "guest", "user", "moderator
 
 
 
+
+/**
+ * The User model handles the database of users (members) who can log into the system
+ *
+ * @class UserModel
+ * @extends {ModelBaseMongoose}
+ */
 class UserModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------

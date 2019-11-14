@@ -1,10 +1,13 @@
-// approom
-// 3rd party session model -- this minimal wrapper just lets us crud access it
-// v1.0.0 on 10/25/19 by mouser@donationcoder.com
-//
-// The session model db table is used by a 3rd party session manager
-// So our defining it here is a little unusual, it just lets us PEEK into the table with our crud functions
-// ATTN: We need to be careful that our definition of the table schema does not interfere with the cookie module definition, etc.
+/**
+ * @module models/session
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 10/25/19
+ * @description
+ * The session model db table is used by a 3rd party session manager
+ * So our defining it here is a little unusual, it just lets us PEEK into the table with our crud functions
+ * ##### Notes
+ *  * ATTN: We need to be careful that our definition of the table schema does not interfere with the cookie module definition, etc.
+ */
 
 "use strict";
 
@@ -12,10 +15,16 @@
 const mongoose = require("mongoose");
 
 // models
-const ModelBaseMongooseMinimal = require("./modelBaseMongooseMinimal");
+const ModelBaseMongooseMinimal = require("./model_base_mongoose_minimal");
 
 
 
+/**
+ * Class mirroring the session model db table is used by a 3rd party session manager
+ *
+ * @class SessionModel
+ * @extends {ModelBaseMongooseMinimal}
+ */
 class SessionModel extends ModelBaseMongooseMinimal {
 
 	//---------------------------------------------------------------------------

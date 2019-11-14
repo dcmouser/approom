@@ -1,17 +1,19 @@
-// approom
-// file model
-// v1.0.0 on 5/1/19 by mouser@donationcoder.com
-//
-// The File model helps us track data files that are created by users/apps within the system
-//  a File model object represents meta information for an actual filesystem file
+/**
+ * @module models/roomdata
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/1/19
+ * @description
+ * Stores arbitrary data objects associated with a room
+ */
 
 "use strict";
+
 
 // modules
 const mongoose = require("mongoose");
 
 // models
-const ModelBaseMongoose = require("./modelBaseMongoose");
+const ModelBaseMongoose = require("./model_base_mongoose");
 const arserver = require("../controllers/arserver");
 
 // our helper modules
@@ -19,6 +21,14 @@ const jrhMisc = require("../helpers/jrh_misc");
 const jrhText = require("../helpers/jrh_text");
 
 
+
+
+/**
+ * Stores arbitrary data objects associated with a room
+ *
+ * @class RoomdataModel
+ * @extends {ModelBaseMongoose}
+ */
 class RoomdataModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------

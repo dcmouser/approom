@@ -1,16 +1,26 @@
-// approom
-// option model
-// v1.0.0 on 5/15/19 by mouser@donationcoder.com
-//
-// Handles system options that we want to store in db
+/**
+ * @module models/option
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/15/19
+ * @description
+ * The database object that represents database-stored options (those not stored in config files)
+ */
 
 "use strict";
 
+
 // models
-const ModelBaseMongoose = require("./modelBaseMongoose");
+const ModelBaseMongoose = require("./model_base_mongoose");
 
 
 
+
+/**
+ * The database object that represents database-stored options (those not stored in config files)
+ *
+ * @class OptionModel
+ * @extends {ModelBaseMongoose}
+ */
 class OptionModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------

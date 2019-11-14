@@ -1,16 +1,19 @@
-// approom
-// modelBaseMongooseMinimal
-// v1.0.0 on 6/24/19 by mouser@donationcoder.com
-//
-// Base minimal class for mongoose derived classes
+/**
+ * @module models/model_base_mongoose_minimal
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/1/19
+ * @description
+ * Alternative super base model for when objects are lighter weight than normal ModelBaseMongoose
+ */
 
 "use strict";
+
 
 // modules
 const mongoose = require("mongoose");
 
 // models
-const ModelBaseMongoose = require("./modelBaseMongoose");
+const ModelBaseMongoose = require("./model_base_mongoose");
 
 // our helper modules
 const jrlog = require("../helpers/jrlog");
@@ -19,7 +22,12 @@ const JrResult = require("../helpers/jrresult");
 
 
 
-
+/**
+ * Alternative super base model for when objects are lighter weight than normal ModelBaseMongoose
+ *
+ * @class ModelBaseMongooseMinimal
+ * @extends {ModelBaseMongoose}
+ */
 class ModelBaseMongooseMinimal extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------

@@ -1,22 +1,31 @@
-// approom
-// log model
-// v1.0.0 on 5/15/19 by mouser@donationcoder.com
-//
-// The Log model stores a db table of system logs
+/**
+ * @module models/log
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/1/19
+ * @description
+ * Class representing the log data model table object
+ */
 
 "use strict";
+
 
 // modules
 const mongoose = require("mongoose");
 
 // models
-const ModelBaseMongooseMinimal = require("./modelBaseMongooseMinimal");
+const ModelBaseMongooseMinimal = require("./model_base_mongoose_minimal");
 
 // helpers
 const jrhText = require("../helpers/jrh_text");
 
 
 
+/**
+ * Class representing the log data model table object
+ *
+ * @class LogModel
+ * @extends {ModelBaseMongooseMinimal}
+ */
 class LogModel extends ModelBaseMongooseMinimal {
 
 	//---------------------------------------------------------------------------

@@ -1,9 +1,13 @@
-// approom
-// admin route
-// v1.0.0 on 6/4/19 by mouser@donationcoder.com
-//
+/**
+ * @module routes/admin
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 6/4/19
+ * @description
+ * Provides administrative routes
+ */
 
 "use strict";
+
 
 // modules
 const express = require("express");
@@ -19,8 +23,15 @@ const arserver = require("../controllers/arserver");
 // express router
 const router = express.Router();
 
-// module variable to remember base url path of router
+
+
+//---------------------------------------------------------------------------
+// module variables
+
+// remember base url path of router
 var routerBaseUrlPath;
+//---------------------------------------------------------------------------
+
 
 
 

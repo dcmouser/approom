@@ -1,30 +1,33 @@
-// approom
-// verification model
-// v1.0.0 on 5/15/19 by mouser@donationcoder.com
-//
-// Handles things that are pending verification (user email change, registration, etc.)
-//
-// ATTN: 11/6/19
-// for additional security we store only the LONG HASHED value of the short verification uniquecode, while sending user a short plaintext version of the code
-// that protects us from database stealing (see https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html)
-// so that if someone gets access to the database, they can't "easily" reverse the uniquecodes to do the pending password resets and registrations
-// HOWEVER there are some caveats:
-//  1. the uniquecodes are SHORT (by default like 5 characters long), so they could be easily bruteforce reverses
-//  2. we are using sha512 but not deliberately slowing it down
-//  3. we are not using a unique salt, but rather a fixed site secret salt.  This is unfortunate but is needed so we can quickly search for a verification code by its code as input by the user
-// ATTN:TODO 11/6/19 - One way we could fix these weaknesses would be if the plaintext code we gave people were actually in two parts like (AAAAA-BBBBB) where the AAAAA part was stored in plaintext in the db and the BBBBB part was hashed in the database
-//  with proper bsrypt/random salt.  Then we would LOOK UP the verification using AAAAA but verify the hashed part of BBBBB.  It would double the length of the code we need to give to user, but it would make rainbow table brute force much harder..
-// ATTN: TODO 11/10/19 - Do we want to do more loops of hashing to make brute force more time consuming?
-
-
+/**
+ * @module models/verification
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/15/19
+ * @description
+ * Handles things that are pending verification (user email change, registration, etc.)
+ *
+ * ##### Notes
+ * ATTN: 11/6/19
+ * For additional security we store only the LONG HASHED value of the short verification uniquecode, while sending user a short plaintext version of the code
+ * that protects us from database stealing (see https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html)
+ * so that if someone gets access to the database, they can't "easily" reverse the uniquecodes to do the pending password resets and registrations
+ * HOWEVER there are some caveats:
+ *  1. the uniquecodes are SHORT (by default like 5 characters long), so they could be easily bruteforce reverses
+ *  2. we are using sha512 but not deliberately slowing it down
+ *  3. we are not using a unique salt, but rather a fixed site secret salt.  This is unfortunate but is needed so we can quickly search for a verification code by its code as input by the user
+ * ATTN:TODO 11/6/19 - One way we could fix these weaknesses would be if the plaintext code we gave people were actually in two parts like (AAAAA-BBBBB) where the AAAAA part was stored in plaintext in the db and the BBBBB part was hashed in the database
+ *   with proper bsrypt/random salt.  Then we would LOOK UP the verification using AAAAA but verify the hashed part of BBBBB.  It would double the length of the code we need to give to user, but it would make rainbow table brute force much harder..
+ * ATTN: TODO 11/10/19 - Do we want to do more loops of hashing to make brute force more time consuming?
+ */
 
 "use strict";
 
+
+//---------------------------------------------------------------------------
 // modules
 const mongoose = require("mongoose");
 
 // models
-const ModelBaseMongoose = require("./modelBaseMongoose");
+const ModelBaseMongoose = require("./model_base_mongoose");
 const UserModel = require("./user");
 const LoginModel = require("./login");
 const arserver = require("../controllers/arserver");
@@ -34,10 +37,13 @@ const jrhMisc = require("../helpers/jrh_misc");
 const jrlog = require("../helpers/jrlog");
 const jrhCrypto = require("../helpers/jrh_crypto");
 const JrResult = require("../helpers/jrresult");
+//---------------------------------------------------------------------------
 
 
 
 //---------------------------------------------------------------------------
+// constants
+
 const DefCodeLength = 5;
 const DefMaxUniqueCodeCollissions = 10;
 //
@@ -49,6 +55,13 @@ const DefExpirationDurationMinutesShort = 5;
 
 
 
+
+/**
+ * Handles things that are pending verification (user email change, registration, etc.)
+ *
+ * @class VerificationModel
+ * @extends {ModelBaseMongoose}
+ */
 class VerificationModel extends ModelBaseMongoose {
 
 
@@ -892,6 +905,8 @@ If this request was not made by you, please ignore this email.
 
 
 }
+
+
 
 
 // export the class as the sole export
