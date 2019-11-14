@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>routes/api.js - Documentation</title>
+    <title>helpers/jrh_crypto.js - Documentation</title>
     
     
     <script src="scripts/prettify/prettify.js"></script>
@@ -32,7 +32,7 @@
 
 <div id="main">
     
-    <h1 class="page-title">routes/api.js</h1>
+    <h1 class="page-title">helpers/jrh_crypto.js</h1>
     
 
     
@@ -43,217 +43,127 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>/**
- * @module routes/api
+ * @module helpers/jrh_crypto
  * @author jesse reichler &lt;mouser@donationcoder.com>
- * @copyright 10/28/19
- * @description
- * ##### Overview
- * This file handles all requests related to the programmatic API interface for accessing the system.
- * @todo These routes are all intended to be called programmatically by other code, and so should all return json replies, but currently some return standard web pages for testing.
-*/
+ * @copyright 5/19/19
 
+ * @description
+ * Collection of helper functions for crypto related stuff
+*/
 
 "use strict";
 
-// passport
-const passport = require("passport");
 
+//---------------------------------------------------------------------------
 // modules
-const express = require("express");
-const assert = require("assert");
+// for password hashing
+var crypto = require("crypto");
 
-// server
-const arserver = require("../controllers/server");
+// ATTN: move to bcrypt; not yet used
+var bcrypt = require("bcrypt");
 
-// helpers
-const JrResult = require("../helpers/jrresult");
-const jrlog = require("../helpers/jrlog");
+// our helper modules
+const jrlog = require("./jrlog");
+const jrhMisc = require("./jrh_misc");
+//---------------------------------------------------------------------------
 
-
-// module variable to remember base url path of router
-var routerBaseUrlPath;
 
 
 
 //---------------------------------------------------------------------------
+// constants
+
+const DefPasswordAlgorithm = "bcrypt";
+// const DefPasswordAlgorithm = "crypto_sha512";
+
+// salt length, not used by bcrypt
+const DefCryptSaltLength = 16;
+
+// salt rounds, used by bcrypt
+const DefCryptSaltRounds = 11;
+
+// update this when you change something about the way a pass algorithm works or the options here,
+//  so you can easily filter users based using a password version threshold to force updates.
+// in addition we store password creation dates, so we can filter based on some date of db compromise
+const DefLatestPasswordVersion = 2;
+
+// for humaneasy codes (all uppercase, no I no O no Z no 0 no 1 no 2)
+const DefHumanEasyCharactersArray = ["ABCDEFGHJKLMNPQRSTUVWXY", "3456789"];
+const DefHumanEasyCharacters = DefHumanEasyCharactersArray[0] + DefHumanEasyCharactersArray[1];
+//---------------------------------------------------------------------------
+
+
+
+
+
 /**
- * Add the API routes
+ * Take a plaintext string and hash it.
+ * A random salt is automatically generated and added to the hash object
  *
- * @param {string} urlPath - the base path of these relative paths
- * @returns router object
+ * @param {string} passwordPlaintext
+ * @returns passwordHashedObj, an object with property fields for the hashed password, including hash (the hashed string), and other meta properties describing the hash operation
  */
-function setupRouter(urlPath) {
-	// save urlPath (in module locals)
-	routerBaseUrlPath = urlPath;
-
-	// setup routes
-	const router = express.Router();
-	router.get("/", routerGetIndex);
-	router.get("/reqrefresh", routerGetReqrefresh);
-	router.post("/reqrefresh", routerPostReqrefresh);
-	router.get("/refreshaccess", routerGetRefreshaccess);
-	router.all("/tokentest", routerAllTokentest);
-	router.get("*", routerGetWildcard);
-
-	// return router
-	return router;
-}
-//---------------------------------------------------------------------------
-
-
-
-
-//---------------------------------------------------------------------------
-// router functions
-
-/**
- * @description
- * Handle the request for the api index page,
- *  which currently just shows a web page index of links to all of the api functions.
- * @todo Replace the template with some json reply, since api should only be machine callable.
- */
-async function routerGetIndex(req, res, next) {
-	// just show index
-	res.render("api/index", {
-		jrResult: JrResult.sessionRenderResult(req, res),
-	});
+async function hashPlaintextPasswordToObj(passwordPlaintext) {
+	// algorithm to use
+	var passwordAlgorithm = DefPasswordAlgorithm;
+	// a salt of "" means to use a random salt and include it in the hash
+	var salt = "";
+	// hash it
+	var passwordHashedObj = await createHashedObjectFromString(passwordPlaintext, passwordAlgorithm, salt, DefCryptSaltRounds, DefLatestPasswordVersion);
+	// return it -- an OBJECT with properties not just a string
+	return passwordHashedObj;
 }
 
 
 /**
- * @description
- * Present user with form for their username and password,
- * so they may request a long-lived Refresh token (JWT).
- * @todo Note that this web page we present is useful for debugging, but should not be necesary in production use, because we expect code to be posting to us programmatically.
+ * Test a plaintext string (user entered password) against a stored passwordHashed object.
+ * The passwordHashedObj will contain the random salt to use and the algorithm used.
+ *
+ * @param {string} passwordPlaintext
+ * @param {object} passwordHashedObj
+ * @returns true if they match, false if they don't, or throws ERROR if something else goes wrong (password algorithm not supported, etc.)
  */
-async function routerGetReqrefresh(req, res, next) {
-	// render page
-	res.render("api/tokenuserpassform", {
-	});
-}
+async function testPlaintextPassword(passwordPlaintext, passwordHashedObj) {
+	// see if password matches
 
-
-/**
- * @description
- * Process request for a long-lived Refresh token (JWT), after checking user's username and password in post data.
- * If username and password match, they will be issued a JWT refresh token that they can use to generate short-lived access tokens.
- * ##### Notes
- * * The refresh token is coded with scope "api" and cannot be used to perform arbitrary actions on the site; it can only be used for api-like actions.
- * * The refresh token should only be used to request access tokens, which are short-lived tokens that can be use to perform actual api functions.
- */
-async function routerPostReqrefresh(req, res, next) {
-
-	// do a local login with passed username and password; DONT store session info
-	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateNonSessionGetUserTuple("local", "with username and password", req, res, next, jrResult, true);
-	if (jrResult.isError()) {
-		var msg = "Error during api token request: " + jrResult.getErrorsAsString();
-		res.status(401).send(msg);
-		return;
+	// we allow for password stored in db to be blank.  in this case we always reject a password as not matching (ie they can't login with password)
+	// we allow for this case -- sometimes users may have no password set; in this case it
+	// but note that we WILL allow a check of a blank plaintext password (so if a blank string is hashed and stored as a valid password, we will check and approve that if it matches)
+	if (jrhMisc.isObjectEmpty(passwordHashedObj)) {
+		return false;
 	}
 
-	// success
-	var secureToken = await makeSecureTokenRefresh(userPassport, user);
+	// password obj properties
+	var passwordAlgorithm = passwordHashedObj.alg;
+	var passwordHashedStr = passwordHashedObj.hash;
+	var passwordVersion = passwordHashedObj.ver;
 
-	// log request
-	arserver.logr(req, "api.token", "made refresh token for " + user.getLogIdString());
-
-	// provide it
-	res.status(200).send(secureToken);
-}
-
-
-/**
- * @description
- * Get a short-lived (JWT) Access token, using a Refresh token.  Here the user passes us a Refresh token and we give them (after verifying it's validity) an Access token.
- * @todo It gets token from the query string (token parameter); eventually we want this to be (only) retrieved from headers or post data.  This just makes it easier to test initially.
- * ##### NOTES
- * * see &lt;a href="https://scotch.io/@devGson/api-authentication-with-json-web-tokensjwt-and-passport">using refresh tokens with jwt&lt;/a>
- */
-async function routerGetRefreshaccess(req, res, next) {
-
-	// first the user has to give us a valid REFRESH token
-	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult);
-	if (jrResult.isError()) {
-		res.status(403).send(jrResult.getErrorsAsString());
-		return;
-	}
-
-	// while testing this we also want to make sure the refresh token wasn't revoked
-
-	// it's a token, but is it the right type?
-	const tokenType = userPassport.token.type;
-	if (tokenType !== "refresh") {
-		res.status(403).send("Error: A valid REFRESH token must be passed to request an access token.");
-		return;
-	}
-
-	// jrlog.debugObj(userPassport.token);
-
-	// ok they gave us a valid refresh token, so now we generate an access token for them
-	var secureToken = await makeSecureTokenAccessFromRefreshToken(userPassport, user, userPassport.token);
-
-	// log request
-	arserver.logr(req, "api.token", "refreshed access token for " + user.getLogIdString());
-
-	// provide it
-	res.status(200).send(secureToken);
-}
-
-
-/**
- * @description
- * Evaluate a refresh or access token, and report on its contents and validity; useful for testing.
- * @todo This should probably not be present in production version.
- * @todo It gets token from the query string (token parameter); we probably want it in header or post data eventually.
- */
-async function routerAllTokentest(req, res, next) {
-	// test if user has passed user login info through api token
-
-	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult);
-	if (jrResult.isError()) {
-		res.status(403).send(jrResult.getErrorsAsString());
-		return;
-	}
-
-	// it's good
-	const tokenType = userPassport.token.type;
-	res.status(200).send("Valid token parsed in API test.&lt;br/>&lt;br/>Token type: " + tokenType + "&lt;br/>&lt;br/>User minimal passport profile " + JSON.stringify(userPassport) + " &lt;br/>&lt;br/>Full user: " + JSON.stringify(user));
-}
-
-
-/**
- * @description
- * Test function, catches all other api routes (so no 404s), and just complains and checks for rate limiting.
- * ##### NOTES
- * * Currently this function is just used to test rate limiting for DOS type attacks.
- */
-// test rate limiting of generic 404s at api route
-async function routerGetWildcard(req, res, next) {
-	var msg;
-
-	// ATTN: test of rate limiting block
-	const rateLimiter = arserver.getRateLimiterApi();
-	const rateLimiterKey = req.ip;
-	//
+	// ok compare
 	try {
-		await rateLimiter.consume(rateLimiterKey, 1);
-	} catch (rateLimiterRes) {
-		// rate limiter triggered
-		msg = {
-			message: "API rate limiting triggered; your ip has been blocked for " + rateLimiter.blockDuration + " seconds.",
-		};
-		res.status(429).send(msg);
-		// exit from function
-		return;
+		if (passwordAlgorithm === "bcrypt") {
+			// bcrypt uses its own explicit compare function, that is meant to defeat timing attacks
+			// note that it will figure out the salt and saltrounds from the actual hash string
+			var bretv = bcrypt.compare(passwordPlaintext, passwordHashedStr);
+			return bretv;
+		}
+		// for non-bcrypt, we essentially repeat the hash process with the previously used salt and then compare
+		var salt = passwordHashedObj.salt;
+		var saltRounds = passwordHashedObj.saltRounds;
+		//
+		var passwordHashedTest = await createHashedObjectFromString(passwordPlaintext, passwordAlgorithm, salt, saltRounds, passwordVersion);
+		// now is the hashed version of the new plaintext the same as the hashed version of the old stored one?
+		return (passwordHashedTest.passwordHashedStr === passwordHashedStr);
+	} catch (err) {
+		const emsg = "Error in jrhMisc exports.testPlaintextPassword while attempting to parse/compare hashed password string with password algorithn '" + passwordAlgorithm + "'";
+		if (true) {
+			// throw it up and let caller handle it (adding our more verbos error)
+			err.message = emsg + "; " + err.message;
+		}
+		throw err;
 	}
 
-	msg = {
-		message: "API Route " + routerBaseUrlPath + req.url + " not found.  API not implemented yet.",
-	};
-	res.status(404).send(msg);
+	// no match
+	return false;
 }
 //---------------------------------------------------------------------------
 
@@ -263,72 +173,176 @@ async function routerGetWildcard(req, res, next) {
 
 
 
+/**
+ * More specific function to created hashed object from a plaintext string
+ *
+ * @param {string} plaintextString
+ * @param {string} passwordAlgorithm - from bcrypt|crypto_sha512|plain (just returns string itself)
+ * @param {string} salt - the salt to use, incorporated in return object; if blank a random one is generated
+ * @param {int} saltRounds - the number of rounds of salting
+ * @param {int} passwordVersion - password version number; passed to hash function, slows down hashing making brute forcing harder
+ * @returns hashed object with .hash containing the hashed string with salt info, etc. and other meta properties
+ */
+async function createHashedObjectFromString(plaintextString, passwordAlgorithm, salt, saltRounds, passwordVersion) {
+	// function to hash plaintext password and return an object with hashed password properties
+
+	var hashedString;
+	//
+	if (passwordAlgorithm === "plain") {
+		hashedString = plaintextString;
+		salt = "";
+	} else if (passwordAlgorithm === "bcrypt") {
+		// bcrypt module hash -- the most widely recommended method
+		// note that bcrypt does not let us specify salt, and embeds extra info in hashedString string
+		hashedString = await bcrypt.hash(plaintextString, saltRounds);
+		// null these so we dont save them (saltRound info is embedded in the bcrypt hash)
+		salt = null;
+		saltRounds = null;
+	} else if (passwordAlgorithm === "crypto_sha512") {
+		// crypto module hash
+		// see https://ciphertrick.com/2016/01/18/salt-hash-passwords-using-nodejs-crypto/
+		// note: crypto does not use saltRounds
+		if (!salt) {
+			// no salt provided, make a random one
+			salt = generateRandomSalt();
+		}
+		//
+		var hash = crypto.createHmac("sha512", salt);
+		hash.update(plaintextString);
+		hashedString = hash.digest("hex");
+		// null these so we dont save them
+		saltRounds = null;
+	} else {
+		throw (new Error("Uknown password hash algorithm: " + passwordAlgorithm));
+	}
+
+	// build the passwordHashed and return it
+	var hashedObj = {
+		hash: hashedString,
+		alg: passwordAlgorithm,
+		// version is a numeric value we can use in case we need to force upgrade everyone with an old password algorithm, etc.
+		ver: passwordVersion,
+		// save date so we can find older passwords we want to force users to update after some issue
+		date: new Date(),
+	};
+	if (salt !== null) {
+		hashedObj.salt = salt;
+	}
+	if (saltRounds !== null) {
+		hashedObj.saltRounds = saltRounds;
+	}
+	//
+	return hashedObj;
+}
+//---------------------------------------------------------------------------
 
 
 
 
 
 //---------------------------------------------------------------------------
-// helper functions
-
-
 /**
- * Helper function to make a secure access token from a refresh token
- *
- * @param {Object} userPassport - minimal object with properties of the user
- * @param {UserModel} user - full model object of User class
- * @param {String} refreshToken - the refresh token object to use to generate access token
- * @returns a token object.
+ * Generate a random salt of a default langth (DefCryptSaltLength const)
+  * @returns hex string of length DefCryptSaltLength
  */
-async function makeSecureTokenAccessFromRefreshToken(userPassport, user, refreshToken) {
-	// make an access token with SAME scope as refresh token
-	return await makeSecureTokenAccess(userPassport, user, refreshToken.scope);
+function generateRandomSalt() {
+	// private func
+	return genRandomStringHex(DefCryptSaltLength);
 }
 
 
 /**
- * Helper function to make a Refresh token
+ * Generate a random hex string of a specified length, cryptographically random bytes used as data
+ * @see &lt;a href="https://ciphertrick.com/2016/01/18/salt-hash-passwords-using-nodejs-crypto/">salting hash passwords&lt;/a>
  *
- * @param {Object} userPassport - minimal object with properties of the user
- * @param {UserModel} user - full model object of User class
- * @returns a token object
+ * @param {int} length - the number of characters
+ * @returns random string of characters of specified length
  */
-async function makeSecureTokenRefresh(userPassport, user) {
-	const payload = {
-		type: "refresh",
-		scope: "api",
-		apiCode: await user.getApiCodeEnsureValid(),
-		user: userPassport,
-	};
-	// create secure toke
-	const expirationSeconds = arserver.getConfigVal("token:EXPIRATIONSECS_REFRESH");
-	const secureToken = arserver.createSecureToken(payload, expirationSeconds);
-	return secureToken;
+function genRandomStringHex(length) {
+	return crypto.randomBytes(Math.ceil(length / 2))
+		.toString("hex")
+		.slice(0, length);
 }
 
 
 /**
- * Helper function to make a generic secure token
+ * This generates a random string using only characters and digits that are easy for humans to recognize and differentiate
+ * @see &lt;a href="https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript">stackoverflow&lt;/a>
+ * ##### Notes
+ *  * This is not cryptographically secure random numbers, as it uses Math.random
+ * @todo Replace with crypto secure prng
  *
- * @param {Object} userPassport - minimal object with properties of the user
- * @param {UserModel} user - full model object of User class
- * @param {String} scope - the refresh token object to use to generate access token
- * @returns a token object
+ * @param {int} length
+ * @returns random string of specified characters consisting of only characters and digits found in DefHumanEasyCharacters
  */
-async function makeSecureTokenAccess(userPassport, user, scope) {
-	const payload = {
-		type: "access",
-		scope,
-		apiCode: await user.getApiCodeEnsureValid(),
-		user: userPassport,
-	};
-	// add accessId -- the idea here is for every user object in database to ahve an accessId (either sequential or random); that can be changed to invalidate all previously issues access tokens
-	const expirationSeconds = arserver.getConfigVal("token:EXPIRATIONSECS_ACCESS");
-	const secureToken = arserver.createSecureToken(payload, expirationSeconds);
-	return secureToken;
+function genRandomStringHumanEasy(length) {
+	// generate a string of letters and numbers that is hard for humans to mistake
+	// so all uppercase and avoid letters that could be duplicates
+	// see https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
+	var retstr = "";
+	var charlen = DefHumanEasyCharacters.length;
+	var charpos;
+	for (var i = 0; i &lt; length; i++) {
+		charpos = Math.floor(Math.random() * charlen);
+		retstr += DefHumanEasyCharacters.charAt(charpos);
+	}
+	return retstr;
+}
+
+
+/**
+ * This generates a random string using only characters and digits that are easy for humans to recognize and differentiate,
+ * and also alternates numbers and digits for even easier to remember codes.
+ * @see &lt;a href="https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript">stackoverflow&lt;/a>
+ * ##### Notes
+ *  * This is not cryptographically secure random numbers, as it uses Math.random
+ * @todo Replace with crypto secure prng
+ *
+ * @param {int} length
+ * @returns random string consisting of only characters and digits found in DefHumanEasyCharacters
+ */
+function genRandomStringHumanEasier(length) {
+	var retstr = "";
+	var charlen, charpos;
+	var group = 0;
+	for (var i = 0; i &lt; length; i++) {
+		if (group > 1) {
+			// alternate
+			group = 0;
+		}
+		charlen = DefHumanEasyCharactersArray[group].length;
+		charpos = Math.floor(Math.random() * charlen);
+		retstr += DefHumanEasyCharactersArray[group].charAt(charpos);
+		group++;
+	}
+	return retstr;
 }
 //---------------------------------------------------------------------------
 
+
+
+//---------------------------------------------------------------------------
+/**
+ * Hash a string, but this time using a specific salt, returning a simple hashed string as result.
+ * ##### Notes
+ *  * This function needs to retun the SAME HASH no matter when we call it, so that we can search for result this means we dont use a random salt
+ *  * And we always use sha51 algorithm.
+ *  * This helper function is used to hash verification codes in database so that if db is compromised it will be harder to retrieve plaintext verificaiton code
+ *  * We can't use random salt because we need to be able to look up matching items by the hashed version.
+ * @todo In future we might use a two-part verification code, where first part is unique plaintext id, and second part is hashed string
+ * @todo In that way we could look up items by their plaintext part, and use any crypto for the hashed part.
+ *
+ * @param {string} plaintextString
+ * @param {string} salt
+ * @returns hashed string
+ */
+async function hashPlaintextStringInsecureButSearchable(plaintextString, salt) {
+	var hash = crypto.createHmac("sha512", salt);
+	hash.update(plaintextString);
+	var hashedString = hash.digest("hex");
+	return hashedString;
+}
+//---------------------------------------------------------------------------
 
 
 
@@ -338,8 +352,15 @@ async function makeSecureTokenAccess(userPassport, user, scope) {
 
 
 module.exports = {
-	setupRouter,
+	hashPlaintextPasswordToObj,
+	testPlaintextPassword,
+
+	genRandomStringHumanEasy,
+	genRandomStringHumanEasier,
+
+	hashPlaintextStringInsecureButSearchable,
 };
+
 </code></pre>
         </article>
     </section>

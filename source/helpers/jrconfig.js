@@ -4,7 +4,7 @@
  * @copyright 5/9/19
 
  * @description
- * Collection of helper functions for managing configuration commandlineargs/files/options/environment
+ * Configuration support module that manages configuration commandlineargs/files/options/environment
  * ##### Notes
  *  * We use nconf module for holding all configuration data;  our functions just offer ways to use that more flexibly
  *  * We use yargs to handle commandline processing; our functions just offer ways to use that more flexibly

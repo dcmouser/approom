@@ -4,7 +4,7 @@
  * @copyright 6/27/19
 
  * @description
- * Collection of helper functions for handlebars template system
+ * Collection of helper functions for validating data
 */
 
 "use strict";

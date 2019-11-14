@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>routes/api.js - Documentation</title>
+    <title>helpers/jrh_express.js - Documentation</title>
     
     
     <script src="scripts/prettify/prettify.js"></script>
@@ -32,7 +32,7 @@
 
 <div id="main">
     
-    <h1 class="page-title">routes/api.js</h1>
+    <h1 class="page-title">helpers/jrh_express.js</h1>
     
 
     
@@ -43,217 +43,355 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>/**
- * @module routes/api
+ * @module helpers/jrh_express
  * @author jesse reichler &lt;mouser@donationcoder.com>
- * @copyright 10/28/19
- * @description
- * ##### Overview
- * This file handles all requests related to the programmatic API interface for accessing the system.
- * @todo These routes are all intended to be called programmatically by other code, and so should all return json replies, but currently some return standard web pages for testing.
-*/
+ * @copyright 11/2/19
 
+ * @description
+ * Collection of helper functions for use with the nodejs express web framework
+*/
 
 "use strict";
 
-// passport
-const passport = require("passport");
 
 // modules
-const express = require("express");
-const assert = require("assert");
+const passport = require("passport");
 
-// server
-const arserver = require("../controllers/server");
-
-// helpers
-const JrResult = require("../helpers/jrresult");
-const jrlog = require("../helpers/jrlog");
+// our helper modules
+const JrResult = require("./jrresult");
 
 
-// module variable to remember base url path of router
-var routerBaseUrlPath;
+
+
+
 
 
 
 //---------------------------------------------------------------------------
 /**
- * Add the API routes
+ * Async Wrapper around the express/passport passport.authenticate function
  *
- * @param {string} urlPath - the base path of these relative paths
- * @returns router object
+ * The passport library uses callbacks instead of promises and aync functions, so we wrap it here in a function that let's us use it like an async function for ease of use.
+ * @see &lt;a href="https://github.com/jaredhanson/passport/issues/605">passport docs&lt;/a>
+ *
+ * @param {*} authOptions
+ * @param {*} provider
+ * @param {*} providerNiceLabel
+ * @param {*} req
+ * @param {*} res
+ * @param {*} next
+ * @param {*} jrResult - our JrResult class with info about success or errors; pass in a valid instance and it is updated
+ * @returns a simple object with passport user data
  */
-function setupRouter(urlPath) {
-	// save urlPath (in module locals)
-	routerBaseUrlPath = urlPath;
+async function asyncPasswordAuthenticate(authOptions, provider, providerNiceLabel, req, res, next, jrResult) {
+	// first we make a promise out of passport.authenticate then await on it
 
-	// setup routes
-	const router = express.Router();
-	router.get("/", routerGetIndex);
-	router.get("/reqrefresh", routerGetReqrefresh);
-	router.post("/reqrefresh", routerPostReqrefresh);
-	router.get("/refreshaccess", routerGetRefreshaccess);
-	router.all("/tokentest", routerAllTokentest);
-	router.get("*", routerGetWildcard);
+	var userPassport;
 
-	// return router
-	return router;
-}
-//---------------------------------------------------------------------------
-
-
-
-
-//---------------------------------------------------------------------------
-// router functions
-
-/**
- * @description
- * Handle the request for the api index page,
- *  which currently just shows a web page index of links to all of the api functions.
- * @todo Replace the template with some json reply, since api should only be machine callable.
- */
-async function routerGetIndex(req, res, next) {
-	// just show index
-	res.render("api/index", {
-		jrResult: JrResult.sessionRenderResult(req, res),
+	// create promise wrapper around passport.authenticate
+	const passportPromiseAuth = (ireq, ires, inext) => new Promise((resolve, reject) => {
+		passport.authenticate(provider, authOptions, async (err, inuserPassport, info) => {
+			if (err || !inuserPassport) {
+				// add error
+				jrResult.pushError("error authenticating " + providerNiceLabel + ": " + JrResult.passportErrorAsString(info) + ".");
+				// run next on error in chain
+				if (false &amp;&amp; err) {
+					inext(err);
+				}
+				resolve(jrResult);
+			}
+			// success
+			userPassport = inuserPassport;
+			// success resolve
+			resolve(jrResult);
+		})(ireq, ires, inext);
 	});
-}
 
 
-/**
- * @description
- * Present user with form for their username and password,
- * so they may request a long-lived Refresh token (JWT).
- * @todo Note that this web page we present is useful for debugging, but should not be necesary in production use, because we expect code to be posting to us programmatically.
- */
-async function routerGetReqrefresh(req, res, next) {
-	// render page
-	res.render("api/tokenuserpassform", {
-	});
-}
-
-
-/**
- * @description
- * Process request for a long-lived Refresh token (JWT), after checking user's username and password in post data.
- * If username and password match, they will be issued a JWT refresh token that they can use to generate short-lived access tokens.
- * ##### Notes
- * * The refresh token is coded with scope "api" and cannot be used to perform arbitrary actions on the site; it can only be used for api-like actions.
- * * The refresh token should only be used to request access tokens, which are short-lived tokens that can be use to perform actual api functions.
- */
-async function routerPostReqrefresh(req, res, next) {
-
-	// do a local login with passed username and password; DONT store session info
-	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateNonSessionGetUserTuple("local", "with username and password", req, res, next, jrResult, true);
-	if (jrResult.isError()) {
-		var msg = "Error during api token request: " + jrResult.getErrorsAsString();
-		res.status(401).send(msg);
-		return;
-	}
-
-	// success
-	var secureToken = await makeSecureTokenRefresh(userPassport, user);
-
-	// log request
-	arserver.logr(req, "api.token", "made refresh token for " + user.getLogIdString());
-
-	// provide it
-	res.status(200).send(secureToken);
-}
-
-
-/**
- * @description
- * Get a short-lived (JWT) Access token, using a Refresh token.  Here the user passes us a Refresh token and we give them (after verifying it's validity) an Access token.
- * @todo It gets token from the query string (token parameter); eventually we want this to be (only) retrieved from headers or post data.  This just makes it easier to test initially.
- * ##### NOTES
- * * see &lt;a href="https://scotch.io/@devGson/api-authentication-with-json-web-tokensjwt-and-passport">using refresh tokens with jwt&lt;/a>
- */
-async function routerGetRefreshaccess(req, res, next) {
-
-	// first the user has to give us a valid REFRESH token
-	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult);
-	if (jrResult.isError()) {
-		res.status(403).send(jrResult.getErrorsAsString());
-		return;
-	}
-
-	// while testing this we also want to make sure the refresh token wasn't revoked
-
-	// it's a token, but is it the right type?
-	const tokenType = userPassport.token.type;
-	if (tokenType !== "refresh") {
-		res.status(403).send("Error: A valid REFRESH token must be passed to request an access token.");
-		return;
-	}
-
-	// jrlog.debugObj(userPassport.token);
-
-	// ok they gave us a valid refresh token, so now we generate an access token for them
-	var secureToken = await makeSecureTokenAccessFromRefreshToken(userPassport, user, userPassport.token);
-
-	// log request
-	arserver.logr(req, "api.token", "refreshed access token for " + user.getLogIdString());
-
-	// provide it
-	res.status(200).send(secureToken);
-}
-
-
-/**
- * @description
- * Evaluate a refresh or access token, and report on its contents and validity; useful for testing.
- * @todo This should probably not be present in production version.
- * @todo It gets token from the query string (token parameter); we probably want it in header or post data eventually.
- */
-async function routerAllTokentest(req, res, next) {
-	// test if user has passed user login info through api token
-
-	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult);
-	if (jrResult.isError()) {
-		res.status(403).send(jrResult.getErrorsAsString());
-		return;
-	}
-
-	// it's good
-	const tokenType = userPassport.token.type;
-	res.status(200).send("Valid token parsed in API test.&lt;br/>&lt;br/>Token type: " + tokenType + "&lt;br/>&lt;br/>User minimal passport profile " + JSON.stringify(userPassport) + " &lt;br/>&lt;br/>Full user: " + JSON.stringify(user));
-}
-
-
-/**
- * @description
- * Test function, catches all other api routes (so no 404s), and just complains and checks for rate limiting.
- * ##### NOTES
- * * Currently this function is just used to test rate limiting for DOS type attacks.
- */
-// test rate limiting of generic 404s at api route
-async function routerGetWildcard(req, res, next) {
-	var msg;
-
-	// ATTN: test of rate limiting block
-	const rateLimiter = arserver.getRateLimiterApi();
-	const rateLimiterKey = req.ip;
-	//
+	// wait for promise resolution
 	try {
-		await rateLimiter.consume(rateLimiterKey, 1);
-	} catch (rateLimiterRes) {
-		// rate limiter triggered
-		msg = {
-			message: "API rate limiting triggered; your ip has been blocked for " + rateLimiter.blockDuration + " seconds.",
-		};
-		res.status(429).send(msg);
-		// exit from function
-		return;
+		// now wait for the passport authenticate promise to run; note there is no case where it rejects; we could do this differently and catch an error
+		await passportPromiseAuth(req, res, next);
+	} catch (err) {
+		// unexpected error
+		jrResult.pushError(err.message);
 	}
 
-	msg = {
-		message: "API Route " + routerBaseUrlPath + req.url + " not found.  API not implemented yet.",
-	};
-	res.status(404).send(msg);
+	// return userPassport data object
+	return userPassport;
+}
+//---------------------------------------------------------------------------
+
+
+
+//---------------------------------------------------------------------------
+// ASYNC wrapper around passport req.login
+/**
+ * Async Wrapper around the express req.logIn function
+ *
+ * The express library uses callbacks instead of promises and aync functions, so we wrap it here in a function that let's us use it like an async function for ease of use.
+ * @see &lt;a href="https://github.com/jaredhanson/passport/issues/605">passport docs&lt;/a>
+ *
+ * @param {*} userPassport - simple object with user data to log in the user
+ * @param {*} errorMessage - text of errror message added to jrResult on error
+ * @param {*} req - express request
+ * @param {*} jrResult - our JrResult class with info about success or errors; pass in a valid instance and it is updated
+ */
+async function asyncPasswordReqLogin(userPassport, errorMessage, req, jrResult) {
+	// first we make a promise out of req.logIn then await on it
+
+	// again create promise for passport req.login
+	const passportPromiseReqLogin = (ireq) => new Promise((resolve, reject) => {
+		// actually login the user
+		ireq.logIn(userPassport, async (ierr) => {
+			if (ierr) {
+				// error (exception) logging them in
+				jrResult.pushError(errorMessage + ": " + JrResult.passportErrorAsString(ierr));
+				resolve(jrResult);
+			}
+			// success
+			// success resolve
+			resolve(jrResult);
+		})(ireq);
+	});
+
+	try {
+		// now wait for the passport req login promise to run; note there is no case where it rejects; we could do this differently and catch an error
+		await passportPromiseReqLogin(req);
+	} catch (err) {
+		// unexpected error
+		jrResult.pushError(err.message);
+	}
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+//---------------------------------------------------------------------------
+/**
+ * Suggested code from express builder sample applications; used when creating server and binding it to ip+port
+ *
+ * @param {*} portval
+ * @returns port value (possibly provided as string), converted to an integer if possible
+ */
+function normalizePort(portval) {
+	var port = parseInt(portval, 10);
+	if (Number.isNaN(port)) {
+		// named pipe
+		return portval;
+	}
+	if (port >= 0) {
+		// port number
+		return port;
+	}
+	return false;
+}
+//---------------------------------------------------------------------------
+
+
+
+
+//---------------------------------------------------------------------------
+/**
+ * Helper debug function that generates a list (object) of express middleware for display
+ * @see &lt;a href="https://github.com/yshing/express-list-middleware/blob/master/index.js">github code&lt;/a>
+ * @see &lt;a href="https://github.com/yshing/express-repl-toolkit/tree/master/tools">github code&lt;/a>
+ * ##### Notes
+ *  * Uses an interesting trick to get file and line number where the middleware is located
+ *
+ * @param {object} app - the express app object
+ * @returns object containing all middleware, suitable for json stringifcation to console, etc.
+ */
+function calcExpressMiddleWare(app) {
+	var appStack = app._router.stack;
+	return Array.prototype.map.call(appStack, (middleware, index) => {
+		return index + ". " + (middleware.handle.name || "&lt;anonymous function>") + " " + getFileLine(middleware.handle);
+	});
+	// force the middleware to produce an error to locate the file.
+	function getFileLine(handler) {
+		try {
+			handler(undefined);
+		} catch (e) {
+			return e.stack.split("\n")[1];
+		}
+		return null;
+	}
+}
+
+
+/**
+ * Helper debug function the generates a list (object) of all paths registered to the express app
+ *
+ * @param {object} expressApp
+ * @returns object containing all routes (and whether they are get|post|all)
+ */
+function calcExpressRoutePathData(expressApp) {
+	var siteRoutes = expressApp._router.stack;
+
+	var routes = [];
+	siteRoutes.forEach(calcExpressRoutePathDataRouteArray.bind(this, routes, []));
+	return routes;
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+//---------------------------------------------------------------------------
+/**
+ * Internal helper debug function the helps to generate a list (object) of all paths registered to the express app
+ * @private
+ * @param {*} routes
+ * @param {*} routepath
+ * @param {*} layer
+ */
+function calcExpressRoutePathDataRouteArray(routes, routepath, layer) {
+	if (layer.route) {
+		layer.route.stack.forEach(calcExpressRoutePathDataRouteArray.bind(this, routes, routepath.concat(calcExpressRoutePathDataSplit(layer.route.path))));
+	} else if (layer.name === "router" &amp;&amp; layer.handle.stack) {
+		routes.push("");
+		layer.handle.stack.forEach(calcExpressRoutePathDataRouteArray.bind(this, routes, routepath.concat(calcExpressRoutePathDataSplit(layer.regexp))));
+	} else if (layer.method) {
+		var pathstr = layer.method.toUpperCase() + " /" + routepath.concat(calcExpressRoutePathDataSplit(layer.regexp)).filter(Boolean).join("/");
+		routes.push(pathstr);
+	}
+}
+
+
+/**
+ * Internal helper debug function the helps to generate a list (object) of all paths registered to the express app.
+ * Splits on path separator.
+ * @private
+ * @see &lt;a href="https://github.com/expressjs/express/issues/3308">github code&lt;/a>
+ *
+ * @param {*} thing
+ * @returns split of path
+ */
+function calcExpressRoutePathDataSplit(thing) {
+	if (typeof thing === "string") {
+		return thing.split("/");
+	}
+	if (thing.fast_slash) {
+		return "";
+	}
+	var match = thing.toString().replace("\\/?", "").replace("(?=\\/|$)", "$").match(/^\/\^((?:\\[.*+?^${}()|[\]\\/]|[^.*+?^${}()|[\]\\/])*)\$\//);
+	return match ? match[1].replace(/\\(.)/g, "$1").split("/") : "&lt;complex:" + thing.toString() + ">";
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+/**
+ * Express helper function to look for property in request BODY or QUERY and return it, or defaultVal if not present
+ *
+ * @param {object} req - express request object
+ * @param {string} key - key to look for in request body or query
+ * @param {*} defaultVal - to return if key not found in request
+ * @returns req.body[key] or req.query[key] or defaultVal
+ */
+function reqVal(req, key, defaultVal) {
+	// return query param or post val or default
+	if (req.body[key] !== undefined &amp;&amp; req.body[key] !== null) {
+		return req.body[key];
+	}
+	if (req.query[key] !== undefined &amp;&amp; req.query[key] !== null) {
+		return req.query[key];
+	}
+	return defaultVal;
+}
+
+
+/**
+ * Express helper to look for property in request BODY or QUERY and return it, or defaultVal if not present
+ *
+ * @param {object} req - express request object
+ * @param {string} key - key to look for in request body or query
+ * @param {int} min - min int to floor the value to
+ * @param {int} max - max int to ceil the value to
+ * @param {int} defaultVal - to return if key not found in request
+ * @returns req.body[key] or req.query[key] cast to int in range [min,max] or defaultVal
+ */
+function reqValAsInt(req, key, min, max, defaultVal) {
+	// get val as int and min and max it
+	var val = Number(reqVal(req, key, defaultVal));
+	if (min !== null) {
+		val = Math.max(val, min);
+	}
+	if (max !== null) {
+		val = Math.min(val, max);
+	}
+	return val;
+}
+
+
+/**
+ * Express helper to look for property in request BODY or QUERY and return it, or defaultVal if not present
+ *
+ * @param {object} req - express request object
+ * @param {string} key - key to look for in request body or query
+ * @param {array} valueList - list of values that are acceptable
+ * @param {*} defaultVal - to return if key not found in request
+ * @returns req.body[key] or req.query[key] as long as they are present in valueList, otherwise defaultVal
+ */
+function reqValFromList(req, key, valueList, defaultVal) {
+	var val = reqVal(req, key, defaultVal);
+	if (valueList.indexOf(val) > -1) {
+		return val;
+	}
+	return defaultVal;
+}
+
+
+/**
+ * Express helper to look for all properties with a given prefix
+ *
+ * @param {*} req - express request object
+ * @param {string} prefix - the prefix string
+ * @param {*} keyList
+ * @returns an associative array of all key=>value pairs of request properties where key starts with "prefix_key" and key is in keyList
+ */
+function reqPrefixedValueArray(req, prefix, keyList) {
+	// look for ALL values for prefix+"_"+key and return an associative array of them
+	var valArray = {};
+	var fieldName;
+	var val;
+	keyList.forEach((key) => {
+		fieldName = prefix + "_" + key;
+		val = reqVal(req, fieldName, undefined);
+		if (val !== undefined &amp;&amp; val !== "") {
+			// store it
+			valArray[key] = val;
+		}
+	});
+
+	return valArray;
+}
+
+
+/**
+ * Deletes the varname from session data
+ *
+ * @param {obj} req
+ * @param {string} varName
+ */
+function forgetSessionVar(req, varName) {
+	if (req.session &amp;&amp; req.session[varName] !== undefined) {
+		delete req.session[varName];
+	}
 }
 //---------------------------------------------------------------------------
 
@@ -268,77 +406,23 @@ async function routerGetWildcard(req, res, next) {
 
 
 
-//---------------------------------------------------------------------------
-// helper functions
 
 
-/**
- * Helper function to make a secure access token from a refresh token
- *
- * @param {Object} userPassport - minimal object with properties of the user
- * @param {UserModel} user - full model object of User class
- * @param {String} refreshToken - the refresh token object to use to generate access token
- * @returns a token object.
- */
-async function makeSecureTokenAccessFromRefreshToken(userPassport, user, refreshToken) {
-	// make an access token with SAME scope as refresh token
-	return await makeSecureTokenAccess(userPassport, user, refreshToken.scope);
-}
-
-
-/**
- * Helper function to make a Refresh token
- *
- * @param {Object} userPassport - minimal object with properties of the user
- * @param {UserModel} user - full model object of User class
- * @returns a token object
- */
-async function makeSecureTokenRefresh(userPassport, user) {
-	const payload = {
-		type: "refresh",
-		scope: "api",
-		apiCode: await user.getApiCodeEnsureValid(),
-		user: userPassport,
-	};
-	// create secure toke
-	const expirationSeconds = arserver.getConfigVal("token:EXPIRATIONSECS_REFRESH");
-	const secureToken = arserver.createSecureToken(payload, expirationSeconds);
-	return secureToken;
-}
-
-
-/**
- * Helper function to make a generic secure token
- *
- * @param {Object} userPassport - minimal object with properties of the user
- * @param {UserModel} user - full model object of User class
- * @param {String} scope - the refresh token object to use to generate access token
- * @returns a token object
- */
-async function makeSecureTokenAccess(userPassport, user, scope) {
-	const payload = {
-		type: "access",
-		scope,
-		apiCode: await user.getApiCodeEnsureValid(),
-		user: userPassport,
-	};
-	// add accessId -- the idea here is for every user object in database to ahve an accessId (either sequential or random); that can be changed to invalidate all previously issues access tokens
-	const expirationSeconds = arserver.getConfigVal("token:EXPIRATIONSECS_ACCESS");
-	const secureToken = arserver.createSecureToken(payload, expirationSeconds);
-	return secureToken;
-}
-//---------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
+// export the class as the sole export
 module.exports = {
-	setupRouter,
+	asyncPasswordAuthenticate,
+	asyncPasswordReqLogin,
+
+	normalizePort,
+
+	calcExpressMiddleWare,
+	calcExpressRoutePathData,
+
+	reqVal,
+	reqValAsInt,
+	reqValFromList,
+	reqPrefixedValueArray,
+	forgetSessionVar,
 };
 </code></pre>
         </article>

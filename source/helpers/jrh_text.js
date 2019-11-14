@@ -4,7 +4,7 @@
  * @copyright 5/24/19
 
  * @description
- * Collection of helper functions for html/views
+ * Collection of helper functions for text/html/views
 */
 
 "use strict";

@@ -1,0 +1,3267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>helpers/jrlog - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="module-controllers_aclaid-AclAid.html">AclAid</a></li></ul><h3>Modules</h3><ul><li><a href="module-controllers_aclaid.html">controllers/aclaid</a></li><li><a href="module-helpers_jrconfig.html">helpers/jrconfig</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrconfig.html#~addConfigFile">addConfigFile</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~findQueuedCommand">findQueuedCommand</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~fixConfigFilePathName">fixConfigFilePathName</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~getDebugObj">getDebugObj</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~getVal">getVal</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~getValDefault">getValDefault</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~ipStringToSafeFilenameString">ipStringToSafeFilenameString</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~nconfMergeCliConfigFiles">nconfMergeCliConfigFiles</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~nconfMergeConfigFile">nconfMergeConfigFile</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~parse">parse</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~popQueuedCommand">popQueuedCommand</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~queueYargsCommand">queueYargsCommand</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~runQueuedCommands">runQueuedCommands</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setConfigDirAndDiscoverFiles">setConfigDirAndDiscoverFiles</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setDefaultOptions">setDefaultOptions</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setEnvList">setEnvList</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setOverrideOptions">setOverrideOptions</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setServerFilenamePrefixFromServerIp">setServerFilenamePrefixFromServerIp</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setYargs">setYargs</a></li></ul></li><li><a href="module-helpers_jrh_crypto.html">helpers/jrh_crypto</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_crypto.html#~createHashedObjectFromString">createHashedObjectFromString</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~generateRandomSalt">generateRandomSalt</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~genRandomStringHex">genRandomStringHex</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~genRandomStringHumanEasier">genRandomStringHumanEasier</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~genRandomStringHumanEasy">genRandomStringHumanEasy</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~hashPlaintextPasswordToObj">hashPlaintextPasswordToObj</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~hashPlaintextStringInsecureButSearchable">hashPlaintextStringInsecureButSearchable</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~testPlaintextPassword">testPlaintextPassword</a></li></ul></li><li><a href="module-helpers_jrh_express.html">helpers/jrh_express</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_express.html#~asyncPasswordAuthenticate">asyncPasswordAuthenticate</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~asyncPasswordReqLogin">asyncPasswordReqLogin</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressMiddleWare">calcExpressMiddleWare</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressRoutePathData">calcExpressRoutePathData</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressRoutePathDataRouteArray">calcExpressRoutePathDataRouteArray</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressRoutePathDataSplit">calcExpressRoutePathDataSplit</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~forgetSessionVar">forgetSessionVar</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~normalizePort">normalizePort</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqPrefixedValueArray">reqPrefixedValueArray</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqVal">reqVal</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqValAsInt">reqValAsInt</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqValFromList">reqValFromList</a></li></ul></li><li><a href="module-helpers_jrh_grid.html">helpers/jrh_grid</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_grid.html#~calcHeaderKeysNicely">calcHeaderKeysNicely</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridList">jrGridList</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListPager">jrGridListPager</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListPagerItem">jrGridListPagerItem</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListPagerItemPerPage">jrGridListPagerItemPerPage</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTable">jrGridListTable</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTableData">jrGridListTableData</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTableHeader">jrGridListTableHeader</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTableHeaderSortDir">jrGridListTableHeaderSortDir</a></li></ul></li><li><a href="module-helpers_jrh_handlebars.html">helpers/jrh_handlebars</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_handlebars.html#~loadPartialFiles">loadPartialFiles</a></li><li data-type='method'><a href="module-helpers_jrh_handlebars.html#~setupJrHandlebarHelpers">setupJrHandlebarHelpers</a></li></ul></li><li><a href="module-helpers_jrh_misc.html">helpers/jrh_misc</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_misc.html#~asyncAwaitForEachFunctionCall">asyncAwaitForEachFunctionCall</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~createObjectFromJsonParse">createObjectFromJsonParse</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~DateNowPlusMinutes">DateNowPlusMinutes</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~deepIterationCopy">deepIterationCopy</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~firstCoercedTrueValue">firstCoercedTrueValue</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getNiceNowString">getNiceNowString</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getNonFalseValueOrDefault">getNonFalseValueOrDefault</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getNonNullValueOrDefault">getNonNullValueOrDefault</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getPreciseNowString">getPreciseNowString</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getServerIpAddress">getServerIpAddress</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isInAnyArray">isInAnyArray</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isObjectEmpty">isObjectEmpty</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isPromise">isPromise</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isSimpleObject">isSimpleObject</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~makeSafeForFormInput">makeSafeForFormInput</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~mergeArraysDedupe">mergeArraysDedupe</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~mergeArraysKeepDupes">mergeArraysKeepDupes</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~regexEscapeStr">regexEscapeStr</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~shallowCopy">shallowCopy</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~stringArrayToNiceString">stringArrayToNiceString</a></li></ul></li><li><a href="module-helpers_jrh_mongo.html">helpers/jrh_mongo</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_mongo.html#~calcDatabaseResourceUse">calcDatabaseResourceUse</a></li><li data-type='method'><a href="module-helpers_jrh_mongo.html#~calcDatabaseStructure">calcDatabaseStructure</a></li><li data-type='method'><a href="module-helpers_jrh_mongo.html#~isValidMongooseObjectId">isValidMongooseObjectId</a></li><li data-type='method'><a href="module-helpers_jrh_mongo.html#~mongoIdEqual">mongoIdEqual</a></li></ul></li><li><a href="module-helpers_jrh_mongo_filter.html">helpers/jrh_mongo_filter</a></li><li><a href="module-helpers_jrh_text.html">helpers/jrh_text</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_text.html#~jrBootstrapCollapseBox">jrBootstrapCollapseBox</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlFormInputPassword">jrHtmlFormInputPassword</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlFormOptionList">jrHtmlFormOptionList</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlFormOptionListSelect">jrHtmlFormOptionListSelect</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlNiceOptionFromList">jrHtmlNiceOptionFromList</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlStrigifyObject">jrHtmlStrigifyObject</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrPluralize">jrPluralize</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrPluralizeCount">jrPluralizeCount</a></li></ul></li><li><a href="module-helpers_jrh_validate.html">helpers/jrh_validate</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateInteger">validateInteger</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateIntegerRange">validateIntegerRange</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateRealName">validateRealName</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateString">validateString</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateTrueFalse">validateTrueFalse</a></li></ul></li><li><a href="module-helpers_jrlog.html">helpers/jrlog</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrlog.html#~calcLogFilePath">calcLogFilePath</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~cdebug">cdebug</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~cdebugf">cdebugf</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~cdebugObj">cdebugObj</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~convertErrorTypeToWinstonLevel">convertErrorTypeToWinstonLevel</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~debug">debug</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~debugf">debugf</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~debugObj">debugObj</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~error">error</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~getDebugEnabled">getDebugEnabled</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~info">info</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~log">log</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~logStdDbMessage">logStdDbMessage</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~objToString">objToString</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setDebugEnabled">setDebugEnabled</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setup">setup</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setupDebugmod">setupDebugmod</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setupMorganMiddlewareForExpressWebAccessLogging">setupMorganMiddlewareForExpressWebAccessLogging</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setupWinston">setupWinston</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~warning">warning</a></li></ul></li><li><a href="module-routes_api.html">routes/api</a><ul class='methods'><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenAccess">makeSecureTokenAccess</a></li><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenAccessFromRefreshToken">makeSecureTokenAccessFromRefreshToken</a></li><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenRefresh">makeSecureTokenRefresh</a></li><li data-type='method'><a href="module-routes_api.html#~routerAllTokentest">routerAllTokentest</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetIndex">routerGetIndex</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetRefreshaccess">routerGetRefreshaccess</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetReqrefresh">routerGetReqrefresh</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetWildcard">routerGetWildcard</a></li><li data-type='method'><a href="module-routes_api.html#~routerPostReqrefresh">routerPostReqrefresh</a></li><li data-type='method'><a href="module-routes_api.html#~setupRouter">setupRouter</a></li></ul></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">helpers/jrlog</h1>
+    
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        
+            
+        
+    
+</header>
+
+<article>
+    
+        <div class="container-overview">
+        
+            
+                <div class="description"><p>Logging support module</p>
+<h5>Notes</h5>
+<ul>
+<li>Uses Winston module for logging to file</li>
+<li>Uses debug module for logging to console</li>
+<li>Uses Morgan for logging express web http requests</li>
+</ul></div>
+            
+
+            
+                
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-author">Author:</dt>
+    <dd class="tag-author">
+        <ul>
+            <li><a href="mailto:mouser@donationcoder.com">jesse reichler</a></li>
+        </ul>
+    </dd>
+    
+
+    
+    <dt class="tag-copyright">Copyright:</dt>
+    <dd class="tag-copyright"><ul class="dummy"><li>5/7/19</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+        
+        </div>
+    
+
+    
+
+    
+
+    
+    
+    
+
+     
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    <h4 class="name" id="~calcLogFilePath"><span class="type-signature">(private, inner) </span>calcLogFilePath<span class="signature">(fileSuffix)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line527">line 527</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Given a base filename (typically the app or service name) and an optional suffix (when an app wants multiple log files for different purposes), calculate its full file path by adding base directory and .log extension.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>fileSuffix</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>full file path</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~cdebug"><span class="type-signature">(inner) </span>cdebug<span class="signature">(&hellip;args)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line238">line 238</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Conditional passthrough to debug module function to show some info on console.
+Does nothing if debug mode is off.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>args</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                    &lt;repeatable><br>
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>result of debug module function</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~cdebugf"><span class="type-signature">(inner) </span>cdebugf<span class="signature">(string, &hellip;args)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line255">line 255</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Conditional call to debug module function after formatting string using util.format
+Does nothing if debug mode is off.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>cdebugf("%s:%d", str, val);</code></pre>
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>string</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>string to pass to util.format</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>args</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                    &lt;repeatable><br>
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>arguments for util.format</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>result of debug module function</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~cdebugObj"><span class="type-signature">(inner) </span>cdebugObj<span class="signature">(obj, msg)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line270">line 270</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Conditional dump an object with its properties, with an optional message
+Does nothing if debug mode is off.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>obj</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>object to dump</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>msg</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>message to show before dumping object (ignored if null/undefined)</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~convertErrorTypeToWinstonLevel"><span class="type-signature">(private, inner) </span>convertErrorTypeToWinstonLevel<span class="signature">(type)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line359">line 359</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Returns a registered winston logging level to use for this type.
+If the type string is a known winstonCustomLevels we can use it directly as the level; if not, winston will throw an error if we try to use this as the log level, so instead caller will use UnknownError as the level</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>type</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>valid winston logging level to use</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~debug"><span class="type-signature">(inner) </span>debug<span class="signature">(&hellip;args)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line198">line 198</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Passthrough to debug module function to show some info on console</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>args</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                    &lt;repeatable><br>
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>result of debug module function</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~debugf"><span class="type-signature">(inner) </span>debugf<span class="signature">(string, &hellip;args)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line210">line 210</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Invoke to debug module function after formatting string using util.format</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>debugf("%s:%d", str, val);</code></pre>
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>string</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>string to pass to util.format</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>args</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                    &lt;repeatable><br>
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>arguments for util.format</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>result of debug module function</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~debugObj"><span class="type-signature">(inner) </span>debugObj<span class="signature">(obj, msg)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line219">line 219</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Dump an object with its properties, with an optional message</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>obj</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>object to dump</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>msg</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>message to show before dumping object (ignored if null/undefined)</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~error"><span class="type-signature">(inner) </span>error<span class="signature">(&hellip;args)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line176">line 176</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Passthrough log(&quot;error&quot;) function to winston logger, to log an item to file</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>args</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                    &lt;repeatable><br>
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>result of winston log command</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~getDebugEnabled"><span class="type-signature">(inner) </span>getDebugEnabled<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line135">line 135</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Accessor for the debug mode</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>true if debugging is enabled</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~info"><span class="type-signature">(inner) </span>info<span class="signature">(&hellip;args)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line160">line 160</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Passthrough log(&quot;info&quot;) function to winston logger, to log an item to file</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>args</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                    &lt;repeatable><br>
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>result of winston log command</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~log"><span class="type-signature">(inner) </span>log<span class="signature">(&hellip;args)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line152">line 152</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Passthrough log function to winston logger, to log an item to file</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>args</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                    &lt;repeatable><br>
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>result of winston log command</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~logStdDbMessage"><span class="type-signature">(inner) </span>logStdDbMessage<span class="signature">(type, message, severity, userid, ip, extraData)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line332">line 332</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Log (to winston file logger) a message that mirrors the database log items the server normally logs to database.
+This is used to create a plain file of log items that parallels our database log</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>type</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the kind of message (ideally defined in winstonCustomLevels; if not it will be logged to file as an UnknownError)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>message</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the main message to log</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>severity</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">int</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>severity level from 0 (least important) to 100 (most important)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>userid</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>userid of logged in user of request (or undefined/null)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>ip</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>ip of user request (or undefined/null)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>extraData</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">obj</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>stringified with JSON.stringify</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~objToString"><span class="type-signature">(inner) </span>objToString<span class="signature">(obj, flagCompact)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line293">line 293</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Stringify an object nicely for display on console</p>
+<h5>Notes</h5>
+<ul>
+<li>See <a href="https://stackoverflow.com/questions/10729276/how-can-i-get-the-full-object-in-node-jss-console-log-rather-than-object">stackoverflow</a></li>
+<li>See <a href="https://nodejs.org/api/util.html#util_util_inspect_object_options">nodejs docs</a></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>obj</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>the object to stringify</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>flagCompact</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>if true then we use a compact single line output format</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>string suitable for debug/diagnostic display</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~setDebugEnabled"><span class="type-signature">(inner) </span>setDebugEnabled<span class="signature">(val)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line126">line 126</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Set debug mode on or off.
+This controls whether certain debug functions (those ending in 'c' for conditional) actually generate output</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>val</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~setup"><span class="type-signature">(inner) </span>setup<span class="signature">(iserviceName, ilogDir)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line88">line 88</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Initialize values for the logging system to use</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>iserviceName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>name of the application or process, for use in filename and console messages</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>ilogDir</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>base directory where log files should be created</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~setupDebugmod"><span class="type-signature">(inner) </span>setupDebugmod<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line501">line 501</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Setup the debug module logger for console messages</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>the debug module created function for invoking debug statement</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~setupMorganMiddlewareForExpressWebAccessLogging"><span class="type-signature">(inner) </span>setupMorganMiddlewareForExpressWebAccessLogging<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line106">line 106</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Setup the morgan logging middleware for express web framework, which is create an access file (like apache access log).
+Called by our server setup code when registering express middleware.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>the morgan middleware object to register with express</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~setupWinston"><span class="type-signature">(inner) </span>setupWinston<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line416">line 416</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Setp the winston logging module and register our custom levels, etc.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>a winston logging object</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~warning"><span class="type-signature">(inner) </span>warning<span class="signature">(&hellip;args)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrlog.js.html">helpers/jrlog.js</a>, <a href="helpers_jrlog.js.html#line168">line 168</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Passthrough log(&quot;warning&quot;) function to winston logger, to log an item to file</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>args</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                    &lt;repeatable><br>
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>result of winston log command</p>
+</div>
+
+
+
+    
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.3</a> on Thu Nov 14 2019 00:45:10 GMT-0600 (Central Standard Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

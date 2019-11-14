@@ -1,0 +1,2888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>helpers/jrconfig - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="module-controllers_aclaid-AclAid.html">AclAid</a></li></ul><h3>Modules</h3><ul><li><a href="module-controllers_aclaid.html">controllers/aclaid</a></li><li><a href="module-helpers_jrconfig.html">helpers/jrconfig</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrconfig.html#~addConfigFile">addConfigFile</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~findQueuedCommand">findQueuedCommand</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~fixConfigFilePathName">fixConfigFilePathName</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~getDebugObj">getDebugObj</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~getVal">getVal</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~getValDefault">getValDefault</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~ipStringToSafeFilenameString">ipStringToSafeFilenameString</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~nconfMergeCliConfigFiles">nconfMergeCliConfigFiles</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~nconfMergeConfigFile">nconfMergeConfigFile</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~parse">parse</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~popQueuedCommand">popQueuedCommand</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~queueYargsCommand">queueYargsCommand</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~runQueuedCommands">runQueuedCommands</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setConfigDirAndDiscoverFiles">setConfigDirAndDiscoverFiles</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setDefaultOptions">setDefaultOptions</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setEnvList">setEnvList</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setOverrideOptions">setOverrideOptions</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setServerFilenamePrefixFromServerIp">setServerFilenamePrefixFromServerIp</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setYargs">setYargs</a></li></ul></li><li><a href="module-helpers_jrh_crypto.html">helpers/jrh_crypto</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_crypto.html#~createHashedObjectFromString">createHashedObjectFromString</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~generateRandomSalt">generateRandomSalt</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~genRandomStringHex">genRandomStringHex</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~genRandomStringHumanEasier">genRandomStringHumanEasier</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~genRandomStringHumanEasy">genRandomStringHumanEasy</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~hashPlaintextPasswordToObj">hashPlaintextPasswordToObj</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~hashPlaintextStringInsecureButSearchable">hashPlaintextStringInsecureButSearchable</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~testPlaintextPassword">testPlaintextPassword</a></li></ul></li><li><a href="module-helpers_jrh_express.html">helpers/jrh_express</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_express.html#~asyncPasswordAuthenticate">asyncPasswordAuthenticate</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~asyncPasswordReqLogin">asyncPasswordReqLogin</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressMiddleWare">calcExpressMiddleWare</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressRoutePathData">calcExpressRoutePathData</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressRoutePathDataRouteArray">calcExpressRoutePathDataRouteArray</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressRoutePathDataSplit">calcExpressRoutePathDataSplit</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~forgetSessionVar">forgetSessionVar</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~normalizePort">normalizePort</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqPrefixedValueArray">reqPrefixedValueArray</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqVal">reqVal</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqValAsInt">reqValAsInt</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqValFromList">reqValFromList</a></li></ul></li><li><a href="module-helpers_jrh_grid.html">helpers/jrh_grid</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_grid.html#~calcHeaderKeysNicely">calcHeaderKeysNicely</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridList">jrGridList</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListPager">jrGridListPager</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListPagerItem">jrGridListPagerItem</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListPagerItemPerPage">jrGridListPagerItemPerPage</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTable">jrGridListTable</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTableData">jrGridListTableData</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTableHeader">jrGridListTableHeader</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTableHeaderSortDir">jrGridListTableHeaderSortDir</a></li></ul></li><li><a href="module-helpers_jrh_handlebars.html">helpers/jrh_handlebars</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_handlebars.html#~loadPartialFiles">loadPartialFiles</a></li><li data-type='method'><a href="module-helpers_jrh_handlebars.html#~setupJrHandlebarHelpers">setupJrHandlebarHelpers</a></li></ul></li><li><a href="module-helpers_jrh_misc.html">helpers/jrh_misc</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_misc.html#~asyncAwaitForEachFunctionCall">asyncAwaitForEachFunctionCall</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~createObjectFromJsonParse">createObjectFromJsonParse</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~DateNowPlusMinutes">DateNowPlusMinutes</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~deepIterationCopy">deepIterationCopy</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~firstCoercedTrueValue">firstCoercedTrueValue</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getNiceNowString">getNiceNowString</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getNonFalseValueOrDefault">getNonFalseValueOrDefault</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getNonNullValueOrDefault">getNonNullValueOrDefault</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getPreciseNowString">getPreciseNowString</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getServerIpAddress">getServerIpAddress</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isInAnyArray">isInAnyArray</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isObjectEmpty">isObjectEmpty</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isPromise">isPromise</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isSimpleObject">isSimpleObject</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~makeSafeForFormInput">makeSafeForFormInput</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~mergeArraysDedupe">mergeArraysDedupe</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~mergeArraysKeepDupes">mergeArraysKeepDupes</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~regexEscapeStr">regexEscapeStr</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~shallowCopy">shallowCopy</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~stringArrayToNiceString">stringArrayToNiceString</a></li></ul></li><li><a href="module-helpers_jrh_mongo.html">helpers/jrh_mongo</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_mongo.html#~calcDatabaseResourceUse">calcDatabaseResourceUse</a></li><li data-type='method'><a href="module-helpers_jrh_mongo.html#~calcDatabaseStructure">calcDatabaseStructure</a></li><li data-type='method'><a href="module-helpers_jrh_mongo.html#~isValidMongooseObjectId">isValidMongooseObjectId</a></li><li data-type='method'><a href="module-helpers_jrh_mongo.html#~mongoIdEqual">mongoIdEqual</a></li></ul></li><li><a href="module-helpers_jrh_mongo_filter.html">helpers/jrh_mongo_filter</a></li><li><a href="module-helpers_jrh_text.html">helpers/jrh_text</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_text.html#~jrBootstrapCollapseBox">jrBootstrapCollapseBox</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlFormInputPassword">jrHtmlFormInputPassword</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlFormOptionList">jrHtmlFormOptionList</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlFormOptionListSelect">jrHtmlFormOptionListSelect</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlNiceOptionFromList">jrHtmlNiceOptionFromList</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlStrigifyObject">jrHtmlStrigifyObject</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrPluralize">jrPluralize</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrPluralizeCount">jrPluralizeCount</a></li></ul></li><li><a href="module-helpers_jrh_validate.html">helpers/jrh_validate</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateInteger">validateInteger</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateIntegerRange">validateIntegerRange</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateRealName">validateRealName</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateString">validateString</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateTrueFalse">validateTrueFalse</a></li></ul></li><li><a href="module-helpers_jrlog.html">helpers/jrlog</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrlog.html#~calcLogFilePath">calcLogFilePath</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~cdebug">cdebug</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~cdebugf">cdebugf</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~cdebugObj">cdebugObj</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~convertErrorTypeToWinstonLevel">convertErrorTypeToWinstonLevel</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~debug">debug</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~debugf">debugf</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~debugObj">debugObj</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~error">error</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~getDebugEnabled">getDebugEnabled</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~info">info</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~log">log</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~logStdDbMessage">logStdDbMessage</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~objToString">objToString</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setDebugEnabled">setDebugEnabled</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setup">setup</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setupDebugmod">setupDebugmod</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setupMorganMiddlewareForExpressWebAccessLogging">setupMorganMiddlewareForExpressWebAccessLogging</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setupWinston">setupWinston</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~warning">warning</a></li></ul></li><li><a href="module-routes_api.html">routes/api</a><ul class='methods'><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenAccess">makeSecureTokenAccess</a></li><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenAccessFromRefreshToken">makeSecureTokenAccessFromRefreshToken</a></li><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenRefresh">makeSecureTokenRefresh</a></li><li data-type='method'><a href="module-routes_api.html#~routerAllTokentest">routerAllTokentest</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetIndex">routerGetIndex</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetRefreshaccess">routerGetRefreshaccess</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetReqrefresh">routerGetReqrefresh</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetWildcard">routerGetWildcard</a></li><li data-type='method'><a href="module-routes_api.html#~routerPostReqrefresh">routerPostReqrefresh</a></li><li data-type='method'><a href="module-routes_api.html#~setupRouter">setupRouter</a></li></ul></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">helpers/jrconfig</h1>
+    
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        
+            
+        
+    
+</header>
+
+<article>
+    
+        <div class="container-overview">
+        
+            
+                <div class="description"><p>Configuration support module that manages configuration commandlineargs/files/options/environment</p>
+<h5>Notes</h5>
+<ul>
+<li>We use nconf module for holding all configuration data;  our functions just offer ways to use that more flexibly</li>
+<li>We use yargs to handle commandline processing; our functions just offer ways to use that more flexibly</li>
+</ul></div>
+            
+
+            
+                
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-author">Author:</dt>
+    <dd class="tag-author">
+        <ul>
+            <li><a href="mailto:mouser@donationcoder.com">jesse reichler</a></li>
+        </ul>
+    </dd>
+    
+
+    
+    <dt class="tag-copyright">Copyright:</dt>
+    <dd class="tag-copyright"><ul class="dummy"><li>5/9/19</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+        
+        </div>
+    
+
+    
+
+    
+
+    
+    
+    
+
+     
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    <h4 class="name" id="~addConfigFile"><span class="type-signature">(private, inner) </span>addConfigFile<span class="signature">(filepath, flagErrorOnFileNotExist)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line299">line 299</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Helper function to add a file to our queued list of config files (which will be processed in order)</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>filepath</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>flagErrorOnFileNotExist</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>if set then an exception will be thrown if file does not exist; otherwise nothing happens</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+    <div class="param-desc">
+    
+        <p>error if file is not found and flagErrorOnFileNotExist is true</p>
+    
+    </div>
+
+
+    
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>true if file found and loaded</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~findQueuedCommand"><span class="type-signature">(inner) </span>findQueuedCommand<span class="signature">(cmd, flagPop)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line182">line 182</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Find a queud command by name and return it.
+This is useful as an alternative way of finding commands explicitly</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>cmd</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>flagPop</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>if true the found command will be popped off the queue</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>undefined if not found, or queued command in format {command: commandName, argv, callback}</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~fixConfigFilePathName"><span class="type-signature">(private, inner) </span>fixConfigFilePathName<span class="signature">(filepath)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line381">line 381</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-todo">To Do:</dt>
+    <dd class="tag-todo">
+        <ul>
+            <li>support jsoc files?</li>
+        </ul>
+    </dd>
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Fixup config file name by adding base directory, doing any %SPECIAL% substrings and adding .json after it if its not explicitly provided</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>filepath</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>filepath with base directory and .json added</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~getDebugObj"><span class="type-signature">(inner) </span>getDebugObj<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line475">line 475</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Function for diagnostics/debugging.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>an object that contains the nconf.get() full set of assignments of configuration variables, as well as the priority order list of configuration files loaded (and not found)</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~getVal"><span class="type-signature">(private, inner) </span>getVal<span class="signature">(variadic)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line418">line 418</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Just pass along a get request to the underlying nconf module.
+Use getValDefault if you don't want exception error thrown on missing variable</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>getVal("DEBUG") - returns the value of the DEBUG config variable</code></pre>
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>variadic</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>args but normally just a single string with the variable name</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+    <div class="param-desc">
+    
+        <p>error if variable not found</p>
+    
+    </div>
+
+
+    
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>value</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~getValDefault"><span class="type-signature">(private, inner) </span>getValDefault<span class="signature">(arg, defaultVal)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line436">line 436</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Get the value of a variable; if its undefined then return defaultVal</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>arg</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>variable name to find</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defaultVal</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>the config value for variable specified, or defaultVal if not found</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~ipStringToSafeFilenameString"><span class="type-signature">(inner) </span>ipStringToSafeFilenameString<span class="signature">(val)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line463">line 463</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Replace filename illegal characters (:) from ip string with underscores</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>val</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>ip string with colons</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>ip string with colons replaced with underscores</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~nconfMergeCliConfigFiles"><span class="type-signature">(private, inner) </span>nconfMergeCliConfigFiles<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line328">line 328</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Get a list of config files specified on the commandline via nconf, and load those in</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~nconfMergeConfigFile"><span class="type-signature">(private, inner) </span>nconfMergeConfigFile<span class="signature">(filepath, flagErrorOnFileNotExist)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line353">line 353</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Merge in a config file to nconf configuration settings using nconf.file command</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>filepath</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>flagErrorOnFileNotExist</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>throw an error if file does not exist?</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+    <div class="param-desc">
+    
+        <p>exception if file is missing and flagErrorOnFileNotExist is true</p>
+    
+    </div>
+
+
+    
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>true if file found and loaded</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~parse"><span class="type-signature">(inner) </span>parse<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line65">line 65</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>One time call to process options that have been set through other functions first</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+    <div class="param-desc">
+    
+        <p>error if you try to run this twice</p>
+    
+    </div>
+
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~popQueuedCommand"><span class="type-signature">(inner) </span>popQueuedCommand<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line164">line 164</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>An alternate way to manually go through queue of commands</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>the next queued command, in format {command: commandName, argv, callback}</p>
+</div>
+
+
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~queueYargsCommand"><span class="type-signature">(inner) </span>queueYargsCommand<span class="signature">(commandName, argv, callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line119">line 119</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Queue a command with arguments, for the yargs commandline processing library</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>commandName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>argv</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~runQueuedCommands"><span class="type-signature">(inner) </span>runQueuedCommands<span class="signature">(flagErrorIfNone)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line136">line 136</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Run a set of queued yarg commandline options/commands.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>flagErrorIfNone</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~setConfigDirAndDiscoverFiles"><span class="type-signature">(inner) </span>setConfigDirAndDiscoverFiles<span class="signature">(val)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line215">line 215</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Set the base directory for config files and find a list of all valid config files in this subdir</p>
+<h5>Notes</h5>
+<ul>
+<li>Normally you would call this with the actual directory containing the config files, but if you call it with the parent directory, it will look for a &quot;config/&quot; subdir and use that instead.</li>
+<li>This function then looks for a set of specific filenames in the config directory, in a specificy priority order, and queues the ones it finds</li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>val</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>base directory where config files are stored</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~setDefaultOptions"><span class="type-signature">(inner) </span>setDefaultOptions<span class="signature">(val)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line238">line 238</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Set an object with default config options, which will be overridden by options found in config files</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>val</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>configuration object with properties that will be used if no config file sets them</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~setEnvList"><span class="type-signature">(inner) </span>setEnvList<span class="signature">(val)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line260">line 260</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Sets the list of environment variable key names that will be loaded into the config environment (if not overridden in config files)</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>val</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">array</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>list of strings that identify which variables from environment to load</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~setOverrideOptions"><span class="type-signature">(inner) </span>setOverrideOptions<span class="signature">(val)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line250">line 250</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Set an object containing override options that will take precedence over any options found in any config files</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>val</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>configuration object with properties that will override any config file</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~setServerFilenamePrefixFromServerIp"><span class="type-signature">(private, inner) </span>setServerFilenamePrefixFromServerIp<span class="signature">(val)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line451">line 451</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Caller should call this in order for us to discover and load SERVERIP prefixed config files automatically</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>val</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>server ip as string (we will convert : to _)</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~setYargs"><span class="type-signature">(inner) </span>setYargs<span class="signature">(val)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="helpers_jrconfig.js.html">helpers/jrconfig.js</a>, <a href="helpers_jrconfig.js.html#line269">line 269</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>The caller should pass us the yargs commandline processor module object to use</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>val</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.3</a> on Thu Nov 14 2019 00:45:10 GMT-0600 (Central Standard Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

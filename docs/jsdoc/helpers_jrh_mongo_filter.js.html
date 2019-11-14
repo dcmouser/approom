@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>helpers/jrh_mongo_filter.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="module-controllers_aclaid-AclAid.html">AclAid</a></li></ul><h3>Modules</h3><ul><li><a href="module-controllers_aclaid.html">controllers/aclaid</a></li><li><a href="module-helpers_jrconfig.html">helpers/jrconfig</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrconfig.html#~addConfigFile">addConfigFile</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~findQueuedCommand">findQueuedCommand</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~fixConfigFilePathName">fixConfigFilePathName</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~getDebugObj">getDebugObj</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~getVal">getVal</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~getValDefault">getValDefault</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~ipStringToSafeFilenameString">ipStringToSafeFilenameString</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~nconfMergeCliConfigFiles">nconfMergeCliConfigFiles</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~nconfMergeConfigFile">nconfMergeConfigFile</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~parse">parse</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~popQueuedCommand">popQueuedCommand</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~queueYargsCommand">queueYargsCommand</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~runQueuedCommands">runQueuedCommands</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setConfigDirAndDiscoverFiles">setConfigDirAndDiscoverFiles</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setDefaultOptions">setDefaultOptions</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setEnvList">setEnvList</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setOverrideOptions">setOverrideOptions</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setServerFilenamePrefixFromServerIp">setServerFilenamePrefixFromServerIp</a></li><li data-type='method'><a href="module-helpers_jrconfig.html#~setYargs">setYargs</a></li></ul></li><li><a href="module-helpers_jrh_crypto.html">helpers/jrh_crypto</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_crypto.html#~createHashedObjectFromString">createHashedObjectFromString</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~generateRandomSalt">generateRandomSalt</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~genRandomStringHex">genRandomStringHex</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~genRandomStringHumanEasier">genRandomStringHumanEasier</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~genRandomStringHumanEasy">genRandomStringHumanEasy</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~hashPlaintextPasswordToObj">hashPlaintextPasswordToObj</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~hashPlaintextStringInsecureButSearchable">hashPlaintextStringInsecureButSearchable</a></li><li data-type='method'><a href="module-helpers_jrh_crypto.html#~testPlaintextPassword">testPlaintextPassword</a></li></ul></li><li><a href="module-helpers_jrh_express.html">helpers/jrh_express</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_express.html#~asyncPasswordAuthenticate">asyncPasswordAuthenticate</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~asyncPasswordReqLogin">asyncPasswordReqLogin</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressMiddleWare">calcExpressMiddleWare</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressRoutePathData">calcExpressRoutePathData</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressRoutePathDataRouteArray">calcExpressRoutePathDataRouteArray</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~calcExpressRoutePathDataSplit">calcExpressRoutePathDataSplit</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~forgetSessionVar">forgetSessionVar</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~normalizePort">normalizePort</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqPrefixedValueArray">reqPrefixedValueArray</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqVal">reqVal</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqValAsInt">reqValAsInt</a></li><li data-type='method'><a href="module-helpers_jrh_express.html#~reqValFromList">reqValFromList</a></li></ul></li><li><a href="module-helpers_jrh_grid.html">helpers/jrh_grid</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_grid.html#~calcHeaderKeysNicely">calcHeaderKeysNicely</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridList">jrGridList</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListPager">jrGridListPager</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListPagerItem">jrGridListPagerItem</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListPagerItemPerPage">jrGridListPagerItemPerPage</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTable">jrGridListTable</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTableData">jrGridListTableData</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTableHeader">jrGridListTableHeader</a></li><li data-type='method'><a href="module-helpers_jrh_grid.html#~jrGridListTableHeaderSortDir">jrGridListTableHeaderSortDir</a></li></ul></li><li><a href="module-helpers_jrh_handlebars.html">helpers/jrh_handlebars</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_handlebars.html#~loadPartialFiles">loadPartialFiles</a></li><li data-type='method'><a href="module-helpers_jrh_handlebars.html#~setupJrHandlebarHelpers">setupJrHandlebarHelpers</a></li></ul></li><li><a href="module-helpers_jrh_misc.html">helpers/jrh_misc</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_misc.html#~asyncAwaitForEachFunctionCall">asyncAwaitForEachFunctionCall</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~createObjectFromJsonParse">createObjectFromJsonParse</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~DateNowPlusMinutes">DateNowPlusMinutes</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~deepIterationCopy">deepIterationCopy</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~firstCoercedTrueValue">firstCoercedTrueValue</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getNiceNowString">getNiceNowString</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getNonFalseValueOrDefault">getNonFalseValueOrDefault</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getNonNullValueOrDefault">getNonNullValueOrDefault</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getPreciseNowString">getPreciseNowString</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~getServerIpAddress">getServerIpAddress</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isInAnyArray">isInAnyArray</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isObjectEmpty">isObjectEmpty</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isPromise">isPromise</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~isSimpleObject">isSimpleObject</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~makeSafeForFormInput">makeSafeForFormInput</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~mergeArraysDedupe">mergeArraysDedupe</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~mergeArraysKeepDupes">mergeArraysKeepDupes</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~regexEscapeStr">regexEscapeStr</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~shallowCopy">shallowCopy</a></li><li data-type='method'><a href="module-helpers_jrh_misc.html#~stringArrayToNiceString">stringArrayToNiceString</a></li></ul></li><li><a href="module-helpers_jrh_mongo.html">helpers/jrh_mongo</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_mongo.html#~calcDatabaseResourceUse">calcDatabaseResourceUse</a></li><li data-type='method'><a href="module-helpers_jrh_mongo.html#~calcDatabaseStructure">calcDatabaseStructure</a></li><li data-type='method'><a href="module-helpers_jrh_mongo.html#~isValidMongooseObjectId">isValidMongooseObjectId</a></li><li data-type='method'><a href="module-helpers_jrh_mongo.html#~mongoIdEqual">mongoIdEqual</a></li></ul></li><li><a href="module-helpers_jrh_mongo_filter.html">helpers/jrh_mongo_filter</a></li><li><a href="module-helpers_jrh_text.html">helpers/jrh_text</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_text.html#~jrBootstrapCollapseBox">jrBootstrapCollapseBox</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlFormInputPassword">jrHtmlFormInputPassword</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlFormOptionList">jrHtmlFormOptionList</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlFormOptionListSelect">jrHtmlFormOptionListSelect</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlNiceOptionFromList">jrHtmlNiceOptionFromList</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrHtmlStrigifyObject">jrHtmlStrigifyObject</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrPluralize">jrPluralize</a></li><li data-type='method'><a href="module-helpers_jrh_text.html#~jrPluralizeCount">jrPluralizeCount</a></li></ul></li><li><a href="module-helpers_jrh_validate.html">helpers/jrh_validate</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateInteger">validateInteger</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateIntegerRange">validateIntegerRange</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateRealName">validateRealName</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateString">validateString</a></li><li data-type='method'><a href="module-helpers_jrh_validate.html#~validateTrueFalse">validateTrueFalse</a></li></ul></li><li><a href="module-helpers_jrlog.html">helpers/jrlog</a><ul class='methods'><li data-type='method'><a href="module-helpers_jrlog.html#~calcLogFilePath">calcLogFilePath</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~cdebug">cdebug</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~cdebugf">cdebugf</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~cdebugObj">cdebugObj</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~convertErrorTypeToWinstonLevel">convertErrorTypeToWinstonLevel</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~debug">debug</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~debugf">debugf</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~debugObj">debugObj</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~error">error</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~getDebugEnabled">getDebugEnabled</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~info">info</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~log">log</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~logStdDbMessage">logStdDbMessage</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~objToString">objToString</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setDebugEnabled">setDebugEnabled</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setup">setup</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setupDebugmod">setupDebugmod</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setupMorganMiddlewareForExpressWebAccessLogging">setupMorganMiddlewareForExpressWebAccessLogging</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~setupWinston">setupWinston</a></li><li data-type='method'><a href="module-helpers_jrlog.html#~warning">warning</a></li></ul></li><li><a href="module-routes_api.html">routes/api</a><ul class='methods'><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenAccess">makeSecureTokenAccess</a></li><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenAccessFromRefreshToken">makeSecureTokenAccessFromRefreshToken</a></li><li data-type='method'><a href="module-routes_api.html#~makeSecureTokenRefresh">makeSecureTokenRefresh</a></li><li data-type='method'><a href="module-routes_api.html#~routerAllTokentest">routerAllTokentest</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetIndex">routerGetIndex</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetRefreshaccess">routerGetRefreshaccess</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetReqrefresh">routerGetReqrefresh</a></li><li data-type='method'><a href="module-routes_api.html#~routerGetWildcard">routerGetWildcard</a></li><li data-type='method'><a href="module-routes_api.html#~routerPostReqrefresh">routerPostReqrefresh</a></li><li data-type='method'><a href="module-routes_api.html#~setupRouter">setupRouter</a></li></ul></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">helpers/jrh_mongo_filter.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @module helpers/jrh_mongo_filter
+ * @author jesse reichler &lt;mouser@donationcoder.com>
+ * @copyright 5/7/19
+
+ * @description
+ * Collection of helper functions for database crud filtering
+*/
+
+"use strict";
+
+
+// modules
+const mongoose = require("mongoose");
+
+// our helper modules
+const jrhMisc = require("./jrh_misc");
+const jrhExpress = require("./jrh_express");
+const jrhMongo = require("./jrh_mongo");
+
+
+
+//---------------------------------------------------------------------------
+function buildMongooseQueryFromReq(filterOptions, schema, req, jrResult) {
+	// return the query object for use with mongoose
+	// we parse the req data (form post vars or query params), and create the query used by mongoose
+
+	// here are the req params we can get:
+	//  pageNumb (gobal)
+	//  pageSize (global)
+	//  sortField (global)
+	//  sortDir (global)
+	// Then for each field:
+	//	filterString
+
+	var fieldKeys = Object.keys(schema);
+	//
+	var pageNum = jrhExpress.reqValAsInt(req, "pageNum", 1, null, 1);
+	var pageSize = jrhExpress.reqValAsInt(req, "pageSize", filterOptions.minPageSize, filterOptions.maxPageSize, filterOptions.defaultPageSize);
+	var sortField = jrhExpress.reqValFromList(req, "sortField", fieldKeys, filterOptions.defaultSortField);
+	var sortDir = jrhExpress.reqValFromList(req, "sortDir", ["asc", "desc"], filterOptions.defaultSortDir);
+	//
+	var fieldFilters = jrhExpress.reqPrefixedValueArray(req, "filter", fieldKeys);
+	//
+	var protectedFields = filterOptions.protectedFields;
+	var hiddenFields = filterOptions.hiddenFields;
+
+	// block sort if its on our block list
+	if (jrhMisc.isInAnyArray(sortField, protectedFields, hiddenFields)) {
+		sortField = "";
+	}
+
+	// query options
+	var queryOptions = {};
+	// offset and limit
+	queryOptions.limit = pageSize;
+	queryOptions.skip = (pageNum - 1) * pageSize;
+	// query option for sorting?
+	if (sortField) {
+		queryOptions.sort = {};
+		queryOptions.sort[sortField] = sortDir;
+	}
+
+	// build the query
+	var query = {};
+	var aFindFilter;
+	var fieldSchema;
+	var fieldFilterKeys = Object.keys(fieldFilters);
+	fieldFilterKeys.forEach((fieldFilterKey) => {
+
+		// certain fields we will refuse to filter on
+		if (jrhMisc.isInAnyArray(fieldFilterKey, protectedFields)) {
+			return;
+		}
+
+		fieldSchema = schema[fieldFilterKey];
+		aFindFilter = convertReqQueryStringToAMongooseFindFilter(fieldFilterKey, fieldSchema, fieldFilters[fieldFilterKey], jrResult);
+		if (aFindFilter !== undefined) {
+			// return value could be just the filter, a full object with fieldFilterKey as key, or an object with an $and or $or key
+			if (aFindFilter &amp;&amp; aFindFilter[fieldFilterKey]) {
+				// if its an undefined value stored in object, its because we returned an error
+				// ATTN: unfinished
+				query[fieldFilterKey] = aFindFilter[fieldFilterKey];
+			} else if (aFindFilter &amp;&amp; aFindFilter.$and) {
+				if (query.$and) {
+					// merge and arrays
+					query.$and = query.$and.concat(aFindFilter.$and);
+				} else {
+					query.$and = aFindFilter.$and;
+				}
+			} else if (aFindFilter &amp;&amp; aFindFilter.$or) {
+				if (query.$or) {
+					// merge or arrays
+					query.$or = query.$or.concat(aFindFilter.$or);
+				} else {
+					query.$or = aFindFilter.$or;
+				}
+			} else {
+				// store it under this field
+				query[fieldFilterKey] = aFindFilter;
+			}
+		}
+	});
+
+	// obj data for url building and grid ui construction
+	var queryUrlData = {
+		pageNum,
+		pageSize,
+		sortField,
+		sortDir,
+		fieldFilters,
+		fieldKeys,
+	};
+
+	// return tuple of query and queryOptions
+	return { query, queryOptions, queryUrlData };
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+//---------------------------------------------------------------------------
+function convertReqQueryStringToAMongooseFindFilter(fkey, fieldSchema, querystr, jrResult) {
+	// user types a filter for a field (db column) as a string;
+	// here we convert it into something suitable for a mongoose find query obj
+	const schemaType = fieldSchema.type;
+	let key, retQuery;
+
+	// format for query string is a bit ad hoc, but works like this:
+	// the search phrase is first divided into a set of OR tests by splitting using the text " or " (without quotes)
+	// alternatively a comma may be used in place of " or "
+	// with each OR phrase we can have a set of AND queries, separated by " and " (without quotes)
+	// integer (Number) fields are simple integers
+	//
+	// Operators for numbers are &lt; > &lt;= >= = == != !== !&lt; !> !&lt;= !>=
+	// So some example valid numeric searches:
+	// 	&lt;20
+	//  &lt;20 and >5
+	//  &lt;20 or >100
+	//  &lt;20 and >5 or >100  [remember this is treated like (&lt;20 and >5) or (>100) ]
+	//
+	// Date fields are exactly like numbers, EXCEPT that the numeric values in the search query are treated as dates, X number of days in the past
+	// So &lt;5 means the date is less (older) than 5 days ago
+	//
+	// String fields only support the operators = == != !==
+	// But string queries are parsed slightly specially.
+	// First, strings in double quotes are tested for exact matches, they do NOT do a substring %LIKE% match
+	// Strings *not* in double quotes are searched for as substrings in the field as if they were %LIKE% matches in sql
+	// Strings enclosed in // are treated as regular expression searches
+	// Note that the and/or operators are not smart about being in quotes, which means that you simply CANNOT search for something with " and " or " or "" in it or commas
+	//
+	// Additionally you can use the constant "null" or "undefined" (not in quotes) to search for undefined value, or !null to search for values that are NOT undefined or null
+
+	if (schemaType === Number) {
+		// it's a numeric column
+		// filter rules:
+		//   user can use operators > &lt; ! =
+		retQuery = convertReqQueryStringToAMongooseFindFilterNumeric(fkey, schemaType, querystr, "integer", jrResult);
+	} else if (schemaType === String) {
+		// it's a string column
+		// filter rules:
+		//   if enclosed in double quotes, it should be an exact search
+		//   if not, it should be a wildcard LIKE type search (we wil have to use regex)
+		//   if surrounded by / / then it is an explicit regex
+		retQuery = convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, querystr, "string", jrResult);
+	} else if (schemaType === Date) {
+		// it's a date column
+		// filter rules:
+		//  similar to numeric column
+		retQuery = convertReqQueryStringToAMongooseFindFilterNumeric(fkey, schemaType, querystr, "date", jrResult);
+	} else if (schemaType === mongoose.Schema.ObjectId) {
+		// exact match
+		retQuery = convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, querystr, "idstring", jrResult);
+	} else if (schemaType === Map) {
+		// can't filter this
+		retQuery = undefined;
+	} else if (schemaType === Boolean) {
+		// boolean
+		retQuery = convertReqQueryStringToAMongooseFindFilterBoolean(fkey, schemaType, querystr, jrResult);
+	} else {
+		jrResult.pushError("Search filter error: Unknown schema field type: " + schemaType.toString());
+	}
+
+	return retQuery;
+}
+//---------------------------------------------------------------------------
+
+
+
+//---------------------------------------------------------------------------
+function convertReqQueryStringToAMongooseFindFilterNumeric(fkey, schemaType, querystr, subType, jrResult) {
+	var valPat;
+	var mongoValFunc;
+
+	// numeric mongo operators
+	const operators = {
+		"&lt;": "$lt",
+		">": "$gt",
+		"&lt;=": "$lte",
+		">=": "$gte",
+		"=": "$eq",
+		"==": "$eq",
+		"!=": "$ne",
+		"!==": "$ne",
+		"!&lt;": "$gte",
+		"!>": "$lte",
+		"!&lt;=": "$gt",
+		"!>=": "$lt",
+	};
+
+	// eslint-disable-next-line no-useless-escape
+	var opChars = "\&lt;\>=\!";
+
+	if (subType === "integer") {
+		valPat = "[+-]{0,1}\\d+";
+		mongoValFunc = (strVal, jrResulti) => {
+			var num = Number(strVal);
+			if (Number.isNaN(num)) {
+				jrResult.pushError("Search filter error: Not a valid number: " + strVal);
+				num = undefined;
+			}
+			return num;
+		};
+	} else if (subType === "date") {
+		// eslint-disable-next-line no-useless-escape
+		valPat = "[\\d/\\.\\-]+";
+		mongoValFunc = (strVal, jrResulti) => {
+			var dateVal;
+			// is it a pure number
+			if (strVal.match(/^[\d]+$/)) {
+				var num = Number(strVal);
+				if (Number.isNaN(num)) {
+					jrResult.pushError("Search filter error: Not a valid number for date (days old) comparison: " + strVal);
+					num = undefined;
+				} else {
+					dateVal = new Date();
+					dateVal.setDate(dateVal.getDate() - num);
+				}
+			} else {
+				// try to parse as a date
+				try {
+					dateVal = new Date(strVal);
+				} catch (err) {
+					// doesn't throw an exception just drops through with invalid date
+				}
+				// check for invalid date
+				if (Number.isNaN(dateVal.getTime())) {
+					jrResult.pushError("Search filter error: Date filters should use numbers to indicate how many days in past, or date format YYYY-MM-DD.  Syntax error at: " + strVal);
+				}
+			}
+
+			return dateVal;
+		};
+	} else {
+		jrResult.pushError("Search filter error: Unknown numeric subtype in convertReqQueryStringToAMongooseFindFilterNumeric: " + subType);
+	}
+
+	const standaloneOpString = "$eq";
+	return convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaType, querystr, operators, opChars, valPat, mongoValFunc, standaloneOpString, jrResult);
+}
+
+
+function convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, querystr, subType, jrResult) {
+	var valPat;
+	var mongoValFunc;
+
+	// numeric mongo operators
+	const operators = {
+		"=": "",
+		"==": "",
+		"!=": "$not",
+		"!==": "$not",
+		// "=": "$eq",
+		// "==": "$eq",
+		// "!=": "$ne",
+		// "!==": "$ne",
+	};
+
+	// eslint-disable-next-line no-useless-escape
+	var opChars = "=!";
+
+	// eslint-disable-next-line no-useless-escape
+	if (subType === "string") {
+		valPat = "[^=!]+";
+		mongoValFunc = (strVal, jrResulti) => {
+			return convertReqQueryStringToAMongooseFindFilterMongoStrCmp(strVal, jrResult);
+		};
+	} else if (subType === "idstring") {
+		valPat = "[^=!]+";
+		mongoValFunc = (strVal, jrResulti) => {
+			if (jrhMongo.isValidMongooseObjectId(strVal)) {
+				return strVal;
+			}
+			jrResulti.pushError("Search filter error: Id value is improperly formatted");
+			return undefined;
+		};
+	} else {
+		jrResult.pushError("Search filter error: Unknown subtype in convertReqQueryStringToAMongooseFindFilterStringic: " + subType);
+	}
+
+	const standaloneOpString = "";
+	return convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaType, querystr, operators, opChars, valPat, mongoValFunc, standaloneOpString, jrResult);
+}
+
+
+
+
+function convertReqQueryStringToAMongooseFindFilterBoolean(fkey, schemaType, querystr, jrResult) {
+	var retv;
+
+	if (querystr === "true" || querystr === "1") {
+		retv = {
+			$eq: "true",
+		};
+	} else if (querystr === "false" || querystr === "0") {
+		retv = {
+			$ne: "true",
+		};
+	} else {
+		jrResult.pushError("Search filter error: Expected filter to be 'true' or 'false'.");
+		return undefined;
+	}
+
+	return retv;
+}
+
+
+
+function convertReqQueryStringToAMongooseFindFilterMongoStrCmp(strVal, jrResult) {
+	// help for string compare
+	// first let's see if its an explicit regex
+	var regex, regexMatch;
+	var retv;
+	regex = /^\/(.+)\/(.*)$/;
+	regexMatch = strVal.match(regex);
+	if (regexMatch) {
+		var regexMain = regexMatch[1];
+		var regexOptions = regexMatch[2];
+		try {
+			retv = new RegExp(regexMain, regexOptions);
+		} catch (error) {
+			// illegal regex error
+			jrResult.pushError("Search filter error: Illegal regular expression syntax: " + strVal);
+			return undefined;
+		}
+		return {
+			$regex: retv,
+		};
+	}
+
+	regex = /^"(.*)"$/;
+	regexMatch = strVal.match(regex);
+	if (regexMatch) {
+		// EXACT string match
+		var exactString = regexMatch[1];
+		return exactString;
+	}
+
+	// otherwise we want a LIKE type string
+
+	// create a regex that allows wild characters on left or right, by ESCAPING string
+	var queryStrEscaped = jrhMisc.regexEscapeStr(strVal);
+	try {
+		retv = new RegExp(queryStrEscaped, "im");
+	} catch (err) {
+		// illegal regex error
+		jrResult.pushError("Search filter error: Illegal filter string syntax, incompatible with regex escape: " + strVal);
+		return undefined;
+	}
+	return {
+		$regex: retv,
+	};
+}
+
+
+
+
+function convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaType, querystr, operators, opChars, valPat, mongoValFunc, standaloneOpString, jrResult) {
+	var opRegex = new RegExp("\\s*([" + opChars + "]+)\\s*(" + valPat + ")\\s*");
+	var valRegex = new RegExp("\\s*(" + valPat + ")\\s*");
+	// var nullRegex = /([!=]*)\s*\bnull\b/;
+	var nullRegex = /([!=]*)\s*\b(null|undefined)\b/;
+	//
+	var mongoOp, opVal, opValm;
+	var oneCondition;
+	var orSet = [];
+
+	// first split into comma separated values -- these are ORs
+	var andSplit = /\s+and\s+/;
+	var orSplit = /\s+or\s+|,/;
+
+	var orParts = querystr.split(orSplit);
+	orParts.forEach((orstr) => {
+		var andSet = [];
+
+		// ok now the set of unitary operator, or standalone items are combines as ANDS
+		// but we also allow separation of operators and standalones by &amp;&amp; to be used as an AND
+		// which is useful for strings
+
+		var andParts = orstr.split(andSplit);
+
+		andParts.forEach((str) => {
+			// operator expressions
+			if (opChars) {
+				str = str.replace(opRegex, (foundstr, g1, g2) => {
+					mongoOp = operators[g1];
+					if (mongoOp !== undefined) {
+						var obj = convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(fkey, g2, mongoOp, mongoValFunc, jrResult);
+						andSet.push(obj);
+					} else {
+						// operator not found, leave it alone
+						return foundstr;
+					}
+					// return "" to replace it with empty
+					return "";
+				});
+			}
+
+			// special value: null
+			str = str.replace(nullRegex, (foundstr, g1) => {
+				var obj = {};
+				oneCondition = {};
+				if (g1.indexOf("!") === -1) {
+					oneCondition.$eq = opValm;
+				} else {
+					oneCondition.$ne = opValm;
+				}
+				obj[fkey] = oneCondition;
+				andSet.push(obj);
+				// return "" to replace it with empty
+				return "";
+			});
+
+			// standalone values
+			str = str.replace(valRegex, (foundstr, g2) => {
+				mongoOp = standaloneOpString;
+				var obj = convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(fkey, g2, mongoOp, mongoValFunc, jrResult);
+				andSet.push(obj);
+				// return "" to replace it with empty
+				return "";
+			});
+
+			// anything left in string other than whitespace? if so we should consider it error?
+			str = str.trim();
+			if (str !== "") {
+				// error?
+				jrResult.pushError("Search filter error: Invalid syntax, unparsed: " + str);
+			}
+
+		});	// end of AND foreach
+
+		if (andSet.length === 0) {
+			// do nothing
+		} else if (andSet.length === 1) {
+			orSet.push(andSet[0]);
+		} else {
+			var andObj = {
+				$and: andSet,
+			};
+			orSet.push(andObj);
+		}
+	}); // end of OR foreach
+
+	if (orSet.length === 0) {
+		return undefined;
+	}
+	if (orSet.length === 1) {
+		return orSet[0];
+	}
+
+	var orObj = {
+		$or: orSet,
+	};
+	return orObj;
+}
+
+
+function convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(fkey, opVal, mongoOp, mongoValFunc, jrResult) {
+	var opValm;
+
+	// this is a bit messy, but we need to handle null carefully and weirdly
+	if (opVal === "null" || opVal === "undefined") {
+		opValm = null;
+		if (!mongoOp) {
+			mongoOp = "$eq";
+		} else if (mongoOp === "$not") {
+			mongoOp = "$ne";
+		} else if (mongoOp !== "$eq") {
+			jrResult.pushError("Search filter syntax error: Bad operator for use with null");
+		}
+	} else if (opVal === "!null" || opVal === "!undefined") {
+		opValm = null;
+		if (!mongoOp) {
+			mongoOp = "$ne";
+		} else if (mongoOp === "$eq") {
+			mongoOp = "$ne";
+		} else if (mongoOp === "$ne") {
+			mongoOp = "$eq";
+		} else if (mongoOp === "$not") {
+			mongoOp = "$eq";
+		} else {
+			jrResult.pushError("Search filter syntax error: Bad operator for use with null");
+		}
+	} else {
+		opValm = mongoValFunc(opVal, jrResult);
+	}
+	// if its UNDEFINED then an error happened, just return it
+	if (opValm === undefined) {
+		return undefined;
+	}
+	//
+	var obj = {};
+	if (mongoOp) {
+		var oneCondition = {};
+		oneCondition[mongoOp] = opValm;
+		obj[fkey] = oneCondition;
+	} else {
+		obj[fkey] = opValm;
+	}
+	return obj;
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+// export the class as the sole export
+module.exports = {
+	buildMongooseQueryFromReq,
+};
+
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.3</a> on Thu Nov 14 2019 00:45:10 GMT-0600 (Central Standard Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

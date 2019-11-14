@@ -1,18 +1,23 @@
-// jrlogger
-// v1.0.0 on 5/7/19 by mouser@donationcoder.com
-//
-// simple logging wrapper class that handles BOTH logging to file and conditional debugging info to console
-//
-// Uses Winston module for logging to file
-// Uses debug module for logging to console
-// Uses Morgan for logging express web http requests
+/**
+ * @module helpers/jrlog
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/7/19
 
+ * @description
+ * Logging support module
+ * ##### Notes
+ *  * Uses Winston module for logging to file
+ *  * Uses debug module for logging to console
+ *  * Uses Morgan for logging express web http requests
+ */
 
 "use strict";
 
 
 
 //---------------------------------------------------------------------------
+// modules
+
 // we use winston to do the actual work of logging
 const winston = require("winston");
 
@@ -33,7 +38,9 @@ const path = require("path");
 
 
 //---------------------------------------------------------------------------
-// debugging levels
+// constants
+
+// winston debugging levels
 // ideally every kind of log message type coming from app would be entered here
 // if we try to log one not here it will go into log as "errorUnknown" and log to error file
 const winstonCustomLevels = {
@@ -55,6 +62,9 @@ const winstonCustomLevels = {
 //---------------------------------------------------------------------------
 
 
+
+
+
 //---------------------------------------------------------------------------
 // module variables
 var winstonLogger;
@@ -69,7 +79,12 @@ var debugEnabled = false;
 
 
 
-//---------------------------------------------------------------------------
+/**
+ * Initialize values for the logging system to use
+ *
+ * @param {string} iserviceName - name of the application or process, for use in filename and console messages
+ * @param {string} ilogDir - base directory where log files should be created
+ */
 function setup(iserviceName, ilogDir) {
 	// save values
 	serviceName = iserviceName;
@@ -83,8 +98,11 @@ function setup(iserviceName, ilogDir) {
 
 
 //---------------------------------------------------------------------------
-// just a helper function for the server to setup file logging of web http express access log
-// it's here in this file just to have a central location for all logging setup stuff
+/**
+ * Setup the morgan logging middleware for express web framework, which is create an access file (like apache access log).
+ * Called by our server setup code when registering express middleware.
+ * @returns the morgan middleware object to register with express
+ */
 function setupMorganMiddlewareForExpressWebAccessLogging() {
 	const morganMode = "combined";
 	const morganOutputAbsoluteFilePath = calcLogFilePath("access");
@@ -99,10 +117,21 @@ function setupMorganMiddlewareForExpressWebAccessLogging() {
 
 
 //---------------------------------------------------------------------------
+/**
+ * Set debug mode on or off.
+ * This controls whether certain debug functions (those ending in 'c' for conditional) actually generate output
+ *
+ * @param {boolean} val
+ */
 function setDebugEnabled(val) {
 	debugEnabled = val;
 }
 
+/**
+ * Accessor for the debug mode
+ *
+ * @returns true if debugging is enabled
+ */
 function getDebugEnabled() {
 	return debugEnabled;
 }
@@ -113,12 +142,37 @@ function getDebugEnabled() {
 
 //---------------------------------------------------------------------------
 // just pass through stuff to winston
+
+/**
+ * Passthrough log function to winston logger, to log an item to file
+ *
+ * @param {*} args
+ * @returns result of winston log command
+ */
 function log(...args) { return winstonLogger.log(...args); }
 
+/**
+ * Passthrough log("info") function to winston logger, to log an item to file
+ *
+ * @param {*} args
+ * @returns result of winston log command
+ */
 function info(...args) { return winstonLogger.log("info", ...args); }
 
+/**
+ * Passthrough log("warning") function to winston logger, to log an item to file
+ *
+ * @param {*} args
+ * @returns result of winston log command
+ */
 function warning(...args) { return winstonLogger.log("warning", ...args); }
 
+/**
+ * Passthrough log("error") function to winston logger, to log an item to file
+ *
+ * @param {*} args
+ * @returns result of winston log command
+ */
 function error(...args) { return winstonLogger.log("error", ...args); }
 
 /*
@@ -135,13 +189,33 @@ function error(...args) { return winstonLogger.error(...args); }
 //---------------------------------------------------------------------------
 // pass through to debug function for quick and dirty screen display
 
-// simple debug passthrough
+/**
+ * Passthrough to debug module function to show some info on console
+ *
+ * @param {*} args
+ * @returns result of debug module function
+ */
 function debug(...args) { return debugfunc(...args); }
 
+
+/**
+ * Invoke to debug module function after formatting string using util.format
+ * @example debugf("%s:%d", str, val);
+ *
+ * @param {string} string - string to pass to util.format
+ * @param {*} args - arguments for util.format
+ * @returns result of debug module function
+ */
 // formatted string ("%s:%d", str, val)
 function debugf(str, ...args) { return debugfunc(util.format(str, ...args)); }
 
-// debug dump an object with optional title
+
+/**
+ * Dump an object with its properties, with an optional message
+ *
+ * @param {object} obj - object to dump
+ * @param {string} msg - message to show before dumping object (ignored if null/undefined)
+ */
 function debugObj(obj, msg) {
 	// just helper log function
 	if (msg) {
@@ -150,16 +224,55 @@ function debugObj(obj, msg) {
 		debug(objToString(obj, false));
 	}
 }
+//---------------------------------------------------------------------------
 
 
-// conditional versions
+//---------------------------------------------------------------------------
+/**
+ * Conditional passthrough to debug module function to show some info on console.
+ * Does nothing if debug mode is off.
+ *
+ * @param {*} args
+ * @returns result of debug module function
+ */
+function cdebug(...args) {
+	if (getDebugEnabled()) {
+		return debug(...args);
+	}
+	return null;
+}
 
-function cdebug(...args) { if (getDebugEnabled()) return debug(...args); return null; }
 
-function cdebugf(str, ...args) { if (getDebugEnabled()) return debugf(str, ...args); return null; }
+/**
+ * Conditional call to debug module function after formatting string using util.format
+ * Does nothing if debug mode is off.
+ * @example cdebugf("%s:%d", str, val);
+ *
+ * @param {string} string - string to pass to util.format
+ * @param {*} args - arguments for util.format
+ * @returns result of debug module function
+ */
+function cdebugf(str, ...args) {
+	if (getDebugEnabled()) {
+		return debugf(str, ...args);
+	}
+	return null;
+}
 
-// debug an object
-function cdebugObj(obj, msg) { if (getDebugEnabled()) return debugObj(obj, msg); return null; }
+
+/**
+ * Conditional dump an object with its properties, with an optional message
+ * Does nothing if debug mode is off.
+ *
+ * @param {object} obj - object to dump
+ * @param {string} msg - message to show before dumping object (ignored if null/undefined)
+ */
+function cdebugObj(obj, msg) {
+	if (getDebugEnabled()) {
+		return debugObj(obj, msg);
+	}
+	return null;
+}
 //---------------------------------------------------------------------------
 
 
@@ -167,10 +280,16 @@ function cdebugObj(obj, msg) { if (getDebugEnabled()) return debugObj(obj, msg);
 
 
 //---------------------------------------------------------------------------
-// helper for debugging object
-
-// see https://stackoverflow.com/questions/10729276/how-can-i-get-the-full-object-in-node-jss-console-log-rather-than-object
-// see https://nodejs.org/api/util.html#util_util_inspect_object_options
+/**
+ * Stringify an object nicely for display on console
+ * ##### Notes
+ *  * See <a href="https://stackoverflow.com/questions/10729276/how-can-i-get-the-full-object-in-node-jss-console-log-rather-than-object">stackoverflow</a>
+ *  * See <a href="https://nodejs.org/api/util.html#util_util_inspect_object_options">nodejs docs</a>
+ *
+ * @param {*} obj - the object to stringify
+ * @param {*} flagCompact - if true then we use a compact single line output format
+ * @returns string suitable for debug/diagnostic display
+ */
 function objToString(obj, flagCompact) {
 	// return util.inspect(obj, false, null, true /* enable colors */);
 	var options = {};
@@ -199,19 +318,25 @@ function objToString(obj, flagCompact) {
 
 
 //---------------------------------------------------------------------------
-// dblog is a mirror of our server.log function that adds log object to file (see server.js);
-// it basically saves a copy of a database log object to a file logger
-function dblog(type, message, severity, userid, ip, extraData) {
+/**
+ * Log (to winston file logger) a message that mirrors the database log items the server normally logs to database.
+ * This is used to create a plain file of log items that parallels our database log
+ *
+ * @param {string} type - the kind of message (ideally defined in winstonCustomLevels; if not it will be logged to file as an UnknownError)
+ * @param {string} message - the main message to log
+ * @param {int} severity - severity level from 0 (least important) to 100 (most important)
+ * @param {string} userid - userid of logged in user of request (or undefined/null)
+ * @param {string} ip - ip of user request (or undefined/null)
+ * @param {obj} extraData - stringified with JSON.stringify
+ */
+function logStdDbMessage(type, message, severity, userid, ip, extraData) {
 	var msg;
 
-	// if winston has a registered error level matching the type, we use it
-	// if NOT, we consider this an unknownError type of message (it will got to error log)
-	var level;
+	// ideally the type is the same as a registered winston logging level; if not we have to make do
 	var extras = "";
-	if (isErrorTypeValidWinstonLevel(type)) {
-		level = type;
-	} else {
-		level = "errorUnknown";
+	var level = convertErrorTypeToWinstonLevel(type);
+	if (level !== type) {
+		// since the log level and type string are different, add the actual type to the message since it does not match level
 		extras = util.format(" type='%s'", type);
 	}
 	if (extraData) {
@@ -223,8 +348,21 @@ function dblog(type, message, severity, userid, ip, extraData) {
 }
 
 
-function isErrorTypeValidWinstonLevel(type) {
-	return (winstonCustomLevels[type]);
+/**
+ * Returns a registered winston logging level to use for this type.
+ * If the type string is a known winstonCustomLevels we can use it directly as the level; if not, winston will throw an error if we try to use this as the log level, so instead caller will use UnknownError as the level
+ * @private
+ *
+ * @param {string} type
+ * @returns valid winston logging level to use
+ */
+function convertErrorTypeToWinstonLevel(type) {
+	if (winstonCustomLevels[type]) {
+		// the type is a known level, return it
+		return type;
+	}
+	// not found, so we should return generic level
+	return "errorUnknown";
 }
 //---------------------------------------------------------------------------
 
@@ -270,7 +408,11 @@ function isErrorTypeValidWinstonLevel(type) {
 
 
 
-//---------------------------------------------------------------------------
+/**
+ * Setp the winston logging module and register our custom levels, etc.
+ *
+ * @returns a winston logging object
+ */
 function setupWinston() {
 	// create the WINSTON logger
 	// create transports and initialize
@@ -290,6 +432,7 @@ function setupWinston() {
 		db: "grey",
 	};
 
+	// create the logger
 	winstonLogger = winston.createLogger({
 		levels: winstonCustomLevels,
 		// level: "info",
@@ -313,9 +456,9 @@ function setupWinston() {
 		],
 	});
 
-
+	// currently we use a different module for console logging
 	if (false) {
-		// setup console logging?
+		// setup console logging
 		winstonLogger.add(new winston.transports.Console({
 			format: winston.format.combine(
 				winston.format.colorize(),
@@ -327,6 +470,7 @@ function setupWinston() {
 		winston.addColors(customColors);
 	}
 
+	// we may in the future want to create additional transports to save logs to different places with different filters, etc.
 	if (false) {
 		// create a db file channel just for DB log messages?
 		// doesnt work because this catched stuff above this level too
@@ -349,12 +493,16 @@ function setupWinston() {
 //---------------------------------------------------------------------------
 
 
-//---------------------------------------------------------------------------
+/**
+ * Setup the debug module logger for console messages
+ *
+ * @returns the debug module created function for invoking debug statement
+ */
 function setupDebugmod() {
 	// now create the simple console logger from debug module
 	debugfunc = debugmod(serviceName);
 
-	// force it on for us
+	// force it on for our service
 	debugmod.enable(serviceName);
 
 	// return it
@@ -369,7 +517,13 @@ function setupDebugmod() {
 
 
 //---------------------------------------------------------------------------
-// log file path helper
+/**
+ * Given a base filename (typically the app or service name) and an optional suffix (when an app wants multiple log files for different purposes), calculate its full file path by adding base directory and .log extension.
+ * @private
+ *
+ * @param {string} fileSuffix
+ * @returns full file path
+ */
 function calcLogFilePath(fileSuffix) {
 	var filePath = path.join(logDir, serviceName);
 	if (fileSuffix !== "") {
@@ -412,5 +566,5 @@ module.exports = {
 	cdebug, cdebugf, cdebugObj,
 
 	objToString,
-	dblog,
+	logStdDbMessage,
 };

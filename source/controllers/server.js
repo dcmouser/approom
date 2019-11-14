@@ -1667,7 +1667,7 @@ class AppRoomServer {
 		});
 
 		// first log it to file (seems less error prone) using our normal system that makes us log to file?
-		jrlog.dblog(type, message, severity, userid, ip, extraData);
+		jrlog.logStdDbMessage(type, message, severity, userid, ip, extraData);
 
 		// now save it to database
 		await log.dbSave();

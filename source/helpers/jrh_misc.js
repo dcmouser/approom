@@ -1,5 +1,5 @@
 /**
- * @module helpers/jrhMisc
+ * @module helpers/jrh_misc
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 5/7/19
 
