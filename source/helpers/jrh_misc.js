@@ -1,10 +1,10 @@
 /**
- * @module helpers/jrhelpers
+ * @module helpers/jrhMisc
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 5/7/19
 
  * @description
- * Collection of my general purpose helper functions that could be used in various projects.
+ * Collection of general purpose helper functions
 */
 
 "use strict";
@@ -93,6 +93,26 @@ function getNonFalseValueOrDefault(val, defaultVal) {
 	}
 	return val;
 }
+
+
+/**
+ * If val is not undefined and not null, return it; otherwise return default val.
+ * ##### Notes
+ *  * The intention of this function is to be used to check if a value was provided for some option, and use a default if not.
+ *  * This can be confusing if the false value is passed in and caller expects to get it back instead of the defaultVal
+ *  * The main reason to use a function for this instead of just using a line in code testing truthiness of val, is to help us locate these kind of tests in code via a search, since they are prone to issues.
+ *
+ * @param {*} val
+ * @param {*} defaultVal
+ * @returns val [if it evaluates to true] else defaultVal
+ */
+function getNonNullValueOrDefault(val, defaultVal) {
+	if (val === undefined || val === null) {
+		return defaultVal;
+	}
+	return val;
+}
+
 
 
 /**
@@ -246,8 +266,7 @@ function getPreciseNowString() {
  * Replace special characters in string so it can be used in regex.
  * This is useful when we want to use a user-provided string in a regular expression and so we need to validate/escape it first.
  * It is used in our admin crud area filters to convert a simple user substring into a wildcard search string
- * ##### TODO
- *  * check this for any security vulnerabilities
+ * @todo Check this for any security vulnerabilities
  *
  * @param {string} str
  * @returns escaped version of string suitable for use inside a regular expression (i.e. no unescaped regex characters)
@@ -398,6 +417,7 @@ module.exports = {
 	asyncAwaitForEachFunctionCall,
 
 	getNonFalseValueOrDefault,
+	getNonNullValueOrDefault,
 	firstCoercedTrueValue,
 	isObjectEmpty,
 

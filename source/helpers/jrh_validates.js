@@ -1,10 +1,10 @@
 /**
- * @module helpers/jrvalidators
+ * @module helpers/jrh_validate
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 6/27/19
 
  * @description
- * Collection of my general helper functions for handlebars template system
+ * Collection of helper functions for handlebars template system
 */
 
 "use strict";

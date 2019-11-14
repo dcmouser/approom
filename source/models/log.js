@@ -13,7 +13,7 @@ const mongoose = require("mongoose");
 const ModelBaseMongooseMinimal = require("./modelBaseMongooseMinimal");
 
 // helpers
-const jrhmisc = require("../helpers/jrhmisc");
+const jrhText = require("../helpers/jrh_text");
 
 
 
@@ -104,6 +104,18 @@ class LogModel extends ModelBaseMongooseMinimal {
 				filterSize: 0,
 				readOnly: ["edit"],
 			},
+		};
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	// defaults for crud list
+	static getCrudDefaults() {
+		return {
+			sortField: "creationDate",
+			sortDir: "desc",
 		};
 	}
 	//---------------------------------------------------------------------------

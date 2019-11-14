@@ -16,7 +16,7 @@ const UserModel = require("./user");
 // helpers
 const jrlog = require("../helpers/jrlog");
 const JrResult = require("../helpers/jrresult");
-const jrhelpersmdb = require("../helpers/jrhelpersmdb");
+const jrhMongo = require("../helpers/jrh_mongo");
 
 
 
@@ -235,7 +235,7 @@ class LoginModel extends ModelBaseMongoose {
 			eventNewlyLinked = true;
 		} else {
 			// login already existed -- but did it have the right userId already?
-			if (userId && !jrhelpersmdb.mongoIdEqual(login.getUserId(), userId)) {
+			if (userId && !jrhMongo.mongoIdEqual(login.getUserId(), userId)) {
 				// ok we need to update login data to point to the new user
 				// ATTN: We expect this case to happen when login.userId is empty;
 				// but is it possible for us to get here with login.userId with a real user?

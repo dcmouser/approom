@@ -13,11 +13,11 @@ const assert = require("assert");
 const ModelBaseMongoose = require("./modelBaseMongoose");
 
 // our helper modules
-const jrhelpers = require("../helpers/jrhelpers");
+const jrhMisc = require("../helpers/jrh_misc");
 const jrlog = require("../helpers/jrlog");
-const jrcrypto = require("../helpers/jrcrypto");
+const jrhCrypto = require("../helpers/jrh_crypto");
 const JrResult = require("../helpers/jrresult");
-const jrvalidators = require("../helpers/jrvalidators");
+const jrhValidate = require("../helpers/jrh_validates");
 
 // controllers
 const arserver = require("../controllers/server");
@@ -332,14 +332,14 @@ class UserModel extends ModelBaseMongoose {
 	async testPlaintextPassword(passwordPlaintext) {
 		// return true if password matches, false if not or if any error
 		var passwordObj = this.getPasswordObj();
-		var bretv = await jrcrypto.testPlaintextPassword(passwordPlaintext, passwordObj);
+		var bretv = await jrhCrypto.testPlaintextPassword(passwordPlaintext, passwordObj);
 		return bretv;
 	}
 
 
 	// static hash password helper
 	static async hashPlaintextPasswordToObj(passwordPlaintext) {
-		var oretv = await jrcrypto.hashPlaintextPasswordToObj(passwordPlaintext);
+		var oretv = await jrhCrypto.hashPlaintextPasswordToObj(passwordPlaintext);
 		return oretv;
 	}
 
@@ -352,7 +352,7 @@ class UserModel extends ModelBaseMongoose {
 	}
 
 	static passwordHashToObj(passwordHashed) {
-		var passwordObj = jrhelpers.createObjectFromJsonParse(passwordHashed, {});
+		var passwordObj = jrhMisc.createObjectFromJsonParse(passwordHashed, {});
 		return passwordObj;
 	}
 
@@ -619,9 +619,9 @@ class UserModel extends ModelBaseMongoose {
 	static async createUniqueUserFromBridgedLogin(bridgedLoginObj, flagUpdateLoginDate) {
 		// this could be tricky because we may have collisions in our desired username, email, etc.
 		var userObj = {
-			username: jrhelpers.getNonFalseValueOrDefault(bridgedLoginObj.getExtraData("username"), undefined),
-			realName: jrhelpers.getNonFalseValueOrDefault(bridgedLoginObj.getExtraData("realName"), undefined),
-			email: jrhelpers.getNonFalseValueOrDefault(bridgedLoginObj.getExtraData("email"), undefined),
+			username: jrhMisc.getNonFalseValueOrDefault(bridgedLoginObj.getExtraData("username"), undefined),
+			realName: jrhMisc.getNonFalseValueOrDefault(bridgedLoginObj.getExtraData("realName"), undefined),
+			email: jrhMisc.getNonFalseValueOrDefault(bridgedLoginObj.getExtraData("email"), undefined),
 			passwordHashed: undefined,
 		};
 		// modify or tweak username if its not unique
@@ -764,7 +764,7 @@ class UserModel extends ModelBaseMongoose {
 
 	static randomUsernameSuffix() {
 		// just return some random letters to add to a username that has a clash with an existing one
-		var str = jrcrypto.genRandomStringHumanEasy(DefRandomUsernameRandomSuffixLength);
+		var str = jrhCrypto.genRandomStringHumanEasy(DefRandomUsernameRandomSuffixLength);
 		if (DefUsernameAlwaysLowercase) {
 			str = str.toLowerCase();
 		}
@@ -862,9 +862,9 @@ class UserModel extends ModelBaseMongoose {
 		// note that when validate password, we ALLOW it to be provided blank, BUT we tell validateMergeAsync that it is required field FOR THE OBJECT; normally flagRequired is passed from validateMergeAsync to form validate function, but in this case it's different since we don't want user to be able to REMOVE password
 		await this.validateMergeAsync(jrResult, "password", "passwordHashed", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await UserModel.validatePlaintextPasswordConvertToHash(jrr, inVal, false, true));
 
-		await this.validateMergeAsync(jrResult, "realName", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateRealName(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrResult, "realName", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateRealName(jrr, keyname, inVal, flagRequired));
 		await this.validateMergeAsync(jrResult, "email", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => this.validateEmail(jrr, inVal, true, flagRrequiredEmail, obj));
-		await this.validateMergeAsync(jrResult, "apiCode", "", source, saveFields, preValidatedFields, obj, false, async (jrr, keyname, inVal, flagRequired) => jrvalidators.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrResult, "apiCode", "", source, saveFields, preValidatedFields, obj, false, async (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
 
 		// base fields shared between all? (notes, etc.)
 		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj);
@@ -874,7 +874,7 @@ class UserModel extends ModelBaseMongoose {
 			flagTrustEmailChange = true;
 		} else if (flagUserIsSiteAdmin) {
 			var keynameEmailBypass = "emailBypassVerify";
-			flagTrustEmailChange = jrvalidators.validateTrueFalse(jrResult, keynameEmailBypass, source[keynameEmailBypass], false);
+			flagTrustEmailChange = jrhValidate.validateTrueFalse(jrResult, keynameEmailBypass, source[keynameEmailBypass], false);
 		}
 
 		if (flagIsNew && !flagTrustEmailChange) {
@@ -1148,7 +1148,7 @@ class UserModel extends ModelBaseMongoose {
 
 	async resetUpdateApiCode() {
 		// update the apicode which will invalidate any previously issues api access tokens for user
-		this.apiCode = jrhelpers.getPreciseNowString();
+		this.apiCode = jrhMisc.getPreciseNowString();
 		// save it to database
 		var userdoc = await this.dbSave();
 		if (userdoc) {

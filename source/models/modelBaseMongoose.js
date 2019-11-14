@@ -11,11 +11,11 @@ const mongoose = require("mongoose");
 
 // our helper modules
 const jrlog = require("../helpers/jrlog");
-const jrhelpers = require("../helpers/jrhelpers");
-const jrhelpersmdb = require("../helpers/jrhelpersmdb");
-const jrhmisc = require("../helpers/jrhmisc");
+const jrhMisc = require("../helpers/jrh_misc");
+const jrhMongo = require("../helpers/jrh_mongo");
+const jrhText = require("../helpers/jrh_text");
 const JrResult = require("../helpers/jrresult");
-const jrvalidators = require("../helpers/jrvalidators");
+const jrhValidate = require("../helpers/jrh_validates");
 
 
 
@@ -127,6 +127,18 @@ class ModelBaseMongoose {
 
 
 
+	//---------------------------------------------------------------------------
+	// defaults for crud list
+	static getCrudDefaults() {
+		return {
+			sortField: "_id",
+			sortDir: "asc",
+		};
+	}
+	//---------------------------------------------------------------------------
+
+
+
 
 
 	//---------------------------------------------------------------------------
@@ -172,9 +184,9 @@ class ModelBaseMongoose {
 		var keyHideArray;
 		var visfunc, isVisible;
 
-		await jrhelpers.asyncAwaitForEachFunctionCall(keys, async (key) => {
+		await jrhMisc.asyncAwaitForEachFunctionCall(keys, async (key) => {
 			keyHideArray = modelSchemaExtra[key].hide;
-			if (jrhelpers.isInAnyArray(viewType, keyHideArray)) {
+			if (jrhMisc.isInAnyArray(viewType, keyHideArray)) {
 				retKeys.push(key);
 			} else {
 				visfunc = modelSchemaExtra[key].visibleFunction;
@@ -324,7 +336,7 @@ class ModelBaseMongoose {
 		}
 		// success
 		// we don't push a success result here because we would see it in operations we dont want messages on
-		// jrResult.pushSuccess(this.getmodelClass().getNiceName() + " saved on " + jrhelpers.getNiceNowString() + ".");
+		// jrResult.pushSuccess(this.getmodelClass().getNiceName() + " saved on " + jrhMisc.getNiceNowString() + ".");
 		return retv;
 	}
 	//---------------------------------------------------------------------------
@@ -599,11 +611,11 @@ class ModelBaseMongoose {
 
 	static validateModelFielDisbled(jrResult, key, val, flagRequired) {
 		// the disabled field for resource models must be a postitive integer (0 meaning not disabled, higher than 0 various flavors of being a disabled resource)
-		return jrvalidators.validateIntegerRange(jrResult, key, val, 0, 999999, flagRequired);
+		return jrhValidate.validateIntegerRange(jrResult, key, val, 0, 999999, flagRequired);
 	}
 
 	static validateModelFieldId(jrResult, val) {
-		if (!jrhelpersmdb.isValidMongooseObjectId(val)) {
+		if (!jrhMongo.isValidMongooseObjectId(val)) {
 			jrResult.pushError("No valid id specified.");
 			return null;
 		}
@@ -798,20 +810,23 @@ class ModelBaseMongoose {
 		// headers for list grid
 		var gridHeaders = [];
 
+		// default sorting?
+		var crudDefaults = this.getCrudDefaults();
+
 		// options for filter construction
 		var filterOptions = {
 			defaultPageSize: 10,
 			minPageSize: 1,
 			maxPageSize: 1000,
-			defaultSortField: "_id",
-			defaultSortDir: "asc",
+			defaultSortField: jrhMisc.getNonNullValueOrDefault(crudDefaults.sortField, "_id"),
+			defaultSortDir: jrhMisc.getNonNullValueOrDefault(crudDefaults.sortDir, "desc"),
 			alwaysFilter: [],
 			protectedFields,
 			hiddenFields,
 		};
 
-		const jrFindFilter = require("../helpers/jrfindfilter");
-		var { query, queryOptions, queryUrlData } = jrFindFilter.buildMongooseQueryFromReq(filterOptions, gridSchema, req, jrResult);
+		const jrhMongoFilter = require("../helpers/jrh_mongo_filter");
+		var { query, queryOptions, queryUrlData } = jrhMongoFilter.buildMongooseQueryFromReq(filterOptions, gridSchema, req, jrResult);
 
 		var queryProjection = "";
 
@@ -909,7 +924,7 @@ class ModelBaseMongoose {
 	static async validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj) {
 		// base fields shared among most models
 		await this.validateMergeAsync(jrResult, "disabled", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => this.validateModelFielDisbled(jrr, keyname, inVal, flagRequired));
-		await this.validateMergeAsync(jrResult, "notes", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrResult, "notes", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
 	}
 	//---------------------------------------------------------------------------
 
@@ -936,7 +951,7 @@ class ModelBaseMongoose {
 			}
 			if (viewType === "edit") {
 				var flagExistingIsNonBlank = (obj && (obj.passwordHashed !== undefined && obj.passwordHashed !== null && obj.password !== ""));
-				return jrhmisc.jrHtmlFormInputPassword("password", obj, flagRequired, flagExistingIsNonBlank);
+				return jrhText.jrHtmlFormInputPassword("password", obj, flagRequired, flagExistingIsNonBlank);
 			}
 			if (viewType === "list") {
 				if (isLoggedInUserSiteAdmin) {

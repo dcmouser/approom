@@ -1,18 +1,18 @@
 /**
- * @module helpers/jrhgrid
+ * @module helpers/jrh_grid
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 6/21/19
 
  * @description
- * Collection of my helper functions for creating general purpose html grids of data
+ * Collection of helper functions for creating general purpose html grids of data
 */
 
 "use strict";
 
 
 // our helper modules
-const jrhelpers = require("./jrhelpers");
-const jrhmisc = require("./jrhmisc");
+const jrhMisc = require("./jrh_misc");
+const jrhText = require("./jrh_text");
 
 
 
@@ -21,8 +21,7 @@ const jrhmisc = require("./jrhmisc");
 
 /**
  * Builds a grid table/list and form inputs for working with it
- * ##### ToDo
- *  * Add info about where listHelperData comes from
+ * @todo Add info about where listHelperData comes from
  *
  * @param {object} req - express request object
  * @param {obj} listHelperData - data to put in the grid
@@ -79,7 +78,7 @@ async function jrGridList(req, listHelperData) {
 		`;
 
 	// debug extra stuff
-	rethtml += "\n<br/><hr/>\n" + jrhmisc.jrBootstrapCollapseBox("Table Debug", listHelperData, "");
+	rethtml += "\n<br/><hr/>\n" + jrhText.jrBootstrapCollapseBox("Table Debug", listHelperData, "");
 
 	// return it as raw html
 	return rethtml;
@@ -185,8 +184,8 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 				<tr>
 				`;
 		// item row
-		await jrhelpers.asyncAwaitForEachFunctionCall(headerKeys, async (key) => {
-			if (jrhelpers.isInAnyArray(key, hiddenFields)) {
+		await jrhMisc.asyncAwaitForEachFunctionCall(headerKeys, async (key) => {
+			if (jrhMisc.isInAnyArray(key, hiddenFields)) {
 				return;
 			}
 
@@ -448,7 +447,7 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 
 	var onclick;
 	headerKeys.forEach((key) => {
-		if (jrhelpers.isInAnyArray(key, hiddenFields)) {
+		if (jrhMisc.isInAnyArray(key, hiddenFields)) {
 			return;
 		}
 		//
@@ -463,7 +462,7 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 			rethtml += `
 					<th scope="col"> &nbsp; </th>
 				`;
-		} else if (false && jrhelpers.isInAnyArray(key, protectedFields)) {
+		} else if (false && jrhMisc.isInAnyArray(key, protectedFields)) {
 			rethtml += `
 					<th scope="col">${key}</th>
 				`;
@@ -514,7 +513,7 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 				<tr>
 		`;
 	headerKeys.forEach((key) => {
-		if (jrhelpers.isInAnyArray(key, hiddenFields)) {
+		if (jrhMisc.isInAnyArray(key, hiddenFields)) {
 			return;
 		}
 		if (key === "_checkbox") {
@@ -527,7 +526,7 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 			rethtml += `
 					<th scope="col"> &nbsp; </th>
 				`;
-		} else if (jrhelpers.isInAnyArray(key, protectedFields)) {
+		} else if (jrhMisc.isInAnyArray(key, protectedFields)) {
 			rethtml += `
 					<th scope="col">&nbsp;</th>
 				`;
@@ -536,7 +535,7 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 			if (val === undefined) {
 				val = "";
 			} else {
-				val = jrhelpers.makeSafeForFormInput(val);
+				val = jrhMisc.makeSafeForFormInput(val);
 			}
 			var onkeydown = "jrGridGenericOnEnterRefresh(event, '" + queryUrlData.tableId + "', this)";
 			var size = listHelperData.modelClass.getSchemaExtraFieldVal(key, "filterSize", defaultFilterInputSize);

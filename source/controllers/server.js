@@ -34,6 +34,7 @@ const passportJwt = require("passport-jwt");
 const path = require("path");
 const fs = require("fs");
 const assert = require("assert");
+const util = require("util");
 
 // misc 3rd party modules
 const gravatar = require("gravatar");
@@ -42,13 +43,13 @@ const gravatar = require("gravatar");
 const nodemailer = require("nodemailer");
 
 // our helper modules
-const jrhelpers = require("../helpers/jrhelpers");
-const jrhelpersmdb = require("../helpers/jrhelpersmdb");
-const jrhelpersexpress = require("../helpers/jrhelpersexpress");
+const jrhMisc = require("../helpers/jrh_misc");
+const jrhMongo = require("../helpers/jrh_mongo");
+const jrhExpress = require("../helpers/jrh_express");
 const jrlog = require("../helpers/jrlog");
 const jrconfig = require("../helpers/jrconfig");
 const JrResult = require("../helpers/jrresult");
-const jrhandlebars = require("../helpers/jrhandlebars");
+const jrhHandlebars = require("../helpers/jrh_handlebars");
 
 // approomserver globals
 const arGlobals = require("../approomglobals");
@@ -173,7 +174,7 @@ class AppRoomServer {
 		jrlog.debugf("%s v%s (%s) by %s", arGlobals.programName, arGlobals.programVersion, arGlobals.programDate, arGlobals.programAuthor);
 
 		// try to get server ip
-		var serverIp = jrhelpers.getServerIpAddress();
+		var serverIp = jrhMisc.getServerIpAddress();
 		jrconfig.setServerFilenamePrefixFromServerIp(serverIp);
 		jrlog.debugf("Running on server: %s", serverIp);
 
@@ -185,8 +186,8 @@ class AppRoomServer {
 		jrconfig.setOverrideOptions(arGlobals.overrideOptions);
 		jrconfig.setEnvList(arGlobals.envListOptions);
 
-		// DEFAULT base directory to look for config files -- caller can modify this
-		jrconfig.setConfigDir(this.getBaseDir());
+		// Set base directory to look for config files -- caller can modify this, and discover them
+		jrconfig.setConfigDirAndDiscoverFiles(this.getBaseDir());
 	}
 
 
@@ -710,7 +711,7 @@ class AppRoomServer {
 		// create an http or https server and listen
 		var expressServer;
 
-		var normalizedPort = jrhelpersexpress.normalizePort(port);
+		var normalizedPort = jrhExpress.normalizePort(port);
 
 		if (flagHttps) {
 			expressServer = https.createServer(options, this.expressApp);
@@ -853,9 +854,9 @@ class AppRoomServer {
 	}
 
 	forgetLastSessionVerification(req) {
-		jrhelpersexpress.forgetSessionVar(req, "lastVerificationId");
-		jrhelpersexpress.forgetSessionVar(req, "lastVerificationCodePlaintext");
-		jrhelpersexpress.forgetSessionVar(req, "lastVerificationDate");
+		jrhExpress.forgetSessionVar(req, "lastVerificationId");
+		jrhExpress.forgetSessionVar(req, "lastVerificationCodePlaintext");
+		jrhExpress.forgetSessionVar(req, "lastVerificationDate");
 	}
 	//---------------------------------------------------------------------------
 
@@ -1064,11 +1065,11 @@ class AppRoomServer {
 		const thisArserver = this;
 
 		// run and wait for passport.authenticate async
-		var userPassport = await jrhelpersexpress.asyncPasswordAuthenticate({}, provider, providerNiceLabel, req, res, next, jrResult);
+		var userPassport = await jrhExpress.asyncPasswordAuthenticate({}, provider, providerNiceLabel, req, res, next, jrResult);
 
 		// run and wait for passport.login async
 		if (!jrResult.isError()) {
-			await jrhelpersexpress.asyncPasswordReqLogin(userPassport, "Error while authenticating user " + providerNiceLabel, req, jrResult);
+			await jrhExpress.asyncPasswordReqLogin(userPassport, "Error while authenticating user " + providerNiceLabel, req, jrResult);
 		}
 
 
@@ -1159,7 +1160,7 @@ class AppRoomServer {
 		var user;
 
 		// run and wait for passport.authenticate async
-		var userPassport = await jrhelpersexpress.asyncPasswordAuthenticate({ session: false }, provider, providerNiceLabel, req, res, next, jrResult);
+		var userPassport = await jrhExpress.asyncPasswordAuthenticate({ session: false }, provider, providerNiceLabel, req, res, next, jrResult);
 
 		// error?
 		if (jrResult.isError()) {
@@ -1201,7 +1202,7 @@ class AppRoomServer {
 
 		try {
 			// run login using async function wrapper
-			await jrhelpersexpress.asyncPasswordReqLogin(userPassport, "Authentication login error", req, jrResult);
+			await jrhExpress.asyncPasswordReqLogin(userPassport, "Authentication login error", req, jrResult);
 
 			if (!jrResult.isError()) {
 				// update login date and save it
@@ -1274,10 +1275,10 @@ class AppRoomServer {
 		// handlebar stuff
 
 		// create general purpose handlebar helper functions we can call
-		jrhandlebars.setupJrHandlebarHelpers();
+		jrhHandlebars.setupJrHandlebarHelpers();
 
 		// parse and make available partials from files
-		jrhandlebars.loadPartialFiles(this.getBaseSubDir("views/partials"), "");
+		jrhHandlebars.loadPartialFiles(this.getBaseSubDir("views/partials"), "");
 	}
 
 	getViewPath() {
@@ -1344,7 +1345,7 @@ class AppRoomServer {
 		if (retv.rejected.length === 0) {
 			// success!
 			if (mailobj.revealEmail) {
-				msg = "Mail sent to " + jrhelpers.stringArrayToNiceString(retv.accepted) + ".";
+				msg = "Mail sent to " + jrhMisc.stringArrayToNiceString(retv.accepted) + ".";
 			} else {
 				msg = "Mail sent.";
 			}
@@ -1352,7 +1353,7 @@ class AppRoomServer {
 		}
 		// error
 		if (mailobj.revealEmail) {
-			msg = "Failed to send email to " + jrhelpers.stringArrayToNiceString(retv.rejected) + ".";
+			msg = "Failed to send email to " + jrhMisc.stringArrayToNiceString(retv.rejected) + ".";
 		} else {
 			msg = "Failed to send email.";
 		}
@@ -1480,6 +1481,9 @@ class AppRoomServer {
 		// now make the express servers (http AND/OR https)
 		this.createExpressServersAndListen();
 
+		// now create a log entry about the server starting up
+		await this.logStartup();
+
 		// done setup
 		return true;
 	}
@@ -1605,6 +1609,39 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 
 
+
+
+
+	//---------------------------------------------------------------------------
+	async logStartup() {
+		// log the startup event
+		var msg = util.format("Starting up on %s.", jrhMisc.getNiceNowString());
+		if (this.isDevelopmentMode()) {
+			msg += "  Development mode enabled.";
+		}
+		await this.logmanual("info", msg, 0);
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	//---------------------------------------------------------------------------
 	async logr(req, type, message, severity, extraData) {
 		const userid = req.user ? req.user.id : undefined;
@@ -1636,6 +1673,47 @@ class AppRoomServer {
 		await log.dbSave();
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1761,7 +1839,7 @@ class AppRoomServer {
 	forgetLoginDiversions(req) {
 		// call this to unset any session diversions -- this can be useful if the user tried to access a protected page but then left the login page and did other things
 		// remove it from session
-		jrhelpersexpress.forgetSessionVar(req, "divertedUrl");
+		jrhExpress.forgetSessionVar(req, "divertedUrl");
 	}
 	//---------------------------------------------------------------------------
 
@@ -1856,7 +1934,7 @@ class AppRoomServer {
 	}
 
 	forgetCsrfToken(req) {
-		jrhelpersexpress.forgetSessionVar(req, "csrfSecret");
+		jrhExpress.forgetSessionVar(req, "csrfSecret");
 	}
 	//---------------------------------------------------------------------------
 
@@ -2032,7 +2110,7 @@ class AppRoomServer {
 	// internal debugging info for internals admin
 
 	calcExpressRoutePathData() {
-		return jrhelpersexpress.calcExpressRoutePathData(this.getExpressApp());
+		return jrhExpress.calcExpressRoutePathData(this.getExpressApp());
 	}
 
 
@@ -2049,7 +2127,7 @@ class AppRoomServer {
 		}
 
 		// middleware
-		serverInfo.expressMiddleware = jrhelpersexpress.calcExpressMiddleWare(this.getExpressApp());
+		serverInfo.expressMiddleware = jrhExpress.calcExpressMiddleWare(this.getExpressApp());
 
 		return serverInfo;
 	}
@@ -2057,14 +2135,14 @@ class AppRoomServer {
 
 	async calcDatabaseResourceUse() {
 		// return info about database memory and file use, etc.
-		var retv = await jrhelpersmdb.calcDatabaseResourceUse();
+		var retv = await jrhMongo.calcDatabaseResourceUse();
 		return retv;
 	}
 
 
 	async calcDatabaseStructure() {
 		// return info about the database structure
-		const dbStrcuture = await jrhelpersmdb.calcDatabaseResourceUse();
+		const dbStrcuture = await jrhMongo.calcDatabaseResourceUse();
 		return dbStrcuture;
 	}
 

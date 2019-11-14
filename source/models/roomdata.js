@@ -15,8 +15,8 @@ const ModelBaseMongoose = require("./modelBaseMongoose");
 const arserver = require("../controllers/server");
 
 // our helper modules
-const jrhelpers = require("../helpers/jrhelpers");
-const jrhmisc = require("../helpers/jrhmisc");
+const jrhMisc = require("../helpers/jrh_misc");
+const jrhText = require("../helpers/jrh_text");
 
 
 class RoomdataModel extends ModelBaseMongoose {
@@ -74,7 +74,7 @@ class RoomdataModel extends ModelBaseMongoose {
 					}
 					if (viewType === "edit") {
 						roomid = obj ? obj.roomid : null;
-						rethtml = jrhmisc.jrHtmlFormOptionListSelect("roomid", helperData.roomlist, roomid);
+						rethtml = jrhText.jrHtmlFormOptionListSelect("roomid", helperData.roomlist, roomid);
 						return rethtml;
 					}
 					if (viewType === "list") {

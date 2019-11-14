@@ -15,9 +15,9 @@ const hbs = require("hbs");
 
 // helpers
 const JrResult = require("../helpers/jrresult");
-const jrhmisc = require("../helpers/jrhmisc");
-const jrhelpers = require("../helpers/jrhelpers");
-const jrhgrid = require("../helpers/jrhgrid");
+const jrhText = require("../helpers/jrh_text");
+const jrhMisc = require("../helpers/jrh_misc");
+const jrhGrid = require("../helpers/jrh_grid");
 
 // models
 const arserver = require("./server");
@@ -129,7 +129,7 @@ class CrudAid {
 
 		// hidden fields for list view
 		var hiddenFiledsExtraSchema = await modelClass.getSchemaExtraKeysMatchingViewType("list", req);
-		hiddenFields = jrhelpers.mergeArraysDedupe(hiddenFields, hiddenFiledsExtraSchema);
+		hiddenFields = jrhMisc.mergeArraysDedupe(hiddenFields, hiddenFiledsExtraSchema);
 
 		// make helper data
 		const helperData = await modelClass.calcCrudListHelperData(req, res, baseCrudUrl, protectedFields, hiddenFields, jrResult);
@@ -249,7 +249,7 @@ class CrudAid {
 			var savedobj = await modelClass.validateAndSave(jrResult, {}, true, req, req.body, saveFields, null, obj);
 			if (!jrResult.isError()) {
 				// success! drop down with new blank form, or alternatively, we could redirect to a VIEW obj._id page
-				jrResult.pushSuccess(modelClass.getNiceName() + " added on " + jrhelpers.getNiceNowString() + ".");
+				jrResult.pushSuccess(modelClass.getNiceName() + " added on " + jrhMisc.getNiceNowString() + ".");
 
 				// log the action
 				arserver.logr(req, "crud.create", "created " + savedobj.getLogIdString());
@@ -382,9 +382,9 @@ class CrudAid {
 				// success! drop down with new blank form, or alternatively, we could redirect to a VIEW obj._id page
 
 				// log the action
-				arserver.logr(req, "crud.create", "edited " + savedobj.getLogIdString());
+				arserver.logr(req, "crud.edit", "edited " + savedobj.getLogIdString());
 
-				jrResult.pushSuccess(modelClass.getNiceName() + " saved on " + jrhelpers.getNiceNowString() + ".");
+				jrResult.pushSuccess(modelClass.getNiceName() + " saved on " + jrhMisc.getNiceNowString() + ".");
 				if (!baseCrudUrl) {
 					// just return to caller saying they should take over
 					jrResult.addToSession(req);
@@ -546,7 +546,7 @@ class CrudAid {
 			jrResult.pushSuccess(modelClass.getNiceName() + " #" + objIdString + " has been deleted.");
 
 			// log the action
-			arserver.logr(req, "crud.create", "deleted " + logIdString);
+			arserver.logr(req, "crud.delete", "deleted " + logIdString);
 
 			// redirect
 			jrResult.addToSession(req);
@@ -703,20 +703,20 @@ class CrudAid {
 		var visfunc, isVisible, isReadOnly;
 		var extra;
 		var err;
-		await jrhelpers.asyncAwaitForEachFunctionCall(schemaKeys, async (fieldName) => {
+		await jrhMisc.asyncAwaitForEachFunctionCall(schemaKeys, async (fieldName) => {
 
 			// type of this field
 			schemaType = modelClass.getBaseSchemaType(fieldName);
 
 			// hidden?
 			hideList = modelClass.getSchemaExtraFieldVal(fieldName, "hide", undefined);
-			if (jrhelpers.isInAnyArray("edit", hideList)) {
+			if (jrhMisc.isInAnyArray("edit", hideList)) {
 				return;
 			}
 
 			// read only?
 			readOnlyList = modelClass.getSchemaExtraFieldVal(fieldName, "readOnly", undefined);
-			isReadOnly = jrhelpers.isInAnyArray("edit", readOnlyList);
+			isReadOnly = jrhMisc.isInAnyArray("edit", readOnlyList);
 
 			// label
 			label = modelClass.getSchemaExtraFieldVal(fieldName, "label", fieldName);
@@ -833,14 +833,14 @@ class CrudAid {
 		var visfunc, isVisible;
 		var crudLink;
 
-		await jrhelpers.asyncAwaitForEachFunctionCall(schemaKeys, async (fieldName) => {
+		await jrhMisc.asyncAwaitForEachFunctionCall(schemaKeys, async (fieldName) => {
 
 			// type of this field
 			schemaType = modelClass.getBaseSchemaType(fieldName);
 
 			// hidden?
 			hideList = modelClass.getSchemaExtraFieldVal(fieldName, "hide", undefined);
-			if (jrhelpers.isInAnyArray("view", hideList)) {
+			if (jrhMisc.isInAnyArray("view", hideList)) {
 				return;
 			}
 
@@ -929,7 +929,7 @@ class CrudAid {
 
 
 	async buildGenericMainHtmlList(modelClass, req, obj, helperData, jrResult) {
-		var rehtml = await jrhgrid.jrGridList(req, helperData);
+		var rehtml = await jrhGrid.jrGridList(req, helperData);
 		return rehtml;
 	}
 	//---------------------------------------------------------------------------
@@ -937,12 +937,12 @@ class CrudAid {
 
 	//---------------------------------------------------------------------------
 	buildChoiceHtmlForAddEdit(fieldName, choices, val) {
-		var rethtml = jrhmisc.jrHtmlFormOptionListSelect(fieldName, choices, val);
+		var rethtml = jrhText.jrHtmlFormOptionListSelect(fieldName, choices, val);
 		return rethtml;
 	}
 
 	buildChoiceHtmlForView(choices, val) {
-		var rethtml = jrhmisc.jrHtmlNiceOptionFromList(choices, val, "[NOT SET]");
+		var rethtml = jrhText.jrHtmlNiceOptionFromList(choices, val, "[NOT SET]");
 		return rethtml;
 	}
 	//---------------------------------------------------------------------------

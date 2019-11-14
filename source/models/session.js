@@ -104,7 +104,7 @@ class SessionModel extends ModelBaseMongooseMinimal {
 
 	static validateModelFieldId(jrResult, val) {
 		/*
-		if (!jrhelpersmdb.isValidMongooseObjectId(val)) {
+		if (!jrhMongo.isValidMongooseObjectId(val)) {
 			jrResult.pushError("No valid id specified.");
 			return null;
 		}

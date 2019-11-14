@@ -14,7 +14,7 @@ const ModelBaseMongoose = require("./modelBaseMongoose");
 
 // our helper modules
 const jrlog = require("../helpers/jrlog");
-const jrhelpers = require("../helpers/jrhelpers");
+const jrhMisc = require("../helpers/jrh_misc");
 const JrResult = require("../helpers/jrresult");
 
 

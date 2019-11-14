@@ -1,10 +1,10 @@
 /**
- * @module helpers/jrhelpersmdb
+ * @module helpers/jrh_mongo
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 5/7/19
 
  * @description
- * Collection of my general helper functions for mongo and mongoose database framework
+ * Collection of helper functions for mongo and mongoose database framework
 */
 
 "use strict";

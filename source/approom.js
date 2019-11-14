@@ -67,13 +67,6 @@ processJrConfigAndCommandline();
 //---------------------------------------------------------------------------
 // commandline process
 function processJrConfigAndCommandline() {
-	if (arserver.getOptionDebugEnabled()) {
-		// testing
-		var nconfobj = jrconfig.getNconf();
-		var dataobj = nconfobj.get();
-		jrlog.logObj(dataobj, "dataobj");
-	}
-
 	// run commandline callbacks (show help if none found)
 	jrconfig.runQueuedCommands(true);
 }

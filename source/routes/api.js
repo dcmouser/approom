@@ -5,9 +5,7 @@
  * @description
  * ##### Overview
  * This file handles all requests related to the programmatic API interface for accessing the system.
- * ##### ToDo
- * These routes are all intended to be called programmatically by other code, and so should all return json replies.
- * But currently some return standard web pages for testing.
+ * @todo These routes are all intended to be called programmatically by other code, and so should all return json replies, but currently some return standard web pages for testing.
 */
 
 
@@ -68,8 +66,7 @@ function setupRouter(urlPath) {
  * @description
  * Handle the request for the api index page,
  *  which currently just shows a web page index of links to all of the api functions.
- * ##### ToDo
- * * Replace the template with some json reply, since api should only be machine callable.
+ * @todo Replace the template with some json reply, since api should only be machine callable.
  */
 async function routerGetIndex(req, res, next) {
 	// just show index
@@ -83,8 +80,7 @@ async function routerGetIndex(req, res, next) {
  * @description
  * Present user with form for their username and password,
  * so they may request a long-lived Refresh token (JWT).
- * ##### ToDo
- * * Note that this web page we present is useful for debugging, but should not be necesary in production use, because we expect code to be posting to us programmatically.
+ * @todo Note that this web page we present is useful for debugging, but should not be necesary in production use, because we expect code to be posting to us programmatically.
  */
 async function routerGetReqrefresh(req, res, next) {
 	// render page
@@ -126,8 +122,7 @@ async function routerPostReqrefresh(req, res, next) {
 /**
  * @description
  * Get a short-lived (JWT) Access token, using a Refresh token.  Here the user passes us a Refresh token and we give them (after verifying it's validity) an Access token.
- * ##### TODO
- * * It gets token from the query string (token parameter); eventually we want this to be (only) retrieved from headers or post data.  This just makes it easier to test initially.
+ * @todo It gets token from the query string (token parameter); eventually we want this to be (only) retrieved from headers or post data.  This just makes it easier to test initially.
  * ##### NOTES
  * * see <a href="https://scotch.io/@devGson/api-authentication-with-json-web-tokensjwt-and-passport">using refresh tokens with jwt</a>
  */
@@ -166,9 +161,8 @@ async function routerGetRefreshaccess(req, res, next) {
 /**
  * @description
  * Evaluate a refresh or access token, and report on its contents and validity; useful for testing.
- * ##### TODO
- * * This should probably not be present in production version
- * * It gets token from the query string (token parameter); we probably want it in header or post data eventually.
+ * @todo This should probably not be present in production version.
+ * @todo It gets token from the query string (token parameter); we probably want it in header or post data eventually.
  */
 async function routerAllTokentest(req, res, next) {
 	// test if user has passed user login info through api token

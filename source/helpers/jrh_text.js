@@ -1,17 +1,17 @@
 /**
- * @module helpers/jrhmisc
+ * @module helpers/jrh_text
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 5/24/19
 
  * @description
- * Collection of my general helper functions for html/views
+ * Collection of helper functions for html/views
 */
 
 "use strict";
 
 
 
-
+//---------------------------------------------------------------------------
 /**
  * Pluralize a string based on a number (presumably the number of items being referred to)
  * @example "You have eaten " + jrPluralizeCount(4, "apples", "apples")
@@ -63,6 +63,7 @@ function jrPluralize(number, singular, plural) {
 
 
 
+//---------------------------------------------------------------------------
 /**
  * Create an html input select (drop down) list.
  *
@@ -140,7 +141,7 @@ function jrHtmlNiceOptionFromList(pairlist, selectedid, defaultVal) {
 
 
 
-
+//---------------------------------------------------------------------------
 /**
  * Helper funciton to generate some html that shows a bootstrap spoiler box with some debug information
  *
@@ -191,7 +192,7 @@ function jrHtmlStrigifyObject(obj) {
 
 
 
-
+//---------------------------------------------------------------------------
 /**
  * Create html text for a form input password, with a hint saying whether there is an existing value in the database,
  * and a hint saying whether leaving the value blank will preserve existing value,

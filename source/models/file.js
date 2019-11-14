@@ -14,9 +14,9 @@ const mongoose = require("mongoose");
 const RoomdataModel = require("./roomdata");
 
 // our helper modules
-const jrhelpers = require("../helpers/jrhelpers");
+const jrhMisc = require("../helpers/jrh_misc");
 const jrlog = require("../helpers/jrlog");
-const jrvalidators = require("../helpers/jrvalidators");
+const jrhValidate = require("../helpers/jrh_validates");
 
 
 
@@ -85,7 +85,7 @@ class FileModel extends RoomdataModel {
 					}
 					if (viewType === "edit") {
 						roomid = obj ? obj.roomid : null;
-						rethtml = jrhmisc.jrHtmlFormOptionListSelect("roomid", helperData.roomlist, roomid);
+						rethtml = jrhText.jrHtmlFormOptionListSelect("roomid", helperData.roomlist, roomid);
 						return rethtml;
 					}
 					if (viewType === "list") {
@@ -152,7 +152,7 @@ class FileModel extends RoomdataModel {
 		var reta = super.getSaveFields(req, operationType);
 
 		if (operationType === "crudAdd" || operationType === "crudEdit") {
-			reta = jrhelpers.mergeArraysKeepDupes(reta, ["path", "label", "sizeInBytes"]);
+			reta = jrhMisc.mergeArraysKeepDupes(reta, ["path", "label", "sizeInBytes"]);
 		}
 
 		return reta;
@@ -173,9 +173,9 @@ class FileModel extends RoomdataModel {
 
 		// now our specific derived class fields
 		if (!jrResult.isError()) {
-			await this.validateMergeAsync(jrResult, "path", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateString(jrr, keyname, inVal, flagRequired));
-			await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateString(jrr, keyname, inVal, flagRequired));
-			await this.validateMergeAsync(jrResult, "sizeInBytes", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateInteger(jrr, keyname, inVal, flagRequired));
+			await this.validateMergeAsync(jrResult, "path", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+			await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+			await this.validateMergeAsync(jrResult, "sizeInBytes", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateInteger(jrr, keyname, inVal, flagRequired));
 		}
 
 		// any validation errors?

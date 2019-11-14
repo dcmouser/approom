@@ -47,6 +47,8 @@ const winstonCustomLevels = {
 	debug: 7,
 	db: 6,
 	"crud.create": 6,
+	"crud.edit": 6,
+	"crud.delete": 6,
 	"api.token": 6,
 	"user.create": 6,
 };

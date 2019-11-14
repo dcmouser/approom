@@ -7,9 +7,9 @@
 "use strict";
 
 // our helper modules
-const jrhelpers = require("../helpers/jrhelpers");
+const jrhMisc = require("../helpers/jrh_misc");
 const JrResult = require("../helpers/jrresult");
-const jrvalidators = require("../helpers/jrvalidators");
+const jrhValidate = require("../helpers/jrh_validates");
 
 // require models
 const arserver = require("../controllers/server");
@@ -203,7 +203,7 @@ class RegistrationAid {
 		username = await UserModel.validateUsername(jrResult, username, true, flagUsernameRequired, flagCheckDisallowedUsername, null);
 
 		// valid realName
-		realName = await jrvalidators.validateRealName(jrResult, "realName", realName, false);
+		realName = await jrhValidate.validateRealName(jrResult, "realName", realName, false);
 
 		// valid password?
 		if (passwordHashed) {

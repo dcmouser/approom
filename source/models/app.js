@@ -9,9 +9,9 @@
 "use strict";
 
 // our helper modules
-const jrhelpers = require("../helpers/jrhelpers");
+const jrhMisc = require("../helpers/jrh_misc");
 const jrlog = require("../helpers/jrlog");
-const jrvalidators = require("../helpers/jrvalidators");
+const jrhValidate = require("../helpers/jrh_validates");
 
 // models
 const ModelBaseMongoose = require("./modelBaseMongoose");
@@ -128,12 +128,12 @@ class AppModel extends ModelBaseMongoose {
 
 		// set fields from form and validate
 		await this.validateMergeAsync(jrResult, "shortcode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await this.validateShortcodeUnique(jrr, keyname, inVal, obj));
-		// await this.validateMergeAsync(jrResult, "name", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateString(jrr, keyname, inVal, flagRequired));
-		await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateString(jrr, keyname, inVal, flagRequired));
-		await this.validateMergeAsync(jrResult, "description", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateString(jrr, keyname, inVal, flagRequired));
+		// await this.validateMergeAsync(jrResult, "name", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrResult, "description", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
 		//
-		await this.validateMergeAsync(jrResult, "isPublic", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateTrueFalse(jrResult, keyname, inVal, flagRequired));
-		await this.validateMergeAsync(jrResult, "supportsFiles", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateTrueFalse(jrResult, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrResult, "isPublic", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateTrueFalse(jrResult, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrResult, "supportsFiles", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateTrueFalse(jrResult, keyname, inVal, flagRequired));
 
 		// base fields shared between all? (notes, etc.)
 		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj);

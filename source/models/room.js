@@ -16,10 +16,10 @@ const ModelBaseMongoose = require("./modelBaseMongoose");
 const arserver = require("../controllers/server");
 
 // our helper modules
-const jrhelpers = require("../helpers/jrhelpers");
-const jrhmisc = require("../helpers/jrhmisc");
+const jrhMisc = require("../helpers/jrh_misc");
+const jrhText = require("../helpers/jrh_text");
 const jrlog = require("../helpers/jrlog");
-const jrvalidators = require("../helpers/jrvalidators");
+const jrhValidate = require("../helpers/jrh_validates");
 
 
 
@@ -91,7 +91,7 @@ class RoomModel extends ModelBaseMongoose {
 					}
 					if (viewType === "edit") {
 						appid = obj ? obj.appid : null;
-						rethtml = jrhmisc.jrHtmlFormOptionListSelect("appid", helperData.applist, appid);
+						rethtml = jrhText.jrHtmlFormOptionListSelect("appid", helperData.applist, appid);
 						return rethtml;
 					}
 					if (viewType === "list") {
@@ -159,8 +159,8 @@ class RoomModel extends ModelBaseMongoose {
 		// set fields from form and validate
 		await this.validateMergeAsync(jrResult, "appid", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => this.validateModelFieldAppId(jrr, keyname, inVal, user));
 		await this.validateMergeAsync(jrResult, "shortcode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await this.validateShortcodeUnique(jrr, keyname, inVal, obj));
-		await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateString(jrr, keyname, inVal, flagRequired));
-		await this.validateMergeAsync(jrResult, "description", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrvalidators.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrResult, "description", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
 		// note that password is not required
 		await this.validateMergeAsync(jrResult, "password", "passwordHashed", source, saveFields, preValidatedFields, obj, false, async (jrr, keyname, inVal, flagRequired) => await UserModel.validatePlaintextPasswordConvertToHash(jrr, inVal, flagRequired, true));
 

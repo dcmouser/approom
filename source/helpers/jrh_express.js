@@ -1,5 +1,5 @@
 /**
- * @module helpers/jrhelpersexpress
+ * @module helpers/jrh_express
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 11/2/19
 
@@ -14,7 +14,7 @@
 const passport = require("passport");
 
 // our helper modules
-const JrResult = require("../helpers/jrresult");
+const JrResult = require("./jrresult");
 
 
 

@@ -1,19 +1,22 @@
-// jrFindFilter
-// v1.0.0 on 5/7/19 by mouser@donationcoder.com
-//
-// some of my generic helper functions
+/**
+ * @module helpers/jrh_mongo_filter
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/7/19
+
+ * @description
+ * Collection of helper functions for database crud filtering
+*/
 
 "use strict";
+
 
 // modules
 const mongoose = require("mongoose");
 
 // our helper modules
-const jrlog = require("../helpers/jrlog");
-const jrhelpers = require("../helpers/jrhelpers");
-const jrhelpersexpress = require("../helpers/jrhelpersexpress");
-const jrhelpersmdb = require("../helpers/jrhelpersmdb");
-const JrResult = require("../helpers/jrresult");
+const jrhMisc = require("./jrh_misc");
+const jrhExpress = require("./jrh_express");
+const jrhMongo = require("./jrh_mongo");
 
 
 
@@ -32,18 +35,18 @@ function buildMongooseQueryFromReq(filterOptions, schema, req, jrResult) {
 
 	var fieldKeys = Object.keys(schema);
 	//
-	var pageNum = jrhelpersexpress.reqValAsInt(req, "pageNum", 1, null, 1);
-	var pageSize = jrhelpersexpress.reqValAsInt(req, "pageSize", filterOptions.minPageSize, filterOptions.maxPageSize, filterOptions.defaultPageSize);
-	var sortField = jrhelpersexpress.reqValFromList(req, "sortField", fieldKeys, filterOptions.defaultSortField);
-	var sortDir = jrhelpersexpress.reqValFromList(req, "sortDir", ["asc", "desc"], filterOptions.defaultSortDir);
+	var pageNum = jrhExpress.reqValAsInt(req, "pageNum", 1, null, 1);
+	var pageSize = jrhExpress.reqValAsInt(req, "pageSize", filterOptions.minPageSize, filterOptions.maxPageSize, filterOptions.defaultPageSize);
+	var sortField = jrhExpress.reqValFromList(req, "sortField", fieldKeys, filterOptions.defaultSortField);
+	var sortDir = jrhExpress.reqValFromList(req, "sortDir", ["asc", "desc"], filterOptions.defaultSortDir);
 	//
-	var fieldFilters = jrhelpersexpress.reqPrefixedValueArray(req, "filter", fieldKeys);
+	var fieldFilters = jrhExpress.reqPrefixedValueArray(req, "filter", fieldKeys);
 	//
 	var protectedFields = filterOptions.protectedFields;
 	var hiddenFields = filterOptions.hiddenFields;
 
 	// block sort if its on our block list
-	if (jrhelpers.isInAnyArray(sortField, protectedFields, hiddenFields)) {
+	if (jrhMisc.isInAnyArray(sortField, protectedFields, hiddenFields)) {
 		sortField = "";
 	}
 
@@ -66,7 +69,7 @@ function buildMongooseQueryFromReq(filterOptions, schema, req, jrResult) {
 	fieldFilterKeys.forEach((fieldFilterKey) => {
 
 		// certain fields we will refuse to filter on
-		if (jrhelpers.isInAnyArray(fieldFilterKey, protectedFields)) {
+		if (jrhMisc.isInAnyArray(fieldFilterKey, protectedFields)) {
 			return;
 		}
 
@@ -288,7 +291,7 @@ function convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, qu
 	} else if (subType === "idstring") {
 		valPat = "[^=!]+";
 		mongoValFunc = (strVal, jrResulti) => {
-			if (jrhelpersmdb.isValidMongooseObjectId(strVal)) {
+			if (jrhMongo.isValidMongooseObjectId(strVal)) {
 				return strVal;
 			}
 			jrResulti.pushError("Search filter error: Id value is improperly formatted");
@@ -359,7 +362,7 @@ function convertReqQueryStringToAMongooseFindFilterMongoStrCmp(strVal, jrResult)
 	// otherwise we want a LIKE type string
 
 	// create a regex that allows wild characters on left or right, by ESCAPING string
-	var queryStrEscaped = jrhelpers.regexEscapeStr(strVal);
+	var queryStrEscaped = jrhMisc.regexEscapeStr(strVal);
 	try {
 		retv = new RegExp(queryStrEscaped, "im");
 	} catch (err) {

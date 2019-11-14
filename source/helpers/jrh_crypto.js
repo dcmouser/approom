@@ -1,10 +1,10 @@
 /**
- * @module helpers/jrcrypto
+ * @module helpers/jrh_crypto
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 5/19/19
 
  * @description
- * Collection of my helper functions for crypto related stuff
+ * Collection of helper functions for crypto related stuff
 */
 
 "use strict";
@@ -20,7 +20,7 @@ var bcrypt = require("bcrypt");
 
 // our helper modules
 const jrlog = require("./jrlog");
-const jrhelpers = require("./jrhelpers");
+const jrhMisc = require("./jrh_misc");
 //---------------------------------------------------------------------------
 
 
@@ -85,7 +85,7 @@ async function testPlaintextPassword(passwordPlaintext, passwordHashedObj) {
 	// we allow for password stored in db to be blank.  in this case we always reject a password as not matching (ie they can't login with password)
 	// we allow for this case -- sometimes users may have no password set; in this case it
 	// but note that we WILL allow a check of a blank plaintext password (so if a blank string is hashed and stored as a valid password, we will check and approve that if it matches)
-	if (jrhelpers.isObjectIsEmpty(passwordHashedObj)) {
+	if (jrhMisc.isObjectEmpty(passwordHashedObj)) {
 		return false;
 	}
 
@@ -110,7 +110,7 @@ async function testPlaintextPassword(passwordPlaintext, passwordHashedObj) {
 		// now is the hashed version of the new plaintext the same as the hashed version of the old stored one?
 		return (passwordHashedTest.passwordHashedStr === passwordHashedStr);
 	} catch (err) {
-		const emsg = "Error in jrhelpers exports.testPlaintextPassword while attempting to parse/compare hashed password string with password algorithn '" + passwordAlgorithm + "'";
+		const emsg = "Error in jrhMisc exports.testPlaintextPassword while attempting to parse/compare hashed password string with password algorithn '" + passwordAlgorithm + "'";
 		if (true) {
 			// throw it up and let caller handle it (adding our more verbos error)
 			err.message = emsg + "; " + err.message;
@@ -226,8 +226,7 @@ function genRandomStringHex(length) {
  * @see <a href="https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript">stackoverflow</a>
  * ##### Notes
  *  * This is not cryptographically secure random numbers, as it uses Math.random
- * ##### ToDo
- *  * Replace with crypto secure prng
+ * @todo Replace with crypto secure prng
  *
  * @param {int} length
  * @returns random string of specified characters consisting of only characters and digits found in DefHumanEasyCharacters
@@ -253,8 +252,7 @@ function genRandomStringHumanEasy(length) {
  * @see <a href="https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript">stackoverflow</a>
  * ##### Notes
  *  * This is not cryptographically secure random numbers, as it uses Math.random
- * ##### ToDo
- *  * Replace with crypto secure prng
+ * @todo Replace with crypto secure prng
  *
  * @param {int} length
  * @returns random string consisting of only characters and digits found in DefHumanEasyCharacters
@@ -287,9 +285,8 @@ function genRandomStringHumanEasier(length) {
  *  * And we always use sha51 algorithm.
  *  * This helper function is used to hash verification codes in database so that if db is compromised it will be harder to retrieve plaintext verificaiton code
  *  * We can't use random salt because we need to be able to look up matching items by the hashed version.
- * ##### ToDo
- *  * In future we might use a two-part verification code, where first part is unique plaintext id, and second part is hashed string
- *  * In that way we could look up items by their plaintext part, and use any crypto for the hashed part.
+ * @todo In future we might use a two-part verification code, where first part is unique plaintext id, and second part is hashed string
+ * @todo In that way we could look up items by their plaintext part, and use any crypto for the hashed part.
  *
  * @param {string} plaintextString
  * @param {string} salt

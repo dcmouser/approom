@@ -1,5 +1,5 @@
 /**
- * @module helpers/jrhandlebars
+ * @module helpers/jrh_handlebars
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 5/24/19
 
@@ -18,7 +18,7 @@ const path = require("path");
 
 // our helper modules
 const jrlog = require("./jrlog");
-const jrhmisc = require("./jrhmisc");
+const jrhText = require("./jrh_text");
 
 
 
@@ -32,16 +32,16 @@ const jrhmisc = require("./jrhmisc");
 function setupJrHandlebarHelpers() {
 
 	// pluralizing helpers
-	hbs.registerHelper("jrPluralize", (number, singular, plural) => jrhmisc.jrPluralize(number, singular, plural));
+	hbs.registerHelper("jrPluralize", (number, singular, plural) => jrhText.jrPluralize(number, singular, plural));
 
 	// pluralizing helper
-	hbs.registerHelper("jrPluralizeCount", (number, singular, plural) => jrhmisc.jrPluralizeCount(number, singular, plural));
+	hbs.registerHelper("jrPluralizeCount", (number, singular, plural) => jrhText.jrPluralizeCount(number, singular, plural));
 
 	// form helper for drop down inputs
-	hbs.registerHelper("jrHtmlFormOptionList", (pairlist, selectedid) => new hbs.SafeString(jrhmisc.jrHtmlFormOptionList(pairlist, selectedid)));
+	hbs.registerHelper("jrHtmlFormOptionList", (pairlist, selectedid) => new hbs.SafeString(jrhText.jrHtmlFormOptionList(pairlist, selectedid)));
 
 	// simple object debug display helper
-	hbs.registerHelper("jrHtmlDebugObj", (obj) => new hbs.SafeString(jrhmisc.jrHtmlStrigifyObject(obj)));
+	hbs.registerHelper("jrHtmlDebugObj", (obj) => new hbs.SafeString(jrhText.jrHtmlStrigifyObject(obj)));
 }
 //---------------------------------------------------------------------------
 

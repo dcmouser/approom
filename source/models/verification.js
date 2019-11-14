@@ -30,9 +30,9 @@ const LoginModel = require("./login");
 const arserver = require("../controllers/server");
 
 // our helper modules
-const jrhelpers = require("../helpers/jrhelpers");
+const jrhMisc = require("../helpers/jrh_misc");
 const jrlog = require("../helpers/jrlog");
-const jrcrypto = require("../helpers/jrcrypto");
+const jrhCrypto = require("../helpers/jrh_crypto");
 const JrResult = require("../helpers/jrresult");
 
 
@@ -209,7 +209,7 @@ class VerificationModel extends ModelBaseMongoose {
 		verification.userId = userId;
 		verification.loginId = loginId;
 		verification.extraData = extraData;
-		verification.expirationDate = jrhelpers.DateNowPlusMinutes(expirationMinutes);
+		verification.expirationDate = jrhMisc.DateNowPlusMinutes(expirationMinutes);
 		verification.usedDate = null;
 		// NOTE: verification.uniqueCode set below
 
@@ -404,7 +404,7 @@ If this request was not made by you, please ignore this email.
 
 	//---------------------------------------------------------------------------
 	static async generateUniqueCode() {
-		return jrcrypto.genRandomStringHumanEasier(DefCodeLength);
+		return jrhCrypto.genRandomStringHumanEasier(DefCodeLength);
 	}
 
 
@@ -425,7 +425,7 @@ If this request was not made by you, please ignore this email.
 	static async calcHashOfVerificationCode(verificationCode) {
 		// hash the verification code -- this is what we will store in our database
 		// this function needs to retun the SAME HASH no matter when we call it, so that we can search for result; that's why we used a fixed salt
-		return await jrcrypto.hashPlaintextStringInsecureButSearchable(verificationCode, arserver.getConfigVal("crypto:VERIFICATIONCODESALT"));
+		return await jrhCrypto.hashPlaintextStringInsecureButSearchable(verificationCode, arserver.getConfigVal("crypto:VERIFICATIONCODESALT"));
 	}
 	//---------------------------------------------------------------------------
 
@@ -741,8 +741,8 @@ If this request was not made by you, please ignore this email.
 
 		// properties
 		var email = this.val;
-		var username = jrhelpers.firstCoercedTrueValue(this.getExtraData("username"), extraValues.username);
-		var realName = jrhelpers.firstCoercedTrueValue(this.getExtraData("realName"), extraValues.realName);
+		var username = jrhMisc.firstCoercedTrueValue(this.getExtraData("username"), extraValues.username);
+		var realName = jrhMisc.firstCoercedTrueValue(this.getExtraData("realName"), extraValues.realName);
 		var passwordHashed = this.getExtraData("passwordHashed");
 
 		// first step, let's check if the email has alread been used by someone, if so then we can just redirect them to try to sign up again and cancel this verification
