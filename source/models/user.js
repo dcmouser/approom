@@ -791,7 +791,7 @@ class UserModel extends ModelBaseMongoose {
 			msgShort = "User not found.";
 			msgLong = "No user found with user " + keylabel + " matching " + value + ".";
 		}
-		var jrResult = JrResult.makeNew("UserNotFound");
+		var jrResult = JrResult.makeNew();
 		jrResult.pushBiFieldError(key, msgShort, msgLong);
 		return jrResult;
 	}

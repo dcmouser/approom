@@ -543,14 +543,14 @@ class AppRoomServer {
 				var user = await UserModel.findOneByUsernameEmail(usernameEmail);
 				if (!user) {
 					// not found
-					jrResult = JrResult.makeNew("UsernameNotFound").pushFieldError("usernameEmail", "Username/Email-address not found");
+					jrResult = JrResult.makeNew().pushFieldError("usernameEmail", "Username/Email-address not found");
 					return done(null, false, jrResult);
 				}
 				// ok we found the user, now check their password
 				var bretv = await user.testPlaintextPassword(password);
 				if (!bretv) {
 					// password doesn't match
-					jrResult = JrResult.makeNew("PasswordMismatch").pushFieldError("password", "Password does not match");
+					jrResult = JrResult.makeNew().pushFieldError("password", "Password does not match");
 					return done(null, false, jrResult);
 				}
 				// password matches!
@@ -1349,7 +1349,7 @@ class AppRoomServer {
 			} else {
 				msg = "Mail sent.";
 			}
-			return JrResult.makeNew("SendmailSucccess").pushSuccess(msg);
+			return JrResult.makeSuccess(msg);
 		}
 		// error
 		if (mailobj.revealEmail) {
@@ -1357,7 +1357,7 @@ class AppRoomServer {
 		} else {
 			msg = "Failed to send email.";
 		}
-		return JrResult.makeNew("SendmailError").pushError(msg);
+		return JrResult.makeError(msg);
 	}
 	//---------------------------------------------------------------------------
 
@@ -1812,7 +1812,7 @@ class AppRoomServer {
 		// remember where they were trying to go when we diverted them, so we can go BACK there after they log in
 		req.session.divertedUrl = goalRelUrl;
 		if (msg) {
-			JrResult.makeError("acl", msg).addToSession(req);
+			JrResult.makeError(msg).addToSession(req);
 		}
 	}
 
@@ -2081,17 +2081,17 @@ class AppRoomServer {
 
 
 	renderAclAccessError(req, res, modelClass, errorMessage) {
-		var jrError = JrResult.makeError("ACL", errorMessage);
+		var jrError = JrResult.makeError(errorMessage);
 		// render
 		res.render("acldeny", {
-			jrResult: JrResult.sessionRenderResult(req, res, jrError),
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrError),
 		});
 	}
 
 	renderAclAccessErrorResult(req, res, modelClass, jrResult) {
 		// render
 		res.render("acldeny", {
-			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
 		});
 	}
 	//---------------------------------------------------------------------------
@@ -2301,7 +2301,7 @@ class AppRoomServer {
 				message: err.message,
 				error: errorDisplay,
 				status: err.status,
-				jrResult: JrResult.sessionRenderResult(req, res),
+				jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 			});
 		});
 

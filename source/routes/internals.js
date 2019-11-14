@@ -59,7 +59,7 @@ async function routerGetIndex(req, res, next) {
 	}
 
 	res.render("internals/index", {
-		jrResult: JrResult.sessionRenderResult(req, res),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 	});
 }
 
@@ -73,7 +73,7 @@ async function routerGetConfigOptions(req, res, next) {
 	var rawData = arserver.getJrConfig().getDebugObj();
 	res.render("internals/config_options", {
 		rawData,
-		jrResult: JrResult.sessionRenderResult(req, res),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 	});
 }
 
@@ -87,7 +87,7 @@ async function routerGetRoutes(req, res, next) {
 	var rawData = arserver.calcExpressRoutePathData();
 	res.render("internals/routes", {
 		rawData,
-		jrResult: JrResult.sessionRenderResult(req, res),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 	});
 }
 
@@ -101,7 +101,7 @@ async function routerGetStructureDb(req, res, next) {
 	var rawData = await arserver.calcDatabaseStructure();
 	res.render("internals/structure_db", {
 		rawData,
-		jrResult: JrResult.sessionRenderResult(req, res),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 	});
 }
 
@@ -117,7 +117,7 @@ async function routerGetResourceuse(req, res, next) {
 
 	res.render("internals/resourceuse", {
 		rawDataDb,
-		jrResult: JrResult.sessionRenderResult(req, res),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 	});
 }
 
@@ -133,7 +133,7 @@ async function routerGetServerinfo(req, res, next) {
 
 	res.render("internals/serverinfo", {
 		rawData,
-		jrResult: JrResult.sessionRenderResult(req, res),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 	});
 }
 
@@ -149,7 +149,7 @@ async function routerGetAclinfo(req, res, next) {
 
 	res.render("internals/aclinfo", {
 		rawData,
-		jrResult: JrResult.sessionRenderResult(req, res),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 	});
 }
 
@@ -165,7 +165,7 @@ async function routerGetNodejs(req, res, next) {
 
 	res.render("internals/nodejs", {
 		rawData,
-		jrResult: JrResult.sessionRenderResult(req, res),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 	});
 }
 //---------------------------------------------------------------------------

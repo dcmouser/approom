@@ -1,9 +1,14 @@
-// jrresult
-// v1.0.0 on 5/24/19 by mouser@donationcoder.com
-//
-// error helper class
+/**
+ * @module helpers/jrresult
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 5/24/19
+
+ * @description
+ * Error helper class
+*/
 
 "use strict";
+
 
 // modules
 const assert = require("assert");
@@ -16,52 +21,104 @@ const jrhMisc = require("./jrh_misc");
 
 
 
+//---------------------------------------------------------------------------
 // JrResult is a class for returning an error from functions with enough information that it can be displayed to the user
 // with helper methods for logging, etc.
+/**
+ * We use JrResult object instances to store the results of operations, where we may want to indicate a success or an error with additional information about the nature of the error.
+ * The result can hold multiple errors, possibly keyed to fields (for example an error message corresponding to each input form variable)
+ *
+ * @class JrResult
+ */
+
 class JrResult {
-	constructor(typestr) {
-		this.typestr = typestr;
+
+	//---------------------------------------------------------------------------
+	/**
+	 * Creates an instance of JrResult.
+	 * @memberof JrResult
+	 */
+	constructor() {
 	}
+	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
-	static makeNew(typestr) {
+	/**
+	 * Helper function to create a new blank JrResult object
+	 *
+	 * @static
+	 * @returns new JrResult object
+	 */
+	static makeNew() {
 		// static helper.
-		var jrResult = new JrResult(typestr);
-		return jrResult;
+		return new JrResult();
 	}
 
-	static makeError(typestr, msg) {
-		if (!msg) {
-			// if only one arg is passed, its a message with typestr treated as the msg
-			msg = typestr;
-			typestr = "error";
-		}
-		var jrResult = new JrResult(typestr);
+
+	/**
+	 * Helper function to create a new JrResult object and store an error for it
+	 *
+	 * @static
+	 * @returns new JrResult object
+	 */
+	static makeError(msg) {
+		var jrResult = new JrResult();
 		jrResult.pushError(msg);
 		return jrResult;
 	}
 
+
+	/**
+	 * Helper function to create a new JrResult object and store a success message in it
+	 *
+	 * @static
+	 * @returns new JrResult object
+	 */
 	static makeSuccess(msg) {
-		var jrResult = new JrResult("success");
-		if (msg) {
-			jrResult.pushSuccess(msg);
-		}
+		var jrResult = new JrResult();
+		jrResult.pushSuccess(msg);
 		return jrResult;
 	}
 
+	/**
+	 * Helper function to create a new JrResult object and store a generic message in it
+	 *
+	 * @static
+	 * @returns new JrResult object
+	 */
 	static makeMessage(msg) {
-		var jrResult = new JrResult("message");
-		if (msg) {
-			jrResult.pushMessage(msg);
-		}
+		var jrResult = new JrResult();
+		jrResult.pushMessage(msg);
 		return jrResult;
 	}
 
+
+	/**
+	 * make a clone of an existing jr result
+	 *
+	 * @static
+	 * @param {object} source
+	 * @returns new JrResult object
+	 */
+	static makeClone(source) {
+		// first we make a new JrResult object, then copy properties
+		var target = this.makeNew();
+		target.copyFrom(source);
+		return target;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	/**
+	 * clear all fields of the jrResult object
+	 */
 
 	clear() {
 		this.typestr = undefined;
-		this.fields = undefined;
+		this.errorFields = undefined;
 		this.items = undefined;
 		this.eData = undefined;
 	}
@@ -70,68 +127,149 @@ class JrResult {
 
 	//---------------------------------------------------------------------------
 	// accessors
-	getType() { return this.typestr; }
 
+	/**
+	 * Set the type value which can be checked later
+	 * @param {*} typestr
+	 */
+	setType(typestr) {
+		this.typestr = typestr;
+	}
+
+
+	/**
+	 * Get the type value for the object which can be set
+	 */
+	getType() { return this.typestr; }
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	/**
+	 * Checks if the jrResult is (contains) an error
+	 * @returns true if there are any error items pushed into this jrResult
+	 */
 	isError() {
 		if (this.items && this.items.error && this.items.error.length > 0) {
+			// explicit error messages in the object
 			return true;
 		}
-		if (this.fields && this.fields.length > 0) {
+		if (this.errorFields && this.errorFields.length > 0) {
+			// there are field specific errors registered
 			return true;
 		}
 		return false;
 	}
+	//---------------------------------------------------------------------------
 
+
+
+	//---------------------------------------------------------------------------
 	// fields are key=> value pairs, used for input form errors typically
+
+	/**
+	 * Set a field-associated error; marks the result as an error and makes it possible for observer to check which specific field caused it
+	 *
+	 * @param {string} key
+	 * @param {*} value
+	 * @returns this
+	 */
 	setFieldError(key, value) {
-		if (this.fields === undefined) {
-			this.fields = {};
+		if (this.errorFields === undefined) {
+			this.errorFields = {};
 		}
-		this.fields[key] = value;
+		this.errorFields[key] = value;
 		return this;
 	}
 
+
+	/**
+	 * Gets any error associated with this field key, or defaultVal if none set (defaults to undefined)
+	 *
+	 * @param {string} key
+	 * @param {*} defaultval (if not provided, undefined will be used)
+	 * @returns error message associated with key, or defaultVal if none set
+	 */
 	getFieldError(key, defaultval) {
-		if (this.fields === undefined || this.fields[key] === undefined) {
+		if (this.errorFields === undefined || this.errorFields[key] === undefined) {
 			return defaultval;
 		}
-		return this.fields[key];
+		return this.errorFields[key];
 	}
 
-	clearKey(key) {
+
+	/**
+	 * Generic helper to clear all items in the given section (errors, success, messages)
+	 * @private
+	 *
+	 * @param {*} key
+	 * @returns this
+	 */
+	clearSection(sectionKey) {
 		if (this.items === undefined) {
-			return;
+			return this;
 		}
-		if (this.items[key] === undefined) {
-			return;
+		if (this.items[sectionKey] === undefined) {
+			return this;
 		}
-		this.items[key].clear();
+		this.items[sectionKey].clear();
+
+		return this;
 	}
+
 
 	// now we have more generic lists of messages/errors
-	push(key, msg, flagOnTop) {
+	/**
+	 * Generic helper to push a message into a given section (errors, success, messages)
+	 * @private
+	 *
+	 * @param {string} sectionKey
+	 * @param {*} msg - message to add
+	 * @param {*} flagOnTop - if true, the new message will be pushed at top of list
+	 * @returns this
+	 */
+	push(sectionKey, msg, flagOnTop) {
 		if (this.items === undefined) {
 			this.items = {};
 		}
-		if (this.items[key] === undefined) {
-			this.items[key] = [msg];
+		if (this.items[sectionKey] === undefined) {
+			this.items[sectionKey] = [msg];
 		} else {
 			if (flagOnTop) {
-				this.items[key].unshift(msg);
+				this.items[sectionKey].unshift(msg);
 			} else {
-				this.items[key].push(msg);
+				this.items[sectionKey].push(msg);
 			}
 		}
 		return this;
 	}
 
+
+	/**
+	 * Set the error associated with a specific key
+	 * ##### Notes:
+	 *  * this also causes a general (non-feild) error to be added to the object, with the same message
+	 *
+	 * @param {string} key - the field name to set the error for
+	 * @param {string} msg - the error messsage
+	 * @returns this
+	 */
 	pushFieldError(key, msg) {
-		// push an error, and also add a field error for it
+		// push a generic error, and also add a field error for it
 		this.push("error", msg);
 		this.setFieldError(key, msg);
 		return this;
 	}
 
+
+	/**
+	 * Set the error associated with a specific key, AND adds a different error message as a general error
+	 *
+	 * @param {string} key - the field name to set the error for
+	 * @param {string} shortMsg - the error messsage to add to the field
+	 * @param {string} longMsg - the error message to add as a generic error
+	 * @returns this
+	 */
 	pushBiFieldError(key, shortMsg, longMsg) {
 		// push an error, and also add a field error for it
 		this.push("error", longMsg);
@@ -139,40 +277,94 @@ class JrResult {
 		return this;
 	}
 
+
+	/**
+	 * Add a generic error to the result
+	 *
+	 * @param {string} msg
+	 * @returns this
+	 */
 	pushError(msg) {
 		this.push("error", msg);
 		return this;
 	}
 
+
+	/**
+	 * Add a generic error to the result, pushing it to the top of the error list
+	 *
+	 * @param {string} msg
+	 * @returns this
+	 */
 	pushErrorOnTop(msg) {
 		this.push("error", msg, true);
 		return this;
 	}
 
+
+	/**
+	 * Clear any previous error and then add a generic error to the result
+	 *
+	 * @param {string} msg
+	 * @returns this
+	 */
 	setError(msg) {
-		this.clearKey("error");
+		this.clearSection("error");
 		this.push("error", msg);
 		return this;
 	}
 
-	pushMessage(msg) {
-		this.push("message", msg);
+
+	/**
+	 * Add a generic message (not an error) to the result
+	 *
+	 * @param {string} msg
+ 	 * @param {boolean} flagOnTop - if true the message will be pushed on top; if unspecified it will not
+	 * @returns this
+	 */
+	pushMessage(msg, flagOnTop) {
+		this.push("message", msg, flagOnTop);
 		return this;
 	}
 
+
+	/**
+	 * Add a success message (not an error) to the result
+	 *
+	 * @param {string} msg
+ 	 * @param {boolean} flagOnTop - if true the message will be pushed on top; if unspecified it will not
+	 * @returns this
+	 */
 	pushSuccess(msg, flagOnTop) {
 		this.push("success", msg, flagOnTop);
 		return this;
 	}
 
-	setEData(key, val) {
+
+	/**
+	 * Set generic extra data for the result
+	 *
+	 * @param {string} key - key to store data in
+	 * @param {*} val - data to store
+	 * @returns this
+	 */
+	setExtraData(key, val) {
 		if (!this.eData) {
 			this.eData = [];
 		}
 		this.eData[key] = val;
+		return this;
 	}
 
-	getEData(key, defaultVal) {
+
+	/**
+	 * Get generic extra data for the result
+	 *
+	 * @param {string} key - key to retrieve data for
+	 * @param {*} defaultVal - returned if key not set
+	 * @returns extra data stored under key, or defaultVal if none
+	 */
+	getExtraData(key, defaultVal) {
 		if (!this.eData || !(key in this.eData)) {
 			return defaultVal;
 		}
@@ -183,6 +375,15 @@ class JrResult {
 
 	//---------------------------------------------------------------------------
 	// merge source into us, adding errors
+
+	/**
+	 * This function is used to merge one result into another, combining errors and successes, etc.
+	 * It's a rather elaborate function but serves an important purpose when we have multiple results and we care about errors in either.
+	 *
+	 * @param {object} source - source JrResult
+	 * @param {boolean} flagMergeSourceToTop - whether to merge souce object messages above ours when combinging
+	 * @returns this
+	 */
 	mergeIn(source, flagMergeSourceToTop) {
 		// this is really an awkward function, i wonder if there isn't a better cleaner way to merge objects and arrays
 		// this function is specific to the JrResult class, and not generic
@@ -199,18 +400,18 @@ class JrResult {
 		*/
 
 		// for fields, each keyed item should be a string; on the rare occasion we have an entry in both our field and source field with same key, we can append them.
-		if (source.fields) {
-			if (!this.fields) {
-				this.fields = jrhMisc.shallowCopy(source.fields);
+		if (source.errorFields) {
+			if (!this.errorFields) {
+				this.errorFields = jrhMisc.shallowCopy(source.errorFields);
 			} else {
-				for (key in source.fields) {
-					if (!this.fields[key]) {
-						this.fields[key] = source.fields[key];
+				for (key in source.errorFields) {
+					if (!this.errorFields[key]) {
+						this.errorFields[key] = source.errorFields[key];
 					} else {
 						if (flagMergeSourceToTop) {
-							this.fields[key] = source.fields[key] + " " + this.fields[key];
+							this.errorFields[key] = source.errorFields[key] + " " + this.errorFields[key];
 						} else {
-							this.fields[key] = this.fields[key] + " " + source.fields[key];
+							this.errorFields[key] = this.errorFields[key] + " " + source.errorFields[key];
 						}
 					}
 				}
@@ -247,13 +448,12 @@ class JrResult {
 	}
 
 
-	static makeClone(source) {
-		// first we make a new JrResult object, then copy properties
-		var target = this.makeNew();
-		target.copyFrom(source);
-		return target;
-	}
-
+	/**
+	 * Just a shallow copy of the object
+	 *
+	 * @param {object} source JrResult
+	 * @returns this
+	 */
 	copyFrom(source) {
 		// first we make a new JrResult object, then copy properties
 		Object.assign(this, source);
@@ -262,25 +462,45 @@ class JrResult {
 	//---------------------------------------------------------------------------
 
 
+
 	//---------------------------------------------------------------------------
-	// simple static helper
-	static is(obj) {
+	/**
+	 * Check if the passed value is a JrResult
+	 *
+	 * @static
+	 * @param {*} obj
+	 * @returns true if obj is an instance of JrResult
+	 */
+	static isJrResult(obj) {
 		return obj instanceof JrResult;
 	}
 
-	// this static helper lets us easily check for a case where caller did something like "var jrResult = JrResult.makeNew();"
-	//  but then in conditional blocks never added any messages or errors to it
+
+	/**
+	 * Simple helper function thats lets us easily check for a case where no errors or messages were added to a JrResult (i.e. it can be completely ignored)
+	 *
+	 * @static
+	 * @param {object} obj
+	 * @returns true if the JrResult obj has no data
+	 */
 	static isBlank(obj) {
 		// helper function
 		if (!obj) {
 			return true;
 		}
-		if (!obj.items && !obj.fields) {
+		if (!obj.items && !obj.errorFields) {
 			return true;
 		}
 		return false;
 	}
 
+
+	/**
+	 * Simple helper function thats makes it easier to ignore a result if there is nothing important in it
+	 *
+	 * @static
+	 * @returns undefined if thhis JrResult is blank
+	 */
 	undefinedIfBlank() {
 		if (JrResult.isBlank(this)) {
 			return undefined;
@@ -292,25 +512,16 @@ class JrResult {
 
 	//---------------------------------------------------------------------------
 	// passport helpers
-	static createFromPassportInfoError(info) {
-		// just convert from a passport error info object, which simply has a message field
-		return JrResult.makeNew("PassportError").pushError(this.passportErrorAsString(info));
-	}
 
-
-	static passportInfoAsJrResultError(info) {
-		if (!info) {
-			return undefined;
-		}
-		if (JrResult.is(info)) {
-			return info;
-		}
-		return this.createFromPassportInfoError(info);
-	}
-
-
-	static passportErrorAsString(info) {
-		if (JrResult.is(info)) {
+	/**
+	 * Return the string associated with a passport error, OR convert the JrResult to an error string if they pass in a JrResult
+	 *
+	 * @static
+	 * @param {object} info - the passport info error (or a jrResult)
+	 * @returns error message string
+	 */
+	static passportOrJrResultErrorAsString(info) {
+		if (JrResult.isJrResult(info)) {
 			return info.getErrorsAsString();
 		}
 		if (!info || !info.message) {
@@ -318,16 +529,20 @@ class JrResult {
 		}
 		return info.message;
 	}
-
-	addPassportInfoAsError(info) {
-		// add passport info value as an error to us
-		this.pushError(this.passportErrorAsString(info));
-	}
 	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
 	// session helpers for flash message save/load
+	/**
+	 * Add this JrResult to the (request)session, so it can be remembered for flash error messages (when we show an error on their next/redirected page request)
+	 * ##### Notes
+	 *  * We add the mergeIn function to combine multiple jrResults into one
+	 *
+	 * @param {*} req - express request
+	 * @param {*} flagAddToTop - add it to the top of the list of such error messages
+	 * @returns this
+	 */
 	addToSession(req, flagAddToTop) {
 		// addd to session
 		// for consistency we return THIS not the newly merged session info
@@ -350,40 +565,58 @@ class JrResult {
 		return this;
 	}
 
-	loadFromSession(req) {
+
+	/**
+	 * Create a result from the session, or return undefined if there is none, then clear session jrResult
+	 * ##### Notes
+	 *  * Important: The results will be REMOVED from the session after this is called
+	 *
+	 * @param {*} req - express request
+	 * @returns jrResult from session or undefined if none found
+	 */
+	static makeAndRemoveFromSession(req) {
+		// if not found, just return undefined quickly
+		if (!req.session || !req.session.jrResult) {
+			return undefined;
+		}
+
+		// create new result
+		var jrResult = JrResult.makeNew();
+
 		// load and ADD from session, then CLEAR session
 		if (req.session.jrResult) {
 			this.copyFrom(req.session.jrResult);
 			// remove it from session
 			delete req.session.jrResult;
 		}
-		// return ourselves so we can be used to chain functions
-		return this;
-	}
 
-	static makeFromSession(req) {
-		// if not found, just return undefined quickly
-		if (!req.session || !req.session.jrResult) {
-			return undefined;
-		}
-		//
-		var jrResult = JrResult.makeNew().loadFromSession(req);
 		return jrResult;
 	}
 
 
-	static sessionRenderResult(req, res, jrResult, flagSessionAtTop) {
+	/**
+	 * Get any existing result from session, merging it with any provided here, and clearing any existing result from session
+	 *
+	 * @static
+	 * @param {*} req - express request
+	 * @param {*} res - express result
+	 * @param {*} jrResult - the result to render in the session
+	 * @param {*} flagSessionAtTop - if true, result errors will be placed at top
+	 * @returns the new combined result in the session
+	 */
+	static getMergeSessionResultAndClear(req, res, jrResult, flagSessionAtTop) {
 		// ok we have a jrResult locally that we are about to pass along to view template
 		// but if we just passed it in as a local template/view variable, it would OVERWRITE any session data, so we would like to
 		// combine them
 		// session result, if any (deleting it from session if found, like a flash message)
-		var jrResultSession = this.makeFromSession(req);
+		var jrResultSession = this.makeAndRemoveFromSession(req);
 
 		if (!jrResult) {
 			// empty jrResult, just return session version
 			return jrResultSession;
 		}
-		// combine them
+
+		// combine them and return it
 		jrResult.mergeIn(jrResultSession, flagSessionAtTop);
 		return jrResult;
 	}
@@ -392,34 +625,53 @@ class JrResult {
 
 
 	//---------------------------------------------------------------------------
-	// to help use short circuit a procedure that would normally end in rendering a view -- sort of like throwing an exception
+	/**
+	 * Helper function for common issue where we want to store in result whether we have already started rendering result
+	 * @todo - remove use of this function and simply store flag in express result
+	 *
+	 * @param {boolean} val - true or false
+	 */
 	setDoneRendering(val) {
 		this.doneRendering = val;
 	}
 
+
+	/**
+	 * Helper function for common issue where we want to store in result whether we have already started rendering result
+	 * @todo - remove use of this function and simply store flag in express result
+	 * @returns true if this flag has been set
+	 */
 	getDoneRendering() {
 		return this.doneRendering;
 	}
 	//---------------------------------------------------------------------------
 
 
+
 	//---------------------------------------------------------------------------
-	// express middleware helper
-	// the idea here is we want to take any session jrResult found in session, and put it automatically in any render call res
-	// all this does is save us from having to make every render look like this:
-	//    	res.render("viewpage", {
-	//          jrResult: JrResult.restoreFromSession(req);
-	//      });
-	// see https://stackoverflow.com/questions/9285880/node-js-express-js-how-to-override-intercept-res-render-function
-	//
-	// ATTN: 5/27/19 -- although this worked flawlessly, we have decided to force the manaul use of this into all render calls, to have better control over it
-	// but the proper call now is a bit more involved, it should be like this:
-	//	res.render("urlpath", {
-	//      jrResult: JrResult.sessionRenderResult(req, res, jrResult),
-	//      // or if we have no result of our own: jrResult: JrResult.sessionRenderResult(req, res)
-	//      }
-	// this old code does NOT do a merge combine of session data with manual jrresult, so can no longer be used
-	//
+	/**
+	 * Experimental express middleware function that automatically grabs any pending jrResult error from session and makes it available in the locals variable of a view for display
+	 * ##### Notes
+	 * express middleware helper
+	 * the idea here is we want to take any session jrResult found in session, and put it automatically in any render call res
+	 * all this does is save us from having to make every render look like this:
+	 *    	res.render("viewpage", {
+	 *         jrResult: JrResult.restoreFromSession(req);
+	 *      });
+	 * see https://stackoverflow.com/questions/9285880/node-js-express-js-how-to-override-intercept-res-render-function
+	 *
+	 * ATTN: 5/27/19 -- although this worked flawlessly, we have decided to force the manaul use of this into all render calls, to have better control over it
+	 * but the proper call now is a bit more involved, it should be like this:
+	 *	res.render("urlpath", {
+	 *      jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
+	 *      // or if we have no result of our own: jrResult: JrResult.getMergeSessionResultAndClear(req, res)
+	 *      }
+	 * this old code does NOT do a merge combine of session data with manual jrresult, so can no longer be used
+	 *
+	 *
+	 * @static
+	 * @param {*} options
+	 */
 	static _unusedCodeExpressMiddlewareInjectSessionResult(options) {
 		options = options || {};
 		// var safe = (options.unsafe === undefined) ? true : !options.unsafe;
@@ -429,7 +681,7 @@ class JrResult {
 			// override logic
 			res.render = (view, roptions, fn) => {
 				// transfer any session jrResult into RESPONSE view available variable
-				res.locals.jrResult = JrResult.makeFromSession(req);
+				res.locals.jrResult = JrResult.makeAndRemoveFromSession(req);
 				// continue with original render
 				jRrender.call(this, view, roptions, fn);
 			};
@@ -441,6 +693,11 @@ class JrResult {
 
 
 	//---------------------------------------------------------------------------
+	/**
+	 * Return a string containing all errors in the result
+	 *
+	 * @returns error string
+	 */
 	getErrorsAsString() {
 		if (!this.items || !this.items.error || this.items.error.length <= 0) {
 			return "";

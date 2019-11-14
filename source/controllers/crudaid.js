@@ -143,7 +143,7 @@ class CrudAid {
 		// render
 		res.render(viewFile, {
 			headline: "List " + modelClass.getNiceName() + "s",
-			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
 			csrfToken: arserver.makeCsrf(req, res),
 			helperData,
 			genericMainHtml,
@@ -203,7 +203,7 @@ class CrudAid {
 		// render
 		res.render(viewFile, {
 			headline: "Add " + modelClass.getNiceName(),
-			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
 			csrfToken: arserver.makeCsrf(req, res),
 			reqbody,
 			helperData,
@@ -285,7 +285,7 @@ class CrudAid {
 		// re-present form for another add?
 		res.render(viewFile, {
 			headline: "Add " + modelClass.getNiceName(),
-			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
 			csrfToken: arserver.makeCsrf(req, res),
 			reqbody,
 			helperData,
@@ -332,7 +332,7 @@ class CrudAid {
 		// render
 		res.render(viewFile, {
 			headline: "Edit " + modelClass.getNiceName() + " #" + id,
-			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
 			csrfToken: arserver.makeCsrf(req, res),
 			reqbody,
 			helperData,
@@ -417,7 +417,7 @@ class CrudAid {
 		// render -- just like original edit
 		res.render(viewFile, {
 			headline: "Edit " + modelClass.getNiceName() + " #" + id,
-			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
 			csrfToken: arserver.makeCsrf(req, res),
 			reqbody,
 			helperData,
@@ -459,7 +459,7 @@ class CrudAid {
 		// render
 		res.render(viewFile, {
 			headline: "View " + modelClass.getNiceName() + " #" + id,
-			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
 			obj,
 			helperData,
 			genericMainHtml,
@@ -501,7 +501,7 @@ class CrudAid {
 		// render
 		res.render(viewFile, {
 			headline: "Delete " + modelClass.getNiceName() + " #" + id,
-			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
 			csrfToken: arserver.makeCsrf(req, res),
 			obj,
 			helperData,
@@ -569,7 +569,7 @@ class CrudAid {
 		// failed, present them with delete page like view?
 		res.render(viewFile, {
 			headline: "Delete " + modelClass.getNiceName() + " #" + id,
-			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
 			obj,
 			genericMainHtml,
 			crudDelete: true,
@@ -604,7 +604,7 @@ class CrudAid {
 		// render
 		res.render(viewFile, {
 			headline: modelClass.getNiceName() + " Stats",
-			jrResult: JrResult.sessionRenderResult(req, res),
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 			csrfToken: arserver.makeCsrf(req, res),
 			helperData,
 			genericMainHtml,

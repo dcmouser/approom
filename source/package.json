@@ -14,7 +14,7 @@
     "UNUSED_configtest2": "cross-env config=debug,dev node approom.js runserver",
     "eslint": "eslint .",
     "npmcheck": "cls && npm audit || npm-check || exit 0",
-    "makedoc": "node_modules/.bin/jsdoc -p --readme ../README.md -c jsdoc.json && copyfiles -u 3 ../docs/jsdoc/**/* static/jsdoc",
+    "makedoc": "node_modules/.bin/jsdoc --private --readme ../README.md --configure jsdoc.json && copyfiles -u 3 ../docs/jsdoc/**/* static/jsdoc",
     "copydoc": "copyfiles -u 3 --verbose ../docs/jsdoc/**/* static/jsdoc"
   },
   "author": "jesse reichler / mouser (mouser@donationcoder.com)",

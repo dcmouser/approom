@@ -53,8 +53,8 @@ async function routerGetIndex(req, res, next) {
 	}
 
 	res.render("user/membersonly", {
-		// jrResult: JrResult.sessionRenderResult(req, res, jrResult, true),
-		jrResult: JrResult.sessionRenderResult(req, res),
+		// jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult, true),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 		username: user.getUsername(),
 		id: user.getIdAsString(),
 	});

@@ -36,6 +36,7 @@ function jrPluralizeCount(number, singular, plural) {
 	return (typeof plural === "string" ? numberStr + " " + plural : numberStr + " " + singular + "s");
 }
 
+
 /**
  * Pluralize a string based on a number (presumably the number of items being referred to)
  * @example "You have eaten " + jrPluralize(4, "one apple", "some apples")

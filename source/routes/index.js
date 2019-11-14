@@ -52,7 +52,7 @@ async function routerGetIndex(req, res, next) {
 
 	// render view
 	res.render("index", {
-		jrResult: JrResult.sessionRenderResult(req, res),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 		title: "AppRoom",
 	});
 }

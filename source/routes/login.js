@@ -63,7 +63,7 @@ async function routerGetIndex(req, res, next) {
 
 	// render page
 	res.render("account/login", {
-		jrResult: JrResult.sessionRenderResult(req, res),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 		csrfToken: arserver.makeCsrf(req, res),
 	});
 }
@@ -89,7 +89,7 @@ async function routerPostIndex(req, res, next) {
 		// re-present the login form
 		res.render("account/login", {
 			reqBody: req.body,
-			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
 			csrfToken: arserver.makeCsrf(req, res),
 		});
 	} else {
@@ -117,7 +117,7 @@ async function routerGetTwitterAuth(req, res, next) {
 // present one-time login via email form
 async function routerGetEmail(req, res, next) {
 	res.render("account/login_email", {
-		jrResult: JrResult.sessionRenderResult(req, res),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 		csrfToken: arserver.makeCsrf(req, res),
 	});
 }
@@ -160,7 +160,7 @@ async function routerPostEmail(req, res, next) {
 
 	// show the email login form
 	res.render("account/login_email", {
-		jrResult: JrResult.sessionRenderResult(req, res, jrResult),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
 		reqBody: req.body,
 		csrfToken: arserver.makeCsrf(req, res),
 	});

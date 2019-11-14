@@ -42,7 +42,7 @@ function setupRouter(urlPath) {
 
 async function routerGetIndex(req, res, next) {
 	res.render("app/index", {
-		jrResult: JrResult.sessionRenderResult(req, res),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 		title: "App Route",
 	});
 }

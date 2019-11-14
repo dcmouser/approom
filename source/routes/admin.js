@@ -54,7 +54,7 @@ async function routerGetIndex(req, res, next) {
 	}
 
 	res.render("admin/index", {
-		jrResult: JrResult.sessionRenderResult(req, res),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 	});
 }
 
@@ -66,7 +66,7 @@ async function routerGetTesting(req, res, next) {
 	}
 
 	res.render("admin/testing", {
-		jrResult: JrResult.sessionRenderResult(req, res),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 	});
 }
 
@@ -78,7 +78,7 @@ async function routerGetTestingMakeappsrooms(req, res, next) {
 	}
 
 	res.render("admin/confirmpage", {
-		jrResult: JrResult.sessionRenderResult(req, res),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 		csrfToken: arserver.makeCsrf(req, res),
 		headline: "Generate some test Apps and Rooms",
 		message: "This operation will bulk create a bunch of apps and rooms.  Note it will fail if run twice, due to clashing shortcodes.",

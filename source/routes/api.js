@@ -71,7 +71,7 @@ function setupRouter(urlPath) {
 async function routerGetIndex(req, res, next) {
 	// just show index
 	res.render("api/index", {
-		jrResult: JrResult.sessionRenderResult(req, res),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 	});
 }
 

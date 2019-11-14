@@ -20,13 +20,23 @@ const jrhMongo = require("./jrh_mongo");
 
 
 
-//---------------------------------------------------------------------------
+/**
+ * Build a mongoose (mongo?) query to filter only certain rows of a database table, from form variables in a user request.
+ * This is used to allow the crud admin tables to be filtered by an admin user using simple column filters.
+ * This function includes sort fields and direction, and pagination values (offset, size)
+ *
+ * @param {*} filterOptions - defined default sort field/direction, default page size, max page size, etc.
+ * @param {*} schema - defines the column headers available and their characteristics
+ * @param {*} req - express request
+ * @param {*} jrResult - a JrResult object that we will push error codes into in the case of error
+ * @returns tuple \{ query, queryOptions, queryUrlData \} where queryUrlData is an object with data to include in form data/links to reproduce the request (useful for going to next page, etc)
+ */
 function buildMongooseQueryFromReq(filterOptions, schema, req, jrResult) {
 	// return the query object for use with mongoose
 	// we parse the req data (form post vars or query params), and create the query used by mongoose
 
 	// here are the req params we can get:
-	//  pageNumb (gobal)
+	//  pageNum (gobal)
 	//  pageSize (global)
 	//  sortField (global)
 	//  sortDir (global)
@@ -121,38 +131,49 @@ function buildMongooseQueryFromReq(filterOptions, schema, req, jrResult) {
 
 
 
-
 //---------------------------------------------------------------------------
+/**
+ * Take a query string (which is in an adhoc format described below) and convert it into a safe mongoose(mongo) query object that can be sent to the database
+ * ##### Notes
+ *
+ * format for query string is a bit ad hoc, but works like this:\
+ * the search phrase is first divided into a set of OR tests by splitting using the text " or " (without quotes)\
+ * alternatively a comma may be used in place of " or "\
+ * with each OR phrase we can have a set of AND queries, separated by " and " (without quotes)\
+ * integer (Number) fields are simple integers\
+ *
+ * Operators for numbers are < > <= >= = == != !== !< !> !<= !>=\
+ * So some example valid numeric searches:\
+ * <20\
+ * <20 and >5\
+ * <20 or >100\
+ * <20 and >5 or >100  [remember this is treated like (<20 and >5) or (>100) ]\
+ *
+ * Date fields are exactly like numbers, EXCEPT that the numeric values in the search query are treated as dates, X number of days in the past\
+ * So <5 means the date is less (older) than 5 days ago\
+ *
+ * String fields only support the operators = == != !==\
+ * But string queries are parsed slightly specially.\
+ * First, strings in double quotes are tested for exact matches, they do NOT do a substring %LIKE% match\
+ * Strings *not* in double quotes are searched for as substrings in the field as if they were %LIKE% matches in sql\
+ * Strings enclosed in // are treated as regular expression searches\
+ * Note that the and/or operators are not smart about being in quotes, which means that you simply CANNOT search for something with " and " or " or "" in it or commas\
+ *
+ * Additionally you can use the constant "null" or "undefined" (not in quotes) to search for undefined value, or !null to search for values that are NOT undefined or null\
+ *
+ * @private
+ *
+ * @param {string} fkey - the name of the column (field)
+ * @param {object} fieldSchema - the schema definition for the field
+ * @param {string} querystr - the string specified by the user specifying how to filter the data
+ * @param {object} jrResult - errors will be pushed into this object
+ * @returns the query object generated
+ */
 function convertReqQueryStringToAMongooseFindFilter(fkey, fieldSchema, querystr, jrResult) {
 	// user types a filter for a field (db column) as a string;
 	// here we convert it into something suitable for a mongoose find query obj
 	const schemaType = fieldSchema.type;
 	let key, retQuery;
-
-	// format for query string is a bit ad hoc, but works like this:
-	// the search phrase is first divided into a set of OR tests by splitting using the text " or " (without quotes)
-	// alternatively a comma may be used in place of " or "
-	// with each OR phrase we can have a set of AND queries, separated by " and " (without quotes)
-	// integer (Number) fields are simple integers
-	//
-	// Operators for numbers are < > <= >= = == != !== !< !> !<= !>=
-	// So some example valid numeric searches:
-	// 	<20
-	//  <20 and >5
-	//  <20 or >100
-	//  <20 and >5 or >100  [remember this is treated like (<20 and >5) or (>100) ]
-	//
-	// Date fields are exactly like numbers, EXCEPT that the numeric values in the search query are treated as dates, X number of days in the past
-	// So <5 means the date is less (older) than 5 days ago
-	//
-	// String fields only support the operators = == != !==
-	// But string queries are parsed slightly specially.
-	// First, strings in double quotes are tested for exact matches, they do NOT do a substring %LIKE% match
-	// Strings *not* in double quotes are searched for as substrings in the field as if they were %LIKE% matches in sql
-	// Strings enclosed in // are treated as regular expression searches
-	// Note that the and/or operators are not smart about being in quotes, which means that you simply CANNOT search for something with " and " or " or "" in it or commas
-	//
-	// Additionally you can use the constant "null" or "undefined" (not in quotes) to search for undefined value, or !null to search for values that are NOT undefined or null
 
 	if (schemaType === Number) {
 		// it's a numeric column
@@ -190,7 +211,21 @@ function convertReqQueryStringToAMongooseFindFilter(fkey, fieldSchema, querystr,
 
 
 
+
+
 //---------------------------------------------------------------------------
+/**
+ * A numeric-field-specific version of the function that makes a query object from a query string
+ * @see convertReqQueryStringToAMongooseFindFilter
+ * @private
+ *
+ * @param {*} fkey
+ * @param {*} schemaType
+ * @param {*} querystr
+ * @param {*} subType
+ * @param {*} jrResult
+ * @returns query object
+ */
 function convertReqQueryStringToAMongooseFindFilterNumeric(fkey, schemaType, querystr, subType, jrResult) {
 	var valPat;
 	var mongoValFunc;
@@ -263,6 +298,18 @@ function convertReqQueryStringToAMongooseFindFilterNumeric(fkey, schemaType, que
 }
 
 
+/**
+ * A string-field-specific version of the function that makes a query object from a query string
+ * @see convertReqQueryStringToAMongooseFindFilter
+ * @private
+ *
+ * @param {*} fkey
+ * @param {*} schemaType
+ * @param {*} querystr
+ * @param {*} subType
+ * @param {*} jrResult
+ * @returns query object
+ */
 function convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, querystr, subType, jrResult) {
 	var valPat;
 	var mongoValFunc;
@@ -307,7 +354,17 @@ function convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, qu
 
 
 
-
+/**
+ * A boolean-field-specific version of the function that makes a query object from a query string
+ * @see convertReqQueryStringToAMongooseFindFilter
+ * @private
+ *
+ * @param {*} fkey
+ * @param {*} schemaType
+ * @param {*} querystr
+ * @param {*} jrResult
+ * @returns query object
+ */
 function convertReqQueryStringToAMongooseFindFilterBoolean(fkey, schemaType, querystr, jrResult) {
 	var retv;
 
@@ -326,9 +383,20 @@ function convertReqQueryStringToAMongooseFindFilterBoolean(fkey, schemaType, que
 
 	return retv;
 }
+//---------------------------------------------------------------------------
 
 
 
+
+//---------------------------------------------------------------------------
+/**
+ * Take a query string for a string field, and make a query object out of it which will be either a regex style query to act like a wildcard match, or pass through the regex search if user specifies it as /regex/
+ * @private
+ *
+ * @param {string} strVal
+ * @param {object} jrResult
+ * @returns query object
+ */
 function convertReqQueryStringToAMongooseFindFilterMongoStrCmp(strVal, jrResult) {
 	// help for string compare
 	// first let's see if its an explicit regex
@@ -377,7 +445,21 @@ function convertReqQueryStringToAMongooseFindFilterMongoStrCmp(strVal, jrResult)
 
 
 
-
+/**
+ * Parse a query string using and and or separators and create a query object with and and or arrays
+ * @todo improve documentation for other parameters
+ *
+ * @param {string} fkey
+ * @param {*} schemaType
+ * @param {string} querystr
+ * @param {array} operators -- allowable operators
+ * @param {*} opChars
+ * @param {*} valPat
+ * @param {*} mongoValFunc
+ * @param {*} standaloneOpString
+ * @param {*} jrResult
+ * @returns an array of disjunctive queries (ors)
+ */
 function convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaType, querystr, operators, opChars, valPat, mongoValFunc, standaloneOpString, jrResult) {
 	var opRegex = new RegExp("\\s*([" + opChars + "]+)\\s*(" + valPat + ")\\s*");
 	var valRegex = new RegExp("\\s*(" + valPat + ")\\s*");
@@ -478,6 +560,17 @@ function convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaT
 }
 
 
+/**
+ * Examine a string value (opVal) and operator, and handle null|undefined case specially
+ * @todo improve documentation for other parameters
+ *
+ * @param {*} fkey
+ * @param {*} opVal
+ * @param {*} mongoOp
+ * @param {*} mongoValFunc
+ * @param {*} jrResult
+ * @returns an object, either simple value or operator and value for handling null/undefined cases
+ */
 function convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(fkey, opVal, mongoOp, mongoValFunc, jrResult) {
 	var opValm;
 

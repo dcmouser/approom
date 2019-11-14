@@ -489,7 +489,7 @@ If this request was not made by you, please ignore this email.
 		if (!verification) {
 			// not found
 			return {
-				jrResult: JrResult.makeError("VerificationError", "Verification code (" + code + ") not found."),
+				jrResult: JrResult.makeError("Verification code (" + code + ") not found."),
 				successRedirectTo: null,
 			};
 		}
@@ -510,7 +510,7 @@ If this request was not made by you, please ignore this email.
 			user = await UserModel.findOneById(userId, true);
 			if (!user) {
 				return {
-					jrResult: JrResult.makeError("VerificationError", "The user associated with this verification code could not be found."),
+					jrResult: JrResult.makeError("The user associated with this verification code could not be found."),
 					successRedirectTo: null,
 				};
 			}
@@ -554,12 +554,12 @@ If this request was not made by you, please ignore this email.
 			// already used
 			// however, for certain verifications we allow reuse
 			if (!this.canUserReuse(req)) {
-				return JrResult.makeError("VerifcationError", "Verification code (" + this.getUniqueCode() + ") has already been used, and cannot be used again.");
+				return JrResult.makeError("Verification code (" + this.getUniqueCode() + ") has already been used, and cannot be used again.");
 			}
 		}
 		if (this.isExpired()) {
 			// expired
-			return JrResult.makeError("VerifcationError", "Verification code (" + this.getUniqueCode() + ") has expired.");
+			return JrResult.makeError("Verification code (" + this.getUniqueCode() + ") has expired.");
 		}
 		// all good
 		return JrResult.makeSuccess();
@@ -669,7 +669,7 @@ If this request was not made by you, please ignore this email.
 		}
 
 		// unknown
-		var jrResult = JrResult.makeError("VerificationError", "Unknown verification token type (" + this.type + ")");
+		var jrResult = JrResult.makeError("Unknown verification token type (" + this.type + ")");
 		return { jrResult, successRedirectTo };
 	}
 

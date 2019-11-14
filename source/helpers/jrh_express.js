@@ -49,7 +49,7 @@ async function asyncPasswordAuthenticate(authOptions, provider, providerNiceLabe
 		passport.authenticate(provider, authOptions, async (err, inuserPassport, info) => {
 			if (err || !inuserPassport) {
 				// add error
-				jrResult.pushError("error authenticating " + providerNiceLabel + ": " + JrResult.passportErrorAsString(info) + ".");
+				jrResult.pushError("error authenticating " + providerNiceLabel + ": " + JrResult.passportOrJrResultErrorAsString(info) + ".");
 				// run next on error in chain
 				if (false && err) {
 					inext(err);
@@ -102,7 +102,7 @@ async function asyncPasswordReqLogin(userPassport, errorMessage, req, jrResult) 
 		ireq.logIn(userPassport, async (ierr) => {
 			if (ierr) {
 				// error (exception) logging them in
-				jrResult.pushError(errorMessage + ": " + JrResult.passportErrorAsString(ierr));
+				jrResult.pushError(errorMessage + ": " + JrResult.passportOrJrResultErrorAsString(ierr));
 				resolve(jrResult);
 			}
 			// success

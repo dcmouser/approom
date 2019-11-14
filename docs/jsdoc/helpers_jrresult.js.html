@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>routes/api.js - Documentation</title>
+    <title>helpers/jrresult.js - Documentation</title>
     
     
     <script src="scripts/prettify/prettify.js"></script>
@@ -32,7 +32,7 @@
 
 <div id="main">
     
-    <h1 class="page-title">routes/api.js</h1>
+    <h1 class="page-title">helpers/jrresult.js</h1>
     
 
     
@@ -43,303 +43,725 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>/**
- * @module routes/api
+ * @module helpers/jrresult
  * @author jesse reichler &lt;mouser@donationcoder.com>
- * @copyright 10/28/19
- * @description
- * ##### Overview
- * This file handles all requests related to the programmatic API interface for accessing the system.
- * @todo These routes are all intended to be called programmatically by other code, and so should all return json replies, but currently some return standard web pages for testing.
-*/
+ * @copyright 5/24/19
 
+ * @description
+ * Error helper class
+*/
 
 "use strict";
 
-// passport
-const passport = require("passport");
 
 // modules
-const express = require("express");
 const assert = require("assert");
 
-// server
-const arserver = require("../controllers/server");
-
-// helpers
-const JrResult = require("../helpers/jrresult");
-const jrlog = require("../helpers/jrlog");
+// helper modules
+const jrhMisc = require("./jrh_misc");
 
 
-// module variable to remember base url path of router
-var routerBaseUrlPath;
+
 
 
 
 //---------------------------------------------------------------------------
+// JrResult is a class for returning an error from functions with enough information that it can be displayed to the user
+// with helper methods for logging, etc.
 /**
- * Add the API routes
+ * We use JrResult object instances to store the results of operations, where we may want to indicate a success or an error with additional information about the nature of the error.
+ * The result can hold multiple errors, possibly keyed to fields (for example an error message corresponding to each input form variable)
  *
- * @param {string} urlPath - the base path of these relative paths
- * @returns router object
+ * @class JrResult
  */
-function setupRouter(urlPath) {
-	// save urlPath (in module locals)
-	routerBaseUrlPath = urlPath;
 
-	// setup routes
-	const router = express.Router();
-	router.get("/", routerGetIndex);
-	router.get("/reqrefresh", routerGetReqrefresh);
-	router.post("/reqrefresh", routerPostReqrefresh);
-	router.get("/refreshaccess", routerGetRefreshaccess);
-	router.all("/tokentest", routerAllTokentest);
-	router.get("*", routerGetWildcard);
+class JrResult {
 
-	// return router
-	return router;
-}
-//---------------------------------------------------------------------------
+	//---------------------------------------------------------------------------
+	/**
+	 * Creates an instance of JrResult.
+	 * @memberof JrResult
+	 */
+	constructor() {
+	}
+	//---------------------------------------------------------------------------
 
 
-
-
-//---------------------------------------------------------------------------
-// router functions
-
-/**
- * @description
- * Handle the request for the api index page,
- *  which currently just shows a web page index of links to all of the api functions.
- * @todo Replace the template with some json reply, since api should only be machine callable.
- */
-async function routerGetIndex(req, res, next) {
-	// just show index
-	res.render("api/index", {
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-	});
-}
-
-
-/**
- * @description
- * Present user with form for their username and password,
- * so they may request a long-lived Refresh token (JWT).
- * @todo Note that this web page we present is useful for debugging, but should not be necesary in production use, because we expect code to be posting to us programmatically.
- */
-async function routerGetReqrefresh(req, res, next) {
-	// render page
-	res.render("api/tokenuserpassform", {
-	});
-}
-
-
-/**
- * @description
- * Process request for a long-lived Refresh token (JWT), after checking user's username and password in post data.
- * If username and password match, they will be issued a JWT refresh token that they can use to generate short-lived access tokens.
- * ##### Notes
- * * The refresh token is coded with scope "api" and cannot be used to perform arbitrary actions on the site; it can only be used for api-like actions.
- * * The refresh token should only be used to request access tokens, which are short-lived tokens that can be use to perform actual api functions.
- */
-async function routerPostReqrefresh(req, res, next) {
-
-	// do a local login with passed username and password; DONT store session info
-	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateNonSessionGetUserTuple("local", "with username and password", req, res, next, jrResult, true);
-	if (jrResult.isError()) {
-		var msg = "Error during api token request: " + jrResult.getErrorsAsString();
-		res.status(401).send(msg);
-		return;
+	//---------------------------------------------------------------------------
+	/**
+	 * Helper function to create a new blank JrResult object
+	 *
+	 * @static
+	 * @returns new JrResult object
+	 */
+	static makeNew() {
+		// static helper.
+		return new JrResult();
 	}
 
-	// success
-	var secureToken = await makeSecureTokenRefresh(userPassport, user);
 
-	// log request
-	arserver.logr(req, "api.token", "made refresh token for " + user.getLogIdString());
-
-	// provide it
-	res.status(200).send(secureToken);
-}
-
-
-/**
- * @description
- * Get a short-lived (JWT) Access token, using a Refresh token.  Here the user passes us a Refresh token and we give them (after verifying it's validity) an Access token.
- * @todo It gets token from the query string (token parameter); eventually we want this to be (only) retrieved from headers or post data.  This just makes it easier to test initially.
- * ##### NOTES
- * * see &lt;a href="https://scotch.io/@devGson/api-authentication-with-json-web-tokensjwt-and-passport">using refresh tokens with jwt&lt;/a>
- */
-async function routerGetRefreshaccess(req, res, next) {
-
-	// first the user has to give us a valid REFRESH token
-	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult);
-	if (jrResult.isError()) {
-		res.status(403).send(jrResult.getErrorsAsString());
-		return;
+	/**
+	 * Helper function to create a new JrResult object and store an error for it
+	 *
+	 * @static
+	 * @returns new JrResult object
+	 */
+	static makeError(msg) {
+		var jrResult = new JrResult();
+		jrResult.pushError(msg);
+		return jrResult;
 	}
 
-	// while testing this we also want to make sure the refresh token wasn't revoked
 
-	// it's a token, but is it the right type?
-	const tokenType = userPassport.token.type;
-	if (tokenType !== "refresh") {
-		res.status(403).send("Error: A valid REFRESH token must be passed to request an access token.");
-		return;
+	/**
+	 * Helper function to create a new JrResult object and store a success message in it
+	 *
+	 * @static
+	 * @returns new JrResult object
+	 */
+	static makeSuccess(msg) {
+		var jrResult = new JrResult();
+		jrResult.pushSuccess(msg);
+		return jrResult;
 	}
 
-	// jrlog.debugObj(userPassport.token);
-
-	// ok they gave us a valid refresh token, so now we generate an access token for them
-	var secureToken = await makeSecureTokenAccessFromRefreshToken(userPassport, user, userPassport.token);
-
-	// log request
-	arserver.logr(req, "api.token", "refreshed access token for " + user.getLogIdString());
-
-	// provide it
-	res.status(200).send(secureToken);
-}
-
-
-/**
- * @description
- * Evaluate a refresh or access token, and report on its contents and validity; useful for testing.
- * @todo This should probably not be present in production version.
- * @todo It gets token from the query string (token parameter); we probably want it in header or post data eventually.
- */
-async function routerAllTokentest(req, res, next) {
-	// test if user has passed user login info through api token
-
-	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult);
-	if (jrResult.isError()) {
-		res.status(403).send(jrResult.getErrorsAsString());
-		return;
+	/**
+	 * Helper function to create a new JrResult object and store a generic message in it
+	 *
+	 * @static
+	 * @returns new JrResult object
+	 */
+	static makeMessage(msg) {
+		var jrResult = new JrResult();
+		jrResult.pushMessage(msg);
+		return jrResult;
 	}
 
-	// it's good
-	const tokenType = userPassport.token.type;
-	res.status(200).send("Valid token parsed in API test.&lt;br/>&lt;br/>Token type: " + tokenType + "&lt;br/>&lt;br/>User minimal passport profile " + JSON.stringify(userPassport) + " &lt;br/>&lt;br/>Full user: " + JSON.stringify(user));
-}
+
+	/**
+	 * make a clone of an existing jr result
+	 *
+	 * @static
+	 * @param {object} source
+	 * @returns new JrResult object
+	 */
+	static makeClone(source) {
+		// first we make a new JrResult object, then copy properties
+		var target = this.makeNew();
+		target.copyFrom(source);
+		return target;
+	}
+	//---------------------------------------------------------------------------
 
 
-/**
- * @description
- * Test function, catches all other api routes (so no 404s), and just complains and checks for rate limiting.
- * ##### NOTES
- * * Currently this function is just used to test rate limiting for DOS type attacks.
- */
-// test rate limiting of generic 404s at api route
-async function routerGetWildcard(req, res, next) {
-	var msg;
 
-	// ATTN: test of rate limiting block
-	const rateLimiter = arserver.getRateLimiterApi();
-	const rateLimiterKey = req.ip;
-	//
-	try {
-		await rateLimiter.consume(rateLimiterKey, 1);
-	} catch (rateLimiterRes) {
-		// rate limiter triggered
-		msg = {
-			message: "API rate limiting triggered; your ip has been blocked for " + rateLimiter.blockDuration + " seconds.",
+	//---------------------------------------------------------------------------
+	/**
+	 * clear all fields of the jrResult object
+	 */
+
+	clear() {
+		this.typestr = undefined;
+		this.errorFields = undefined;
+		this.items = undefined;
+		this.eData = undefined;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	// accessors
+
+	/**
+	 * Set the type value which can be checked later
+	 * @param {*} typestr
+	 */
+	setType(typestr) {
+		this.typestr = typestr;
+	}
+
+
+	/**
+	 * Get the type value for the object which can be set
+	 */
+	getType() { return this.typestr; }
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	/**
+	 * Checks if the jrResult is (contains) an error
+	 * @returns true if there are any error items pushed into this jrResult
+	 */
+	isError() {
+		if (this.items &amp;&amp; this.items.error &amp;&amp; this.items.error.length > 0) {
+			// explicit error messages in the object
+			return true;
+		}
+		if (this.errorFields &amp;&amp; this.errorFields.length > 0) {
+			// there are field specific errors registered
+			return true;
+		}
+		return false;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	// fields are key=> value pairs, used for input form errors typically
+
+	/**
+	 * Set a field-associated error; marks the result as an error and makes it possible for observer to check which specific field caused it
+	 *
+	 * @param {string} key
+	 * @param {*} value
+	 * @returns this
+	 */
+	setFieldError(key, value) {
+		if (this.errorFields === undefined) {
+			this.errorFields = {};
+		}
+		this.errorFields[key] = value;
+		return this;
+	}
+
+
+	/**
+	 * Gets any error associated with this field key, or defaultVal if none set (defaults to undefined)
+	 *
+	 * @param {string} key
+	 * @param {*} defaultval (if not provided, undefined will be used)
+	 * @returns error message associated with key, or defaultVal if none set
+	 */
+	getFieldError(key, defaultval) {
+		if (this.errorFields === undefined || this.errorFields[key] === undefined) {
+			return defaultval;
+		}
+		return this.errorFields[key];
+	}
+
+
+	/**
+	 * Generic helper to clear all items in the given section (errors, success, messages)
+	 * @private
+	 *
+	 * @param {*} key
+	 * @returns this
+	 */
+	clearSection(sectionKey) {
+		if (this.items === undefined) {
+			return this;
+		}
+		if (this.items[sectionKey] === undefined) {
+			return this;
+		}
+		this.items[sectionKey].clear();
+
+		return this;
+	}
+
+
+	// now we have more generic lists of messages/errors
+	/**
+	 * Generic helper to push a message into a given section (errors, success, messages)
+	 * @private
+	 *
+	 * @param {string} sectionKey
+	 * @param {*} msg - message to add
+	 * @param {*} flagOnTop - if true, the new message will be pushed at top of list
+	 * @returns this
+	 */
+	push(sectionKey, msg, flagOnTop) {
+		if (this.items === undefined) {
+			this.items = {};
+		}
+		if (this.items[sectionKey] === undefined) {
+			this.items[sectionKey] = [msg];
+		} else {
+			if (flagOnTop) {
+				this.items[sectionKey].unshift(msg);
+			} else {
+				this.items[sectionKey].push(msg);
+			}
+		}
+		return this;
+	}
+
+
+	/**
+	 * Set the error associated with a specific key
+	 * ##### Notes:
+	 *  * this also causes a general (non-feild) error to be added to the object, with the same message
+	 *
+	 * @param {string} key - the field name to set the error for
+	 * @param {string} msg - the error messsage
+	 * @returns this
+	 */
+	pushFieldError(key, msg) {
+		// push a generic error, and also add a field error for it
+		this.push("error", msg);
+		this.setFieldError(key, msg);
+		return this;
+	}
+
+
+	/**
+	 * Set the error associated with a specific key, AND adds a different error message as a general error
+	 *
+	 * @param {string} key - the field name to set the error for
+	 * @param {string} shortMsg - the error messsage to add to the field
+	 * @param {string} longMsg - the error message to add as a generic error
+	 * @returns this
+	 */
+	pushBiFieldError(key, shortMsg, longMsg) {
+		// push an error, and also add a field error for it
+		this.push("error", longMsg);
+		this.setFieldError(key, shortMsg);
+		return this;
+	}
+
+
+	/**
+	 * Add a generic error to the result
+	 *
+	 * @param {string} msg
+	 * @returns this
+	 */
+	pushError(msg) {
+		this.push("error", msg);
+		return this;
+	}
+
+
+	/**
+	 * Add a generic error to the result, pushing it to the top of the error list
+	 *
+	 * @param {string} msg
+	 * @returns this
+	 */
+	pushErrorOnTop(msg) {
+		this.push("error", msg, true);
+		return this;
+	}
+
+
+	/**
+	 * Clear any previous error and then add a generic error to the result
+	 *
+	 * @param {string} msg
+	 * @returns this
+	 */
+	setError(msg) {
+		this.clearSection("error");
+		this.push("error", msg);
+		return this;
+	}
+
+
+	/**
+	 * Add a generic message (not an error) to the result
+	 *
+	 * @param {string} msg
+ 	 * @param {boolean} flagOnTop - if true the message will be pushed on top; if unspecified it will not
+	 * @returns this
+	 */
+	pushMessage(msg, flagOnTop) {
+		this.push("message", msg, flagOnTop);
+		return this;
+	}
+
+
+	/**
+	 * Add a success message (not an error) to the result
+	 *
+	 * @param {string} msg
+ 	 * @param {boolean} flagOnTop - if true the message will be pushed on top; if unspecified it will not
+	 * @returns this
+	 */
+	pushSuccess(msg, flagOnTop) {
+		this.push("success", msg, flagOnTop);
+		return this;
+	}
+
+
+	/**
+	 * Set generic extra data for the result
+	 *
+	 * @param {string} key - key to store data in
+	 * @param {*} val - data to store
+	 * @returns this
+	 */
+	setExtraData(key, val) {
+		if (!this.eData) {
+			this.eData = [];
+		}
+		this.eData[key] = val;
+		return this;
+	}
+
+
+	/**
+	 * Get generic extra data for the result
+	 *
+	 * @param {string} key - key to retrieve data for
+	 * @param {*} defaultVal - returned if key not set
+	 * @returns extra data stored under key, or defaultVal if none
+	 */
+	getExtraData(key, defaultVal) {
+		if (!this.eData || !(key in this.eData)) {
+			return defaultVal;
+		}
+		return this.eData[key];
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	// merge source into us, adding errors
+
+	/**
+	 * This function is used to merge one result into another, combining errors and successes, etc.
+	 * It's a rather elaborate function but serves an important purpose when we have multiple results and we care about errors in either.
+	 *
+	 * @param {object} source - source JrResult
+	 * @param {boolean} flagMergeSourceToTop - whether to merge souce object messages above ours when combinging
+	 * @returns this
+	 */
+	mergeIn(source, flagMergeSourceToTop) {
+		// this is really an awkward function, i wonder if there isn't a better cleaner way to merge objects and arrays
+		// this function is specific to the JrResult class, and not generic
+		var key;
+
+		if (!source) {
+			return this;
+		}
+
+		/*
+		if (!(source instanceof JrResult)) {
+			throw (new Error("In JrResult mergeIn with improper source result of class " + (typeof source)));
+		}
+		*/
+
+		// for fields, each keyed item should be a string; on the rare occasion we have an entry in both our field and source field with same key, we can append them.
+		if (source.errorFields) {
+			if (!this.errorFields) {
+				this.errorFields = jrhMisc.shallowCopy(source.errorFields);
+			} else {
+				for (key in source.errorFields) {
+					if (!this.errorFields[key]) {
+						this.errorFields[key] = source.errorFields[key];
+					} else {
+						if (flagMergeSourceToTop) {
+							this.errorFields[key] = source.errorFields[key] + " " + this.errorFields[key];
+						} else {
+							this.errorFields[key] = this.errorFields[key] + " " + source.errorFields[key];
+						}
+					}
+				}
+			}
+		}
+
+		if (source.items) {
+			// but items need to be concatenated
+			if (!this.items) {
+				this.items = jrhMisc.shallowCopy(source.items);
+			} else {
+				for (key in source.items) {
+					if (!this.items[key]) {
+						this.items[key] = jrhMisc.shallowCopy(source.items[key]);
+					} else {
+						if (flagMergeSourceToTop) {
+							this.items[key] = (source.items[key]).concat(this.items[key]);
+						} else {
+							this.items[key] = (this.items[key]).concat(source.items[key]);
+						}
+					}
+				}
+			}
+		}
+
+		// if our typestr is blank, use source typestr
+		if (!this.typestr) {
+			this.typestr = source.typestr;
+		} else if (flagMergeSourceToTop &amp;&amp; source.typestr) {
+			this.typestr = source.typestr;
+		}
+
+		return this;
+	}
+
+
+	/**
+	 * Just a shallow copy of the object
+	 *
+	 * @param {object} source JrResult
+	 * @returns this
+	 */
+	copyFrom(source) {
+		// first we make a new JrResult object, then copy properties
+		Object.assign(this, source);
+		return this;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	/**
+	 * Check if the passed value is a JrResult
+	 *
+	 * @static
+	 * @param {*} obj
+	 * @returns true if obj is an instance of JrResult
+	 */
+	static isJrResult(obj) {
+		return obj instanceof JrResult;
+	}
+
+
+	/**
+	 * Simple helper function thats lets us easily check for a case where no errors or messages were added to a JrResult (i.e. it can be completely ignored)
+	 *
+	 * @static
+	 * @param {object} obj
+	 * @returns true if the JrResult obj has no data
+	 */
+	static isBlank(obj) {
+		// helper function
+		if (!obj) {
+			return true;
+		}
+		if (!obj.items &amp;&amp; !obj.errorFields) {
+			return true;
+		}
+		return false;
+	}
+
+
+	/**
+	 * Simple helper function thats makes it easier to ignore a result if there is nothing important in it
+	 *
+	 * @static
+	 * @returns undefined if thhis JrResult is blank
+	 */
+	undefinedIfBlank() {
+		if (JrResult.isBlank(this)) {
+			return undefined;
+		}
+		return this;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	// passport helpers
+
+	/**
+	 * Return the string associated with a passport error, OR convert the JrResult to an error string if they pass in a JrResult
+	 *
+	 * @static
+	 * @param {object} info - the passport info error (or a jrResult)
+	 * @returns error message string
+	 */
+	static passportOrJrResultErrorAsString(info) {
+		if (JrResult.isJrResult(info)) {
+			return info.getErrorsAsString();
+		}
+		if (!info || !info.message) {
+			return "unknown authorization error";
+		}
+		return info.message;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	// session helpers for flash message save/load
+	/**
+	 * Add this JrResult to the (request)session, so it can be remembered for flash error messages (when we show an error on their next/redirected page request)
+	 * ##### Notes
+	 *  * We add the mergeIn function to combine multiple jrResults into one
+	 *
+	 * @param {*} req - express request
+	 * @param {*} flagAddToTop - add it to the top of the list of such error messages
+	 * @returns this
+	 */
+	addToSession(req, flagAddToTop) {
+		// addd to session
+		// for consistency we return THIS not the newly merged session info
+		assert(req.session, "No session defined, can't add result to it.");
+
+		if (!req.session.jrResult) {
+			// just assign it since there is nothing in session -- but should we ASSIGN it instead?
+			if (false) {
+				req.session.jrResult = this;
+			} else {
+				req.session.jrResult = JrResult.makeClone(this);
+			}
+		} else {
+			// merge it -- the problem is that the SESSION version is not a true jrresult object so we have to do it backwards
+			var sjrResult = req.session.jrResult;
+			this.mergeIn(sjrResult, !flagAddToTop);
+			// sjrResult.mergeIn(this, flagAddToTop);
+			req.session.jrResult = this;
+		}
+		return this;
+	}
+
+
+	/**
+	 * Create a result from the session, or return undefined if there is none, then clear session jrResult
+	 * ##### Notes
+	 *  * Important: The results will be REMOVED from the session after this is called
+	 *
+	 * @param {*} req - express request
+	 * @returns jrResult from session or undefined if none found
+	 */
+	static makeAndRemoveFromSession(req) {
+		// if not found, just return undefined quickly
+		if (!req.session || !req.session.jrResult) {
+			return undefined;
+		}
+
+		// create new result
+		var jrResult = JrResult.makeNew();
+
+		// load and ADD from session, then CLEAR session
+		if (req.session.jrResult) {
+			this.copyFrom(req.session.jrResult);
+			// remove it from session
+			delete req.session.jrResult;
+		}
+
+		return jrResult;
+	}
+
+
+	/**
+	 * Get any existing result from session, merging it with any provided here, and clearing any existing result from session
+	 *
+	 * @static
+	 * @param {*} req - express request
+	 * @param {*} res - express result
+	 * @param {*} jrResult - the result to render in the session
+	 * @param {*} flagSessionAtTop - if true, result errors will be placed at top
+	 * @returns the new combined result in the session
+	 */
+	static getMergeSessionResultAndClear(req, res, jrResult, flagSessionAtTop) {
+		// ok we have a jrResult locally that we are about to pass along to view template
+		// but if we just passed it in as a local template/view variable, it would OVERWRITE any session data, so we would like to
+		// combine them
+		// session result, if any (deleting it from session if found, like a flash message)
+		var jrResultSession = this.makeAndRemoveFromSession(req);
+
+		if (!jrResult) {
+			// empty jrResult, just return session version
+			return jrResultSession;
+		}
+
+		// combine them and return it
+		jrResult.mergeIn(jrResultSession, flagSessionAtTop);
+		return jrResult;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	/**
+	 * Helper function for common issue where we want to store in result whether we have already started rendering result
+	 * @todo - remove use of this function and simply store flag in express result
+	 *
+	 * @param {boolean} val - true or false
+	 */
+	setDoneRendering(val) {
+		this.doneRendering = val;
+	}
+
+
+	/**
+	 * Helper function for common issue where we want to store in result whether we have already started rendering result
+	 * @todo - remove use of this function and simply store flag in express result
+	 * @returns true if this flag has been set
+	 */
+	getDoneRendering() {
+		return this.doneRendering;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	/**
+	 * Experimental express middleware function that automatically grabs any pending jrResult error from session and makes it available in the locals variable of a view for display
+	 * ##### Notes
+	 * express middleware helper
+	 * the idea here is we want to take any session jrResult found in session, and put it automatically in any render call res
+	 * all this does is save us from having to make every render look like this:
+	 *    	res.render("viewpage", {
+	 *         jrResult: JrResult.restoreFromSession(req);
+	 *      });
+	 * see https://stackoverflow.com/questions/9285880/node-js-express-js-how-to-override-intercept-res-render-function
+	 *
+	 * ATTN: 5/27/19 -- although this worked flawlessly, we have decided to force the manaul use of this into all render calls, to have better control over it
+	 * but the proper call now is a bit more involved, it should be like this:
+	 *	res.render("urlpath", {
+	 *      jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
+	 *      // or if we have no result of our own: jrResult: JrResult.getMergeSessionResultAndClear(req, res)
+	 *      }
+	 * this old code does NOT do a merge combine of session data with manual jrresult, so can no longer be used
+	 *
+	 *
+	 * @static
+	 * @param {*} options
+	 */
+	static _unusedCodeExpressMiddlewareInjectSessionResult(options) {
+		options = options || {};
+		// var safe = (options.unsafe === undefined) ? true : !options.unsafe;
+		return (req, res, next) => {
+			// grab reference of render
+			var jRrender = res.render;
+			// override logic
+			res.render = (view, roptions, fn) => {
+				// transfer any session jrResult into RESPONSE view available variable
+				res.locals.jrResult = JrResult.makeAndRemoveFromSession(req);
+				// continue with original render
+				jRrender.call(this, view, roptions, fn);
+			};
+			next();
 		};
-		res.status(429).send(msg);
-		// exit from function
-		return;
 	}
+	//---------------------------------------------------------------------------
 
-	msg = {
-		message: "API Route " + routerBaseUrlPath + req.url + " not found.  API not implemented yet.",
-	};
-	res.status(404).send(msg);
+
+
+	//---------------------------------------------------------------------------
+	/**
+	 * Return a string containing all errors in the result
+	 *
+	 * @returns error string
+	 */
+	getErrorsAsString() {
+		if (!this.items || !this.items.error || this.items.error.length &lt;= 0) {
+			return "";
+		}
+		var str = this.items.error.join(";");
+		return str;
+	}
+	//---------------------------------------------------------------------------
+
+
 }
+
+
+
+
+
 //---------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
+// export the class
+module.exports = JrResult;
 //---------------------------------------------------------------------------
-// helper functions
-
-
-/**
- * Helper function to make a secure access token from a refresh token
- *
- * @param {Object} userPassport - minimal object with properties of the user
- * @param {UserModel} user - full model object of User class
- * @param {String} refreshToken - the refresh token object to use to generate access token
- * @returns a token object.
- */
-async function makeSecureTokenAccessFromRefreshToken(userPassport, user, refreshToken) {
-	// make an access token with SAME scope as refresh token
-	return await makeSecureTokenAccess(userPassport, user, refreshToken.scope);
-}
-
-
-/**
- * Helper function to make a Refresh token
- *
- * @param {Object} userPassport - minimal object with properties of the user
- * @param {UserModel} user - full model object of User class
- * @returns a token object
- */
-async function makeSecureTokenRefresh(userPassport, user) {
-	const payload = {
-		type: "refresh",
-		scope: "api",
-		apiCode: await user.getApiCodeEnsureValid(),
-		user: userPassport,
-	};
-	// create secure toke
-	const expirationSeconds = arserver.getConfigVal("token:EXPIRATIONSECS_REFRESH");
-	const secureToken = arserver.createSecureToken(payload, expirationSeconds);
-	return secureToken;
-}
-
-
-/**
- * Helper function to make a generic secure token
- *
- * @param {Object} userPassport - minimal object with properties of the user
- * @param {UserModel} user - full model object of User class
- * @param {String} scope - the refresh token object to use to generate access token
- * @returns a token object
- */
-async function makeSecureTokenAccess(userPassport, user, scope) {
-	const payload = {
-		type: "access",
-		scope,
-		apiCode: await user.getApiCodeEnsureValid(),
-		user: userPassport,
-	};
-	// add accessId -- the idea here is for every user object in database to ahve an accessId (either sequential or random); that can be changed to invalidate all previously issues access tokens
-	const expirationSeconds = arserver.getConfigVal("token:EXPIRATIONSECS_ACCESS");
-	const secureToken = arserver.createSecureToken(payload, expirationSeconds);
-	return secureToken;
-}
-//---------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-module.exports = {
-	setupRouter,
-};
 </code></pre>
         </article>
     </section>

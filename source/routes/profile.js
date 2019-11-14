@@ -131,7 +131,7 @@ async function routerGetIndex(req, res, next) {
 	};
 
 	res.render("user/profile", {
-		jrResult: JrResult.sessionRenderResult(req, res),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 		extraViewData,
 	});
 }

@@ -12,7 +12,7 @@
 
 
 
-
+//---------------------------------------------------------------------------
 /**
  * Validate a string.  Just check that it's non-blank if so requested.
  *

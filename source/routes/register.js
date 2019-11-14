@@ -62,7 +62,7 @@ async function routerGetIndex(req, res, next) {
 	// render
 	var viewpath = await getRegisterViewPath(req);
 	res.render(viewpath, {
-		jrResult: JrResult.sessionRenderResult(req, res, jrResult, true),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult, true),
 		reqbody: req.body,
 		flagFullRegistrationForm: arserver.getOptionUseFullRegistrationForm(),
 		csrfToken: arserver.makeCsrf(req, res),
@@ -94,7 +94,7 @@ async function routerPostIndex(req, res, next) {
 	if (jrResult.isError()) {
 		var viewpath = await getRegisterViewPath(req);
 		res.render(viewpath, {
-			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
 			reqbody: req.body,
 			flagFullRegistrationForm: arserver.getOptionUseFullRegistrationForm(),
 			csrfToken: arserver.makeCsrf(req, res),

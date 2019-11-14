@@ -68,7 +68,7 @@ async function routerPostCode(req, res, next) {
 async function routerGetIndex(req, res, next) {
 
 	res.render("account/verify", {
-		jrResult: JrResult.sessionRenderResult(req, res),
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 		csrfToken: arserver.makeCsrf(req, res),
 	});
 }
@@ -90,21 +90,24 @@ async function handleVerifyCode(code, req, res, next) {
 	var previouslyLoggedInUserId = arserver.getLoggedInLocalUserIdFromSession(req);
 
 	if (!code) {
-		jrResult = JrResult.makeNew("VerificationError").pushError("Please specify the code to verify.");
+		jrResult = JrResult.makeError("Please specify the code to verify.");
 	} else {
 		({ jrResult, successRedirectTo } = await VerificationModel.verifiyCode(code, {}, req, res));
 	}
 
+	/*
+	// ATTN: 11/14/19 don't think we use this anymore
 	// if caller handled everything
 	if (jrResult.getDoneRendering()) {
 		// all done by caller
 		return;
 	}
+	*/
 
 	if (jrResult.isError()) {
 		// on error, show verify form
 		res.render("account/verify", {
-			jrResult: JrResult.sessionRenderResult(req, res, jrResult),
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
 			reqBody: req.body,
 			csrfToken: arserver.makeCsrf(req, res),
 		});

@@ -47,7 +47,7 @@ async function routerGetIndex(req, res, next) {
 	arserver.logoutForgetSessionData(req);
 
 	// session message
-	JrResult.makeNew("info").pushSuccess("You have been logged out.").addToSession(req);
+	JrResult.makeSuccess("You have been logged out.").addToSession(req);
 
 	res.redirect("/");
 }
