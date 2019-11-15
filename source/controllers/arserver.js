@@ -184,6 +184,9 @@ class AppRoomServer {
 		// setup singleton loggers
 		jrlog.setup(arGlobals.programName, this.getLogDir());
 
+		// extra loggers
+		jrlog.setupWinstonCategoryLogger("404", "404");
+
 		// show some info about app
 		jrlog.debugf("%s v%s (%s) by %s", arGlobals.programName, arGlobals.programVersion, arGlobals.programDate, arGlobals.programAuthor);
 
@@ -191,9 +194,6 @@ class AppRoomServer {
 		var serverIp = jrhMisc.getServerIpAddress();
 		jrconfig.setServerFilenamePrefixFromServerIp(serverIp);
 		jrlog.debugf("Running on server: %s", serverIp);
-
-		// jrlog.info("this is info");
-		// jrlog.error("this is error");
 
 		// setup singleton jrconfig from options
 		jrconfig.setDefaultOptions(arGlobals.defaultOptions);
@@ -251,7 +251,8 @@ class AppRoomServer {
 		this.setupExpressPassport(expressApp);
 
 		// routes
-		this.setupExpressRoutes(expressApp);
+		this.setupExpressRoutesCore(expressApp);
+		this.setupExpressRoutesSpecialized(expressApp);
 
 		// fallback error handlers
 		this.setupExpressErrorHandlers(expressApp);
@@ -366,22 +367,16 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	setupExpressRoutes(expressApp) {
+	setupExpressRoutesCore(expressApp) {
 		// add routes to express app
 
 		// model requires
-		const RoomModel = require("../models/room");
-		const AppModel = require("../models/app");
 		const ConnectionModel = require("../models/connection");
-		const FileModel = require("../models/file");
-		const RoomdataModel = require("../models/roomdata");
-
 		const OptionModel = require("../models/option");
 		const UserModel = require("../models/user");
 		const VerificationModel = require("../models/verification");
 		const LoginModel = require("../models/login");
 		const SessionModel = require("../models/session");
-
 
 
 		// home page
@@ -401,6 +396,37 @@ class AppRoomServer {
 		// profile
 		this.setupRoute(expressApp, "/profile", "profile");
 
+		// admin
+		this.setupRoute(expressApp, "/admin", "admin");
+		// internals
+		this.setupRoute(expressApp, "/internals", "internals");
+		// analytics
+		this.setupRoute(expressApp, "/analytics", "analytics");
+
+
+		// crud routes
+		var crudUrlBase = "/crud";
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/user", UserModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/login", LoginModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/verification", VerificationModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/connection", ConnectionModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/option", OptionModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/log", LogModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/session", SessionModel);
+	}
+
+
+
+	setupExpressRoutesSpecialized(expressApp) {
+		// add routes to express app
+
+		// model requires
+		const RoomModel = require("../models/room");
+		const AppModel = require("../models/app");
+		const FileModel = require("../models/file");
+		const RoomdataModel = require("../models/roomdata");
+
+
 		// app routes
 		this.setupRoute(expressApp, "/app", "app");
 		// room routes
@@ -412,30 +438,19 @@ class AppRoomServer {
 		// test stuff
 		this.setupRoute(expressApp, "/membersonly", "membersonly");
 
-		// admin
-		this.setupRoute(expressApp, "/admin", "admin");
-		// internals
-		this.setupRoute(expressApp, "/internals", "internals");
-		// analytics
-		this.setupRoute(expressApp, "/analytics", "analytics");
-
-
 		// crud routes
 		var crudUrlBase = "/crud";
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/app", AppModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/room", RoomModel);
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/user", UserModel);
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/login", LoginModel);
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/verification", VerificationModel);
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/connection", ConnectionModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/file", FileModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/roomdata", RoomdataModel);
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/option", OptionModel);
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/log", LogModel);
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/session", SessionModel);
 	}
+	//---------------------------------------------------------------------------
 
 
+
+
+	//---------------------------------------------------------------------------
 	setupRoute(expressApp, urlPath, routeFilename) {
 		// require in the file in the routes directory so we can discover its functions
 		var route = require("../routes/" + routeFilename);
@@ -1398,10 +1413,6 @@ class AppRoomServer {
 
 
 
-
-
-
-
 	//---------------------------------------------------------------------------
 	// Event listener for HTTP server "error" event.
 	onErrorEs(listener, expressServer, flagHttps, error) {
@@ -1509,19 +1520,6 @@ class AppRoomServer {
 		// setup database stuff (create and connect to models -- callable whether db is already created or not)
 		var bretv = false;
 
-		// model requires
-		const RoomModel = require("../models/room");
-		const AppModel = require("../models/app");
-		const ConnectionModel = require("../models/connection");
-		const FileModel = require("../models/file");
-		const RoomdataModel = require("../models/roomdata");
-		const OptionModel = require("../models/option");
-		const UserModel = require("../models/user");
-		const VerificationModel = require("../models/verification");
-		const LoginModel = require("../models/login");
-		const SessionModel = require("../models/session");
-
-
 		const mongooseOptions = {
 			useNewUrlParser: true,
 			// see https://github.com/Automattic/mongoose/issues/8156
@@ -1533,32 +1531,13 @@ class AppRoomServer {
 			// connect to db
 			const mongoUrl = this.getOptionDbUrl();
 			jrlog.cdebug("Connecting to mongoose-mongodb: " + mongoUrl);
-
 			await mongoose.connect(mongoUrl, mongooseOptions);
 
-			// setup the model databases
-			await this.setupModelSchema(mongoose, AppModel);
-			await this.setupModelSchema(mongoose, ConnectionModel);
-			await this.setupModelSchema(mongoose, FileModel);
-			await this.setupModelSchema(mongoose, RoomdataModel);
-			await this.setupModelSchema(mongoose, RoomModel);
-			await this.setupModelSchema(mongoose, UserModel);
-			//
-			await this.setupModelSchema(mongoose, LoginModel);
-			await this.setupModelSchema(mongoose, LogModel);
-			await this.setupModelSchema(mongoose, OptionModel);
-			await this.setupModelSchema(mongoose, VerificationModel);
-
-			// 3rd party session management, we still create our own model for it
-			await this.setupModelSchema(mongoose, SessionModel);
-
-			// display a list of all collections?
-			if (false) {
-				var collections = await mongoose.connection.db.listCollections().toArray();
-				jrlog.debug("Collections:");
-				jrlog.debug(collections);
-				jrlog.debug("");
-			}
+			// now setup each of the model schemas
+			const modelClassList = this.getmodelClassList();
+			await jrhMisc.asyncAwaitForEachFunctionCall(modelClassList, async (modelClass) => {
+				await this.setupModelSchema(mongoose, modelClass);
+			});
 
 			// set some options for mongoose/mongodb
 
@@ -1577,6 +1556,29 @@ class AppRoomServer {
 		}
 
 		return bretv;
+	}
+
+
+	getmodelClassList() {
+		// get array of all required model modules
+		const modelClassList = [
+			// core models
+			require("../models/connection"),
+			require("../models/option"),
+			require("../models/user"),
+			require("../models/verification"),
+			require("../models/log"),
+			require("../models/login"),
+			require("../models/session"),
+
+			// specific models
+			require("../models/file"),
+			require("../models/room"),
+			require("../models/app"),
+			require("../models/roomdata"),
+		];
+
+		return modelClassList;
 	}
 
 
@@ -1633,7 +1635,7 @@ class AppRoomServer {
 		if (this.isDevelopmentMode()) {
 			msg += "  Development mode enabled.";
 		}
-		await this.logmanual("info", msg, 0);
+		await this.logm("info", msg, 0);
 	}
 	//---------------------------------------------------------------------------
 
@@ -1659,10 +1661,10 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	async logr(req, type, message, severity, extraData) {
 		const userid = req.user ? req.user.id : undefined;
-		await this.logmanual(type, message, severity, userid, req.ip, extraData);
+		await this.logm(type, message, severity, userid, req.ip, extraData);
 	}
 
-	async logmanual(type, message, severity, userid, ip, extraData) {
+	async logm(type, message, severity, userid, ip, extraData) {
 		// create a new log entry and save it to the log
 
 		if (severity === undefined || severity == null) {
@@ -2297,6 +2299,7 @@ class AppRoomServer {
 		// catch 404 and forward to error handler
 		expressApp.use((req, res, next) => {
 			// if we get here, nothing else has caught the request, so WE push on a 404 error for the next handler
+			this.handle404Error(req);
 			next(httpErrors(404));
 		});
 
@@ -2380,9 +2383,16 @@ class AppRoomServer {
 		if (true) {
 			// log the critical error to file and database
 			const errString = jrlog.objToString(err, false);
-			this.logmanual("errorCrit", errString, 1000);
+			this.logm("errorCrit", errString, 1000);
 		}
 		process.exitCode = 1;
+	}
+
+
+	handle404Error(req) {
+		// caller will pass this along to show 404 error to user; we can do extra stuff here
+		const msg = "404 not found: " + jrhExpress.getRequestLogString(req);
+		jrlog.catlog("404", "error", msg);
 	}
 	//---------------------------------------------------------------------------
 

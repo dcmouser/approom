@@ -585,7 +585,7 @@ class JrResult {
 
 		// load and ADD from session, then CLEAR session
 		if (req.session.jrResult) {
-			this.copyFrom(req.session.jrResult);
+			jrResult.copyFrom(req.session.jrResult);
 			// remove it from session
 			delete req.session.jrResult;
 		}

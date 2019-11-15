@@ -13,6 +13,8 @@
 // modules
 const passport = require("passport");
 
+const util = require("util");
+
 // our helper modules
 const JrResult = require("./jrresult");
 
@@ -353,6 +355,15 @@ function forgetSessionVar(req, varName) {
 
 
 
+//---------------------------------------------------------------------------
+function getRequestLogString(req) {
+	var str = util.format("url='%s' userid='%s' ip='%s'", req.url,  req.user ? req.user.id : undefined, req.ip);
+	return str;
+}
+//---------------------------------------------------------------------------
+
+
+
 
 
 
@@ -379,4 +390,6 @@ module.exports = {
 	reqValFromList,
 	reqPrefixedValueArray,
 	forgetSessionVar,
+
+	getRequestLogString,
 };

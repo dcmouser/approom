@@ -72,6 +72,7 @@ var debugfunc;
 var serviceName;
 var logDir;
 var debugEnabled = false;
+var winstonCategoryLoggers = [];
 //---------------------------------------------------------------------------
 
 
@@ -152,36 +153,14 @@ function getDebugEnabled() {
  */
 function log(...args) { return winstonLogger.log(...args); }
 
+
 /**
- * Passthrough log("info") function to winston logger, to log an item to file
+ * Passthrough log function to winston logger, to log an item to file
  *
  * @param {*} args
  * @returns result of winston log command
  */
-function info(...args) { return winstonLogger.log("info", ...args); }
-
-/**
- * Passthrough log("warning") function to winston logger, to log an item to file
- *
- * @param {*} args
- * @returns result of winston log command
- */
-function warning(...args) { return winstonLogger.log("warning", ...args); }
-
-/**
- * Passthrough log("error") function to winston logger, to log an item to file
- *
- * @param {*} args
- * @returns result of winston log command
- */
-function error(...args) { return winstonLogger.log("error", ...args); }
-
-/*
-// old way, but these seem to format differently
-function info(...args) { return winstonLogger.info(...args); }
-function warning(...args) { return winstonLogger.warning(...args); }
-function error(...args) { return winstonLogger.error(...args); }
-*/
+function catlog(category, ...args) { return winstonCategoryLoggers[category].log(...args); }
 //---------------------------------------------------------------------------
 
 
@@ -396,18 +375,6 @@ function setupWinston() {
 	// see https://github.com/winstonjs/winston/blob/master/examples/quick-start.js
 	// NOTE: we use the module global winstonLogger here, as our default
 
-	// color system only used for console logging which we don't use yet (?)
-	const customColors = {
-		errorUnknown: "red",
-		errorAlert: "red",
-		errorCrit: "red",
-		error: "red",
-		warning: "yellow",
-		notice: "green",
-		info: "blue",
-		debug: "cyan",
-		db: "grey",
-	};
 
 	// create the logger
 	winstonLogger = winston.createLogger({
@@ -433,20 +400,6 @@ function setupWinston() {
 		],
 	});
 
-	// currently we use a different module for console logging
-	if (false) {
-		// setup console logging
-		winstonLogger.add(new winston.transports.Console({
-			format: winston.format.combine(
-				winston.format.colorize(),
-				winston.format.simple(),
-			),
-		}));
-
-		// we need to set colors since we are adding a custom log level (db)
-		winston.addColors(customColors);
-	}
-
 	// we may in the future want to create additional transports to save logs to different places with different filters, etc.
 	if (false) {
 		// create a db file channel just for DB log messages?
@@ -467,7 +420,48 @@ function setupWinston() {
 
 	return winstonLogger;
 }
+
+
+
+function setupWinstonCategoryLogger(category, filename) {
+	winstonCategoryLoggers[category] = winston.createLogger({
+		levels: winstonCustomLevels,
+		// level: "info",
+		format: winston.format.combine(
+			winston.format.timestamp({
+				format: "YYYY-MM-DD HH:mm:ss",
+			}),
+			winston.format.splat(),
+			winston.format.json(),
+		),
+		defaultMeta: { service: serviceName },
+		transports: [
+			new winston.transports.File({ filename: calcLogFilePath(filename) }),
+		],
+	});
+
+	return winstonCategoryLoggers[category];
+}
 //---------------------------------------------------------------------------
+
+
+
+
+
+
+//---------------------------------------------------------------------------
+function getWinstonCategoryLogger(category) {
+	return winstonCategoryLoggers[category];
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
 
 
 
@@ -537,10 +531,12 @@ function calcLogFilePath(fileSuffix) {
 module.exports = {
 	setup,
 	setupMorganMiddlewareForExpressWebAccessLogging,
+	setupWinstonCategoryLogger,
 
 	setDebugEnabled, getDebugEnabled,
 
-	log, info, warning, error,
+	log,
+	catlog,
 	debug, debugf, debugObj,
 	cdebug, cdebugf, cdebugObj,
 
