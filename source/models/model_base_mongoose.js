@@ -13,7 +13,7 @@
 const mongoose = require("mongoose");
 
 // our helper modules
-const jrlog = require("../helpers/jrlog");
+const jrdebug = require("../helpers/jrdebug");
 const jrhMisc = require("../helpers/jrh_misc");
 const jrhMongo = require("../helpers/jrh_mongo");
 const jrhText = require("../helpers/jrh_text");
@@ -106,10 +106,12 @@ class ModelBaseMongoose {
 			creationDate: {
 				label: "Date created",
 				hide: ["edit"],
+				format: "date",
 			},
 			modificationDate: {
 				label: "Date modified",
 				readOnly: ["edit"],
+				format: "date",
 			},
 			disabled: {
 				label: "Disabled?",
@@ -267,11 +269,11 @@ class ModelBaseMongoose {
 
 		// we only do this IF it"s not yet been done
 		if (this.modelSchema) {
-			jrlog.cdebug("Skipping model rebuild for " + this.getCollectionName());
+			jrdebug.cdebug("Skipping model rebuild for " + this.getCollectionName());
 			return;
 		}
 
-		jrlog.cdebug("Setting up model schema for " + this.getCollectionName());
+		jrdebug.cdebug("Setting up model schema for " + this.getCollectionName());
 
 		// compile the model scheme
 		this.modelSchema = this.buildSchema(mongooser);
@@ -990,7 +992,7 @@ class ModelBaseMongoose {
 		return async (viewType, fieldName, req, obj, helperData) => {
 			const objid = obj[fieldName];
 			if (objid) {
-				// jrlog.debugObj(obj, "Obj test");
+				// jrdebug.debugObj(obj, "Obj test");
 				const alink = modelClass.getCrudUrlBase("view", objid);
 				return `<a href="${alink}">${objid}</a>`;
 			}

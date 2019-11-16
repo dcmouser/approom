@@ -23,7 +23,7 @@ const arserver = require("../controllers/arserver");
 
 // helpers
 const JrResult = require("../helpers/jrresult");
-const jrlog = require("../helpers/jrlog");
+const jrdebug = require("../helpers/jrdebug");
 
 
 
@@ -151,7 +151,7 @@ async function routerGetRefreshaccess(req, res, next) {
 		return;
 	}
 
-	// jrlog.debugObj(userPassport.token);
+	// jrdebug.debugObj(userPassport.token);
 
 	// ok they gave us a valid refresh token, so now we generate an access token for them
 	var secureToken = await makeSecureTokenAccessFromRefreshToken(userPassport, user, userPassport.token);

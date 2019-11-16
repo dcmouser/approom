@@ -34,7 +34,7 @@ const arserver = require("../controllers/arserver");
 
 // our helper modules
 const jrhMisc = require("../helpers/jrh_misc");
-const jrlog = require("../helpers/jrlog");
+const jrdebug = require("../helpers/jrdebug");
 const jrhCrypto = require("../helpers/jrh_crypto");
 const JrResult = require("../helpers/jrresult");
 //---------------------------------------------------------------------------
@@ -486,7 +486,7 @@ If this request was not made by you, please ignore this email.
 	//---------------------------------------------------------------------------
 	static async pruneOldVerifications(flagDesperate) {
 		// ATTN: 5/25/19 - unfinished
-		jrlog.debug("In pruneOldVerifications.");
+		jrdebug.debug("In pruneOldVerifications.");
 	}
 	//---------------------------------------------------------------------------
 

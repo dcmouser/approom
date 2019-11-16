@@ -66,9 +66,6 @@ class LogModel extends ModelBaseMongooseMinimal {
 			message: {
 				type: String,
 			},
-			severity: {
-				type: Number,
-			},
 			userid: {
 				type: mongoose.Schema.ObjectId,
 			},
@@ -88,15 +85,13 @@ class LogModel extends ModelBaseMongooseMinimal {
 			creationDate: {
 				label: "Date created",
 				readOnly: ["edit"],
+				format: "date",
 			},
 			type: {
 				label: "Type",
 			},
 			message: {
 				label: "Message",
-			},
-			severity: {
-				label: "Severity",
 			},
 			userid: {
 				label: "User",
@@ -139,6 +134,53 @@ class LogModel extends ModelBaseMongooseMinimal {
 		return model;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// create a new log model object (suitable for saving) from standard log data
+	// this could throw exception on failure to save to database, etc.
+	static async createLogDbModelInstanceFromLogDataAndSave(type, message, extraData, mergeData) {
+		var logObj;
+
+		if (message && !(typeof message === "string")) {
+			// unusual case where the message is an object; for db we should json stringify as message
+			// in this way the db log message is a pure stringified json object
+			logObj = {
+				type,
+				message: JSON.stringify(message),
+				...mergeData,
+				extraData,
+			};
+		} else {
+			logObj = {
+				type,
+				message,
+				...mergeData,
+				extraData,
+			};
+		}
+
+		// create the model
+		const logModel = LogModel.createModel(logObj);
+
+		// test
+		if (false) {
+			throw Error("Testing throwing error from logdb save");
+		}
+
+		// save it to db
+		await logModel.dbSave();
+	}
+
+
+
+
+	//---------------------------------------------------------------------------
+
 
 
 

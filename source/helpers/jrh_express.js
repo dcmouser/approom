@@ -357,7 +357,7 @@ function forgetSessionVar(req, varName) {
 
 //---------------------------------------------------------------------------
 function getRequestLogString(req) {
-	var str = util.format("url='%s' userid='%s' ip='%s'", req.url,  req.user ? req.user.id : undefined, req.ip);
+	var str = util.format("url='%s' userid='%s' ip='%s'", req.url, (req.user ? req.user.id : undefined), req.ip);
 	return str;
 }
 //---------------------------------------------------------------------------

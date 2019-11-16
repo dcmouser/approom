@@ -19,6 +19,7 @@ const ModelBaseMongoose = require("./model_base_mongoose");
 // our helper modules
 const jrhMisc = require("../helpers/jrh_misc");
 const jrlog = require("../helpers/jrlog");
+const jrdebug = require("../helpers/jrdebug");
 const jrhCrypto = require("../helpers/jrh_crypto");
 const JrResult = require("../helpers/jrresult");
 const jrhValidate = require("../helpers/jrh_validates");
@@ -213,7 +214,7 @@ class UserModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	// database init
 	static async dbInit(mongooser) {
-		jrlog.cdebug("Inside User dbInit");
+		jrdebug.cdebug("Inside User dbInit");
 
 		await this.createAdminUser();
 		await this.createVisitorUser();
@@ -225,7 +226,7 @@ class UserModel extends ModelBaseMongoose {
 		var doc = await this.mongooseModel.findOne({ username: "admin" }).exec();
 		if (!doc) {
 			// create admin object
-			jrlog.cdebug("  Creating admin user");
+			jrdebug.cdebug("  Creating admin user");
 			// hash password
 			var passwordObj = await this.hashPlaintextPasswordToObj(this.getPasswordAdminPlaintextDefault());
 			var passwordHashed = this.passwordObjToHash(passwordObj);
@@ -246,9 +247,9 @@ class UserModel extends ModelBaseMongoose {
 			// and save it
 			var userdoc = await user.dbSave();
 			//
-			jrlog.cdebugObj(userdoc, "  userAdmin");
+			jrdebug.cdebugObj(userdoc, "  userAdmin");
 		} else {
-			jrlog.cdebug("  Found admin user.");
+			jrdebug.cdebug("  Found admin user.");
 		}
 	}
 
@@ -257,7 +258,7 @@ class UserModel extends ModelBaseMongoose {
 		var doc = await this.mongooseModel.findOne({ username: "testuser" }).exec();
 		if (!doc) {
 			// create admin object
-			jrlog.cdebug("  Creating testuser user");
+			jrdebug.cdebug("  Creating testuser user");
 			// hash password
 			var passwordObj = await this.hashPlaintextPasswordToObj("test");
 			var passwordHashed = this.passwordObjToHash(passwordObj);
@@ -277,9 +278,9 @@ class UserModel extends ModelBaseMongoose {
 			// and save it
 			var userdoc = await user.dbSave();
 			//
-			jrlog.cdebugObj(userdoc, "  testuser");
+			jrdebug.cdebugObj(userdoc, "  testuser");
 		} else {
-			jrlog.cdebug("  Found testuser user.");
+			jrdebug.cdebug("  Found testuser user.");
 		}
 	}
 
@@ -288,7 +289,7 @@ class UserModel extends ModelBaseMongoose {
 		var doc = await this.mongooseModel.findOne({ username: "visitor" }).exec();
 		if (!doc) {
 			// create admin object
-			jrlog.cdebug("  Creating testuser user");
+			jrdebug.cdebug("  Creating testuser user");
 			// hash password -- plain text password of "" will not be usable to log in
 			// var passwordObj = await this.hashPlaintextPasswordToObj("");
 			// var passwordHashed = this.passwordObjToHash(passwordObj);
@@ -308,9 +309,9 @@ class UserModel extends ModelBaseMongoose {
 			// and save it
 			var userdoc = await user.dbSave();
 			//
-			jrlog.cdebugObj(userdoc, "  visitor");
+			jrdebug.cdebugObj(userdoc, "  visitor");
 		} else {
-			jrlog.cdebug("  Found visitor user.");
+			jrdebug.cdebug("  Found visitor user.");
 		}
 	}
 	//---------------------------------------------------------------------------
@@ -409,7 +410,7 @@ class UserModel extends ModelBaseMongoose {
 			return null;
 		}
 		var user = await this.mongooseModel.findOne({ username }).exec();
-		jrlog.cdebugObj(user, "in findOneByUsername");
+		jrdebug.cdebugObj(user, "in findOneByUsername");
 		return user;
 	}
 
@@ -767,7 +768,7 @@ class UserModel extends ModelBaseMongoose {
 			return username;
 		}
 
-		jrlog.debugObj(jrResult, "username validate result");
+		jrdebug.debugObj(jrResult, "username validate result");
 
 		// we got an error, it's not valid syntax.. but we removed all bad characters, corrected length, etc.
 		throw (new Error("Failed to fix imported username to comply with username syntax."));

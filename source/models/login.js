@@ -17,7 +17,7 @@ const ModelBaseMongoose = require("./model_base_mongoose");
 const UserModel = require("./user");
 
 // helpers
-const jrlog = require("../helpers/jrlog");
+const jrdebug = require("../helpers/jrdebug");
 const JrResult = require("../helpers/jrresult");
 const jrhMongo = require("../helpers/jrh_mongo");
 
@@ -182,19 +182,19 @@ class LoginModel extends ModelBaseMongoose {
 		var existingUserId = arserver.getLoggedInLocalUserIdFromSession(req);
 
 		// ok first let's see if we can find an existing bridged login
-		jrlog.cdebugObj(bridgedLoginObj, "Looking for existing bridged login.");
+		jrdebug.cdebugObj(bridgedLoginObj, "Looking for existing bridged login.");
 		// find it and ALSO atomically at same time update date of login
 		var login = await this.findOneByProviderInfo(bridgedLoginObj.provider, bridgedLoginObj.providerUserId, true);
 		if (login !== null) {
 			// we found the bridged login, so just grab the associated user and return them
-			jrlog.cdebugObj(login, "Found a matching login.");
+			jrdebug.cdebugObj(login, "Found a matching login.");
 			//
 			if (login.userId) {
 				user = await UserModel.findOneById(login.userId, true);
 				if (user) {
-					jrlog.cdebugObj(user, "Found a matching user.");
+					jrdebug.cdebugObj(user, "Found a matching user.");
 				} else {
-					jrlog.cdebugObj(user, "Failed to find a matching user login even though login had a user id.");
+					jrdebug.cdebugObj(user, "Failed to find a matching user login even though login had a user id.");
 				}
 			}
 		}

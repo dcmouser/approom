@@ -648,7 +648,6 @@ class CrudAid {
 		var fnameModelGeneric = path.join("crud", "generic_" + subview);
 		// try to find model specific version
 		var fpath = path.join(arserver.getViewPath(), fnameModelSpecific + arserver.getViewExt());
-		// jrLog.debug("ATTN: looking for " + fpath);
 		if (fs.existsSync(fpath)) {
 			return {
 				viewFile: fnameModelSpecific,
@@ -733,7 +732,7 @@ class CrudAid {
 			// now value
 			valHtml = undefined;
 			valfunc = modelClass.getSchemaExtraFieldVal(fieldName, "valueFunction");
-			if (valfunc) {
+			if (obj && valfunc) {
 				// ok we have a custom function to call to get html to show for value
 				valHtml = await valfunc("edit", fieldName, req, obj, helperData);
 			}
@@ -741,7 +740,7 @@ class CrudAid {
 
 			// dynamic visibility function
 			visfunc = modelClass.getSchemaExtraFieldVal(fieldName, "visibleFunction");
-			if (visfunc) {
+			if (obj && visfunc) {
 				// ok we have a custom function to call
 				isVisible = await visfunc("edit", req, obj, helperData);
 				if (!isVisible) {

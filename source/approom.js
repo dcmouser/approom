@@ -18,6 +18,7 @@ const arserver = require("./controllers/arserver");
 // our helper modules
 const jrconfig = require("./helpers/jrconfig");
 const jrlog = require("./helpers/jrlog");
+const jrdebug = require("./helpers/jrdebug");
 
 // program globals (version, author, etc.)
 const arGlobals = require("./approomglobals");
@@ -47,7 +48,7 @@ jrconfig.setYargs(createYargsObj());
 arserver.setupConfigAndLoggingEnvironment();
 
 // configure server instance (jrconfig should be parsed first)
-arserver.parseConfig();
+arserver.processConfig();
 //---------------------------------------------------------------------------
 
 
@@ -146,7 +147,7 @@ async function commandRunServer() {
 async function commandDbSetup() {
 	// setup initial database and acl stuff
 	const bretv = await arserver.createAndConnectToDatabase();
-	jrlog.debug("Finished dbsetup.");
+	jrdebug.debug("Finished dbsetup.");
 	arserver.closeDown();
 	return bretv;
 }

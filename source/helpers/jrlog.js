@@ -7,7 +7,6 @@
  * Logging support module
  * ##### Notes
  *  * Uses Winston module for logging to file
- *  * Uses debug module for logging to console
  *  * Uses Morgan for logging express web http requests
  */
 
@@ -21,16 +20,15 @@
 // we use winston to do the actual work of logging
 const winston = require("winston");
 
-// and debug for console logging
-const debugmod = require("debug");
-
 // and morgan for express web logging
 const morgan = require("morgan");
 
 // others
 const fs = require("fs");
-const util = require("util");
 const path = require("path");
+
+// our helper modules
+const jrhMisc = require("./jrh_misc");
 //---------------------------------------------------------------------------
 
 
@@ -40,7 +38,7 @@ const path = require("path");
 //---------------------------------------------------------------------------
 // constants
 
-// winston debugging levels
+// winston log levels
 // ideally every kind of log message type coming from app would be entered here
 // if we try to log one not here it will go into log as "errorUnknown" and log to error file
 const winstonCustomLevels = {
@@ -53,12 +51,13 @@ const winstonCustomLevels = {
 	info: 6,
 	debug: 7,
 	db: 6,
-	"crud.create": 6,
-	"crud.edit": 6,
-	"crud.delete": 6,
-	"api.token": 6,
-	"user.create": 6,
+
+	crud: 6,
+	api: 6,
+	user: 6,
 };
+
+const winstonCustomLevelsKeys = Object.keys(winstonCustomLevels);
 //---------------------------------------------------------------------------
 
 
@@ -68,10 +67,8 @@ const winstonCustomLevels = {
 //---------------------------------------------------------------------------
 // module variables
 var winstonLogger;
-var debugfunc;
 var serviceName;
 var logDir;
-var debugEnabled = false;
 var winstonCategoryLoggers = [];
 //---------------------------------------------------------------------------
 
@@ -92,8 +89,6 @@ function setup(iserviceName, ilogDir) {
 	logDir = ilogDir;
 	// create winston object
 	winstonLogger = setupWinston();
-	// create debug func that is on only in debug mode
-	debugfunc = setupDebugmod();
 }
 //---------------------------------------------------------------------------
 
@@ -118,26 +113,7 @@ function setupMorganMiddlewareForExpressWebAccessLogging() {
 
 
 
-//---------------------------------------------------------------------------
-/**
- * Set debug mode on or off.
- * This controls whether certain debug functions (those ending in 'c' for conditional) actually generate output
- *
- * @param {boolean} val
- */
-function setDebugEnabled(val) {
-	debugEnabled = val;
-}
 
-/**
- * Accessor for the debug mode
- *
- * @returns true if debugging is enabled
- */
-function getDebugEnabled() {
-	return debugEnabled;
-}
-//---------------------------------------------------------------------------
 
 
 
@@ -155,104 +131,27 @@ function log(...args) { return winstonLogger.log(...args); }
 
 
 /**
- * Passthrough log function to winston logger, to log an item to file
+ * Passthrough log function to winston logger, to log an item to file created for a specific cateogry
  *
+ * @param {string} category -- the category associated with the logger
  * @param {*} args
  * @returns result of winston log command
  */
 function catlog(category, ...args) { return winstonCategoryLoggers[category].log(...args); }
-//---------------------------------------------------------------------------
 
-
-
-
-//---------------------------------------------------------------------------
-// pass through to debug function for quick and dirty screen display
 
 /**
- * Passthrough to debug module function to show some info on console
+ * Passthrough log function to winston logger, to log an item to file created for a specific cateogry; creating category logger if it does not yet exist
  *
+ * @param {string} category -- the category associated with the logger
  * @param {*} args
- * @returns result of debug module function
+ * @returns result of winston log command
  */
-function debug(...args) { return debugfunc(...args); }
-
-
-/**
- * Invoke to debug module function after formatting string using util.format
- * @example debugf("%s:%d", str, val);
- *
- * @param {string} string - string to pass to util.format
- * @param {*} args - arguments for util.format
- * @returns result of debug module function
- */
-// formatted string ("%s:%d", str, val)
-function debugf(str, ...args) { return debugfunc(util.format(str, ...args)); }
-
-
-/**
- * Dump an object with its properties, with an optional message
- *
- * @param {object} obj - object to dump
- * @param {string} msg - message to show before dumping object (ignored if null/undefined)
- */
-function debugObj(obj, msg) {
-	// just helper log function
-	if (msg) {
-		debug(msg + ": " + objToString(obj, false));
-	} else {
-		debug(objToString(obj, false));
+function ecatlog(category, ...args) {
+	if (!winstonCategoryLoggers[category]) {
+		setupWinstonCategoryLogger(category, category);
 	}
-}
-//---------------------------------------------------------------------------
-
-
-
-//---------------------------------------------------------------------------
-/**
- * Conditional passthrough to debug module function to show some info on console.
- * Does nothing if debug mode is off.
- *
- * @param {*} args
- * @returns result of debug module function
- */
-function cdebug(...args) {
-	if (getDebugEnabled()) {
-		return debug(...args);
-	}
-	return null;
-}
-
-
-/**
- * Conditional call to debug module function after formatting string using util.format
- * Does nothing if debug mode is off.
- * @example cdebugf("%s:%d", str, val);
- *
- * @param {string} string - string to pass to util.format
- * @param {*} args - arguments for util.format
- * @returns result of debug module function
- */
-function cdebugf(str, ...args) {
-	if (getDebugEnabled()) {
-		return debugf(str, ...args);
-	}
-	return null;
-}
-
-
-/**
- * Conditional dump an object with its properties, with an optional message
- * Does nothing if debug mode is off.
- *
- * @param {object} obj - object to dump
- * @param {string} msg - message to show before dumping object (ignored if null/undefined)
- */
-function cdebugObj(obj, msg) {
-	if (getDebugEnabled()) {
-		return debugObj(obj, msg);
-	}
-	return null;
+	return winstonCategoryLoggers[category].log(...args);
 }
 //---------------------------------------------------------------------------
 
@@ -260,92 +159,130 @@ function cdebugObj(obj, msg) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //---------------------------------------------------------------------------
-/**
- * Stringify an object nicely for display on console
- * ##### Notes
- *  * See <a href="https://stackoverflow.com/questions/10729276/how-can-i-get-the-full-object-in-node-jss-console-log-rather-than-object">stackoverflow</a>
- *  * See <a href="https://nodejs.org/api/util.html#util_util_inspect_object_options">nodejs docs</a>
- *
- * @param {*} obj - the object to stringify
- * @param {*} flagCompact - if true then we use a compact single line output format
- * @returns string suitable for debug/diagnostic display
- */
-function objToString(obj, flagCompact) {
-	// return util.inspect(obj, false, null, true /* enable colors */);
-	var options = {};
-	if (flagCompact) {
-		options = {
-			showHidden: false,
-			depth: 2,
-			colors: false,
-			compact: true,
-			breakLength: Infinity,
-		};
-	} else {
-		options = {
-			showHidden: false,
-			depth: 2,
-			colors: false,
-			compact: false,
-			breakLength: 80,
-		};
-	}
-	return util.inspect(obj, options);
+function logMessage(type, message, extraData, mergeData) {
+	// make the object to save in file log
+	var logObj = createLogFileObj(type, message, extraData, mergeData);
+	// log it
+	logObjectByType(type, logObj);
 }
 //---------------------------------------------------------------------------
 
 
 
-
 //---------------------------------------------------------------------------
-/**
- * Log (to winston file logger) a message that mirrors the database log items the server normally logs to database.
- * This is used to create a plain file of log items that parallels our database log
- *
- * @param {string} type - the kind of message (ideally defined in winstonCustomLevels; if not it will be logged to file as an UnknownError)
- * @param {string} message - the main message to log
- * @param {int} severity - severity level from 0 (least important) to 100 (most important)
- * @param {string} userid - userid of logged in user of request (or undefined/null)
- * @param {string} ip - ip of user request (or undefined/null)
- * @param {obj} extraData - stringified with JSON.stringify
- */
-function logStdDbMessage(type, message, severity, userid, ip, extraData) {
-	var msg;
-
-	// ideally the type is the same as a registered winston logging level; if not we have to make do
-	var extras = "";
-	var level = convertErrorTypeToWinstonLevel(type);
-	if (level !== type) {
-		// since the log level and type string are different, add the actual type to the message since it does not match level
-		extras = util.format(" type='%s'", type);
-	}
-	if (extraData) {
-		msg = util.format("severity='%s' userid='%s' ip='%s' msg='%s' data='%s'%s", severity, userid, ip, message, JSON.stringify(extraData), extras);
-	} else {
-		msg = util.format("severity='%s' userid='%s' ip='%s' msg='%s'%s", severity, userid, ip, message, extras);
-	}
-	winstonLogger.log(level, msg);
+function logExceptionError(err) {
+	const logObjError = {
+		type: "errorCrit.logging",
+		message: "Exception while trying to log to database: " + err.message,
+	};
+	logObjectByLevel("errorCrit", logObjError);
 }
 
 
+function logExceptionErrorWithMessage(err, type, message, extraData, mergeData) {
+	// create normal log messsage object
+	var logObj = createLogFileObj(type, message, extraData, mergeData);
+	// now alter it for exception
+	const logObjError = {
+		type: "errorCrit.logging",
+		message: "Exception while trying to log to database: " + err.message,
+		origLog: logObj,
+	};
+	logObjectByLevel("errorCrit", logObjError);
+}
+//---------------------------------------------------------------------------
+
+
+
+//---------------------------------------------------------------------------
+function logObjectByType(type, obj) {
+	// just log the object to winston
+	const level = convertLogTypeToLevel(type);
+	logObjectByLevel(level, obj);
+}
+
+
+function logObjectByLevel(level, obj) {
+	// log it
+	winstonLogger.log(level, obj);
+}
+
+
+function catlogObjectByLevel(category, level, obj) {
+	// log it
+	winstonCategoryLoggers[category].log(level, obj);
+}
+//---------------------------------------------------------------------------
+
+
+//---------------------------------------------------------------------------
 /**
- * Returns a registered winston logging level to use for this type.
- * If the type string is a known winstonCustomLevels we can use it directly as the level; if not, winston will throw an error if we try to use this as the log level, so instead caller will use UnknownError as the level
- * @private
+ * Take a type string (which may be dot notation path) and split it into a valid winston logger level and a subtype
  *
  * @param {string} type
- * @returns valid winston logging level to use
  */
-function convertErrorTypeToWinstonLevel(type) {
-	if (winstonCustomLevels[type]) {
-		// the type is a known level, return it
-		return type;
+function convertLogTypeToLevelAndSubtype(type) {
+	// try to find the longest prefix in the type corresponding to a known winston log level
+	var [level, remainder] = jrhMisc.findLongestPrefixAndRemainder(type, winstonCustomLevelsKeys, ".");
+	if (level === "") {
+		// not found
+		return ["errorUnknown", type];
 	}
-	// not found, so we should return generic level
-	return "errorUnknown";
+	return [level, remainder];
+}
+
+
+function convertLogTypeToLevel(type) {
+	var [level, remainder] = convertLogTypeToLevelAndSubtype(type);
+	return level;
 }
 //---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -385,10 +322,10 @@ function setupWinston() {
 				format: "YYYY-MM-DD HH:mm:ss",
 			}),
 			winston.format.errors({ stack: true }),
-			winston.format.splat(),
+			// winston.format.splat(),
 			winston.format.json(),
 		),
-		defaultMeta: { service: serviceName },
+		// defaultMeta: { service: serviceName },
 		transports: [
 			//
 			// - Write to all logs with level `info` and below to `.log`
@@ -431,10 +368,10 @@ function setupWinstonCategoryLogger(category, filename) {
 			winston.format.timestamp({
 				format: "YYYY-MM-DD HH:mm:ss",
 			}),
-			winston.format.splat(),
+			// winston.format.splat(),
 			winston.format.json(),
 		),
-		defaultMeta: { service: serviceName },
+		// defaultMeta: { service: serviceName },
 		transports: [
 			new winston.transports.File({ filename: calcLogFilePath(filename) }),
 		],
@@ -457,31 +394,6 @@ function getWinstonCategoryLogger(category) {
 
 
 
-
-
-
-
-
-
-
-
-//---------------------------------------------------------------------------
-/**
- * Setup the debug module logger for console messages
- *
- * @returns the debug module created function for invoking debug statement
- */
-function setupDebugmod() {
-	// now create the simple console logger from debug module
-	debugfunc = debugmod(serviceName);
-
-	// force it on for our service
-	debugmod.enable(serviceName);
-
-	// return it
-	return debugfunc;
-}
-//---------------------------------------------------------------------------
 
 
 
@@ -520,6 +432,41 @@ function calcLogFilePath(fileSuffix) {
 
 
 
+//---------------------------------------------------------------------------
+function createLogFileObj(type, message, extraData, mergeData) {
+	var logObj;
+	if (message && !(typeof message === "string")) {
+		// unusual case where the message is an object; for file we merge in message properties, and others
+		logObj = {
+			type,
+			...message,
+			...mergeData,
+			...extraData,
+		};
+	} else {
+		// message is a string, add it as message and merge in others.
+		logObj = {
+			type,
+			message,
+			...mergeData,
+			...extraData,
+		};
+	}
+
+	return logObj;
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -533,13 +480,17 @@ module.exports = {
 	setupMorganMiddlewareForExpressWebAccessLogging,
 	setupWinstonCategoryLogger,
 
-	setDebugEnabled, getDebugEnabled,
-
 	log,
-	catlog,
-	debug, debugf, debugObj,
-	cdebug, cdebugf, cdebugObj,
+	catlog, ecatlog,
 
-	objToString,
-	logStdDbMessage,
+	logMessage,
+	logExceptionError,
+	logExceptionErrorWithMessage,
+
+	logObjectByType,
+	logObjectByLevel,
+	catlogObjectByLevel,
+	convertLogTypeToLevel,
+
+	createLogFileObj,
 };

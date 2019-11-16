@@ -61,7 +61,8 @@
         "arrow-body-style": 0,
         "no-useless-constructor": 0,
         "no-empty-function": 0,
-        "no-unreachable": 0
+        "no-unreachable": 0,
+        "no-continue": 0
     },
 
     "settings": {

@@ -17,7 +17,7 @@ const fs = require("fs");
 const path = require("path");
 
 // our helper modules
-const jrlog = require("./jrlog");
+const jrdebug = require("./jrdebug");
 const jrhText = require("./jrh_text");
 
 
@@ -83,7 +83,7 @@ function loadPartialFiles(partialsDir, prefix) {
 				var partialName = matches[1];
 				var prefixedPartialName = prefix ? (prefix + "/") + partialName : partialName;
 				var template = fs.readFileSync(fullPath, "utf8");
-				jrlog.cdebugf("Adding handlebar view partial: %s.", prefixedPartialName);
+				jrdebug.cdebugf("Adding handlebar view partial: %s.", prefixedPartialName);
 				hbs.registerPartial(prefixedPartialName, template);
 			}
 		}

@@ -13,6 +13,7 @@
 // our helper modules
 const jrhMisc = require("./jrh_misc");
 const jrhText = require("./jrh_text");
+const jrdebug = require("./jrdebug");
 
 
 
@@ -164,17 +165,18 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 	var protectedFields = filterOptions.protectedFields;
 	var hiddenFields = filterOptions.hiddenFields;
 
-	// cache header field custom display hints
-	var valFuncList = {};
-	var valfunc;
+	// cache extra info for each header column
+	var extraInfo = {};
 	headerKeys.forEach((key) => {
-		valfunc = listHelperData.modelClass.getSchemaExtraFieldVal(key, "valueFunction");
-		if (valfunc) {
-			valFuncList[key] = valfunc;
-		}
+		extraInfo[key] = {
+			valformat: listHelperData.modelClass.getSchemaExtraFieldVal(key, "format"),
+			valfunc: listHelperData.modelClass.getSchemaExtraFieldVal(key, "valueFunction"),
+			crudlink: listHelperData.modelClass.getSchemaExtraFieldVal(key, "crudlink"),
+		};
 	});
 
-	var val, valDisplay, crudLink;
+	var val, valtype, valfunc, valformat, valDisplay, crudLink;
+	var extraInfoKey;
 	var item;
 	var numItems = gridItems.length;
 	for (var i = 0; i < numItems; i += 1) {
@@ -189,6 +191,8 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 				return;
 			}
 
+			extraInfoKey = extraInfo[key];
+
 			if (key === "_checkbox") {
 				// checkbox for batch actions
 				rethtml += `
@@ -202,14 +206,14 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 						<td scope="col"> <a href="${urlEdit}" title="edit">&#9998;</a>  <a href="${urlDelete}" title="delete">&#10008;</a> </td>
 					`;
 			} else {
-				var format = listHelperData.modelClass.getSchemaExtraFieldVal(key, "format");
 				val = item[key];
-				valfunc = valFuncList[key];
+				valformat = extraInfoKey.valformat;
+				valfunc = extraInfoKey.valfunc;
 				if (valfunc) {
 					// use custom value resolving callback function
 					valDisplay = await valfunc("list", key, req, item, listHelperData);
 				} else {
-					if (format === "checkbox") {
+					if (valformat === "checkbox") {
 						if (val) {
 							valDisplay = "true";
 						} else {
@@ -220,10 +224,15 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 					} else if (val === null) {
 						valDisplay = "null";
 					} else {
-						valDisplay = val.toString();
+						if (valformat === "date") {
+							// format as compact date
+							valDisplay = val.toLocaleString();
+						} else {
+							valDisplay = val.toString();
+						}
 					}
 					//
-					crudLink = listHelperData.modelClass.getSchemaExtraFieldVal(key, "crudLink");
+					crudLink = extraInfoKey.crudlink;
 					if (crudLink) {
 						valDisplay = `<a href="${crudLink}/view/${val}">${valDisplay}</a>`;
 					}

@@ -34,7 +34,7 @@ const assert = require("assert");
 const roleAcl = require("role-acl");
 
 // our helper modules
-const jrlog = require("../helpers/jrlog");
+const jrdebug = require("../helpers/jrdebug");
 
 
 /**
@@ -104,7 +104,7 @@ class AclAid {
 		this.roleAcl.grant("visitor");
 
 		// test
-		// jrlog.debugObj(this.roleAcl.getGrants(), "TEST of ACL permission grants");
+		// jrdebug.debugObj(this.roleAcl.getGrants(), "TEST of ACL permission grants");
 
 		return true;
 	}

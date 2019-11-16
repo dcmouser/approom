@@ -1,9 +1,15 @@
-// approom
-// v1.0.0 on 4/26/19 by mouser@donationcoder.com
-//
-// some global options
-//
-// ATTN: TODO replace these properties with getters for better error detection
+/**
+ * @module approomglobals
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 4/26/19
+
+ * @description
+ * Defines and exports some contsants concerning the name, version, etc of the application
+ * @todo
+ * Replace constant exports with accessors
+*/
+
+
 
 "use strict";
 

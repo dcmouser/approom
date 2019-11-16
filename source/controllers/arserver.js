@@ -50,6 +50,7 @@ const jrhMisc = require("../helpers/jrh_misc");
 const jrhMongo = require("../helpers/jrh_mongo");
 const jrhExpress = require("../helpers/jrh_express");
 const jrlog = require("../helpers/jrlog");
+const jrdebug = require("../helpers/jrdebug");
 const jrconfig = require("../helpers/jrconfig");
 const JrResult = require("../helpers/jrresult");
 const jrhHandlebars = require("../helpers/jrh_handlebars");
@@ -181,6 +182,9 @@ class AppRoomServer {
 	setupConfigAndLoggingEnvironment() {
 		// perform global configuration actions that are shared and should be run regardless of the cli app or unit tests
 
+		// setup debugger
+		jrdebug.setup(arGlobals.programName, true);
+
 		// setup singleton loggers
 		jrlog.setup(arGlobals.programName, this.getLogDir());
 
@@ -188,12 +192,12 @@ class AppRoomServer {
 		jrlog.setupWinstonCategoryLogger("404", "404");
 
 		// show some info about app
-		jrlog.debugf("%s v%s (%s) by %s", arGlobals.programName, arGlobals.programVersion, arGlobals.programDate, arGlobals.programAuthor);
+		jrdebug.debugf("%s v%s (%s) by %s", arGlobals.programName, arGlobals.programVersion, arGlobals.programDate, arGlobals.programAuthor);
 
 		// try to get server ip
 		var serverIp = jrhMisc.getServerIpAddress();
 		jrconfig.setServerFilenamePrefixFromServerIp(serverIp);
-		jrlog.debugf("Running on server: %s", serverIp);
+		jrdebug.debugf("Running on server: %s", serverIp);
 
 		// setup singleton jrconfig from options
 		jrconfig.setDefaultOptions(arGlobals.defaultOptions);
@@ -205,12 +209,14 @@ class AppRoomServer {
 	}
 
 
-	parseConfig() {
+	processConfig() {
 		// now parse commandline/config/env/ etc.
 		jrconfig.parse();
 
+		// set any values based on config
+
 		// enable debugging based on DEBUG field
-		jrlog.setDebugEnabled(this.getOptionDebugEnabled());
+		jrdebug.setDebugEnabled(this.getOptionDebugEnabled());
 	}
 	//---------------------------------------------------------------------------
 
@@ -338,7 +344,7 @@ class AppRoomServer {
 		const staticAbsoluteDir = this.getBaseSubDir("static");
 		const staticUrl = "/static";
 		expressApp.use(staticUrl, express.static(staticAbsoluteDir));
-		jrlog.cdebugf("Serving static files from '%s' at '%s", staticAbsoluteDir, staticUrl);
+		jrdebug.cdebugf("Serving static files from '%s' at '%s", staticAbsoluteDir, staticUrl);
 
 		// setup bootstrap, jquery, etc.
 		const jsurl = staticUrl + "/js";
@@ -510,7 +516,7 @@ class AppRoomServer {
 			// so we want this to be just enough to uniquely identify the user.
 			// profile is the user profile object returned by the passport strategy callback below, so we can decide what to return from that
 			// so in this case, we just return the profile object
-			jrlog.cdebugObj(profile, "serializeUser profile");
+			jrdebug.cdebugObj(profile, "serializeUser profile");
 			var userProfileObj = profile;
 			// call passport callback
 			done(null, userProfileObj);
@@ -525,7 +531,7 @@ class AppRoomServer {
 			// but we may not want to actually use this function to help passport load up a full user object from the db, because of the overhead and cost of doing
 			// that when it's not needed.  So we are converting from the SESSION userdata to possibly FULLER userdata
 			// however, remember that we might want to check that the user is STILL allowed into our site, etc.
-			jrlog.cdebugObj(user, "deserializeUser user");
+			jrdebug.cdebugObj(user, "deserializeUser user");
 			// build full user ?
 			var userFull = user;
 			// call passport callback
@@ -567,7 +573,7 @@ class AppRoomServer {
 				// so we check their username and password and return either FALSE or the user
 				// first, find the user via their password
 				var jrResult;
-				jrlog.cdebugf("In passport local strategy test with username=%s and password=%s", usernameEmail, password);
+				jrdebug.cdebugf("In passport local strategy test with username=%s and password=%s", usernameEmail, password);
 				const UserModel = require("../models/user");
 				var user = await UserModel.findOneByUsernameEmail(usernameEmail);
 				if (!user) {
@@ -608,14 +614,14 @@ class AppRoomServer {
 		};
 
 		// debug info
-		jrlog.cdebugObj(strategyOptions, "setupPassportStrategyFacebook options");
+		jrdebug.cdebugObj(strategyOptions, "setupPassportStrategyFacebook options");
 
 		passport.use(new Strategy(
 			strategyOptions,
 			async (req, accessToken, refreshToken, profile, done) => {
-				jrlog.cdebugObj(accessToken, "facebook accessToken");
-				jrlog.cdebugObj(refreshToken, "facebook refreshToken");
-				jrlog.cdebugObj(profile, "facebook profile");
+				jrdebug.cdebugObj(accessToken, "facebook accessToken");
+				jrdebug.cdebugObj(refreshToken, "facebook refreshToken");
+				jrdebug.cdebugObj(profile, "facebook profile");
 				// get user associated with this facebook profile, OR create one, etc.
 				var bridgedLoginObj = {
 					provider: profile.provider,
@@ -660,7 +666,7 @@ class AppRoomServer {
 		};
 
 		// debug info
-		jrlog.cdebugObj(strategyOptions, "setupPassportJwt strategyOptions");
+		jrdebug.cdebugObj(strategyOptions, "setupPassportJwt strategyOptions");
 
 		passport.use(new Strategy(
 			strategyOptions,
@@ -1341,7 +1347,7 @@ class AppRoomServer {
 			},
 		});
 
-		jrlog.cdebugf("Setting up mail transport through %s.", jrconfig.getVal("mailer:HOST"));
+		jrdebug.cdebugf("Setting up mail transport through %s.", jrconfig.getVal("mailer:HOST"));
 
 		// verify it?
 		if (this.getOptionDebugEnabled()) {
@@ -1363,7 +1369,7 @@ class AppRoomServer {
 		}
 
 		var result = await this.mailTransport.sendMail(mailobj);
-		jrlog.cdebugObj(result, "Result from sendMail.");
+		jrdebug.cdebugObj(result, "Result from sendMail.");
 		var jrResult = this.makeJrResultFromSendmailRetv(result, mailobj);
 		return jrResult;
 	}
@@ -1428,7 +1434,7 @@ class AppRoomServer {
 		var bind;
 		if (addr === null) {
 			msg = "Could not bind server listener, got null return from listener.address paramater.  Is server already running (in debugger) ?";
-			jrlog.debug(msg);
+			jrdebug.debug(msg);
 			jrlog.error(msg);
 			process.exit(1);
 		} else if (typeof addr === "string") {
@@ -1437,7 +1443,7 @@ class AppRoomServer {
 			bind = "port " + addr.port;
 		} else {
 			msg = "Could not bind server listener, the listener.address paramater was not understood: " + addr;
-			jrlog.debug(msg);
+			jrdebug.debug(msg);
 			jrlog.error(msg);
 			process.exit(1);
 		}
@@ -1468,7 +1474,7 @@ class AppRoomServer {
 
 		// show some info
 		var serverTypestr = flagHttps ? "https" : "http";
-		jrlog.debug("Server (" + serverTypestr + ") started, listening on " + bind);
+		jrdebug.debug("Server (" + serverTypestr + ") started, listening on " + bind);
 	}
 	//---------------------------------------------------------------------------
 
@@ -1485,7 +1491,7 @@ class AppRoomServer {
 
 		// tell user if we are running in development mode
 		if (this.isDevelopmentMode()) {
-			jrlog.debug("Running in development mode (verbose errors shown to web client).");
+			jrdebug.debug("Running in development mode (verbose errors shown to web client).");
 		}
 
 		// view/template extra stuff
@@ -1530,7 +1536,7 @@ class AppRoomServer {
 		try {
 			// connect to db
 			const mongoUrl = this.getOptionDbUrl();
-			jrlog.cdebug("Connecting to mongoose-mongodb: " + mongoUrl);
+			jrdebug.cdebug("Connecting to mongoose-mongodb: " + mongoUrl);
 			await mongoose.connect(mongoUrl, mongooseOptions);
 
 			// now setup each of the model schemas
@@ -1550,8 +1556,8 @@ class AppRoomServer {
 			// success return value -- if we got this far it"s a success; drop down
 			bretv = true;
 		} catch (err) {
-			jrlog.debug("Exception while trying to setup database:");
-			jrlog.debug(err);
+			jrdebug.debug("Exception while trying to setup database:");
+			jrdebug.debug(err);
 			bretv = false;
 		}
 
@@ -1595,7 +1601,7 @@ class AppRoomServer {
 
 	dbDisconnect() {
 		// disconnect from mongoose/mongodb
-		jrlog.debug("Closing mongoose-mongodb connection.");
+		jrdebug.debug("Closing mongoose-mongodb connection.");
 		mongoose.disconnect();
 	}
 	//---------------------------------------------------------------------------
@@ -1635,7 +1641,7 @@ class AppRoomServer {
 		if (this.isDevelopmentMode()) {
 			msg += "  Development mode enabled.";
 		}
-		await this.logm("info", msg, 0);
+		await this.logm("info.server", msg);
 	}
 	//---------------------------------------------------------------------------
 
@@ -1658,37 +1664,134 @@ class AppRoomServer {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	//---------------------------------------------------------------------------
-	async logr(req, type, message, severity, extraData) {
-		const userid = req.user ? req.user.id : undefined;
-		await this.logm(type, message, severity, userid, req.ip, extraData);
+	async logr(req, type, message, extraData) {
+		// create log obj
+		var ip = (req.ip && req.ip.length > 7 && req.ip.substr(0, 7) === "::ffff:") ? req.ip.substr(7) : req.ip;
+		const mergeData = {
+			userid: (req.user ? req.user.id : undefined),
+			ip,
+		};
+		// hand off to more generic function
+		await this.logm(type, message, extraData, mergeData);
 	}
+	//---------------------------------------------------------------------------
 
-	async logm(type, message, severity, userid, ip, extraData) {
-		// create a new log entry and save it to the log
 
-		if (severity === undefined || severity == null) {
-			// default severity
-			severity = 100;
+
+	//---------------------------------------------------------------------------
+	async logm(type, message, extraData, mergeData) {
+		// we now want to hand off the job of logging this item to any registered file and/or db loggers
+		var flagLogToDb = true;
+		var flagLogToFile = true;
+		var errRethrow;
+
+		// save to db
+		if (flagLogToDb) {
+			try {
+				await LogModel.createLogDbModelInstanceFromLogDataAndSave(type, message, extraData, mergeData);
+			} catch (err) {
+				// error while logging to db; remember it
+				errRethrow = err;
+				// force log to file of the original message, even if we weren't planning to already
+				flagLogToFile = true;
+				// log EXCEPTION message (not original) to file first, then drop down and log original message to file
+				jrlog.logExceptionErrorWithMessage(err, type, message, extraData, mergeData);
+			}
 		}
 
-		// save it to database
-		var log = LogModel.createModel({
-			type,
-			message,
-			severity,
-			userid,
-			ip,
-			extraData,
-		});
 
-		// first log it to file (seems less error prone) using our normal system that makes us log to file?
-		jrlog.logStdDbMessage(type, message, severity, userid, ip, extraData);
+		// save to file
+		if (flagLogToFile) {
+			jrlog.logMessage(type, message, extraData, mergeData);
+		}
 
-		// now save it to database
-		await log.dbSave();
+
+		// rethrow any db log save exception
+		if (errRethrow !== undefined) {
+			// rethrow error caught above while trying to save log entry to database
+			throw errRethrow;
+		}
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2382,8 +2485,8 @@ class AppRoomServer {
 		// ATTN: test
 		if (true) {
 			// log the critical error to file and database
-			const errString = jrlog.objToString(err, false);
-			this.logm("errorCrit", errString, 1000);
+			const errString = jrhMisc.objToString(err, false);
+			this.logm("errorCrit", errString);
 		}
 		process.exitCode = 1;
 	}
@@ -2391,8 +2494,25 @@ class AppRoomServer {
 
 	handle404Error(req) {
 		// caller will pass this along to show 404 error to user; we can do extra stuff here
-		const msg = "404 not found: " + jrhExpress.getRequestLogString(req);
-		jrlog.catlog("404", "error", msg);
+		if (true) {
+			const msg = {
+				url: req.url,
+			};
+			this.logr(req, "error.404", msg);
+		} else if (true) {
+			const msg = {
+				url: req.url,
+			};
+			const extraData = {
+				more: "some more",
+				smore: "still some more",
+			};
+			//
+			this.logr(req, "error.404", msg, extraData);
+		} else {
+			const msg = "req.url: " + req.url;
+			this.logr(req, "error.404", msg);
+		}
 	}
 	//---------------------------------------------------------------------------
 

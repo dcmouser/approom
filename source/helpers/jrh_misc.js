@@ -10,6 +10,8 @@
 "use strict";
 
 
+// modules
+const util = require("util");
 
 
 
@@ -366,19 +368,19 @@ function getServerIpAddress() {
 	var bestip;
 	var alias = 0;
 
-	// jrlog.debugObj(ifaces, "ifaces");
-	// jrlog.debugObj(ifacesKeys, "ifacesKeys");
+	// jrdebug.debugObj(ifaces, "ifaces");
+	// jrdebug.debugObj(ifacesKeys, "ifacesKeys");
 
 	for (var j = 0; j < ifacesKeys.length; ++j) {
 		ifname = ifacesKeys[j];
 
 		ifaceset = ifaces[ifname];
-		// jrlog.debugObj(ifaceset, "ifaceset");
+		// jrdebug.debugObj(ifaceset, "ifaceset");
 
 		alias = 0;
 		for (var i = 0; i < ifaceset.length; ++i) {
 			iface = ifaceset[i];
-			// jrlog.debugObj(iface, "iface[" + ifname + "]");
+			// jrdebug.debugObj(iface, "iface[" + ifname + "]");
 			if (iface.family !== "IPv4" || iface.internal !== false) {
 				// skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
 				bestip = iface.address;
@@ -399,6 +401,96 @@ function getServerIpAddress() {
 	}
 	// not found;
 	return "";
+}
+//---------------------------------------------------------------------------
+
+
+
+//---------------------------------------------------------------------------
+/**
+ * Find the longest string in haystack which matches a prefix of longstr (with separatorStr or empty)
+ * Then return a tuple [longeststring, remainder] with separatorStr removed from longeststring and remainder
+ *
+ * @param {string} longstr
+ * @param {array} haystack
+ * @param {string} separatorStr
+ */
+function findLongestPrefixAndRemainder(longstr, haystack, separatorStr) {
+	var longestLen = 0;
+	var longestStr = "";
+	const separatorStrLength = separatorStr.length;
+	const longstrLength = longstr.length;
+	var candidateLength;
+	var candidate;
+	// walk array of strings
+	for (var i = 0; i < haystack.length; ++i) {
+		candidate = haystack[i];
+		candidateLength = candidate.length;
+		if (candidateLength > longstrLength) {
+			// cannot match, too long
+			continue;
+		}
+		if (candidate === longstr) {
+			// found exact match, we can stop now
+			return [candidate, ""];
+		}
+		if (candidateLength + separatorStrLength < longstrLength && candidateLength > longestLen) {
+			// check if its an initial substring
+			if (longstr.substr(0, candidateLength + separatorStrLength) === candidate + separatorStr) {
+				// ok we have a match with candidate + separate on left hand side
+				// our new longest candidate
+				longestStr = candidate;
+				longestLen = candidateLength;
+			}
+		}
+	}
+	// did we find a good match?
+	if (longestLen === 0) {
+		// nothing found
+		return ["", longstr];
+	}
+	// we found something
+	const remainderStr = longstr.substr(candidateLength + separatorStrLength);
+	return [longestStr, remainderStr];
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+//---------------------------------------------------------------------------
+/**
+ * Stringify an object nicely for display on console
+ * ##### Notes
+ *  * See <a href="https://stackoverflow.com/questions/10729276/how-can-i-get-the-full-object-in-node-jss-console-log-rather-than-object">stackoverflow</a>
+ *  * See <a href="https://nodejs.org/api/util.html#util_util_inspect_object_options">nodejs docs</a>
+ *
+ * @param {*} obj - the object to stringify
+ * @param {*} flagCompact - if true then we use a compact single line output format
+ * @returns string suitable for debug/diagnostic display
+ */
+function objToString(obj, flagCompact) {
+	// return util.inspect(obj, false, null, true /* enable colors */);
+	var options = {};
+	if (flagCompact) {
+		options = {
+			showHidden: false,
+			depth: 2,
+			colors: false,
+			compact: true,
+			breakLength: Infinity,
+		};
+	} else {
+		options = {
+			showHidden: false,
+			depth: 2,
+			colors: false,
+			compact: false,
+			breakLength: 80,
+		};
+	}
+	return util.inspect(obj, options);
 }
 //---------------------------------------------------------------------------
 
@@ -439,4 +531,7 @@ module.exports = {
 
 	getServerIpAddress,
 
+	findLongestPrefixAndRemainder,
+
+	objToString,
 };

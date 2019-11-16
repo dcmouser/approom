@@ -1,5 +1,11 @@
-// MOCHA test functions for approom
-// mouser@donationcoder.com on 4/26/19
+/**
+ * @module approomTest
+ * @author jesse reichler <mouser@donationcoder.com>
+ * @copyright 4/26/19
+
+ * @description
+ * MOCHA test functions for approom application/framework
+*/
 
 "use strict";
 
@@ -24,7 +30,7 @@ const jrconfig = require("../helpers/jrconfig");
 arserver.setupConfigAndLoggingEnvironment();
 
 // configure server instance
-arserver.parseConfig();
+arserver.processConfig();
 //---------------------------------------------------------------------------
 
 
@@ -36,6 +42,8 @@ arserver.parseConfig();
 
 
 
+
+//---------------------------------------------------------------------------
 // server tests
 describe("server", () => {
 
@@ -100,8 +108,5 @@ describe("user", () => {
 		assert(bretv, "admin user password is not set to default value");
 	});
 
-
-
-
-
 });
+//---------------------------------------------------------------------------
