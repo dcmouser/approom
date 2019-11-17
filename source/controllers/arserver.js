@@ -71,6 +71,12 @@ const rateLimiterAid = require("./ratelimiteraid");
 //---------------------------------------------------------------------------
 // global constants
 const DefRequiredLoginMessage = "You need to log in before you can access the requested page.";
+// log categories
+const DefLoggingCategoryError = "error";
+const DefLoggingCategoryError404 = "404";
+const DefLoggingCategory = "";
+// log types
+const DefLogMessageTypeError404 = "error.404";
 //---------------------------------------------------------------------------
 
 
@@ -185,11 +191,8 @@ class AppRoomServer {
 		// setup debugger
 		jrdebug.setup(arGlobals.programName, true);
 
-		// setup singleton loggers
-		jrlog.setup(arGlobals.programName, this.getLogDir());
-
-		// extra loggers
-		jrlog.setupWinstonCategoryLogger("404", "404");
+		// setup loggers
+		this.setupLoggers();
 
 		// show some info about app
 		jrdebug.debugf("%s v%s (%s) by %s", arGlobals.programName, arGlobals.programVersion, arGlobals.programDate, arGlobals.programAuthor);
@@ -222,6 +225,18 @@ class AppRoomServer {
 
 
 
+
+	//---------------------------------------------------------------------------
+	setupLoggers() {
+		// setup singleton loggers
+		jrlog.setup(arGlobals.programName, this.getLogDir());
+
+		// winston logger files
+		jrlog.setupWinstonLogger(DefLoggingCategoryError, DefLoggingCategoryError);
+		jrlog.setupWinstonLogger(DefLoggingCategoryError404, DefLoggingCategoryError404);
+		jrlog.setupWinstonLogger(DefLoggingCategory, DefLoggingCategory);
+	}
+	//---------------------------------------------------------------------------
 
 
 
@@ -1717,34 +1732,50 @@ class AppRoomServer {
 		// we now want to hand off the job of logging this item to any registered file and/or db loggers
 		var flagLogToDb = true;
 		var flagLogToFile = true;
-		var errRethrow;
 
 		// save to db
 		if (flagLogToDb) {
-			try {
-				await LogModel.createLogDbModelInstanceFromLogDataAndSave(type, message, extraData, mergeData);
-			} catch (err) {
-				// error while logging to db; remember it
-				errRethrow = err;
-				// force log to file of the original message, even if we weren't planning to already
-				flagLogToFile = true;
-				// log EXCEPTION message (not original) to file first, then drop down and log original message to file
-				jrlog.logExceptionErrorWithMessage(err, type, message, extraData, mergeData);
-			}
+			await this.logmToDbModelClass(LogModel, type, message, extraData, mergeData);
 		}
-
 
 		// save to file
 		if (flagLogToFile) {
-			jrlog.logMessage(type, message, extraData, mergeData);
+			var category = this.calcLoggingCategoryFromLogMessageType(type);
+			jrlog.logMessage(category, type, message, extraData, mergeData);
 		}
+	}
 
 
-		// rethrow any db log save exception
-		if (errRethrow !== undefined) {
-			// rethrow error caught above while trying to save log entry to database
-			throw errRethrow;
+	async logmToDbModelClass(logModelClass, type, message, extraData, mergeData) {
+		try {
+			await logModelClass.createLogDbModelInstanceFromLogDataAndSave(type, message, extraData, mergeData);
+			// uncomment to test fallback error logging
+			// throw Error("logmToDbModelClass exception test.");
+		} catch (err) {
+			// error while logging to db.
+			// log EXCEPTION message (INCLUDES original) to file; note we may still try to log the original cleanly to file below
+			jrdebug.debug("Logging fatal exception to error log file..");
+			jrlog.logExceptionErrorWithMessage(DefLoggingCategoryError, err, type, message, extraData, mergeData);
+			// rethrow exception
+			throw err;
 		}
+	}
+
+
+	calcLoggingCategoryFromLogMessageType(type) {
+		// we want to decide which logging category (file) to put this logg message in
+
+		// 404s go in their own file
+		if (type.startsWith("error.404")) {
+			return DefLoggingCategoryError404;
+		}
+
+		if (type.startsWith("error")) {
+			return DefLoggingCategoryError;
+		}
+
+		// fallback to default
+		return DefLoggingCategory;
 	}
 	//---------------------------------------------------------------------------
 
@@ -2498,7 +2529,7 @@ class AppRoomServer {
 			const msg = {
 				url: req.url,
 			};
-			this.logr(req, "error.404", msg);
+			this.logr(req, DefLogMessageTypeError404, msg);
 		} else if (true) {
 			const msg = {
 				url: req.url,
@@ -2508,10 +2539,10 @@ class AppRoomServer {
 				smore: "still some more",
 			};
 			//
-			this.logr(req, "error.404", msg, extraData);
+			this.logr(req, DefLogMessageTypeError404, msg, extraData);
 		} else {
 			const msg = "req.url: " + req.url;
-			this.logr(req, "error.404", msg);
+			this.logr(req, DefLogMessageTypeError404, msg);
 		}
 	}
 	//---------------------------------------------------------------------------
