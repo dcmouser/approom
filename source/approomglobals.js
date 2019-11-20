@@ -46,6 +46,21 @@ const envListOptions = [
 
 
 
+//---------------------------------------------------------------------------
+/**
+ * The idea here is that we want to be able to easily replace any of the modules of the application.
+ * So we include a built-in function for returning the DEFAULT set of module dependency mappings, and most of the time we can just return that here
+ *
+ * @returns the service locator to use for this application
+ */
+function makeServiceLocator() {
+	return require("./controllers/servicelocator_approom_default")();
+}
+//---------------------------------------------------------------------------
+
+
+
+
 
 
 
@@ -58,5 +73,6 @@ const envListOptions = [
 module.exports = {
 	programName, programVersion, programDate, programAuthor, programDescription,
 	defaultOptions, overrideOptions, envListOptions,
+	makeServiceLocator,
 };
 //---------------------------------------------------------------------------

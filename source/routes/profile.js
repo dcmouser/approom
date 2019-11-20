@@ -12,16 +12,21 @@
 // modules
 const express = require("express");
 
+
 // helpers
 const JrResult = require("../helpers/jrresult");
 const jrlog = require("../helpers/jrlog");
 
-// models
-const UserModel = require("../models/user");
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
 
 // controllers
-const arserver = require("../controllers/arserver");
-const crudAid = require("../controllers/crudaid");
+const arserver = jrequire("arserver");
+const crudAid = jrequire("crudaid");
+
+// models
+const UserModel = jrequire("models/user");
+
 
 // express router
 const router = express.Router();

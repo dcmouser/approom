@@ -12,9 +12,13 @@
 // modules
 const mongoose = require("mongoose");
 
+
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
 // models
-const ModelBaseMongoose = require("./model_base_mongoose");
-const UserModel = require("./user");
+const ModelBaseMongoose = jrequire("models/model_base_mongoose");
+const UserModel = jrequire("models/user");
 
 // helpers
 const jrdebug = require("../helpers/jrdebug");
@@ -177,8 +181,8 @@ class LoginModel extends ModelBaseMongoose {
 
 
 		// is there already a user logged into this section? if so we will bridge the new login bridge to the existing logged in user
-		const arserver = require("../controllers/arserver");
-		const VerificationModel = require("./verification");
+		const arserver = jrequire("arserver");
+
 		var existingUserId = arserver.getLoggedInLocalUserIdFromSession(req);
 
 		// ok first let's see if we can find an existing bridged login

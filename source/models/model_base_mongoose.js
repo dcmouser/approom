@@ -12,12 +12,15 @@
 // modules
 const mongoose = require("mongoose");
 
+
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
 // our helper modules
 const jrdebug = require("../helpers/jrdebug");
 const jrhMisc = require("../helpers/jrh_misc");
 const jrhMongo = require("../helpers/jrh_mongo");
 const jrhText = require("../helpers/jrh_text");
-const JrResult = require("../helpers/jrresult");
 const jrhValidate = require("../helpers/jrh_validates");
 
 
@@ -633,7 +636,7 @@ class ModelBaseMongoose {
 	}
 
 	static async validateModelFieldAppId(jrResult, key, val, user) {
-		const AppModel = require("./app");
+		const AppModel = jrequire("models/app");
 		const appIds = await AppModel.buildSimpleAppIdListUserTargetable(user);
 		if (!appIds || appIds.indexOf(val) === -1) {
 			jrResult.pushError("The specified App ID is inaccessible.");
@@ -644,7 +647,7 @@ class ModelBaseMongoose {
 	}
 
 	static async validateModelFieldRoomId(jrResult, key, val, user) {
-		const RoomModel = require("./room");
+		const RoomModel = jrequire("models/room");
 		const roomIds = await RoomModel.buildSimpleRoomIdListUserTargetable(user);
 		if (!roomIds || roomIds.indexOf(val) === -1) {
 			jrResult.pushError("The specified Room ID is inaccessible.");
@@ -901,7 +904,7 @@ class ModelBaseMongoose {
 		var id = this.validateModelFieldId(jrResult, val);
 
 		// models
-		const arserver = require("../controllers/arserver");
+		const arserver = jrequire("arserver");
 
 		if (!jrResult.isError()) {
 			// acl test

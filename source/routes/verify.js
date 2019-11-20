@@ -12,12 +12,19 @@
 // modules
 const express = require("express");
 
+
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
 // models
-const VerificationModel = require("../models/verification");
-const arserver = require("../controllers/arserver");
+const VerificationModel = jrequire("models/verification");
+
+// controllers
+const arserver = jrequire("arserver");
 
 // helpers
 const JrResult = require("../helpers/jrresult");
+
 
 // express router
 const router = express.Router();

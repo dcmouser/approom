@@ -13,20 +13,23 @@
 // misc node core modules
 const assert = require("assert");
 
+
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
 // models
-const ModelBaseMongoose = require("./model_base_mongoose");
+const ModelBaseMongoose = jrequire("models/model_base_mongoose");
 
 // our helper modules
 const jrhMisc = require("../helpers/jrh_misc");
-const jrlog = require("../helpers/jrlog");
 const jrdebug = require("../helpers/jrdebug");
 const jrhCrypto = require("../helpers/jrh_crypto");
 const JrResult = require("../helpers/jrresult");
 const jrhValidate = require("../helpers/jrh_validates");
 
 // controllers
-const arserver = require("../controllers/arserver");
-const aclAid = require("../controllers/aclaid");
+const arserver = jrequire("arserver");
+const aclAid = jrequire("aclaid");
 //---------------------------------------------------------------------------
 
 
@@ -948,7 +951,7 @@ class UserModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	async createAndSendVerificationEmailChange(emailAddressNew) {
-		const VerificationModel = require("./verification");
+		const VerificationModel = jrequire("models/verification");
 		var emailAddressOld = this.email;
 		var userId = this.getId();
 		return await VerificationModel.createAndSendVerificationEmailChange(emailAddressOld, emailAddressNew, userId);

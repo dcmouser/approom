@@ -26,11 +26,17 @@
 // modules
 const mongoose = require("mongoose");
 
+
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
 // models
-const ModelBaseMongoose = require("./model_base_mongoose");
-const UserModel = require("./user");
-const LoginModel = require("./login");
-const arserver = require("../controllers/arserver");
+const ModelBaseMongoose = jrequire("models/model_base_mongoose");
+const UserModel = jrequire("models/user");
+const LoginModel = jrequire("models/login");
+
+// controllers
+const arserver = jrequire("arserver");
 
 // our helper modules
 const jrhMisc = require("../helpers/jrh_misc");
@@ -428,7 +434,6 @@ If this request was not made by you, please ignore this email.
 		if (!baseUrl) {
 			baseUrl = "verify";
 		}
-		// const arserver = require("../controllers/arserver");
 		return arserver.calcAbsoluteSiteUrlPreferHttps(baseUrl + "/code/" + this.uniqueCode);
 	}
 	//---------------------------------------------------------------------------
@@ -475,7 +480,6 @@ If this request was not made by you, please ignore this email.
 		mailobj.to = emailAddress;
 		//
 		// require here to avoid circular reference problem
-		// const arserver = require("../controllers/arserver");
 		var retv = await arserver.sendMail(mailobj);
 		//
 		return retv;
@@ -750,7 +754,7 @@ If this request was not made by you, please ignore this email.
 		var retvResult;
 
 		// controllers
-		const registrationAid = require("../controllers/registrationaid");
+		const registrationAid = jrequire("registrationaid");
 
 		// properties
 		var email = this.val;

@@ -9,24 +9,22 @@
 
 
 //---------------------------------------------------------------------------
-// package data
-const pkg = require("./package.json");
-
-// code files
-const arserver = require("./controllers/arserver");
-
-// our helper modules
-const jrconfig = require("./helpers/jrconfig");
-const jrlog = require("./helpers/jrlog");
-const jrdebug = require("./helpers/jrdebug");
-
 // program globals (version, author, etc.)
 const arGlobals = require("./approomglobals");
 //---------------------------------------------------------------------------
 
 
+//---------------------------------------------------------------------------
+// service dependency requires helper
+arGlobals.makeServiceLocator();
+const jrequire = require("./helpers/jrservicelocator").require;
 
+const jrconfig = require("./helpers/jrconfig");
+const jrdebug = require("./helpers/jrdebug");
 
+// const arserver = require("./controllers/arserver");
+const arserver = jrequire("arserver");
+//---------------------------------------------------------------------------
 
 
 
@@ -36,7 +34,7 @@ const arGlobals = require("./approomglobals");
 //---------------------------------------------------------------------------
 // create custom yargs object for commandline options and commands
 // you might have multiple cli apps, each with their own createYargsObj
-// NOTE: you MUST do this before calling jrconfig.parse or setupConfigAndLoggingEnvironment, etc.
+// NOTE: you MUST do this before calling jrconfig.parse or setup, etc.
 jrconfig.setYargs(createYargsObj());
 //---------------------------------------------------------------------------
 
@@ -45,7 +43,7 @@ jrconfig.setYargs(createYargsObj());
 
 //---------------------------------------------------------------------------
 // this should be done by even the unit test runners
-arserver.setupConfigAndLoggingEnvironment();
+arserver.setup();
 
 // configure server instance (jrconfig should be parsed first)
 arserver.processConfig();

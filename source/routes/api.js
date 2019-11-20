@@ -18,12 +18,15 @@ const passport = require("passport");
 const express = require("express");
 const assert = require("assert");
 
-// server
-const arserver = require("../controllers/arserver");
+
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
+// controllers
+const arserver = jrequire("arserver");
 
 // helpers
 const JrResult = require("../helpers/jrresult");
-const jrdebug = require("../helpers/jrdebug");
 
 
 

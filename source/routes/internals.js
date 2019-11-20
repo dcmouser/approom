@@ -12,12 +12,17 @@
 // modules
 const express = require("express");
 
+
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
+// controllers
+const arserver = jrequire("arserver");
+
 // helpers
 const JrResult = require("../helpers/jrresult");
 const jrlog = require("../helpers/jrlog");
 
-// models
-const arserver = require("../controllers/arserver");
 
 // express router
 const router = express.Router();
@@ -48,6 +53,7 @@ function setupRouter(urlPath) {
 	router.get("/serverinfo", routerGetServerinfo);
 	router.get("/aclinfo", routerGetAclinfo);
 	router.get("/nodejs", routerGetNodejs);
+	router.get("/dependencies", routerDependencies);
 
 	// return router
 	return router;
@@ -173,6 +179,22 @@ async function routerGetNodejs(req, res, next) {
 	var rawData = arserver.calcNodeJsInfo();
 
 	res.render("internals/nodejs", {
+		rawData,
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+	});
+}
+
+
+async function routerDependencies(req, res, next) {
+	if (!await arserver.requireLoggedInSitePermission("admin", req, res, routerBaseUrlPath)) {
+		// all done
+		return;
+	}
+
+	// get database resource use
+	var rawData = arserver.calcDependencyInfo();
+
+	res.render("internals/dependencies", {
 		rawData,
 		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 	});

@@ -14,11 +14,15 @@ const express = require("express");
 
 // helpers
 const JrResult = require("../helpers/jrresult");
-const jrlog = require("../helpers/jrlog");
-const adminAid = require("../controllers/adminaid");
 
-// models
-const arserver = require("../controllers/arserver");
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
+// controllers
+const adminAid = jrequire("adminaid");
+const arserver = jrequire("arserver");
+
+
 
 // express router
 const router = express.Router();

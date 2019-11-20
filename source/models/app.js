@@ -11,13 +11,15 @@
 
 "use strict";
 
+
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
 // our helper modules
-const jrhMisc = require("../helpers/jrh_misc");
-const jrlog = require("../helpers/jrlog");
 const jrhValidate = require("../helpers/jrh_validates");
 
 // models
-const ModelBaseMongoose = require("./model_base_mongoose");
+const ModelBaseMongoose = jrequire("models/model_base_mongoose");
 
 
 

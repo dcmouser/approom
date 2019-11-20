@@ -12,8 +12,12 @@
 // modules
 const mongoose = require("mongoose");
 
+
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
 // models
-const ModelBaseMongooseMinimal = require("./model_base_mongoose_minimal");
+const ModelBaseMongooseMinimal = jrequire("models/model_base_mongoose_minimal");
 
 // helpers
 const jrhText = require("../helpers/jrh_text");
@@ -79,7 +83,7 @@ class LogModel extends ModelBaseMongooseMinimal {
 	}
 
 	static getSchemaDefinitionExtra() {
-		const UserModel = require("../models/user");
+		const UserModel = jrequire("models/user");
 		return {
 			...(this.getBaseSchemaDefinitionExtra()),
 			creationDate: {

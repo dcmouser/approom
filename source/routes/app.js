@@ -15,6 +15,10 @@ const express = require("express");
 // helpers
 const JrResult = require("../helpers/jrresult");
 
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
+
 // express router
 const router = express.Router();
 

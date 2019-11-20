@@ -63,6 +63,7 @@ function isInAnyArray(val, ...arrays) {
 /**
  * Take an iteratble (array) of objects and a function to call on each, and do an await function on each.
  * @example asyncAwaitForEachFunctionCall([1 2 3], (x) => {console.log(x)})
+ * @see <a href="https://gist.github.com/Atinux/fd2bcce63e44a7d3addddc166ce93fb2">foreach async</a>
  *
  * @param {array} array
  * @param {function} func

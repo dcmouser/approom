@@ -16,8 +16,11 @@ const ratelimiter = require("rate-limiter-flexible");
 // misc node core modules
 const assert = require("assert");
 
-// our helper modules
-const jrlog = require("../helpers/jrlog");
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
+
+
 
 
 

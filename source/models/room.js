@@ -13,14 +13,18 @@
 // modules
 const mongoose = require("mongoose");
 
+
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
 // models
-const ModelBaseMongoose = require("./model_base_mongoose");
-const arserver = require("../controllers/arserver");
+const ModelBaseMongoose = jrequire("models/model_base_mongoose");
+
+// controllers
+const arserver = jrequire("arserver");
 
 // our helper modules
-const jrhMisc = require("../helpers/jrh_misc");
 const jrhText = require("../helpers/jrh_text");
-const jrlog = require("../helpers/jrlog");
 const jrhValidate = require("../helpers/jrh_validates");
 
 
@@ -84,7 +88,7 @@ class RoomModel extends ModelBaseMongoose {
 	}
 
 	static getSchemaDefinitionExtra() {
-		const AppModel = require("./app");
+		const AppModel = jrequire("models/app");
 		return {
 			...(this.getBaseSchemaDefinitionExtra()),
 			appid: {
@@ -159,7 +163,7 @@ class RoomModel extends ModelBaseMongoose {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 		var objdoc;
-		const UserModel = require("./user");
+		const UserModel = jrequire("models/user");
 
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
@@ -199,7 +203,7 @@ class RoomModel extends ModelBaseMongoose {
 	// in case of rooms, this should be the list of APPS that the USER has access to
 	static async calcCrudEditHelperData(user, id) {
 		// build app list, pairs of id -> nicename
-		const AppModel = require("./app");
+		const AppModel = jrequire("models/app");
 		const applist = await AppModel.buildSimpleAppListUserTargetable(user);
 
 		// return it
@@ -214,7 +218,7 @@ class RoomModel extends ModelBaseMongoose {
 		var appLabel;
 		const appid = obj.appid;
 		if (appid) {
-			const AppModel = require("./app");
+			const AppModel = jrequire("models/app");
 			const app = await AppModel.findOneById(appid);
 			if (app) {
 				appLabel = app.shortcode + " - " + app.label;

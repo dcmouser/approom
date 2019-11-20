@@ -8,15 +8,21 @@
 
 "use strict";
 
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+//
 
 // our helper modules
 const jrhMisc = require("../helpers/jrh_misc");
 const JrResult = require("../helpers/jrresult");
 
 // models
-const arserver = require("./arserver");
-const AppModel = require("../models/app");
-const RoomModel = require("../models/room");
+const AppModel = jrequire("models/app");
+const RoomModel = jrequire("models/room");
+
+
+
+
 
 /**
  * Provides support for backend administrative activities

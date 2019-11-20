@@ -9,9 +9,11 @@
 "use strict";
 
 
-// models
-const ModelBaseMongoose = require("./model_base_mongoose");
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
 
+// models
+const ModelBaseMongoose = jrequire("models/model_base_mongoose");
 
 
 

@@ -57,6 +57,7 @@ var configFiles = [];
 
 
 
+//---------------------------------------------------------------------------
 /**
  * One time call to process options that have been set through other functions first
  *
@@ -107,8 +108,12 @@ function parse() {
 	// 7. defaultOptions object passed into us
 	nconf.defaults(defaultOptions);
 }
+//---------------------------------------------------------------------------
 
 
+
+
+//---------------------------------------------------------------------------
 /**
  * Queue a command with arguments, for the yargs commandline processing library
  *

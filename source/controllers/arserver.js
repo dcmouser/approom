@@ -45,6 +45,11 @@ const gravatar = require("gravatar");
 // mail
 const nodemailer = require("nodemailer");
 
+
+
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
 // our helper modules
 const jrhMisc = require("../helpers/jrh_misc");
 const jrhMongo = require("../helpers/jrh_mongo");
@@ -58,11 +63,7 @@ const jrhHandlebars = require("../helpers/jrh_handlebars");
 // approomserver globals
 const arGlobals = require("../approomglobals");
 
-// models (we require most locally to avoid circular requires)
-const LogModel = require("../models/log");
 
-// rate limiter
-const rateLimiterAid = require("./ratelimiteraid");
 
 
 
@@ -185,8 +186,10 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	setupConfigAndLoggingEnvironment() {
+	setup() {
 		// perform global configuration actions that are shared and should be run regardless of the cli app or unit tests
+
+		this.setupLateRequires();
 
 		// setup debugger
 		jrdebug.setup(arGlobals.programName, true);
@@ -225,6 +228,30 @@ class AppRoomServer {
 
 
 
+	//---------------------------------------------------------------------------
+	setupLateRequires() {
+		// controllers
+		this.rateLimiterAid = jrequire("ratelimiteraid");
+		this.crudAid = jrequire("crudaid");
+		this.aclAid = jrequire("aclaid");
+
+		// model requires
+		this.ConnectionModel = jrequire("models/connection");
+		this.OptionModel = jrequire("models/option");
+		this.UserModel = jrequire("models/user");
+		this.VerificationModel = jrequire("models/verification");
+		this.LoginModel = jrequire("models/login");
+		this.SessionModel = jrequire("models/session");
+		this.LogModel = jrequire("models/log");
+		//
+		this.RoomModel = jrequire("models/room");
+		this.AppModel = jrequire("models/app");
+		this.FileModel = jrequire("models/file");
+		this.RoomdataModel = jrequire("models/roomdata");
+	}
+	//---------------------------------------------------------------------------
+
+
 
 	//---------------------------------------------------------------------------
 	setupLoggers() {
@@ -246,6 +273,9 @@ class AppRoomServer {
 		var expressApp = express();
 		// save expressApp for easier referencing later
 		this.expressApp = expressApp;
+
+		// early injection of pointer to this server into request
+		this.setupExpressEarlyInjections(expressApp);
 
 		// view and template stuff
 		this.setupExpressViews(expressApp);
@@ -277,6 +307,19 @@ class AppRoomServer {
 
 		// fallback error handlers
 		this.setupExpressErrorHandlers(expressApp);
+	}
+
+
+	setupExpressEarlyInjections(expressApp) {
+
+		// we are deciding whether we want this
+		if (false) {
+			expressApp.use((req, res, next) => {
+				// add pointer to us in the request?
+				req.arserver = this;
+				return next();
+			});
+		}
 	}
 
 
@@ -391,15 +434,6 @@ class AppRoomServer {
 	setupExpressRoutesCore(expressApp) {
 		// add routes to express app
 
-		// model requires
-		const ConnectionModel = require("../models/connection");
-		const OptionModel = require("../models/option");
-		const UserModel = require("../models/user");
-		const VerificationModel = require("../models/verification");
-		const LoginModel = require("../models/login");
-		const SessionModel = require("../models/session");
-
-
 		// home page
 		this.setupRoute(expressApp, "/", "index");
 
@@ -427,26 +461,19 @@ class AppRoomServer {
 
 		// crud routes
 		var crudUrlBase = "/crud";
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/user", UserModel);
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/login", LoginModel);
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/verification", VerificationModel);
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/connection", ConnectionModel);
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/option", OptionModel);
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/log", LogModel);
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/session", SessionModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/user", this.UserModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/login", this.LoginModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/verification", this.VerificationModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/connection", this.ConnectionModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/option", this.OptionModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/log", this.LogModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/session", this.SessionModel);
 	}
 
 
 
 	setupExpressRoutesSpecialized(expressApp) {
 		// add routes to express app
-
-		// model requires
-		const RoomModel = require("../models/room");
-		const AppModel = require("../models/app");
-		const FileModel = require("../models/file");
-		const RoomdataModel = require("../models/roomdata");
-
 
 		// app routes
 		this.setupRoute(expressApp, "/app", "app");
@@ -461,10 +488,10 @@ class AppRoomServer {
 
 		// crud routes
 		var crudUrlBase = "/crud";
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/app", AppModel);
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/room", RoomModel);
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/file", FileModel);
-		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/roomdata", RoomdataModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/app", this.AppModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/room", this.RoomModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/file", this.FileModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/roomdata", this.RoomdataModel);
 	}
 	//---------------------------------------------------------------------------
 
@@ -492,11 +519,10 @@ class AppRoomServer {
 
 	setupRouteGenericCrud(expressApp, urlPath, modelClass) {
 		// function to set up crud paths for a model
-		const crudAid = require("./crudaid");
 		// create router using express
 		const router = express.Router();
 		// setup paths on it
-		crudAid.setupRouter(router, modelClass, urlPath);
+		this.crudAid.setupRouter(router, modelClass, urlPath);
 		// register it
 		this.useExpressRoute(expressApp, urlPath, router);
 
@@ -589,8 +615,8 @@ class AppRoomServer {
 				// first, find the user via their password
 				var jrResult;
 				jrdebug.cdebugf("In passport local strategy test with username=%s and password=%s", usernameEmail, password);
-				const UserModel = require("../models/user");
-				var user = await UserModel.findOneByUsernameEmail(usernameEmail);
+
+				var user = await this.UserModel.findOneByUsernameEmail(usernameEmail);
 				if (!user) {
 					// not found
 					jrResult = JrResult.makeNew().pushFieldError("usernameEmail", "Username/Email-address not found");
@@ -646,8 +672,7 @@ class AppRoomServer {
 					},
 				};
 				// created bridged user
-				const LoginModel = require("../models/login");
-				var { user, jrResult } = await LoginModel.processBridgedLoginGetOrCreateUserOrProxy(bridgedLoginObj, req);
+				var { user, jrResult } = await this.LoginModel.processBridgedLoginGetOrCreateUserOrProxy(bridgedLoginObj, req);
 				// if user could not be created, it's an error
 				// add jrResult to session in case we did extra stuff and info to show the user
 				if (jrResult) {
@@ -818,8 +843,7 @@ class AppRoomServer {
 		if (!userId) {
 			user = null;
 		} else {
-			const UserModel = require("../models/user");
-			user = await UserModel.findOneById(userId);
+			user = await this.UserModel.findOneById(userId);
 		}
 		// cache it
 		req.arCachedUser = user;
@@ -838,8 +862,7 @@ class AppRoomServer {
 		if (!loginId) {
 			login = null;
 		} else {
-			const LoginModel = require("../models/login");
-			login = await LoginModel.findOneById(loginId);
+			login = await this.LoginModel.findOneById(loginId);
 		}
 		// cache it
 		req.arCachedLogin = login;
@@ -867,8 +890,7 @@ class AppRoomServer {
 		if (!verificationId) {
 			verification = null;
 		} else {
-			const VerificationModel = require("../models/verification");
-			verification = await VerificationModel.findOneById(verificationId);
+			verification = await this.VerificationModel.findOneById(verificationId);
 			if (verification) {
 				// add back the plaintext unique code that we saved in session into the object
 				// in this way, we make it possible to re-process this verification code, and find it in the database, as if user was providing it
@@ -966,18 +988,20 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	async loadUserFromMinimalPassportUserData(userMinimalPassportProfile, jrResult, flagCheckAccessCode) {
+
 		// load full user model given a minimal (passport) profile with just the id field
 		if (!userMinimalPassportProfile) {
 			jrResult.pushError("Invalid access token; error code 2.");
 			return null;
 		}
+
 		const userId = userMinimalPassportProfile.id;
 		if (!userId) {
 			jrResult.pushError("Invalid access token; error code 3.");
 			return null;
 		}
-		const UserModel = require("../models/user");
-		const user = await UserModel.findOneById(userId);
+
+		const user = await this.UserModel.findOneById(userId);
 		if (!user) {
 			jrResult.pushError("Invalid access token; error code 4 (user not found in database).");
 		}
@@ -1138,8 +1162,7 @@ class AppRoomServer {
 				// and NOW if they were previously sessioned with a pre-account Login object, we can connect that to this account
 				if (newlyLoggedInUserId && previousLoginId) {
 					// try to connect
-					const LoginModel = require("../models/login");
-					var jrResult2 = await LoginModel.connectUserToLogin(newlyLoggedInUserId, previousLoginId, false);
+					var jrResult2 = await this.LoginModel.connectUserToLogin(newlyLoggedInUserId, previousLoginId, false);
 					if (jrResult2) {
 						jrResult.mergeIn(jrResult2);
 					}
@@ -1584,19 +1607,19 @@ class AppRoomServer {
 		// get array of all required model modules
 		const modelClassList = [
 			// core models
-			require("../models/connection"),
-			require("../models/option"),
-			require("../models/user"),
-			require("../models/verification"),
-			require("../models/log"),
-			require("../models/login"),
-			require("../models/session"),
+			jrequire("models/connection"),
+			jrequire("models/option"),
+			jrequire("models/user"),
+			jrequire("models/verification"),
+			jrequire("models/log"),
+			jrequire("models/login"),
+			jrequire("models/session"),
 
 			// specific models
-			require("../models/file"),
-			require("../models/room"),
-			require("../models/app"),
-			require("../models/roomdata"),
+			jrequire("models/file"),
+			jrequire("models/room"),
+			jrequire("models/app"),
+			jrequire("models/roomdata"),
 		];
 
 		return modelClassList;
@@ -1625,23 +1648,22 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	async setupAcl() {
-		const aclAid = require("./aclaid");
-		await aclAid.setupAclPermissions();
+		await this.aclAid.setupAclPermissions();
 	}
 	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
 	async setupRateLimiters() {
-		await rateLimiterAid.setupRateLimiters();
+		await this.rateLimiterAid.setupRateLimiters();
 	}
 
 	getRateLimiterBasic() {
-		return rateLimiterAid.getRateLimiterBasic();
+		return this.rateLimiterAid.getRateLimiterBasic();
 	}
 
 	getRateLimiterApi() {
-		return rateLimiterAid.getRateLimiterApi();
+		return this.rateLimiterAid.getRateLimiterApi();
 	}
 	//---------------------------------------------------------------------------
 
@@ -1735,7 +1757,8 @@ class AppRoomServer {
 
 		// save to db
 		if (flagLogToDb) {
-			await this.logmToDbModelClass(LogModel, type, message, extraData, mergeData);
+			const logModelClass = this.calcLoggingCategoryModelFromLogMessageType(type);
+			await this.logmToDbModelClass(logModelClass, type, message, extraData, mergeData);
 		}
 
 		// save to file
@@ -1760,8 +1783,12 @@ class AppRoomServer {
 			throw err;
 		}
 	}
+	//---------------------------------------------------------------------------
 
 
+
+
+	//---------------------------------------------------------------------------
 	calcLoggingCategoryFromLogMessageType(type) {
 		// we want to decide which logging category (file) to put this logg message in
 
@@ -1776,6 +1803,14 @@ class AppRoomServer {
 
 		// fallback to default
 		return DefLoggingCategory;
+	}
+
+
+	calcLoggingCategoryModelFromLogMessageType(type) {
+		// decide which log model class (db table) to use for this log message
+
+		// currently there is only the one
+		return this.LogModel;
 	}
 	//---------------------------------------------------------------------------
 
@@ -2138,13 +2173,13 @@ class AppRoomServer {
 		var label = objType + " #" + objId;
 		var modelClass;
 		if (objType === "app") {
-			modelClass = require("../models/app");
+			modelClass = this.appModel;
 		} else if (objType === "room") {
-			modelClass = require("../models/room");
+			modelClass = this.roomModel;
 		} else if (objType === "user") {
-			modelClass = require("../models/user");
+			modelClass = this.userModel;
 		} else if (objType === "file") {
-			modelClass = require("../models/file");
+			modelClass = this.fileModel;
 		}
 
 		if (modelClass !== undefined) {
@@ -2298,8 +2333,7 @@ class AppRoomServer {
 
 
 	calcAclInfo() {
-		const aclAid = require("./aclaid");
-		const aclInfo = aclAid.calcAclInfo();
+		const aclInfo = this.aclAid.calcAclInfo();
 		return aclInfo;
 	}
 
@@ -2327,6 +2361,15 @@ class AppRoomServer {
 		};
 
 		return nodeJsInfo;
+	}
+
+
+	calcDependencyInfo() {
+		const rawInfo = {
+			jrServiceLocator: require("../helpers/jrservicelocator").calcDebugInfo(),
+		};
+
+		return rawInfo;
 	}
 	//---------------------------------------------------------------------------
 

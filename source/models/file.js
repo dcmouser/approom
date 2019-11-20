@@ -12,12 +12,16 @@
 // modules
 const mongoose = require("mongoose");
 
+
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
 // models
-const RoomdataModel = require("./roomdata");
+const RoomdataModel = jrequire("models/roomdata");
+
 
 // our helper modules
 const jrhMisc = require("../helpers/jrh_misc");
-const jrlog = require("../helpers/jrlog");
 const jrhValidate = require("../helpers/jrh_validates");
 
 

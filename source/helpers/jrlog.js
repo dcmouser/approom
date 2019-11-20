@@ -26,42 +26,9 @@ const morgan = require("morgan");
 // others
 const fs = require("fs");
 const path = require("path");
-
-// our helper modules
-const jrhMisc = require("./jrh_misc");
 //---------------------------------------------------------------------------
 
 
-
-
-
-//---------------------------------------------------------------------------
-// constants
-
-// winston log levels
-// ideally every kind of log message type coming from app would be entered here
-// if we try to log one not here it will go into log as "unknown"
-const winstonCustomLevels = {
-	emerg: 0,
-	alert: 1,
-	crit: 2,
-	error: 3,
-	warning: 4,
-	notice: 5,
-	info: 6,
-	debug: 7,
-
-	unknown: 0,
-
-	crud: 8,
-	api: 7,
-	user: 7,
-
-	maxlevel: 99,
-};
-
-const winstonCustomLevelsKeys = Object.keys(winstonCustomLevels);
-//---------------------------------------------------------------------------
 
 
 
@@ -127,29 +94,53 @@ function setupMorganMiddlewareForExpressWebAccessLogging() {
 //---------------------------------------------------------------------------
 /**
  * Setp the winston logging module and register our custom levels, etc.
+ * Save it in our local hash winstonCategoryLoggers where it can be referenced by category name
  *
+ * @param {string} category - the category to store the new logger under
+ * @param {string} filenameSuffix - base filename (suffix added to our stored logfilename)
  * @returns a winston logging object
  */
-function setupWinstonLogger(category, filename) {
-	winstonCategoryLoggers[category] = createWinstonLoggerObject(filename);
+function setupWinstonLogger(category, filenameSuffix) {
+	winstonCategoryLoggers[category] = createWinstonLoggerObject(filenameSuffix);
 	return winstonCategoryLoggers[category];
 }
 
-
+/**
+ * Alias an existing category winston logger to another name.
+ * This can be useful when we want to mark different categories of log messages for POTENTIALLY different targets but use the same file for the time being
+ *
+ * @param {string} categoryNew
+ * @param {string} categoryOld
+ */
 function aliasWinstonLogger(categoryNew, categoryOld) {
 	winstonCategoryLoggers[categoryNew] = winstonCategoryLoggers[categoryOld];
 }
 
 
-function createWinstonLoggerObject(filename) {
+/**
+ * Create a winston logger with out parameters and the filename suffix
+ * @private
+ *
+ * @param {string} filename
+ * @returns the new winston logger object
+ */
+function createWinstonLoggerObject(filenameSuffix) {
 
 	// ATTN: showLevel: false does not work, it's ignored by winston :(
 
+	// create a custom transform helper to remove level from log output
+	const customFormatTransformNoLogLevel = winston.format((info, opts) => {
+		delete info.level;
+		return info;
+	});
+
 	var wobj = winston.createLogger({
-		level: "maxlevel",
-		showLevel: false,
-		levels: winstonCustomLevels,
+		// level: "maxlevel",
+		// levels: winstonCustomLevels,
 		format: winston.format.combine(
+			// remove log level
+			customFormatTransformNoLogLevel(),
+			// other stuff
 			winston.format.timestamp({
 				format: "YYYY-MM-DD HH:mm:ss",
 			}),
@@ -159,8 +150,7 @@ function createWinstonLoggerObject(filename) {
 		// defaultMeta: { service: serviceName },
 		transports: [
 			new winston.transports.File({
-				filename: calcLogFilePath(filename),
-				showLevel: false,
+				filename: calcLogFilePath(filenameSuffix),
 			}),
 		],
 	});
@@ -169,10 +159,21 @@ function createWinstonLoggerObject(filename) {
 }
 
 
+
+/**
+ * Look up winston logger stored by category.
+ * Create it if it doesn't yet exist (and the store it)
+ * @private
+ *
+ * @param {string} category
+ * @returns the winston logger associated with this cateogry
+ */
 function getWinstonCategoryLogger(category) {
-	// create it if it doesn't yet exist
-	if (!winstonCategoryLoggers[category]) {
-		setupWinstonLogger(category, category);
+	// create it if it doesn't yet exist? or better to let it throw an error
+	if (false) {
+		if (!winstonCategoryLoggers[category]) {
+			setupWinstonLogger(category, category);
+		}
 	}
 	return winstonCategoryLoggers[category];
 }
@@ -212,10 +213,99 @@ function calcLogFilePath(fileSuffix) {
 
 
 
+//---------------------------------------------------------------------------
+/**
+ * Log a standard set of fields to a catgory.
+ * These are standard fields that our caller will use to log both to db and to file.
+ * We have a way of taking these fields and converting them to an object.
+ *
+ * @param {string} category
+ * @param {string} type - in dot notation
+ * @param {string} message (or object)
+ * @param {map} extraData
+ * @param {map} mergeData
+ */
+function logMessage(category, type, message, extraData, mergeData) {
+
+	// make the object to save in file log
+	var logObj = createLogFileObj(type, message, extraData, mergeData);
+
+	// get the level corrresponding to this error type (usually leftmost of dot notation)
+	logObject(category, logObj);
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+/**
+ * Shortcut for logging an exception error
+ *
+ * @param {string} category
+ * @param {error} err
+ */
+function logExceptionError(category, err) {
+	const logObjError = {
+		type: "errorCrit.logging",
+		message: "Exception while trying to log to database: " + err.message,
+	};
+	logObject(category, logObjError);
+}
+
+
+/**
+ * Shortcut for logging an exception error, along with extra original message and parameters referenced by it
+ *
+ * @param {string} category
+ * @param {error} err
+ * @param {string} type
+ * @param {string} message (or object)
+ * @param {map} extraData
+ * @param {map} mergeData
+ */
+function logExceptionErrorWithMessage(category, err, type, message, extraData, mergeData) {
+	// create normal log messsage object
+	var logObj = createLogFileObj(type, message, extraData, mergeData);
+	// now alter it for exception
+	const logObjError = {
+		type: "errorCrit.logging",
+		message: "Exception while trying to log to database: " + err.message,
+		origLog: logObj,
+	};
+	logObject(category, logObjError);
+}
+//---------------------------------------------------------------------------
+
+
 
 
 //---------------------------------------------------------------------------
-// just pass through stuff to winston
+/**
+ * Main work function that asks the winston logger referred to by the category to log the object
+ * ##### Notes
+ *  * We always use the "info" level when writing to winston logs instead of winston logging level system; we use our own way to filter logs
+ *
+ * @param {string} category
+ * @param {object} obj
+ */
+function logObject(category, obj) {
+	winstonCategoryLoggers[category].log("info", obj);
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+//---------------------------------------------------------------------------
+// just pass through stuff to winston -- we don't normall use this
 
 /**
  * Passthrough log function to winston logger, to log an item to file created for a specific cateogry; creating category logger if it does not yet exist
@@ -236,156 +326,18 @@ function log(category, ...args) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//---------------------------------------------------------------------------
-function logMessage(category, type, message, extraData, mergeData) {
-
-	// make the object to save in file log
-	var logObj = createLogFileObj(type, message, extraData, mergeData);
-
-	if (false) {
-		const jrdebug = require("./jrdebug");
-		jrdebug.debugObj(category, "logging to category");
-		jrdebug.debugObj(logObj, "logging obj");
-	}
-
-	// get the level corrresponding to this error type (usually leftmost of dot notation)
-	const level = convertLogTypeToLevel(type);
-	logObjectByLevel(category, level, logObj);
-}
-//---------------------------------------------------------------------------
-
-
-
-//---------------------------------------------------------------------------
-function logExceptionError(category, err) {
-	const logObjError = {
-		type: "errorCrit.logging",
-		message: "Exception while trying to log to database: " + err.message,
-	};
-	doLogExceptionErrorObj(category, logObjError);
-}
-
-
-function logExceptionErrorWithMessage(category, err, type, message, extraData, mergeData) {
-	// create normal log messsage object
-	var logObj = createLogFileObj(type, message, extraData, mergeData);
-	// now alter it for exception
-	const logObjError = {
-		type: "errorCrit.logging",
-		message: "Exception while trying to log to database: " + err.message,
-		origLog: logObj,
-	};
-	doLogExceptionErrorObj(category, logObjError);
-}
-
-
-function doLogExceptionErrorObj(category, logObjError) {
-	// get the log level corresponding to the exception
-	const level = convertLogTypeToLevel("error.exception");
-	// log it
-	logObjectByLevel(category, level, logObjError);
-}
-//---------------------------------------------------------------------------
-
-
-
-//---------------------------------------------------------------------------
-function logObjectByLevel(category, level, obj) {
-	// log it
-	winstonCategoryLoggers[category].log(level, obj);
-}
-//---------------------------------------------------------------------------
-
-
 //---------------------------------------------------------------------------
 /**
- * Take a type string (which may be dot notation path) and split it into a valid winston logger level and a subtype
+ * Convert the parameters to an object suitable for logging.
+ * Merge in some of these fields and handle message differently depending on whether it is a string or object.
  *
+ * @private
  * @param {string} type
+ * @param {string} message (or object)
+ * @param {map} extraData
+ * @param {map} mergeData
+ * @returns object to log
  */
-function convertLogTypeToLevelAndSubtype(type) {
-	// try to find the longest prefix in the type corresponding to a known winston log level
-	var [level, remainder] = jrhMisc.findLongestPrefixAndRemainder(type, winstonCustomLevelsKeys, ".");
-	if (level === "") {
-		// not found
-		return ["unknown", type];
-	}
-	return [level, remainder];
-}
-
-
-function convertLogTypeToLevel(type) {
-	var [level, remainder] = convertLogTypeToLevelAndSubtype(type);
-	return level;
-}
-//---------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//---------------------------------------------------------------------------
 function createLogFileObj(type, message, extraData, mergeData) {
 	var logObj;
 	if (message && !(typeof message === "string")) {
@@ -440,8 +392,7 @@ module.exports = {
 	logExceptionError,
 	logExceptionErrorWithMessage,
 
-	logObjectByLevel,
-	convertLogTypeToLevel,
+	logObject,
 
 	createLogFileObj,
 };

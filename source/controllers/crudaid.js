@@ -16,6 +16,9 @@ const path = require("path");
 // modules
 const hbs = require("hbs");
 
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
 // helpers
 const JrResult = require("../helpers/jrresult");
 const jrhText = require("../helpers/jrh_text");
@@ -23,7 +26,7 @@ const jrhMisc = require("../helpers/jrh_misc");
 const jrhGrid = require("../helpers/jrh_grid");
 
 // models
-const arserver = require("./arserver");
+const arserver = jrequire("arserver");
 
 
 

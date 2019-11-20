@@ -9,16 +9,20 @@
 "use strict";
 
 
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
 // our helper modules
 const jrhMisc = require("../helpers/jrh_misc");
 const JrResult = require("../helpers/jrresult");
 const jrhValidate = require("../helpers/jrh_validates");
 
+
 // require models
-const arserver = require("../controllers/arserver");
-const VerificationModel = require("../models/verification");
-const UserModel = require("../models/user");
-const LoginModel = require("../models/login");
+const arserver = jrequire("arserver");
+const VerificationModel = jrequire("models/verification");
+const UserModel = jrequire("models/user");
+const LoginModel = jrequire("models/login");
 
 
 

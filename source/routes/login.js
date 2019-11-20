@@ -18,10 +18,17 @@ const passport = require("passport");
 const JrResult = require("../helpers/jrresult");
 const jrlog = require("../helpers/jrlog");
 
+
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
+// controllers
+const arserver = jrequire("arserver");
+
 // our models
-const UserModel = require("../models/user");
-const VerificationModel = require("../models/verification");
-const arserver = require("../controllers/arserver");
+const UserModel = jrequire("models/user");
+const VerificationModel = jrequire("models/verification");
+
 
 // express router
 const router = express.Router();

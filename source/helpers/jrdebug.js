@@ -52,6 +52,9 @@ var debugEnabled = false;
 function setup(iserviceName, flagDebugEnabled) {
 	// save values
 	serviceName = iserviceName;
+	if (!serviceName) {
+		throw Error("Service name is undefined; can't setup debugger without one.");
+	}
 	// create debug func that is on only in debug mode
 	debugfunc = setupDebugmod();
 	// set initial debug enabled state
@@ -103,7 +106,7 @@ function setupDebugmod() {
 
 //---------------------------------------------------------------------------
 /**
- * Set debug mode on or off.
+ * Setter for debug mode on or off.
  * This controls whether certain debug functions (those ending in 'c' for conditional) actually generate output
  *
  * @param {boolean} val
@@ -112,8 +115,9 @@ function setDebugEnabled(val) {
 	debugEnabled = val;
 }
 
+
 /**
- * Accessor for the debug mode
+ * Getter for the debug mode
  *
  * @returns true if debugging is enabled
  */

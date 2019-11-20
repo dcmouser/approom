@@ -33,8 +33,9 @@ const assert = require("assert");
 // role-acl
 const roleAcl = require("role-acl");
 
-// our helper modules
-const jrdebug = require("../helpers/jrdebug");
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
 
 
 /**

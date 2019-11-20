@@ -23,7 +23,6 @@
     ],
     "rules": {
         "mocha/no-exclusive-tests": "error",
-
         "indent": [2, "tab", { "SwitchCase": 1, "VariableDeclarator": 1 }],
         "quotes": ["error", "double"],
         "max-len": [2, 512, 4, {"ignoreUrls": true}],

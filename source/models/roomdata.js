@@ -12,12 +12,17 @@
 // modules
 const mongoose = require("mongoose");
 
+
+// requirement service locator
+const jrequire = require("../helpers/jrservicelocator").require;
+
 // models
-const ModelBaseMongoose = require("./model_base_mongoose");
-const arserver = require("../controllers/arserver");
+const ModelBaseMongoose = jrequire("models/model_base_mongoose");
+
+// controllers
+const arserver = jrequire("arserver");
 
 // our helper modules
-const jrhMisc = require("../helpers/jrh_misc");
 const jrhText = require("../helpers/jrh_text");
 
 
@@ -68,7 +73,7 @@ class RoomdataModel extends ModelBaseMongoose {
 	}
 
 	static getSchemaDefinitionExtra() {
-		const RoomModel = require("./room");
+		const RoomModel = jrequire("models/room");
 
 		return {
 			...(this.getBaseSchemaDefinitionExtra()),
@@ -111,7 +116,7 @@ class RoomdataModel extends ModelBaseMongoose {
 	// in case of rooms, this should be the list of APPS that the USER has access to
 	static async calcCrudEditHelperData(user, id) {
 		// build app list, pairs of id -> nicename
-		const RoomModel = require("./room");
+		const RoomModel = jrequire("models/room");
 		const roomlist = await RoomModel.buildSimpleRoomListUserTargetable(user);
 		// return it
 		return {
@@ -125,7 +130,7 @@ class RoomdataModel extends ModelBaseMongoose {
 		var roomLabel;
 		const roomid = obj.roomid;
 		if (roomid) {
-			const RoomModel = require("./room");
+			const RoomModel = jrequire("models/room");
 			const room = await RoomModel.findOneById(roomid);
 			if (room) {
 				roomLabel = room.shortcode + " - " + room.label;

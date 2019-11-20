@@ -13,12 +13,25 @@
 // misc modules
 const assert = require("assert");
 
-// our modules
-const arserver = require("../controllers/arserver");
-const UserModel = require("../models/user");
 
-// helpers
-const jrconfig = require("../helpers/jrconfig");
+
+//---------------------------------------------------------------------------
+// program globals (version, author, etc.)
+const arGlobals = require("../approomglobals");
+//---------------------------------------------------------------------------
+
+
+//---------------------------------------------------------------------------
+// dynamic dependencies instead of using require
+const jrequire = arGlobals.makeServiceLocator().require;
+
+const arserver = jrequire("arserver");
+const UserModel = jrequire("models/user");
+//---------------------------------------------------------------------------
+
+
+
+
 
 
 
@@ -27,7 +40,7 @@ const jrconfig = require("../helpers/jrconfig");
 // this should be done by even the unit test runners
 
 // setup initial config stuff
-arserver.setupConfigAndLoggingEnvironment();
+arserver.setup();
 
 // configure server instance
 arserver.processConfig();
@@ -45,7 +58,7 @@ arserver.processConfig();
 
 //---------------------------------------------------------------------------
 // server tests
-describe("server", () => {
+describe("server", function test() {
 
 	// we need to change timeout for this test
 	this.timeout(10000);
@@ -79,7 +92,7 @@ describe("server", () => {
 
 
 // user model tests
-describe("user", () => {
+describe("user", function test() {
 
 	// we need to change timeout for this test
 	this.timeout(10000);
@@ -105,6 +118,7 @@ describe("user", () => {
 		// test password see if its default
 		var plaintextPassword = UserModel.getPasswordAdminPlaintextDefault();
 		var bretv = await user.testPlaintextPassword(plaintextPassword);
+
 		assert(bretv, "admin user password is not set to default value");
 	});
 
