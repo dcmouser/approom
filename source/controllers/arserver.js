@@ -48,7 +48,7 @@ const nodemailer = require("nodemailer");
 
 
 // requirement service locator
-const jrequire = require("../helpers/jrservicelocator").require;
+const jrequire = require("../helpers/jrequire");
 
 // our helper modules
 const jrhMisc = require("../helpers/jrh_misc");
@@ -2366,7 +2366,7 @@ class AppRoomServer {
 
 	calcDependencyInfo() {
 		const rawInfo = {
-			jrServiceLocator: require("../helpers/jrservicelocator").calcDebugInfo(),
+			jrServiceLocator: require("../helpers/jrequire").calcDebugInfo(),
 		};
 
 		return rawInfo;

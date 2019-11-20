@@ -20,7 +20,7 @@ const assert = require("assert");
 
 
 // requirement service locator
-const jrequire = require("../helpers/jrservicelocator").require;
+const jrequire = require("../helpers/jrequire");
 
 // controllers
 const arserver = jrequire("arserver");

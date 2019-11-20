@@ -17,7 +17,7 @@ const JrResult = require("../helpers/jrresult");
 
 
 // requirement service locator
-const jrequire = require("../helpers/jrservicelocator").require;
+const jrequire = require("../helpers/jrequire");
 
 // controllers
 const adminAid = jrequire("adminaid");

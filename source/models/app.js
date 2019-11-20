@@ -13,10 +13,10 @@
 
 
 // requirement service locator
-const jrequire = require("../helpers/jrservicelocator").require;
+const jrequire = require("../helpers/jrequire");
 
 // our helper modules
-const jrhValidate = require("../helpers/jrh_validates");
+const jrhValidate = require("../helpers/jrh_validate");
 
 // models
 const ModelBaseMongoose = jrequire("models/model_base_mongoose");

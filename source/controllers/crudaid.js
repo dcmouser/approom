@@ -17,7 +17,7 @@ const path = require("path");
 const hbs = require("hbs");
 
 // requirement service locator
-const jrequire = require("../helpers/jrservicelocator").require;
+const jrequire = require("../helpers/jrequire");
 
 // helpers
 const JrResult = require("../helpers/jrresult");

@@ -16,7 +16,7 @@ const mongoose = require("mongoose");
 
 
 // requirement service locator
-const jrequire = require("../helpers/jrservicelocator").require;
+const jrequire = require("../helpers/jrequire");
 
 // models
 const ModelBaseMongooseMinimal = jrequire("models/model_base_mongoose_minimal");

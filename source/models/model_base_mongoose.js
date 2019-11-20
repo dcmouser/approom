@@ -14,14 +14,18 @@ const mongoose = require("mongoose");
 
 
 // requirement service locator
-const jrequire = require("../helpers/jrservicelocator").require;
+const jrequire = require("../helpers/jrequire");
+
+// controller
+const arserver = jrequire("arserver");
 
 // our helper modules
 const jrdebug = require("../helpers/jrdebug");
 const jrhMisc = require("../helpers/jrh_misc");
 const jrhMongo = require("../helpers/jrh_mongo");
 const jrhText = require("../helpers/jrh_text");
-const jrhValidate = require("../helpers/jrh_validates");
+const jrhValidate = require("../helpers/jrh_validate");
+
 
 
 
@@ -861,7 +865,7 @@ class ModelBaseMongoose {
 				queryUrlData.resultCount = await this.mongooseModel.countDocuments(query).exec();
 			}
 		} catch (err) {
-			jrResult.pushError("Error executing find filter: " + JSON.stringify(query, null, " "));
+			jrResult.pushError("Error executing find filter: " + JSON.stringify(query, null, " ") + ":" + err.message);
 			gridItems = [];
 			queryUrlData.resultCount = 0;
 		}
@@ -902,9 +906,6 @@ class ModelBaseMongoose {
 
 		var obj;
 		var id = this.validateModelFieldId(jrResult, val);
-
-		// models
-		const arserver = jrequire("arserver");
 
 		if (!jrResult.isError()) {
 			// acl test
@@ -950,7 +951,7 @@ class ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	// value function helpers
 
-	static makeModelValueFunctionPasswordAdminEyesOnly(arserver, flagRequired) {
+	static makeModelValueFunctionPasswordAdminEyesOnly(flagRequired) {
 		// a value function usable by model definitions
 		return async (viewType, fieldName, req, obj, helperData) => {
 			var isLoggedInUserSiteAdmin = await arserver.isLoggedInUserSiteAdmin(req);

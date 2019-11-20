@@ -53,8 +53,9 @@ const envListOptions = [
  *
  * @returns the service locator to use for this application
  */
-function makeServiceLocator() {
-	return require("./controllers/servicelocator_approom_default")();
+function setupDefaultModulePaths() {
+	const jrequireaid = require("./controllers/jrequireaid");
+	jrequireaid.setupDefaultModulePaths();
 }
 //---------------------------------------------------------------------------
 
@@ -73,6 +74,6 @@ function makeServiceLocator() {
 module.exports = {
 	programName, programVersion, programDate, programAuthor, programDescription,
 	defaultOptions, overrideOptions, envListOptions,
-	makeServiceLocator,
+	setupDefaultModulePaths,
 };
 //---------------------------------------------------------------------------

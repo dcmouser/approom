@@ -197,7 +197,11 @@ function convertReqQueryStringToAMongooseFindFilter(fkey, fieldSchema, querystr,
 		retQuery = convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, querystr, "idstring", jrResult);
 	} else if (schemaType === Map) {
 		// can't filter this
-		retQuery = undefined;
+		if (false) {
+			retQuery = convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, querystr, "string", jrResult);
+		} else {
+			retQuery = undefined;
+		}
 	} else if (schemaType === Boolean) {
 		// boolean
 		retQuery = convertReqQueryStringToAMongooseFindFilterBoolean(fkey, schemaType, querystr, jrResult);

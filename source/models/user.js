@@ -13,9 +13,12 @@
 // misc node core modules
 const assert = require("assert");
 
+// validation helper
+const validator = require("validator");
+
 
 // requirement service locator
-const jrequire = require("../helpers/jrservicelocator").require;
+const jrequire = require("../helpers/jrequire");
 
 // models
 const ModelBaseMongoose = jrequire("models/model_base_mongoose");
@@ -25,7 +28,7 @@ const jrhMisc = require("../helpers/jrh_misc");
 const jrdebug = require("../helpers/jrdebug");
 const jrhCrypto = require("../helpers/jrh_crypto");
 const JrResult = require("../helpers/jrresult");
-const jrhValidate = require("../helpers/jrh_validates");
+const jrhValidate = require("../helpers/jrh_validate");
 
 // controllers
 const arserver = jrequire("arserver");
@@ -162,7 +165,7 @@ class UserModel extends ModelBaseMongoose {
 			passwordHashed: {
 				label: "Password",
 				format: "password",
-				valueFunction: this.makeModelValueFunctionPasswordAdminEyesOnly(arserver, false),
+				valueFunction: this.makeModelValueFunctionPasswordAdminEyesOnly(false),
 				filterSize: 0,
 			},
 			loginDate: {
@@ -454,9 +457,6 @@ class UserModel extends ModelBaseMongoose {
 		// existingUser can be passed to avoid complaint about flagMustBeUnique
 		// return JrResult with error set if error, or blank one on success
 
-		// validation helper
-		const validator = require("validator");
-
 		if (!email) {
 			if (!flagRequired) {
 				return email;
@@ -491,9 +491,6 @@ class UserModel extends ModelBaseMongoose {
 	static async validateUsername(jrResult, username, flagMustBeUnique, flagRequired, flagCheckDisallowed, existingUser) {
 		// return JrResult with error set if error, or blank one on success
 		// ATTN: unfinished
-
-		// validation helper
-		const validator = require("validator");
 
 		if (!username) {
 			if (!flagRequired) {
@@ -565,9 +562,6 @@ class UserModel extends ModelBaseMongoose {
 	static async validatePlaintextPasswordConvertToHash(jrResult, passwordPlaintext, flagRequired, flagAllowClearDash) {
 		// return JrResult with error set if error, or blank one on success
 		// ATTN: unfinished
-
-		// validation helper
-		const validator = require("validator");
 
 		if (!passwordPlaintext) {
 			if (flagRequired) {

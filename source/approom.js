@@ -7,6 +7,9 @@
 "use strict";
 
 
+// modules
+const yargs = require("yargs");
+
 
 //---------------------------------------------------------------------------
 // program globals (version, author, etc.)
@@ -15,14 +18,15 @@ const arGlobals = require("./approomglobals");
 
 
 //---------------------------------------------------------------------------
-// service dependency requires helper
-arGlobals.makeServiceLocator();
-const jrequire = require("./helpers/jrservicelocator").require;
+// initialize the service dependency requires helper
+arGlobals.setupDefaultModulePaths();
+
+// and now we (and others) can use it
+const jrequire = require("./helpers/jrequire");
 
 const jrconfig = require("./helpers/jrconfig");
 const jrdebug = require("./helpers/jrdebug");
 
-// const arserver = require("./controllers/arserver");
 const arserver = jrequire("arserver");
 //---------------------------------------------------------------------------
 
@@ -85,7 +89,6 @@ function processJrConfigAndCommandline() {
 // commandline options for this program
 
 function createYargsObj() {
-	var yargs = require("yargs");
 	yargs.version(arGlobals.programVersion);
 	yargs.epilog("copyright " + arGlobals.programDate + " by " + arGlobals.programAuthor);
 	yargs.strict();

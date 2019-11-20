@@ -15,7 +15,7 @@ const mongoose = require("mongoose");
 
 
 // requirement service locator
-const jrequire = require("../helpers/jrservicelocator").require;
+const jrequire = require("../helpers/jrequire");
 
 // models
 const ModelBaseMongoose = jrequire("models/model_base_mongoose");
@@ -25,7 +25,7 @@ const arserver = jrequire("arserver");
 
 // our helper modules
 const jrhText = require("../helpers/jrh_text");
-const jrhValidate = require("../helpers/jrh_validates");
+const jrhValidate = require("../helpers/jrh_validate");
 
 
 
@@ -129,7 +129,7 @@ class RoomModel extends ModelBaseMongoose {
 			passwordHashed: {
 				label: "Password",
 				format: "password",
-				valueFunction: this.makeModelValueFunctionPasswordAdminEyesOnly(arserver, false),
+				valueFunction: this.makeModelValueFunctionPasswordAdminEyesOnly(false),
 				filterSize: 0,
 			},
 		};

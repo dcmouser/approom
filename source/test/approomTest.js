@@ -23,7 +23,7 @@ const arGlobals = require("../approomglobals");
 
 //---------------------------------------------------------------------------
 // dynamic dependencies instead of using require
-const jrequire = arGlobals.makeServiceLocator().require;
+const jrequire = arGlobals.setupDefaultModulePaths();
 
 const arserver = jrequire("arserver");
 const UserModel = jrequire("models/user");
