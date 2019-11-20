@@ -8,9 +8,9 @@
 
 "use strict";
 
+
 // requirement service locator
 const jrequire = require("../helpers/jrequire");
-//
 
 // our helper modules
 const jrhMisc = require("../helpers/jrh_misc");
@@ -34,15 +34,6 @@ class AdminAid {
 	//---------------------------------------------------------------------------
 	// constructor
 	constructor() {
-	}
-
-	// global singleton request
-	static getSingleton(...args) {
-		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
-		if (this.globalSingleton === undefined) {
-			this.globalSingleton = new AdminAid(...args);
-		}
-		return this.globalSingleton;
 	}
 	//---------------------------------------------------------------------------
 
@@ -115,4 +106,4 @@ class AdminAid {
 
 
 // export the class as the sole export
-module.exports = AdminAid.getSingleton();
+module.exports = new AdminAid();

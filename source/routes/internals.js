@@ -21,11 +21,11 @@ const arserver = jrequire("arserver");
 
 // helpers
 const JrResult = require("../helpers/jrresult");
-const jrlog = require("../helpers/jrlog");
 
 
-// express router
-const router = express.Router();
+
+
+
 
 
 
@@ -39,8 +39,14 @@ var routerBaseUrlPath;
 
 
 
+
+
+
 //---------------------------------------------------------------------------
 function setupRouter(urlPath) {
+	// create express router
+	const router = express.Router();
+
 	// save urlPath (in module locals)
 	routerBaseUrlPath = urlPath;
 

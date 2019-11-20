@@ -11,9 +11,6 @@
 
 "use strict";
 
-// modules
-const mongoose = require("mongoose");
-
 
 // requirement service locator
 const jrequire = require("../helpers/jrequire");

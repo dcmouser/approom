@@ -28,8 +28,8 @@ const crudAid = jrequire("crudaid");
 const UserModel = jrequire("models/user");
 
 
-// express router
-const router = express.Router();
+
+
 
 
 
@@ -46,7 +46,13 @@ var viewFilePathEdit;
 
 
 
+
+
+
 function setupRouter(urlPath) {
+	// create express router
+	const router = express.Router();
+
 	// save urlPath (in module locals)
 	routerBaseUrlPath = urlPath;
 	// save local vars

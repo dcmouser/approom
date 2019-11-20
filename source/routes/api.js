@@ -11,12 +11,8 @@
 "use strict";
 
 
-// passport
-const passport = require("passport");
-
 // modules
 const express = require("express");
-const assert = require("assert");
 
 
 // requirement service locator
@@ -30,12 +26,22 @@ const JrResult = require("../helpers/jrresult");
 
 
 
+
+
+
+
+
 //---------------------------------------------------------------------------
 // module variables
 
 // remember base url path of router
 var routerBaseUrlPath;
 //---------------------------------------------------------------------------
+
+
+
+
+
 
 
 
@@ -48,11 +54,13 @@ var routerBaseUrlPath;
  * @returns router object
  */
 function setupRouter(urlPath) {
+	// create express router
+	const router = express.Router();
+
 	// save urlPath (in module locals)
 	routerBaseUrlPath = urlPath;
 
 	// setup routes
-	const router = express.Router();
 	router.get("/", routerGetIndex);
 	router.get("/reqrefresh", routerGetReqrefresh);
 	router.post("/reqrefresh", routerPostReqrefresh);

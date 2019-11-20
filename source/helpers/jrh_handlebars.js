@@ -12,7 +12,7 @@
 
 // modules
 const hbs = require("hbs");
-//
+
 const fs = require("fs");
 const path = require("path");
 

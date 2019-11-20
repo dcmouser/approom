@@ -19,7 +19,6 @@ const jrequire = require("../helpers/jrequire");
 // models
 const RoomdataModel = jrequire("models/roomdata");
 
-
 // our helper modules
 const jrhMisc = require("../helpers/jrh_misc");
 const jrhValidate = require("../helpers/jrh_validate");

@@ -13,7 +13,6 @@
 
 
 
-//---------------------------------------------------------------------------
 // modules
 
 // and debug for console logging
@@ -24,7 +23,7 @@ const util = require("util");
 
 // our helper modules
 const jrhMisc = require("./jrh_misc");
-//---------------------------------------------------------------------------
+
 
 
 

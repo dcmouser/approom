@@ -10,18 +10,18 @@
 "use strict";
 
 
-//---------------------------------------------------------------------------
+
 // modules
 // for password hashing
 var crypto = require("crypto");
 
-// ATTN: move to bcrypt; not yet used
+// bcrypt crypto helper
 var bcrypt = require("bcrypt");
 
+
 // our helper modules
-const jrlog = require("./jrlog");
 const jrhMisc = require("./jrh_misc");
-//---------------------------------------------------------------------------
+
 
 
 

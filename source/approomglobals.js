@@ -18,8 +18,8 @@
 //---------------------------------------------------------------------------
 // OPTIONS
 const programName = "approom";
-const programVersion = "1.0.1";
-const programDate = "5/1/19 - 10/29/19";
+const programVersion = "1.0.2";
+const programDate = "5/1/19 - 11/20/19";
 const programAuthor = "mouser@donationcoder.com";
 const programDescription = "multi-user room-based coordination framework (mewlo2)";
 //---------------------------------------------------------------------------
@@ -55,6 +55,7 @@ const envListOptions = [
  */
 function setupDefaultModulePaths() {
 	const jrequireaid = require("./controllers/jrequireaid");
+	jrequireaid.setDeferredLoading(true);
 	jrequireaid.setupDefaultModulePaths();
 }
 //---------------------------------------------------------------------------

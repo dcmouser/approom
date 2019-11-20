@@ -3,12 +3,23 @@
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 11/16/19
  * @description
- * Service locator to make module dependencies more flexible, appears as replacement for require
+ * Service locator to make module dependencies more flexible..
+ * The basic idea is that for a framework, one wants to be able to decouple dependencies so that one could swap in a replacement module easily.
+ * For example, imagine a framework with different classes for users, resources, etc., which are tightly coupled and co-dependent, where
+ * one would like to use the framework but swap out a class for a replacement (derived) class.
+ * The approach here is to use a singleton centralized registry of modules used by a framework, and allow an initial setup to change the mappings from names to modules.
+ * Use as a replacement for require, after modules/paths have been registered.
+ * This is meant to be used as a singleton -- a global central requirement loader for our classes.
+ * It is only meant to be used for modules that one might want to swap out with replacements when using a given framework.
+ *
+ * @todo
+ * Force use of a namespace along with names, to avoid collissions.
  *
  * @see <a href="https://www.amazon.com/Node-js-Design-Patterns-server-side-applications/dp/1785885588">NodeJs Patterns book</a>
  */
 
 "use strict";
+
 
 
 
@@ -19,7 +30,7 @@ const requires = {};
 const requirePaths = {};
 
 // we normally used deferred loading, which is better if we might replace a path before it's needed
-const flagDeferredLoad = true;
+var flagDeferredLoading = true;
 //---------------------------------------------------------------------------
 
 
@@ -45,13 +56,14 @@ function registerPath(name, requirePath) {
 
 	if (require[name]) {
 		// already exists, so it is being replaced for subsequent jrequire(name)
-		// console.log("In registerPath: " + name + " replacing require ");
+		console.log("Warning: In jrequire.registerPath, replacing requirement of " + name + ".");
 		// delete any current cached require
 		delete require[name];
 	}
 
-	if (!flagDeferredLoad) {
+	if (!flagDeferredLoading) {
 		// we normally defer loading, especially useful if we might replace requirement modules after a default init; but for testing we might do it now
+		// console.log("In registerPath, immediate load of: " + name);
 		requires[name] = require(requirePath);
 	}
 }
@@ -108,6 +120,16 @@ function jrequire(name) {
 function calcDebugInfo() {
 	return requirePaths;
 }
+
+
+/**
+ * Set the deferred loading flag
+ *
+ * @param {boolean} val
+ */
+function setDeferredLoading(val) {
+	flagDeferredLoading = val;
+}
 //---------------------------------------------------------------------------
 
 
@@ -119,6 +141,7 @@ function calcDebugInfo() {
 jrequire.registerPath = registerPath;
 jrequire.registerRequire = registerRequire;
 jrequire.calcDebugInfo = calcDebugInfo;
+jrequire.setDeferredLoading = setDeferredLoading;
 //---------------------------------------------------------------------------
 
 

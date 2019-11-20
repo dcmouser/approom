@@ -17,6 +17,10 @@ const ModelBaseMongoose = jrequire("models/model_base_mongoose");
 
 
 
+
+
+
+
 /**
  * A Connection model represents someone who is connected into the system, whethther they are a logged-in "User" or just an anonymous guest
  *

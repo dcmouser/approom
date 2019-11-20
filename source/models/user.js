@@ -9,10 +9,6 @@
 "use strict";
 
 
-//---------------------------------------------------------------------------
-// misc node core modules
-const assert = require("assert");
-
 // validation helper
 const validator = require("validator");
 
@@ -33,7 +29,12 @@ const jrhValidate = require("../helpers/jrh_validate");
 // controllers
 const arserver = jrequire("arserver");
 const aclAid = jrequire("aclaid");
-//---------------------------------------------------------------------------
+
+
+
+
+
+
 
 
 //---------------------------------------------------------------------------
@@ -59,6 +60,10 @@ const DefRegexPasswordPattern = /^.{3,64}$/;
 const DefRegexPasswordExplanation = "Must be a string of letters, numbers, and symbols, with a minimum length of 3, maximum length of 64.";
 const DefDisallowedUsernameList = ["admin*", "root", "guest", "user", "moderator*"];
 //---------------------------------------------------------------------------
+
+
+
+
 
 
 

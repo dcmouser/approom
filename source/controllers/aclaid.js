@@ -27,9 +27,6 @@
 "use strict";
 
 
-// misc node core modules
-const assert = require("assert");
-
 // role-acl
 const roleAcl = require("role-acl");
 
@@ -47,15 +44,6 @@ class AclAid {
 
 	//---------------------------------------------------------------------------
 	constructor() {
-	}
-
-	// global singleton request
-	static getSingleton(...args) {
-		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
-		if (this.globalSingleton === undefined) {
-			this.globalSingleton = new AclAid(...args);
-		}
-		return this.globalSingleton;
 	}
 	//---------------------------------------------------------------------------
 
@@ -165,4 +153,4 @@ class AclAid {
 
 
 // export the class as the sole export
-module.exports = AclAid.getSingleton();
+module.exports = new AclAid();

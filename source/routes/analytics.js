@@ -12,20 +12,20 @@
 // modules
 const express = require("express");
 
-// helpers
-const JrResult = require("../helpers/jrresult");
-
 
 // requirement service locator
 const jrequire = require("../helpers/jrequire");
 
+// helpers
+const JrResult = require("../helpers/jrresult");
+
 // controllers
-const adminAid = jrequire("adminaid");
 const arserver = jrequire("arserver");
 
 
-// express router
-const router = express.Router();
+
+
+
 
 
 
@@ -39,8 +39,16 @@ var routerBaseUrlPath;
 
 
 
+
+
+
+
+
 //---------------------------------------------------------------------------
 function setupRouter(urlPath) {
+	// create express router
+	const router = express.Router();
+
 	// save urlPath (in module locals)
 	routerBaseUrlPath = urlPath;
 

@@ -46,7 +46,6 @@ const gravatar = require("gravatar");
 const nodemailer = require("nodemailer");
 
 
-
 // requirement service locator
 const jrequire = require("../helpers/jrequire");
 
@@ -104,15 +103,6 @@ class AppRoomServer {
 		//
 		this.serverHttps = undefined;
 		this.serverHttp = undefined;
-	}
-
-	// global singleton request
-	static getSingleton(...args) {
-		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
-		if (this.globalSingleton === undefined) {
-			this.globalSingleton = new AppRoomServer(...args);
-		}
-		return this.globalSingleton;
 	}
 	//---------------------------------------------------------------------------
 
@@ -236,18 +226,17 @@ class AppRoomServer {
 		this.aclAid = jrequire("aclaid");
 
 		// model requires
+		this.AppModel = jrequire("models/app");
 		this.ConnectionModel = jrequire("models/connection");
+		this.FileModel = jrequire("models/file");
+		this.LogModel = jrequire("models/log");
+		this.LoginModel = jrequire("models/login");
 		this.OptionModel = jrequire("models/option");
+		this.RoomModel = jrequire("models/room");
+		this.RoomdataModel = jrequire("models/roomdata");
+		this.SessionModel = jrequire("models/session");
 		this.UserModel = jrequire("models/user");
 		this.VerificationModel = jrequire("models/verification");
-		this.LoginModel = jrequire("models/login");
-		this.SessionModel = jrequire("models/session");
-		this.LogModel = jrequire("models/log");
-		//
-		this.RoomModel = jrequire("models/room");
-		this.AppModel = jrequire("models/app");
-		this.FileModel = jrequire("models/file");
-		this.RoomdataModel = jrequire("models/roomdata");
 	}
 	//---------------------------------------------------------------------------
 
@@ -2366,7 +2355,7 @@ class AppRoomServer {
 
 	calcDependencyInfo() {
 		const rawInfo = {
-			jrServiceLocator: require("../helpers/jrequire").calcDebugInfo(),
+			jrequire: jrequire.calcDebugInfo(),
 		};
 
 		return rawInfo;
@@ -2609,5 +2598,5 @@ class AppRoomServer {
 
 //---------------------------------------------------------------------------
 // export A SINGLETON INSTANCE of the class as the sole export
-module.exports = AppRoomServer.getSingleton();
+module.exports = new AppRoomServer();
 //---------------------------------------------------------------------------

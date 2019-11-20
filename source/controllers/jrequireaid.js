@@ -17,10 +17,18 @@ const jrequire = require("../helpers/jrequire");
 
 
 //---------------------------------------------------------------------------
-// default service locator configuration
+/**
+ * Register the default module paths for the approom system.
+ * This should be called early before an application (or test) is set up, it basically registers the normal modules of the approom system.
+ * If you wanted to use the approom framework in a project and SWAP OUT certain modules, you could do that AFTER calling this function, replacing just the modules you care about.
+ * ###### Notes
+ * You might call setDeferredLoading(false) first if you want to disable deferred loading of requirements, which can be useful to force a predictable order of requirements to bypass any potential cyclical dependencies
+ */
 function setupDefaultModulePaths() {
 
-	// initialize it with all of the dependencies in the system (note that order is important to avoid cyclical includes)
+	// initialize it with all of the dependencies in the system
+	// NOTE: Because of circular dependencies, if we use deferred requirement resolution on the jrequire helper, then the order we declare things here does not matter;
+	// but we might turn off deferred requirements in order to get the order safe and predictable.
 
 	// generic helpers
 	// NOTE: these dont really need the service locator system, as they are not really candidates for swapping out
@@ -63,10 +71,17 @@ function setupDefaultModulePaths() {
 	jrequire.registerPath("adminaid", require.resolve("./adminaid"));
 	jrequire.registerPath("crudaid", require.resolve("./crudaid"));
 	jrequire.registerPath("registrationaid", require.resolve("./registrationaid"));
+}
 
 
-	// return the jrequire module so it can be chained
-	return jrequire;
+/**
+ * Just pass along the deferred loading flag set to jrequire.
+ * Turning off deferred loading can be useful to test circular dependency risks and ensure a predictable order of requires that avoids it
+ *
+ * @param {boolean} val
+ */
+function setDeferredLoading(val) {
+	jrequire.setDeferredLoading(val);
 }
 //---------------------------------------------------------------------------
 
@@ -76,4 +91,5 @@ function setupDefaultModulePaths() {
 // export the single function as the sole export
 module.exports = {
 	setupDefaultModulePaths,
+	setDeferredLoading,
 };

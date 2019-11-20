@@ -14,18 +14,22 @@
 
 
 
-//---------------------------------------------------------------------------
 // modules
 
-// nconf allows us to parse environment vars, config files, and commandline args via yargs
 const nconf = require("nconf");
 
 const path = require("path");
 const fs = require("fs");
-//
+
+
+// our helpers
 const jrhMisc = require("./jrh_misc");
 const jrlog = require("./jrlog");
-//---------------------------------------------------------------------------
+
+
+
+
+
 
 
 //---------------------------------------------------------------------------
@@ -53,6 +57,9 @@ var overrideOptions = {};
 var queuedCommands = [];
 var configFiles = [];
 //---------------------------------------------------------------------------
+
+
+
 
 
 

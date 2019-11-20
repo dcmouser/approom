@@ -13,13 +13,13 @@
 const jrequire = require("../helpers/jrequire");
 
 // our helper modules
-const jrhMisc = require("../helpers/jrh_misc");
 const JrResult = require("../helpers/jrresult");
 const jrhValidate = require("../helpers/jrh_validate");
 
+// require controllers
+const arserver = jrequire("arserver");
 
 // require models
-const arserver = jrequire("arserver");
 const VerificationModel = jrequire("models/verification");
 const UserModel = jrequire("models/user");
 const LoginModel = jrequire("models/login");
@@ -38,15 +38,6 @@ class RegistrationAid {
 	//---------------------------------------------------------------------------
 	// constructor
 	constructor() {
-	}
-
-	// global singleton request
-	static getSingleton(...args) {
-		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
-		if (this.globalSingleton === undefined) {
-			this.globalSingleton = new RegistrationAid(...args);
-		}
-		return this.globalSingleton;
 	}
 	//---------------------------------------------------------------------------
 
@@ -419,4 +410,4 @@ class RegistrationAid {
 
 
 // export the class as the sole export
-module.exports = RegistrationAid.getSingleton();
+module.exports = new RegistrationAid();

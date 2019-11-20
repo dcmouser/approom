@@ -19,8 +19,7 @@ const jrequire = require("../helpers/jrequire");
 // models
 const ModelBaseMongooseMinimal = jrequire("models/model_base_mongoose_minimal");
 
-// helpers
-const jrhText = require("../helpers/jrh_text");
+
 
 
 

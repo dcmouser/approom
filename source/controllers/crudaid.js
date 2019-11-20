@@ -16,6 +16,7 @@ const path = require("path");
 // modules
 const hbs = require("hbs");
 
+
 // requirement service locator
 const jrequire = require("../helpers/jrequire");
 
@@ -41,15 +42,6 @@ class CrudAid {
 	//---------------------------------------------------------------------------
 	// constructor
 	constructor() {
-	}
-
-	// global singleton request
-	static getSingleton(...args) {
-		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
-		if (this.globalSingleton === undefined) {
-			this.globalSingleton = new CrudAid(...args);
-		}
-		return this.globalSingleton;
 	}
 	//---------------------------------------------------------------------------
 
@@ -924,6 +916,7 @@ class CrudAid {
 		return rethtml;
 	}
 
+
 	async buildGenericMainHtmlStats(modelClass, req, obj, helperData, jrResult) {
 		var rethtml;
 		rethtml = "<div>stats</div>";
@@ -960,4 +953,4 @@ class CrudAid {
 
 
 // export the class as the sole export
-module.exports = CrudAid.getSingleton();
+module.exports = new CrudAid();

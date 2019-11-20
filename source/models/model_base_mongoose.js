@@ -16,7 +16,7 @@ const mongoose = require("mongoose");
 // requirement service locator
 const jrequire = require("../helpers/jrequire");
 
-// controller
+// controllers
 const arserver = jrequire("arserver");
 
 // our helper modules

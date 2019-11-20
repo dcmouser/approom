@@ -13,8 +13,6 @@
 // rate limiter module
 const ratelimiter = require("rate-limiter-flexible");
 
-// misc node core modules
-const assert = require("assert");
 
 // requirement service locator
 const jrequire = require("../helpers/jrequire");
@@ -37,15 +35,6 @@ class RateLimiterAid {
 	// constructor
 	constructor() {
 		this.rateLimiterBasic = null;
-	}
-
-	// global singleton request
-	static getSingleton(...args) {
-		// we could do this more simply by just exporting a new instance as module export, but we wrap a function for more flexibility
-		if (this.globalSingleton === undefined) {
-			this.globalSingleton = new RateLimiterAid(...args);
-		}
-		return this.globalSingleton;
 	}
 	//---------------------------------------------------------------------------
 
@@ -93,4 +82,4 @@ class RateLimiterAid {
 
 
 // export the class as the sole export
-module.exports = RateLimiterAid.getSingleton();
+module.exports = new RateLimiterAid();
