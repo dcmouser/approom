@@ -35,6 +35,11 @@ const jrequire = require("../helpers/jrequire");
 
 
 
+
+
+
+
+
 /**
  * Helps manage access control functions and data
  *
@@ -70,15 +75,13 @@ class AclAid {
 		// files can be viewed by friends of the ROOM
 		this.roleAcl.grant("roomFriend").execute("view").on("roomdata");
 
-		//
+		// crud model access
 		this.createAclEditViewGrantsForResource("log");
 		this.createAclEditViewGrantsForResource("option");
 		this.createAclEditViewGrantsForResource("connection");
 		this.createAclEditViewGrantsForResource("verification");
 		this.createAclEditViewGrantsForResource("login");
 		this.createAclEditViewGrantsForResource("session");
-
-		//
 		this.createAclEditViewGrantsForResource("user");
 
 		// global site admin
@@ -91,9 +94,6 @@ class AclAid {
 
 		// visitor role is for people not logged in
 		this.roleAcl.grant("visitor");
-
-		// test
-		// jrdebug.debugObj(this.roleAcl.getGrants(), "TEST of ACL permission grants");
 
 		return true;
 	}

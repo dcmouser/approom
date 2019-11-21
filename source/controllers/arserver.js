@@ -179,6 +179,7 @@ class AppRoomServer {
 	setup() {
 		// perform global configuration actions that are shared and should be run regardless of the cli app or unit tests
 
+		// load up requirements that avoid circular dependencies
 		this.setupLateRequires();
 
 		// setup debugger
@@ -201,7 +202,7 @@ class AppRoomServer {
 		jrconfig.setEnvList(arGlobals.envListOptions);
 
 		// Set base directory to look for config files -- caller can modify this, and discover them
-		jrconfig.setConfigDirAndDiscoverFiles(this.getBaseDir());
+		jrconfig.setConfigDirAndDiscoverConfigFiles(this.getBaseDir());
 	}
 
 
@@ -213,8 +214,46 @@ class AppRoomServer {
 
 		// enable debugging based on DEBUG field
 		jrdebug.setDebugEnabled(this.getOptionDebugEnabled());
+
+		// discover plugins, must be done after processing config file
+		this.discoverPlugins();
+		this.initializePlugins();
 	}
 	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	discoverPlugins() {
+		// get the plugin config object
+		const pluginConfig = this.getConfigVal("plugins");
+		// now iterate over it and register the plugins
+		var pluginObj;
+		Object.keys(pluginConfig).forEach((name) => {
+			pluginObj = pluginConfig[name];
+			if (pluginObj.enabled !== false) {
+				jrequire.registerPluginPath(pluginObj.category, name, pluginObj.path);
+			}
+		});
+	}
+
+
+	initializePlugins() {
+		// get list of all registered plugins
+		var category, pluginmodule;
+		const plugins = jrequire.getAllPlugins();
+		// iterate all categories
+		Object.keys(plugins).forEach((categoryKey) => {
+			// iterate all modules in this category
+			category = plugins[categoryKey];
+			Object.keys(category).forEach((name) => {
+				pluginmodule = jrequire.plugin(name);
+				pluginmodule.initialize(this);
+			});
+		});
+	}
+	//---------------------------------------------------------------------------
+
 
 
 
@@ -2404,7 +2443,7 @@ class AppRoomServer {
 		const serverJwtCryptoKey = jrconfig.getVal("token:CRYPTOKEY");
 		const token = jsonwebtoken.sign(payload, serverJwtCryptoKey);
 		const tokenObj = {
-			accessToken: token,
+			token,
 		};
 		return tokenObj;
 	}

@@ -57,6 +57,10 @@ function setupDefaultModulePaths() {
 	const jrequireaid = require("./controllers/jrequireaid");
 	jrequireaid.setDeferredLoading(true);
 	jrequireaid.setupDefaultModulePaths();
+
+	// plugin test
+	// const jrequire = require("./helpers/jrequire");
+	// jrequire.registerPluginPath("plugin.generic", "testPlugin", require.resolve("./plugins/testplugin"));
 }
 //---------------------------------------------------------------------------
 

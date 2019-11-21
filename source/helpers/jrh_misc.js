@@ -497,7 +497,28 @@ function objToString(obj, flagCompact) {
 
 
 
+//---------------------------------------------------------------------------
+function apiResultObjFromStringError(str) {
+	return {
+		error: str,
+	};
+}
 
+
+function apiResultObjFromStringSuccess(str) {
+	return {
+		success: str,
+	};
+}
+
+
+function apiResultObjSuccessData(str, data) {
+	return {
+		success: str,
+		...data,
+	};
+}
+//---------------------------------------------------------------------------
 
 
 
@@ -535,4 +556,8 @@ module.exports = {
 	findLongestPrefixAndRemainder,
 
 	objToString,
+
+	apiResultObjFromStringError,
+	apiResultObjFromStringSuccess,
+	apiResultObjSuccessData,
 };

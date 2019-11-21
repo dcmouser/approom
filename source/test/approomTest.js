@@ -18,12 +18,12 @@ const assert = require("assert");
 //---------------------------------------------------------------------------
 // program globals (version, author, etc.)
 const arGlobals = require("../approomglobals");
-//---------------------------------------------------------------------------
 
-
-//---------------------------------------------------------------------------
 // dynamic dependencies instead of using require
-const jrequire = arGlobals.setupDefaultModulePaths();
+arGlobals.setupDefaultModulePaths();
+
+// requirement service locator
+const jrequire = require("../helpers/jrequire");
 
 const arserver = jrequire("arserver");
 const UserModel = jrequire("models/user");

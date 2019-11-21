@@ -224,7 +224,7 @@ function findQueuedCommand(cmd, flagPop) {
  *
  * @param {string} val - base directory where config files are stored
  */
-function setConfigDirAndDiscoverFiles(val) {
+function setConfigDirAndDiscoverConfigFiles(val) {
 	// configDirPath can be base path where there is a config subdir, or the full path to the configdir;
 	//  filenames specified via config option will be looked for in this dir
 	// fixups - auto add config subdir if caller passed in base dir
@@ -511,7 +511,7 @@ module.exports = {
 	runQueuedCommands,
 	findQueuedCommand,
 
-	setConfigDirAndDiscoverFiles,
+	setConfigDirAndDiscoverConfigFiles,
 	setDefaultOptions,
 	setOverrideOptions,
 	setEnvList,

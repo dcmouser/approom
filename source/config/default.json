@@ -51,7 +51,10 @@
 		"SESSIONSECRET": "secret_for_session_cookies",
 		"SESSIONIDNAME": "coookie_session_id_name"
 	},
+	
 
+	"plugins": {
+	},
 
 
 	"options": {

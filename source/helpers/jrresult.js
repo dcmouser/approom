@@ -705,9 +705,33 @@ class JrResult {
 		var str = this.items.error.join(";");
 		return str;
 	}
+
+
+	/**
+	 * Return a string containing all non-errors in the result
+	 *
+	 * @returns success string
+	 */
+	getSuccessAsString() {
+		if (!this.items || !this.items.success || this.items.success.length <= 0) {
+			return "";
+		}
+		var str = this.items.success.join(";");
+		return str;
+	}
 	//---------------------------------------------------------------------------
 
 
+
+	//---------------------------------------------------------------------------
+	toApiResultObj() {
+		if (this.isError()) {
+			return jrhMisc.apiResultObjFromStringError(this.getErrorsAsString());
+		}
+		// success
+		return jrhMisc.apiResultObjFromStringSuccess(this.getSuccessAsString());
+	}
+	//---------------------------------------------------------------------------
 }
 
 

@@ -14,14 +14,11 @@ const yargs = require("yargs");
 //---------------------------------------------------------------------------
 // program globals (version, author, etc.)
 const arGlobals = require("./approomglobals");
-//---------------------------------------------------------------------------
 
-
-//---------------------------------------------------------------------------
 // initialize the service dependency requires helper
 arGlobals.setupDefaultModulePaths();
 
-// and now we (and others) can use it
+// requirement service locator
 const jrequire = require("./helpers/jrequire");
 
 const jrconfig = require("./helpers/jrconfig");

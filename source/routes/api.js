@@ -23,7 +23,7 @@ const arserver = jrequire("arserver");
 
 // helpers
 const JrResult = require("../helpers/jrresult");
-
+const jrhMisc = require("../helpers/jrh_misc");
 
 
 
@@ -76,6 +76,14 @@ function setupRouter(urlPath) {
 
 
 
+
+
+
+
+
+
+
+
 //---------------------------------------------------------------------------
 // router functions
 
@@ -120,8 +128,7 @@ async function routerPostReqrefresh(req, res, next) {
 	var jrResult = JrResult.makeNew();
 	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateNonSessionGetUserTuple("local", "with username and password", req, res, next, jrResult, true);
 	if (jrResult.isError()) {
-		var msg = "Error during api token request: " + jrResult.getErrorsAsString();
-		res.status(401).send(msg);
+		res.status(401).send(jrResult.toApiResultObj());
 		return;
 	}
 
@@ -132,7 +139,7 @@ async function routerPostReqrefresh(req, res, next) {
 	arserver.logr(req, "api.token", "made refresh token for " + user.getLogIdString());
 
 	// provide it
-	res.status(200).send(secureToken);
+	res.status(200).send(jrhMisc.apiResultObjSuccessData("token generated", secureToken));
 }
 
 
@@ -149,7 +156,7 @@ async function routerGetRefreshaccess(req, res, next) {
 	var jrResult = JrResult.makeNew();
 	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult);
 	if (jrResult.isError()) {
-		res.status(403).send(jrResult.getErrorsAsString());
+		res.status(403).send(jrResult.toApiResultObj());
 		return;
 	}
 
@@ -158,7 +165,7 @@ async function routerGetRefreshaccess(req, res, next) {
 	// it's a token, but is it the right type?
 	const tokenType = userPassport.token.type;
 	if (tokenType !== "refresh") {
-		res.status(403).send("Error: A valid REFRESH token must be passed to request an access token.");
+		res.status(403).send(jrhMisc.apiResultObjFromStringError("A valid REFRESH token must be passed to request an access token."));
 		return;
 	}
 
@@ -171,7 +178,7 @@ async function routerGetRefreshaccess(req, res, next) {
 	arserver.logr(req, "api.token", "refreshed access token for " + user.getLogIdString());
 
 	// provide it
-	res.status(200).send(secureToken);
+	res.status(200).send(jrhMisc.apiResultObjSuccessData("token generated", secureToken));
 }
 
 
@@ -187,13 +194,15 @@ async function routerAllTokentest(req, res, next) {
 	var jrResult = JrResult.makeNew();
 	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult);
 	if (jrResult.isError()) {
-		res.status(403).send(jrResult.getErrorsAsString());
+		res.status(403).send(jrResult.toApiResultObj());
 		return;
 	}
 
 	// it's good
-	const tokenType = userPassport.token.type;
-	res.status(200).send("Valid token parsed in API test.<br/><br/>Token type: " + tokenType + "<br/><br/>User minimal passport profile " + JSON.stringify(userPassport) + " <br/><br/>Full user: " + JSON.stringify(user));
+	const resultObj = {
+		userPassport,
+	};
+	res.status(200).send(jrhMisc.apiResultObjSuccessData("Valid token parsed in API test", resultObj));
 }
 
 
@@ -215,20 +224,18 @@ async function routerGetWildcard(req, res, next) {
 		await rateLimiter.consume(rateLimiterKey, 1);
 	} catch (rateLimiterRes) {
 		// rate limiter triggered
-		msg = {
-			message: "API rate limiting triggered; your ip has been blocked for " + rateLimiter.blockDuration + " seconds.",
-		};
-		res.status(429).send(msg);
+		res.status(429).send(jrhMisc.apiResultObjFromStringError("API rate limiting triggered; your ip has been blocked for " + rateLimiter.blockDuration + " seconds."));
 		// exit from function
 		return;
 	}
 
-	msg = {
-		message: "API Route " + routerBaseUrlPath + req.url + " not found.  API not implemented yet.",
-	};
-	res.status(404).send(msg);
+	res.status(404).send(jrhMisc.apiResultObjFromStringError("API Route " + routerBaseUrlPath + req.url + " not found.  API not implemented yet."));
 }
 //---------------------------------------------------------------------------
+
+
+
+
 
 
 
