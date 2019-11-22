@@ -70,7 +70,7 @@ class AclAid {
 		this.createAclEditViewGrantsForResource("file");
 		// files can be viewed by friends of the ROOM
 		this.roleAcl.grant("roomFriend").execute("view").on("file");
-		//
+
 		this.createAclEditViewGrantsForResource("roomdata");
 		// files can be viewed by friends of the ROOM
 		this.roleAcl.grant("roomFriend").execute("view").on("roomdata");
@@ -100,14 +100,22 @@ class AclAid {
 
 
 	createAclEditViewGrantsForResource(resourceName) {
-		// give global moderator permission
-		this.roleAcl.grant("globalModerator").execute(["add", "edit", "view", "list", "delete"]).on(resourceName);
-		// now owner, friend, none
-		this.roleAcl.grant(resourceName + "Owner").execute(["add", "edit", "view", "list"]).on(resourceName);
-		this.roleAcl.grant(resourceName + "Moderator").execute(["add", "edit", "view", "list"]).on(resourceName);
-		this.roleAcl.grant(resourceName + "Friend").execute("view").on(resourceName);
-		//
-		this.roleAcl.grant("none").execute(["view", "list"]).when({ Fn: "EQUALS", args: { public: true } }).on(resourceName);
+		// permission groups
+		const permAll = ["add", "edit", "view", "list", "delete"];
+		const permReadOnly = ["view", "list"];
+
+		// moderator permissions
+		this.roleAcl.grant("globalModerator").execute(permAll).on(resourceName);
+		this.roleAcl.grant(resourceName + "Moderator").execute(permAll).on(resourceName);
+
+		// now owner
+		this.roleAcl.grant(resourceName + "Owner").execute(permAll).on(resourceName);
+
+		// friend
+		this.roleAcl.grant(resourceName + "Friend").execute(permReadOnly).on(resourceName);
+
+		// untested; the idea here is that we want users to be able to access models that have the public:true property
+		this.roleAcl.grant("none").execute(permReadOnly).when({ Fn: "EQUALS", args: { public: true } }).on(resourceName);
 	}
 	//---------------------------------------------------------------------------
 

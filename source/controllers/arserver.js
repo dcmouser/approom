@@ -2395,6 +2395,7 @@ class AppRoomServer {
 	calcDependencyInfo() {
 		const rawInfo = {
 			jrequire: jrequire.calcDebugInfo(),
+			configPlugins: this.getConfigVal("plugins"),
 		};
 
 		return rawInfo;

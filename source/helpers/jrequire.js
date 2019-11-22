@@ -99,7 +99,7 @@ function registerPluginPath(pluginCategory, pluginName, pluginPath) {
 
 	// add it to our registerPath normal registry
 	const pluginNameRegistered = calcPluginRegisteredName(pluginName);
-	registerPath(pluginNameRegistered, pluginPath);
+	registerPath(pluginNameRegistered, fixRequirePath(pluginPath));
 
 	// create category if it doesn't exist
 	if (!plugins[pluginCategory]) {
@@ -181,6 +181,8 @@ function plugin(name) {
  * @returns path with any special replacements
  */
 function fixRequirePath(path) {
+	// lets also try resolving it now
+	path = require.resolve(path);
 	return path;
 }
 //---------------------------------------------------------------------------
