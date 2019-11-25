@@ -26,7 +26,7 @@ const jrhText = require("../helpers/jrh_text");
 const jrhMisc = require("../helpers/jrh_misc");
 const jrhGrid = require("../helpers/jrh_grid");
 
-// models
+// controllers
 const arserver = jrequire("arserver");
 
 

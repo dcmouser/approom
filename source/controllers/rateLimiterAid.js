@@ -37,6 +37,8 @@ class RateLimiterAid {
 	// constructor
 	constructor() {
 		this.rateLimiterBasic = null;
+		this.rateLimiterApi = null;
+		this.rateLimiterEmergencyAlert = null;
 	}
 	//---------------------------------------------------------------------------
 
@@ -44,7 +46,7 @@ class RateLimiterAid {
 
 	//---------------------------------------------------------------------------
 	async setupRateLimiters() {
-		// durations are in seconds
+		// durations are in seconds, so "points:5, duration: 10" means 5 points can be consumed per 10 second block before triggering
 
 		this.rateLimiterBasic = new ratelimiter.RateLimiterMemory({
 			keyPrefix: "rlflx_approom_basic",
@@ -59,6 +61,14 @@ class RateLimiterAid {
 			duration: 30,
 			blockDuration: 30,
 		});
+
+
+		this.rateLimiterEmergencyAlert = new ratelimiter.RateLimiterMemory({
+			keyPrefix: "rlflx_approom_emergency",
+			points: 5,
+			duration: 60,
+			blockDuration: 30,
+		});
 	}
 	//---------------------------------------------------------------------------
 
@@ -67,13 +77,18 @@ class RateLimiterAid {
 	//---------------------------------------------------------------------------
 	// accessors
 	getRateLimiterBasic() {
-		return this.rateLimiter_Basic;
+		return this.rateLimiterBasic;
 	}
 
 	getRateLimiterApi() {
 		return this.rateLimiterApi;
 	}
+
+	getRateLimiterEmergencyAlert() {
+		return this.rateLimiterEmergencyAlert;
+	}
 	//---------------------------------------------------------------------------
+
 
 }
 

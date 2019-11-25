@@ -3,6 +3,16 @@
 	"NODE_ENV": "development",
 
 
+	"options": {
+		"ACCOUNTREQUIRE_PASSWORD": false,
+		"ACCOUNTREQUIRE_EMAIL": false,
+		"SIGNUP_FULLREGISTRATIONFORM": true,
+		"GRAVATAR_OPTIONS": {
+			"d": "monsterid"
+		}
+	},
+
+
 	"server": {
 		"SITE_DOMAIN": "localhost",
 
@@ -30,7 +40,8 @@
 		"SECURE": true,
 		"USERNAME": "YOUR_SMTP_USERNAME",
 		"PASSWORD": "YOU_SMTP_USERPASSS",
-		"FROM": "me@mydomain.com"
+		"FROM": "me@mydomain.com",
+		"DEBUG": false
 	},
 
 
@@ -57,13 +68,16 @@
 	},
 
 
-	"options": {
-		"ACCOUNTREQUIRE_PASSWORD": false,
-		"ACCOUNTREQUIRE_EMAIL": false,
-		"SIGNUP_FULLREGISTRATIONFORM": true,
-		"GRAVATAR_OPTIONS": {
-			"d": "monsterid"
-		}
+	"emergencyAlert": {
+		"primary": [
+			{ "email": "emailaddress1@test.com" }
+		],
+		"secondary": [
+			{ "email": "emailaddress2@test.com" },
+			{ "email": "emailaddress3@test.com" }
+		]
 	}
+
+
 
 }

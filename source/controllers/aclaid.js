@@ -86,11 +86,11 @@ class AclAid {
 
 		// global site admin
 		this.roleAcl.grant("siteAdmin").execute("admin").on("site");
-		this.roleAcl.grant("siteAdmin").execute("analytics").on("site");
 
-		// admin inherits the permissions of globalModerator
-		// this.roleAcl.grant("siteAdmin").extend(["globalModerator"]);
+		// admin also inherits the permissions of globalModerator
 		this.roleAcl.extendRole("siteAdmin", "globalModerator");
+
+		this.roleAcl.grant("globalModerator").execute("analytics").on("site");
 
 		// visitor role is for people not logged in
 		this.roleAcl.grant("visitor");

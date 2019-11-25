@@ -42,10 +42,6 @@ const util = require("util");
 // misc 3rd party modules
 const gravatar = require("gravatar");
 
-// mail
-const nodemailer = require("nodemailer");
-
-
 // requirement service locator
 const jrequire = require("../helpers/jrequire");
 
@@ -74,6 +70,7 @@ const DefRequiredLoginMessage = "You need to log in before you can access the re
 // log categories
 const DefLoggingCategoryError = "error";
 const DefLoggingCategoryError404 = "404";
+const DefLoggingCategoryDebug = "debug";
 const DefLoggingCategory = "";
 // log types
 const DefLogMessageTypeError404 = "error.404";
@@ -129,25 +126,25 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	// getting options via jrconfig
 	//
-	getOptionDbUrl() { return jrconfig.getVal("server:DB_URL"); }
+	getOptionDbUrl() { return this.getConfigVal("server:DB_URL"); }
 
-	getOptionHttp() { return jrconfig.getVal("server:HTTP"); }
+	getOptionHttp() { return this.getConfigVal("server:HTTP"); }
 
-	getOptionHttpPort() { return jrconfig.getVal("server:HTTP_PORT"); }
+	getOptionHttpPort() { return this.getConfigVal("server:HTTP_PORT"); }
 
-	getOptionHttps() { return jrconfig.getVal("server:HTTPS"); }
+	getOptionHttps() { return this.getConfigVal("server:HTTPS"); }
 
-	getOptionHttpsKey() { return jrconfig.getVal("server:HTTPS_KEY"); }
+	getOptionHttpsKey() { return this.getConfigVal("server:HTTPS_KEY"); }
 
-	getOptionHttpsCert() { return jrconfig.getVal("server:HTTPS_CERT"); }
+	getOptionHttpsCert() { return this.getConfigVal("server:HTTPS_CERT"); }
 
-	getOptionHttpsPort() { return jrconfig.getVal("server:HTTPS_PORT"); }
+	getOptionHttpsPort() { return this.getConfigVal("server:HTTPS_PORT"); }
 
-	getOptionSiteDomain() { return jrconfig.getVal("server:SITE_DOMAIN"); }
+	getOptionSiteDomain() { return this.getConfigVal("server:SITE_DOMAIN"); }
 
-	getOptionDebugEnabled() { return jrconfig.getValDefault("DEBUG", false); }
+	getOptionDebugEnabled() { return this.getConfigValDefault("DEBUG", false); }
 
-	getOptionUseFullRegistrationForm() { return jrconfig.getValDefault("options:SIGNUP_FULLREGISTRATIONFORM", false); }
+	getOptionUseFullRegistrationForm() { return this.getConfigValDefault("options:SIGNUP_FULLREGISTRATIONFORM", false); }
 
 	// see https://stackoverflow.com/questions/2683803/gravatar-is-there-a-default-image
 	/*
@@ -159,8 +156,13 @@ class AppRoomServer {
 		retro: awesome generated, 8-bit arcade-style pixelated faces
 		blank: a transparent PNG image (border added to HTML below for demonstration purposes)
 	*/
-	getOptionsGravatar() { return jrconfig.getValDefault("options:GRAVATAR_OPTIONS", {}); }
+	getOptionsGravatar() { return this.getConfigValDefault("options:GRAVATAR_OPTIONS", {}); }
+
+	getEmergencyAlertContactsPrimary() { return this.getConfigValDefault("emergencyAlert:primary", []); }
+
+	getEmergencyAlertContactsSecondary() { return this.getConfigValDefault("emergencyAlert:secondary", []); }
 	//---------------------------------------------------------------------------
+
 
 
 	//---------------------------------------------------------------------------
@@ -169,6 +171,8 @@ class AppRoomServer {
 	getJrConfig() { return jrconfig; }
 
 	getConfigVal(...args) { return jrconfig.getVal(...args); }
+
+	getConfigValDefault(arg, defaultVal) { return jrconfig.getValDefault(arg, defaultVal); }
 	//---------------------------------------------------------------------------
 
 
@@ -263,6 +267,7 @@ class AppRoomServer {
 		this.rateLimiterAid = jrequire("ratelimiteraid");
 		this.crudAid = jrequire("crudaid");
 		this.aclAid = jrequire("aclaid");
+		this.sendAid = jrequire("sendaid");
 
 		// model requires
 		this.AppModel = jrequire("models/app");
@@ -289,6 +294,7 @@ class AppRoomServer {
 		// winston logger files
 		jrlog.setupWinstonLogger(DefLoggingCategoryError, DefLoggingCategoryError);
 		jrlog.setupWinstonLogger(DefLoggingCategoryError404, DefLoggingCategoryError404);
+		jrlog.setupWinstonLogger(DefLoggingCategoryDebug, DefLoggingCategoryDebug);
 		jrlog.setupWinstonLogger(DefLoggingCategory, DefLoggingCategory);
 	}
 	//---------------------------------------------------------------------------
@@ -485,7 +491,8 @@ class AppRoomServer {
 		this.setupRoute(expressApp, "/internals", "internals");
 		// analytics
 		this.setupRoute(expressApp, "/analytics", "analytics");
-
+		// testing
+		this.setupRoute(expressApp, "/test", "test");
 
 		// crud routes
 		var crudUrlBase = "/crud";
@@ -676,8 +683,8 @@ class AppRoomServer {
 		const Strategy = passportFacebook.Strategy;
 
 		var strategyOptions = {
-			clientID: jrconfig.getVal("passport:FACEBOOK_APP_ID"),
-			clientSecret: jrconfig.getVal("passport:FACEBOOK_APP_SECRET"),
+			clientID: this.getConfigVal("passport:FACEBOOK_APP_ID"),
+			clientSecret: this.getConfigVal("passport:FACEBOOK_APP_SECRET"),
 			callbackURL: this.calcAbsoluteSiteUrlPreferHttps("/login/facebook/auth"),
 			passReqToCallback: true,
 		};
@@ -727,7 +734,7 @@ class AppRoomServer {
 		const ExtractJwt = passportJwt.ExtractJwt;
 
 		var strategyOptions = {
-			secretOrKey: jrconfig.getVal("token:CRYPTOKEY"),
+			secretOrKey: this.getConfigVal("token:CRYPTOKEY"),
 			jwtFromRequest: ExtractJwt.fromUrlQueryParameter("token"),
 			// we ignore expiration auto handling; we will check it ourselves
 			ignoreExpiration: true,
@@ -1399,66 +1406,8 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	async setupMailer() {
-		// setup the mailer system
-		// see https://nodemailer.com/about/
-		// see https://medium.com/@SeanChenU/send-mail-using-node-js-with-nodemailer-in-2-mins-c3f3e23f4a1
-		this.mailTransport = nodemailer.createTransport({
-			host: jrconfig.getVal("mailer:HOST"),
-			port: jrconfig.getVal("mailer:PORT"),
-			secure: jrconfig.getVal("mailer:SECURE"),
-			auth: {
-				user: jrconfig.getVal("mailer:USERNAME"),
-				pass: jrconfig.getVal("mailer:PASSWORD"),
-			},
-		});
-
-		jrdebug.cdebugf("Setting up mail transport through %s.", jrconfig.getVal("mailer:HOST"));
-
-		// verify it?
-		if (this.getOptionDebugEnabled()) {
-			await this.mailTransport.verify();
-		}
-	}
-
-
-	getMailTransport() {
-		// return previously created transport
-		return this.mailTransport;
-	}
-
-
 	async sendMail(mailobj) {
-		// add from field
-		if (!mailobj.from) {
-			mailobj.from = jrconfig.getVal("mailer:FROM");
-		}
-
-		var result = await this.mailTransport.sendMail(mailobj);
-		jrdebug.cdebugObj(result, "Result from sendMail.");
-		var jrResult = this.makeJrResultFromSendmailRetv(result, mailobj);
-		return jrResult;
-	}
-
-
-	makeJrResultFromSendmailRetv(retv, mailobj) {
-		var msg;
-		if (retv.rejected.length === 0) {
-			// success!
-			if (mailobj.revealEmail) {
-				msg = "Mail sent to " + jrhMisc.stringArrayToNiceString(retv.accepted) + ".";
-			} else {
-				msg = "Mail sent.";
-			}
-			return JrResult.makeSuccess(msg);
-		}
-		// error
-		if (mailobj.revealEmail) {
-			msg = "Failed to send email to " + jrhMisc.stringArrayToNiceString(retv.rejected) + ".";
-		} else {
-			msg = "Failed to send email.";
-		}
-		return JrResult.makeError(msg);
+		return this.sendAid.sendMail(mailobj);
 	}
 	//---------------------------------------------------------------------------
 
@@ -1564,7 +1513,7 @@ class AppRoomServer {
 		this.setupViewTemplateExtras();
 
 		// other helper stuff
-		await this.setupMailer();
+		await this.sendAid.setupMailer();
 
 		// other model stuff
 		await this.setupAcl();
@@ -1693,6 +1642,10 @@ class AppRoomServer {
 	getRateLimiterApi() {
 		return this.rateLimiterAid.getRateLimiterApi();
 	}
+
+	getRateLimiterEmergencyAlert() {
+		return this.rateLimiterAid.getRateLimiterEmergencyAlert();
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -1819,6 +1772,7 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	calcLoggingCategoryFromLogMessageType(type) {
 		// we want to decide which logging category (file) to put this logg message in
+		// ATTN: we might replace this with something that loops through an array of prefixes associated with categories to make it easier and less hard coded
 
 		// 404s go in their own file
 		if (type.startsWith("error.404")) {
@@ -1827,6 +1781,10 @@ class AppRoomServer {
 
 		if (type.startsWith("error")) {
 			return DefLoggingCategoryError;
+		}
+
+		if (type.startsWith("debug")) {
+			return DefLoggingCategoryDebug;
 		}
 
 		// fallback to default
@@ -2125,6 +2083,9 @@ class AppRoomServer {
 		});
 	}
 
+
+	// ATTN: Im not sure this function works the way we expect
+	// ATTN: TODO - test
 	testCsrfThrowError(req, res, next) {
 		// let csrf throw the error to next, ONLY if there is an error, otherwise just return and dont call next
 		return this.csrfInstance(req, res, (err) => {
@@ -2132,13 +2093,12 @@ class AppRoomServer {
 				next(err);
 				return err;
 			}
+			// forget it so it can't be used twice?
+			if (true) {
+				this.forgetCsrfToken(req);
+			}
 			return undefined;
 		});
-	}
-
-	testCsrfNoThrow(req, res) {
-		// just return any error don't call next
-		return this.csrfInstance(req, res, (err) => err);
 	}
 
 
@@ -2435,13 +2395,13 @@ class AppRoomServer {
 	createSecureToken(payload, expirationSeconds) {
 		// add stuff to payload
 		payload.iat = Math.floor(Date.now() / 1000);
-		payload.iss = jrconfig.getVal("token:ISSUER");
+		payload.iss = this.getConfigVal("token:ISSUER");
 		// expiration?
 		if (expirationSeconds > 0) {
 			payload.exp = Math.floor(Date.now() / 1000) + expirationSeconds;
 		}
 		// make it
-		const serverJwtCryptoKey = jrconfig.getVal("token:CRYPTOKEY");
+		const serverJwtCryptoKey = this.getConfigVal("token:CRYPTOKEY");
 		const token = jsonwebtoken.sign(payload, serverJwtCryptoKey);
 		const tokenObj = {
 			token,
@@ -2618,6 +2578,74 @@ class AppRoomServer {
 		}
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	/**
+	 * This may be called on serious errors (server down, database offline, unexpected exception, etc.), when we want to alert admin(s) immediately via email or sms
+	 * It does some rate-limiting to prevent generating too many messages, etc.
+	 *
+	 * @param {string} eventType
+	 * @param {string} subject
+	 * @param {string} message
+	 * @param {req} express request (or null if not part of one)
+	 * @param {object} extraData
+	 * @param {boolean} flagAlsoSendToSecondaries - if false, only the main admin is notified; if true then the primary AND secondary list of emails, etc. is notified
+	 * @returns # of messages sent
+	 */
+
+	async emergencyAlert(eventType, subject, message, req, extraData, flagAlsoSendToSecondaries) {
+		// first we check rate limiting
+		var messageSentCount = 0;
+
+		const rateLimiter = this.getRateLimiterEmergencyAlert();
+		// ATTN: with rateLimiterKey == "" it means that we share a single rate limter for all emergencyAlerts
+		const rateLimiterKey = "";
+		//
+		try {
+			// consume a point of action
+			await rateLimiter.consume(rateLimiterKey, 1);
+		} catch (rateLimiterRes) {
+			// rate limiter triggered; if this is not our FIRST trigger of rate limiter within this time period, then just silently return
+			// if it is the first trigger, send an alert about alerts being rate limited
+			if (!rateLimiterRes.isFirstInDuration) {
+				return messageSentCount;
+			}
+			// drop down with warning about rate limiting
+			// send them a message saying emergency alerts are disabled for X amount of time
+			const blockTime = rateLimiterRes.msBeforeNext / 1000.0;
+			// overrise subject and message
+			subject = util.format("Emergency alerts temporarily disabled for %d seconds", blockTime);
+			message = util.format("Due to rate limiting, no further alerts will be sent for %d seconds.", blockTime);
+		}
+
+		// ok send the message
+
+		// who gets it?
+		var recipients = this.getEmergencyAlertContactsPrimary();
+		if (flagAlsoSendToSecondaries) {
+			recipients = jrhMisc.mergeArraysKeepDupes(recipients, this.getEmergencyAlertContactsSecondary());
+		}
+
+		// jrdebug.debugObj(recipients, "Recipients");
+		// return 0;
+
+		// loop and send to all recipients
+		await jrhMisc.asyncAwaitForEachFunctionCall(recipients, async (recipient) => {
+			// do something
+			await this.sendAid.sendMessage(recipient, subject, message, extraData, true);
+			++messageSentCount;
+		});
+
+		// done
+		return messageSentCount;
+	}
+	//---------------------------------------------------------------------------
+
+
 
 
 

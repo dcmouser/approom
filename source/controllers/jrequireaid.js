@@ -76,6 +76,7 @@ function setupDefaultModulePaths() {
 	jrequire.registerPath("adminaid", require.resolve("./adminaid"));
 	jrequire.registerPath("crudaid", require.resolve("./crudaid"));
 	jrequire.registerPath("registrationaid", require.resolve("./registrationaid"));
+	jrequire.registerPath("sendaid", require.resolve("./sendaid"));
 }
 
 

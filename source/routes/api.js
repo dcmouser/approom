@@ -218,9 +218,11 @@ async function routerGetWildcard(req, res, next) {
 
 	// ATTN: test of rate limiting block
 	const rateLimiter = arserver.getRateLimiterApi();
+	// ATTN: NOTE that this is a PER-IP rate limit since we use rateLimiterKey = req.ip
 	const rateLimiterKey = req.ip;
 	//
 	try {
+		// ATTN: NOTE that this is a PER-IP rate limit since we use rateLimiterKey = req.ip
 		await rateLimiter.consume(rateLimiterKey, 1);
 	} catch (rateLimiterRes) {
 		// rate limiter triggered

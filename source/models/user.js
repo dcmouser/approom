@@ -985,20 +985,34 @@ class UserModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	// ACL stuff
 
-	getRolesOnObject(objectType, objectId, flagAddNoneRole, flagCheckNonObjectSpecificRoles) {
+	getRolesOnObject(objectType, objectId, flagAddNoneRole) {
 		// get any roles the user is assigned to this ojbectId
 		// if objectId is null then get roles unrelated to object
+		// this will also return roles that match this objectType but have no objectId (meaning they are global)
+		// this will also return roles that have no objectType or the "all" object type, i.e. global roles that MIGHT be relevant for this object
+		// e.g. a site admin will always return the role "admin->site" when check if it has permission on a specific object
+
+		// make sure objectId is null if not passed
+		if (objectId === undefined) {
+			objectId = null;
+		}
+
 		var rolesFound = [];
 
 		// simple walk of roles array
 		var matchesRole;
 		for (var key in this.roles) {
 			matchesRole = false;
-			// ATTN: this second test looks weird and we need to rething if the thing we true'd as tautology is important
-			if ((this.roles[key].t === objectType && this.roles[key].i === objectId)) {
+			// check if this role is relevant
+			if ((this.roles[key].t === objectType && (this.roles[key].i == null || this.roles[key].i === objectId))) {
+				// user has this permission on this object, or has this permission on ALL objects of this type (indicated by this.roles[key].i == null)
 				matchesRole = true;
-			} else if (flagCheckNonObjectSpecificRoles && this.roles[key].i === null && (true || objectId !== null) && (this.roles[key].t === objectType || this.roles[key].t === "site" || this.roles[key].t === null)) {
-				matchesRole = true;
+			} else {
+				// do we want roles not specifically related to this object type (for example if they are site admin)
+				if ((this.roles[key].t === "site" || this.roles[key].t === null) && (this.roles[key].i == null)) {
+					// here we have matched a global site role, or a role without a type, and there is no object id associated with it
+					matchesRole = true;
+				}
 			}
 
 			if (matchesRole) {
@@ -1027,8 +1041,8 @@ class UserModel extends ModelBaseMongoose {
 	}
 
 
-	hasRole(role, objectType = null, objectId = null) {
-		// return true if user has role on (optional) objectId
+	hasExplicitRole(role, objectType = null, objectId = null) {
+		// return true if user has an explicit role on (optional) objectId
 
 		// simple walk of roles array
 		for (var key in this.roles) {
@@ -1047,7 +1061,7 @@ class UserModel extends ModelBaseMongoose {
 		// add that the user has role on objectId
 
 		// first check if it already exists
-		if (this.roles.length > 0 && this.hasRole(role, objectType, objectId)) {
+		if (this.roles.length > 0 && this.hasExplicitRole(role, objectType, objectId)) {
 			// already set
 			return;
 		}
@@ -1095,14 +1109,17 @@ class UserModel extends ModelBaseMongoose {
 	}
 
 
-	async hasPermission(permission, objectType = null, objectId = null, flagCheckNonObjectSpecificRoles = true) {
+	async hasPermission(permission, objectType = null, objectId = null) {
+		// ATTN: TODO -- 11/20/19 - CACHE this answers to this function (with short duration), to save computation time (though it currently does not require db access)
 		// return true if user has permission on (optional) objectId
 		// permissions are derived from roles
 		// by checking nonObjectSpecificRoles it means if the user is a GlobalModerator with no specific object, we will check permissions for that role too
 
 		// get roles held on the object in question (optional)
 		const flagAddNoneRole = true;
-		const objectRoles = this.getRolesOnObject(objectType, objectId, flagAddNoneRole, flagCheckNonObjectSpecificRoles);
+		const objectRoles = this.getRolesOnObject(objectType, objectId, flagAddNoneRole);
+
+		// jrdebug.debugObj(objectRoles, "ObjectRoles for user on object type " + objectType);
 
 		// now ask if any of these rules imply the permission
 		return await aclAid.anyRolesImplyPermission(objectRoles, permission, objectType);
@@ -1143,6 +1160,20 @@ class UserModel extends ModelBaseMongoose {
 		return rolestring;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
