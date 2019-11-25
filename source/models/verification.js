@@ -502,7 +502,7 @@ If this request was not made by you, please ignore this email.
 	//---------------------------------------------------------------------------
 	static async pruneOldVerifications(flagDesperate) {
 		// ATTN: 5/25/19 - unfinished
-		jrdebug.debug("In pruneOldVerifications.");
+		await arserver.logm("admin.maint", "pruning old verifications");
 	}
 	//---------------------------------------------------------------------------
 

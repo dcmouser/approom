@@ -72,7 +72,7 @@ function setupDefaultModulePaths() {
 	jrequire.registerPath("models/session", require.resolve("../models/session"));
 	jrequire.registerPath("models/verification", require.resolve("../models/verification"));
 
-	// controllers
+	// controllers/aids
 	jrequire.registerPath("adminaid", require.resolve("./adminaid"));
 	jrequire.registerPath("crudaid", require.resolve("./crudaid"));
 	jrequire.registerPath("registrationaid", require.resolve("./registrationaid"));

@@ -364,8 +364,34 @@ function getRequestLogString(req) {
 
 
 
+//---------------------------------------------------------------------------
+/**
+ * @see https://expressjs.com/en/api.html#req
+ *
+ * @param {*} req
+ * @returns
+ */
+function reqUrlWithPath(req) {
+	if (!req) {
+		return "/";
+	}
+	return req.baseUrl + "/" + req.path;
+}
 
 
+/**
+ * @see https://expressjs.com/en/api.html#req
+ *
+ * @param {*} req
+ * @returns
+ */
+function reqOriginalUrl(req) {
+	if (!req) {
+		return "/";
+	}
+	return req.originalUrl;
+}
+//---------------------------------------------------------------------------
 
 
 
@@ -392,4 +418,7 @@ module.exports = {
 	forgetSessionVar,
 
 	getRequestLogString,
+
+	reqUrlWithPath,
+	reqOriginalUrl,
 };

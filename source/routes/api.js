@@ -31,15 +31,6 @@ const jrhMisc = require("../helpers/jrh_misc");
 
 
 
-//---------------------------------------------------------------------------
-// module variables
-
-// remember base url path of router
-var routerBaseUrlPath;
-//---------------------------------------------------------------------------
-
-
-
 
 
 
@@ -56,9 +47,6 @@ var routerBaseUrlPath;
 function setupRouter(urlPath) {
 	// create express router
 	const router = express.Router();
-
-	// save urlPath (in module locals)
-	routerBaseUrlPath = urlPath;
 
 	// setup routes
 	router.get("/", routerGetIndex);
@@ -231,7 +219,7 @@ async function routerGetWildcard(req, res, next) {
 		return;
 	}
 
-	res.status(404).send(jrhMisc.apiResultObjFromStringError("API Route " + routerBaseUrlPath + req.url + " not found.  API not implemented yet."));
+	res.status(404).send(jrhMisc.apiResultObjFromStringError("API Route " + req.baseUrl + "/" + req.path + " not found.  API not implemented yet."));
 }
 //---------------------------------------------------------------------------
 

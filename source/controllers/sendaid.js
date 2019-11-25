@@ -42,21 +42,15 @@ class SendAid {
 
 
 	//---------------------------------------------------------------------------
-	async setupMailer() {
+	async setupMailer(mailTransportConfigObj, defaultFrom, flagDebugMode) {
 		// setup the mailer system
 		// see https://nodemailer.com/about/
 		// see https://medium.com/@SeanChenU/send-mail-using-node-js-with-nodemailer-in-2-mins-c3f3e23f4a1
-		this.mailTransport = nodemailer.createTransport({
-			host: arserver.getConfigVal("mailer:HOST"),
-			port: arserver.getConfigVal("mailer:PORT"),
-			secure: arserver.getConfigVal("mailer:SECURE"),
-			auth: {
-				user: arserver.getConfigVal("mailer:USERNAME"),
-				pass: arserver.getConfigVal("mailer:PASSWORD"),
-			},
-		});
+		this.mailTransport = nodemailer.createTransport(mailTransportConfigObj);
+		this.defaultFrom = defaultFrom;
+		this.flagDebugMode = flagDebugMode;
 
-		jrdebug.cdebugf("Setting up mail transport through %s.", arserver.getConfigVal("mailer:HOST"));
+		jrdebug.cdebugf("Setting up mail transport through %s.", mailTransportConfigObj.host);
 
 		// verify it?
 		if (arserver.getOptionDebugEnabled()) {
@@ -150,10 +144,10 @@ class SendAid {
 	async sendMail(mailobj) {
 		// add from field
 		if (!mailobj.from) {
-			mailobj.from = arserver.getConfigVal("mailer:FROM");
+			mailobj.from = this.defaultFrom;
 		}
 
-		if (arserver.getConfigValDefault("mailer:DEBUG", false)) {
+		if (this.flagDebugMode) {
 			// don't actually mail, instead just log it to console and file
 			jrdebug.debug("Config flag mailer:DEBUG set, so mail to [" + mailobj.to + "] not actually sent (sending mail to debug log instead).");
 			arserver.logm("debug.mailer", "mailer:DEBUG option preventing mail from being sent", null, mailobj);

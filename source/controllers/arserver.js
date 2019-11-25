@@ -181,7 +181,15 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	setup() {
+		this.setupPreConfig();
+		this.processConfig();
+		this.setupPostConfig();
+	}
+
+
+	setupPreConfig() {
 		// perform global configuration actions that are shared and should be run regardless of the cli app or unit tests
+		// this happens BEFORE processing config file, so no config info is known yet
 
 		// load up requirements that avoid circular dependencies
 		this.setupLateRequires();
@@ -222,6 +230,22 @@ class AppRoomServer {
 		// discover plugins, must be done after processing config file
 		this.discoverPlugins();
 		this.initializePlugins();
+	}
+
+
+	async setupPostConfig() {
+		// setup done AFTER config is loaded
+
+		// tell user if we are running in development mode
+		if (this.isDevelopmentMode()) {
+			jrdebug.debug("Running in development mode (verbose errors shown to web client).");
+		}
+
+		// view/template extra stuff
+		this.setupViewTemplateExtras();
+
+		// cache any options for faster access
+		this.cacheMiscOptions();
 	}
 	//---------------------------------------------------------------------------
 
@@ -1407,6 +1431,7 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	async sendMail(mailobj) {
+		// just pass on request to sendAid module
 		return this.sendAid.sendMail(mailobj);
 	}
 	//---------------------------------------------------------------------------
@@ -1499,21 +1524,14 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	async runServer() {
-		// run the server
+		// run the server -- this is called AFTER other setup stuff
 
 		// setup express stuff
 		this.setupExpress();
 
-		// tell user if we are running in development mode
-		if (this.isDevelopmentMode()) {
-			jrdebug.debug("Running in development mode (verbose errors shown to web client).");
-		}
-
-		// view/template extra stuff
-		this.setupViewTemplateExtras();
-
-		// other helper stuff
-		await this.sendAid.setupMailer();
+		// postsetup used to happen here
+		// setup mail/messaging helper
+		await this.setupSendAid();
 
 		// other model stuff
 		await this.setupAcl();
@@ -1521,8 +1539,6 @@ class AppRoomServer {
 		// rate limiter
 		await this.setupRateLimiters();
 
-		// cache any options for faster access
-		this.cacheMiscOptions();
 
 		// now make the express servers (http AND/OR https)
 		this.createExpressServersAndListen();
@@ -1534,6 +1550,29 @@ class AppRoomServer {
 		return true;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+	//---------------------------------------------------------------------------
+	async setupSendAid() {
+		const mailTransportConfigObj = {
+			host: this.getConfigVal("mailer:HOST"),
+			port: this.getConfigVal("mailer:PORT"),
+			secure: this.getConfigVal("mailer:SECURE"),
+			auth: {
+				user: this.getConfigVal("mailer:USERNAME"),
+				pass: this.getConfigVal("mailer:PASSWORD"),
+			},
+		};
+		//
+		const defaultFrom = this.getConfigVal("mailer:FROM");
+		const flagDebugMode = this.getConfigValDefault("mailer:DEBUG", false);
+		//
+		await this.sendAid.setupMailer(mailTransportConfigObj, defaultFrom, flagDebugMode);
+	}
+	//---------------------------------------------------------------------------
+
 
 
 	//---------------------------------------------------------------------------
@@ -1889,6 +1928,20 @@ class AppRoomServer {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	//---------------------------------------------------------------------------
 	async requireLoggedIn(req, res, goalRelUrl) {
 		var user = await this.getLoggedInUser(req);
@@ -1965,8 +2018,7 @@ class AppRoomServer {
 	divertToLoginPageThenBackToCurrentUrl(req, res) {
 		// redirect them to login page and then back to their currently requested page
 		var failureRelUrl = "/login";
-		var goalRelUrl = req.originalUrl;
-		this.rememberDivertedRelUrlAndGo(req, res, goalRelUrl, failureRelUrl, DefRequiredLoginMessage);
+		this.rememberDivertedRelUrlAndGo(req, res, null, failureRelUrl, DefRequiredLoginMessage);
 	}
 
 
@@ -1980,6 +2032,11 @@ class AppRoomServer {
 
 
 	rememberDivertedRelUrl(req, res, goalRelUrl, msg) {
+		// if no goal url passed, then use current request url
+		if (!goalRelUrl) {
+			goalRelUrl = jrhExpress.reqOriginalUrl(req);
+		}
+
 		// remember where they were trying to go when we diverted them, so we can go BACK there after they log in
 		req.session.divertedUrl = goalRelUrl;
 		if (msg) {
@@ -2013,6 +2070,16 @@ class AppRoomServer {
 		jrhExpress.forgetSessionVar(req, "divertedUrl");
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
 
 
 

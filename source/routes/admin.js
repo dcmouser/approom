@@ -18,6 +18,7 @@ const jrequire = require("../helpers/jrequire");
 
 // helpers
 const JrResult = require("../helpers/jrresult");
+const jrdebug = require("../helpers/jrdebug");
 
 // controllers
 const adminAid = jrequire("adminaid");
@@ -29,12 +30,6 @@ const arserver = jrequire("arserver");
 
 
 
-//---------------------------------------------------------------------------
-// module variables
-
-// remember base url path of router
-var routerBaseUrlPath;
-//---------------------------------------------------------------------------
 
 
 
@@ -47,9 +42,6 @@ var routerBaseUrlPath;
 function setupRouter(urlPath) {
 	// create express router
 	const router = express.Router();
-
-	// save urlPath (in module locals)
-	routerBaseUrlPath = urlPath;
 
 	// setup routes
 	router.get("/", routerGetIndex);
@@ -70,7 +62,7 @@ function setupRouter(urlPath) {
 
 
 async function routerGetIndex(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res, routerBaseUrlPath)) {
+	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}
@@ -82,7 +74,7 @@ async function routerGetIndex(req, res, next) {
 
 
 async function routerGetTesting(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res, routerBaseUrlPath + "/testing")) {
+	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}
@@ -94,7 +86,7 @@ async function routerGetTesting(req, res, next) {
 
 
 async function routerGetTestingMakeappsrooms(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res, routerBaseUrlPath + "/testing/makeappsrooms")) {
+	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}
@@ -110,7 +102,7 @@ async function routerGetTestingMakeappsrooms(req, res, next) {
 
 
 async function routerPostTestingMakeappsrooms(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res, routerBaseUrlPath + "/testing/makeappsrooms")) {
+	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}

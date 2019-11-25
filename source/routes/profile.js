@@ -16,6 +16,7 @@ const express = require("express");
 // helpers
 const JrResult = require("../helpers/jrresult");
 const jrlog = require("../helpers/jrlog");
+const jrhExpress = require("../helpers/jrh_express");
 
 // requirement service locator
 const jrequire = require("../helpers/jrequire");
@@ -36,9 +37,6 @@ const UserModel = jrequire("models/user");
 //---------------------------------------------------------------------------
 // module variables
 
-// remember base url path of router
-var routerBaseUrlPath;
-
 // others
 var viewFilePathEdit;
 //---------------------------------------------------------------------------
@@ -53,8 +51,6 @@ function setupRouter(urlPath) {
 	// create express router
 	const router = express.Router();
 
-	// save urlPath (in module locals)
-	routerBaseUrlPath = urlPath;
 	// save local vars
 	viewFilePathEdit = {
 		viewFile: "user/profile",
@@ -82,7 +78,7 @@ function setupRouter(urlPath) {
 async function routerGetEdit(req, res, next) {
 	// require them to be logged in, or creates a redirect
 	var user = await arserver.getLoggedInUser(req);
-	if (!arserver.requireUserIsLoggedIn(req, res, user, routerBaseUrlPath + "/edit")) {
+	if (!arserver.requireUserIsLoggedIn(req, res, user)) {
 		// all done
 		return;
 	}
@@ -108,7 +104,7 @@ async function routerGetEdit(req, res, next) {
 async function routerPostEdit(req, res, next) {
 	// require them to be logged in, or creates a redirect
 	var user = await arserver.getLoggedInUser(req);
-	if (!arserver.requireUserIsLoggedIn(req, res, user, routerBaseUrlPath + "/edit")) {
+	if (!arserver.requireUserIsLoggedIn(req, res, user)) {
 		// all done
 		return;
 	}
@@ -129,7 +125,7 @@ async function routerPostEdit(req, res, next) {
 	var bretv = await crudAid.handleEditPost(req, res, next, UserModel, "", viewFilePathEdit, extraViewData);
 	if (!bretv) {
 		// just send them back to profile edit
-		res.redirect(routerBaseUrlPath + "/edit");
+		res.redirect(jrhExpress.reqOriginalUrl(req));
 	}
 }
 
@@ -139,7 +135,7 @@ async function routerGetIndex(req, res, next) {
 
 	// require them to be logged in, or creates a redirect
 	var user = await arserver.getLoggedInUser(req);
-	if (!arserver.requireUserIsLoggedIn(req, res, user, routerBaseUrlPath)) {
+	if (!arserver.requireUserIsLoggedIn(req, res, user)) {
 		// all done
 		return;
 	}

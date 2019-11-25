@@ -35,13 +35,6 @@ const JrResult = require("../helpers/jrresult");
 
 
 
-//---------------------------------------------------------------------------
-// module variables
-
-// remember base url path of router
-var routerBaseUrlPath;
-//---------------------------------------------------------------------------
-
 
 
 
@@ -52,9 +45,6 @@ var routerBaseUrlPath;
 function setupRouter(urlPath) {
 	// create express router
 	const router = express.Router();
-
-	// save urlPath (in module locals)
-	routerBaseUrlPath = urlPath;
 
 	// setup routes
 	router.get("/", routerGetIndex);

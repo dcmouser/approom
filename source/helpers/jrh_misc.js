@@ -523,6 +523,45 @@ function apiResultObjSuccessData(str, data) {
 
 
 
+
+
+
+//---------------------------------------------------------------------------
+/**
+ * Just a wrapper for process.nextTick for use when running an async await from a non async function
+ * Having a dedicated function for this makes it easier to search for.
+ * @example asyncNextTick(async () => {await anAsyncFunc(a,b,c);})
+ *
+ * @param {function} func
+ */
+function asyncNextTick(func) {
+	process.nextTick(func);
+}
+
+function asyncNextTickTest() {
+	// note this is NOT an async function, but can call one (asynchronously at next tick)
+	asyncNextTick(async () => {
+		await asyncTest("hello");
+	});
+}
+
+function asyncTest(dummyval) {
+	// this func returns a promise to await for
+	return dummyval;
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
 module.exports = {
 	mergeArraysKeepDupes,
 	mergeArraysDedupe,

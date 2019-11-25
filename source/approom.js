@@ -45,9 +45,6 @@ jrconfig.setYargs(createYargsObj());
 //---------------------------------------------------------------------------
 // this should be done by even the unit test runners
 arserver.setup();
-
-// configure server instance (jrconfig should be parsed first)
-arserver.processConfig();
 //---------------------------------------------------------------------------
 
 

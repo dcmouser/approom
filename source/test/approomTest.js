@@ -41,9 +41,6 @@ const UserModel = jrequire("models/user");
 
 // setup initial config stuff
 arserver.setup();
-
-// configure server instance
-arserver.processConfig();
 //---------------------------------------------------------------------------
 
 
