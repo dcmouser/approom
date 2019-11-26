@@ -341,6 +341,31 @@ function reqPrefixedValueArray(req, prefix, keyList) {
 
 
 /**
+ * Express helper to look for all items with a given prefix
+ *
+ * @param {*} req - express request object
+ * @param {string} prefix - the prefix string
+ * @returns an array of all form values with id prefix_ (used for checklists)
+ */
+function reqPrefixedCheckboxItemIds(reqbody, prefix) {
+	// look for ALL values for prefix+"_"+key and return an associative array of them
+	var valArray = [];
+	var id;
+	var keys = Object.keys(reqbody);
+	const prefixlen = prefix.length;
+	keys.forEach((keyname) => {
+		if (keyname.startsWith(prefix)) {
+			id = keyname.substr(prefixlen);
+			valArray.push(id);
+		}
+	});
+
+	return valArray;
+}
+
+
+
+/**
  * Deletes the varname from session data
  *
  * @param {obj} req
@@ -415,6 +440,7 @@ module.exports = {
 	reqValAsInt,
 	reqValFromList,
 	reqPrefixedValueArray,
+	reqPrefixedCheckboxItemIds,
 	forgetSessionVar,
 
 	getRequestLogString,

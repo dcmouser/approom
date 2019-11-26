@@ -159,12 +159,24 @@ class LogModel extends ModelBaseMongooseMinimal {
 				extraData,
 			};
 		} else {
-			logObj = {
-				type,
-				message,
-				...mergeData,
-				extraData,
-			};
+			if (true && mergeData) {
+				// merge mergeData into extraData since log object doesn't have other fields
+				logObj = {
+					type,
+					message,
+					extraData: {
+						...mergeData,
+						...extraData,
+					},
+				};
+			} else {
+				logObj = {
+					type,
+					message,
+					...mergeData,
+					extraData,
+				};
+			}
 		}
 
 		// create the model

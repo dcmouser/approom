@@ -25,6 +25,8 @@ const JrResult = require("../helpers/jrresult");
 const jrhText = require("../helpers/jrh_text");
 const jrhMisc = require("../helpers/jrh_misc");
 const jrhGrid = require("../helpers/jrh_grid");
+const jrdebug = require("../helpers/jrdebug");
+const jrhExpress = require("../helpers/jrh_express");
 
 // controllers
 const arserver = jrequire("arserver");
@@ -65,6 +67,8 @@ class CrudAid {
 		// list
 		const viewFilePathList = this.calcViewFile("list", modelClass);
 		router.get("/", async (req, res, next) => await this.handleListGet(req, res, next, modelClass, baseCrudUrl, viewFilePathList, extraViewData));
+		// post for bulk operations
+		router.post("/", async (req, res, next) => await this.handleListPost(req, res, next, modelClass, baseCrudUrl, viewFilePathList, extraViewData));
 		//---------------------------------------------------------------------------
 
 		//---------------------------------------------------------------------------
@@ -124,6 +128,41 @@ class CrudAid {
 			return true;
 		}
 
+		// present the list
+		return await this.doHandleList(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData);
+	}
+
+
+	async handleListPost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+		// this is called for bulk action
+
+		// get logged in user
+		var user = await arserver.getLoggedInUser(req);
+
+		// acl test
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, "list")) {
+			return true;
+		}
+
+		// get bulk action options
+		const formbody = req.body;
+		const bulkAction = formbody.bulkaction;
+		// get all checked checkboxes
+		const checkboxIdList = jrhExpress.reqPrefixedCheckboxItemIds(formbody, "checkboxid_");
+		// jrdebug.debugObj(checkboxIdList, "Bulk action " + bulkAction);
+
+		// do the bulk action and add result to session
+		var jrResult = await this.doBulkAction(user, modelClass, bulkAction, checkboxIdList);
+		jrResult.addToSession(req);
+
+		// present the list
+		return await this.doHandleList(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData);
+	}
+
+
+
+
+	async doHandleList(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		var jrResult = JrResult.makeNew();
 
 		// ATTN: We might set these differently based on who is logged in and looking at the list
@@ -161,8 +200,16 @@ class CrudAid {
 
 		return true;
 	}
+	//---------------------------------------------------------------------------
 
 
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
 	async handleAddGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
@@ -948,6 +995,46 @@ class CrudAid {
 		return rethtml;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	async doBulkAction(user, modelClass, bulkAction, idList) {
+
+		if (bulkAction === "delete") {
+			// do they have permission
+			// first check generic permission to delete ALL
+			const permission = "delete";
+			const objectType = modelClass.getAclName();
+			if (!user.hasPermission(permission, objectType)) {
+				// they don't have blanket permission, so we have to check each one
+				for (let i = 0; i < idList.length; ++i) {
+					if (!user.hasPermission(permission, objectType, idList[i])) {
+						return JrResult.makeError("Permission denied; you do not have permission to do this on item [" + idList[i] + "]");
+					}
+				}
+			}
+
+			// they have permission!
+			return await modelClass.doDeleteByIdStringArray(idList);
+		}
+
+		// dont know this bulk action
+		return JrResult.makeError("Internal error - unknown bulk operation [" + bulkAction + "]");
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
 
 
 }

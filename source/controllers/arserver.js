@@ -23,6 +23,7 @@ const connectMongo = require("connect-mongo");
 const http = require("http");
 const bodyParser = require("body-parser");
 const https = require("https");
+const favicon = require("serve-favicon");
 
 // json web tokens
 const jsonwebtoken = require("jsonwebtoken");
@@ -335,6 +336,9 @@ class AppRoomServer {
 		// early injection of pointer to this server into request
 		this.setupExpressEarlyInjections(expressApp);
 
+		// favicon
+		this.setupExpressFavIcon(expressApp);
+
 		// view and template stuff
 		this.setupExpressViews(expressApp);
 
@@ -378,6 +382,14 @@ class AppRoomServer {
 				return next();
 			});
 		}
+	}
+
+
+	setupExpressFavIcon(expressApp) {
+		// see https://github.com/expressjs/serve-favicon
+		const staticAbsoluteDir = this.getBaseSubDir("static");
+		const faviconObj = favicon(path.join(staticAbsoluteDir, "favicon.ico"));
+		expressApp.use(faviconObj);
 	}
 
 

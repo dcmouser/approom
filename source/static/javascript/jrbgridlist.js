@@ -50,8 +50,6 @@ function jrGridGrabFilterInputValues(tableId, tableData) {
 		return {};
 	}
 
-	// alert("Stage2");
-
 	var filterData = {};
 
 	var eleObj;
@@ -131,6 +129,25 @@ function jrGridToggleCheckboxes(tableId) {
 }
 
 
+function jrCountCheckedItems(tableId) {
+	// toggle the checkboxes
+	var formObj = document.forms["jrGridList_" + tableId];
+	if (!formObj) {
+		return 0;
+	}
+	var checkedCount = 0;
+	var items = formObj.getElementsByTagName("input");
+	for (var i = 0; i < items.length; i++) {
+		if (items[i].type === "checkbox") {
+			if (items[i].checked) {
+				checkedCount += 1;
+			}
+		}
+	}
+	return checkedCount;
+}
+
+
 function jrGridClearFilters(tableId) {
 	// toggle the checkboxes
 	var formObj = document.forms["jrGridList_" + tableId];
@@ -150,9 +167,48 @@ function jrGridClearFilters(tableId) {
 
 
 
-function jrGridBatchSubmit(tableId) {
+function requestGridBulkAction(tableId) {
 	// submit checkbox batch
-	alert("submitting checkbox batch");
+	
+	var itemCountString;
+	var itemCount = jrCountCheckedItems(tableId);
+	if (itemCount == 0) {
+		alert("You need to check some items first.");
+		return;
+	} else if (itemCount == 1) {
+		itemCountString = "this " + itemCount.toString() + " item";
+	} else {
+		itemCountString = "these " + itemCount.toString() + " items";
+	}
+
+	var formObj = document.forms["jrGridList_" + tableId];
+	if (!formObj) {
+		alert("Internal error -- table [" + tableId + "] not found.");
+		return;
+	}
+
+	// get bulk action
+	var bulkAction = formObj.elements.namedItem("bulkaction");
+	if (!bulkAction) {
+		alert("Internal error -- bulk action select for table [" + tableId + "] not found.");
+		return;
+	}
+	var actionString = bulkAction.options[bulkAction.selectedIndex].value;
+	
+	if (actionString == "") {
+		alert("You need to select a bulk action first.");
+		return;
+	}
+	
+	var bretv = window.confirm("Are you sure you want to " + actionString + " " + itemCountString + "?");
+	if (!bretv) {
+		return;
+	}
+
+
+
+	formObj.method = "POST";
+	formObj.submit();
 }
 
 

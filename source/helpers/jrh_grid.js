@@ -32,16 +32,18 @@ async function jrGridList(req, listHelperData) {
 
 	// destructure parts
 	const queryUrlData = listHelperData.queryUrlData;
+	const tableid = queryUrlData.tableId;
+
 
 	// form wrapper start
 	rethtml += `
-		<form id="jrGridList_${queryUrlData.tableId}" action="#">
+		<form id="jrGridList_${tableid}" action="#">
 		`;
 
 	// insert data object for the table
 	var gridListDataJson = JSON.stringify(queryUrlData);
 	rethtml += `<script>
-			var jrGridListData_${queryUrlData.tableId} = ${gridListDataJson};
+			var jrGridListData_${tableid} = ${gridListDataJson};
 		</script>
 		`;
 
@@ -61,6 +63,9 @@ async function jrGridList(req, listHelperData) {
 
 	// build table
 	rethtml += await jrGridListTable(req, listHelperData, queryUrlData);
+
+	// build "with all checked" input
+	rethtml += await jrGridListBulkActions(req, listHelperData, queryUrlData, tableid);
 
 	// add pager at bottom
 	rethtml += pagerHtml;
@@ -269,10 +274,43 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 
 
 
+/**
+ * Builds html for a with all checked drop down box and button
+ *
+ * @private
+ * @param {object} req
+ * @param {object} listHelperData
+ * @param {object} queryUrlData
+ */
+async function jrGridListBulkActions(req, listHelperData, queryUrlData, tableid) {
+	var rethtml = "";
+
+	// beginning
+	rethtml += "<div>With all checked: ";
+
+	// drop down box of choices
+	rethtml += `<select name="bulkaction">
+		<option value=""></option>
+		<option value="delete">Delete All</option>
+		</select>`;
+
+	// go button
+	rethtml += "<input name=\"bulkactiongo\" type=\"button\" value =\"GO\" onclick=\"requestGridBulkAction('" + tableid + "'); return false;\"></input>";
+
+	// end
+	rethtml += "</div><br/>";
+
+	return rethtml;
+}
+//---------------------------------------------------------------------------
 
 
 
 
+
+
+
+//---------------------------------------------------------------------------
 /**
  * Builds html for implementing a pager area for the grid
  *

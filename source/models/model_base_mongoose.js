@@ -25,6 +25,7 @@ const jrhMisc = require("../helpers/jrh_misc");
 const jrhMongo = require("../helpers/jrh_mongo");
 const jrhText = require("../helpers/jrh_text");
 const jrhValidate = require("../helpers/jrh_validate");
+const JrResult = require("../helpers/jrresult");
 
 
 
@@ -917,7 +918,7 @@ class ModelBaseMongoose {
 			}
 			// permission was granted
 			// get object being edited
-			obj = await this.findOneById(id);
+			obj = await this.mongooseModel.findOneById(id);
 			if (!obj) {
 				jrResult.pushError("Could not find " + this.getNiceName() + " with that Id.");
 			}
@@ -1005,6 +1006,26 @@ class ModelBaseMongoose {
 	}
 	//---------------------------------------------------------------------------
 
+
+
+	//---------------------------------------------------------------------------
+	static async doDeleteByIdStringArray(idList) {
+		// delete a bunch of items
+		var jrResult = JrResult.makeNew();
+
+		await this.mongooseModel.deleteMany({ _id: { $in: idList } }, (err) => {
+			if (err) {
+				jrResult.pushError("Error while tryign to bulk delete items: " + err.message);
+			}
+		});
+
+		if (!jrResult.isError()) {
+			jrResult.pushSuccess("Success. Deleted " + jrhText.jrPluralizeCount(idList.length, "item", "items") + ".");
+		}
+
+		return jrResult;
+	}
+	//---------------------------------------------------------------------------
 
 
 
