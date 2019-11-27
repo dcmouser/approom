@@ -55,6 +55,7 @@ const jrdebug = require("../helpers/jrdebug");
 const jrconfig = require("../helpers/jrconfig");
 const JrResult = require("../helpers/jrresult");
 const jrhHandlebars = require("../helpers/jrh_handlebars");
+const jrhText = require("../helpers/jrh_text");
 
 
 // approomserver globals
@@ -98,6 +99,8 @@ class AppRoomServer {
 		//
 		this.serverHttps = undefined;
 		this.serverHttp = undefined;
+		//
+		this.procesData = {};
 	}
 	//---------------------------------------------------------------------------
 
@@ -189,6 +192,9 @@ class AppRoomServer {
 		// perform global configuration actions that are shared and should be run regardless of the cli app or unit tests
 		// this happens BEFORE processing config file, so no config info is known yet
 
+		// save info about startup time
+		this.procesData.started = Date.now();
+
 		// load up requirements that avoid circular dependencies
 		this.setupLateRequires();
 
@@ -236,7 +242,7 @@ class AppRoomServer {
 
 		// tell user if we are running in development mode
 		if (this.isDevelopmentMode()) {
-			jrdebug.debug("Running in development mode (verbose errors shown to web client).");
+			jrdebug.debug("Running in development mode (verbose errors shown).");
 		}
 
 		// view/template extra stuff
@@ -1808,7 +1814,7 @@ class AppRoomServer {
 		// some errors we should trigger emergency alert
 		if (this.shouldAlertOnLogMessageType(type)) {
 			// trigger emegency alert
-			await this.emergencyAlert(type, "Critical error logged", message, req, extraDataPlus);
+			await this.emergencyAlert(type, "Critical error logged on " + jrhMisc.getNiceNowString(), message, req, extraDataPlus);
 		}
 	}
 
@@ -2426,7 +2432,6 @@ class AppRoomServer {
 
 
 
-
 	calcNodeJsInfo() {
 
 		// Getting commandline
@@ -2452,12 +2457,30 @@ class AppRoomServer {
 
 
 	calcDependencyInfo() {
-		const rawInfo = {
+		const rawData = {
 			jrequire: jrequire.calcDebugInfo(),
 			configPlugins: this.getConfigVal("plugins"),
 		};
 
-		return rawInfo;
+		return rawData;
+	}
+
+
+	calcAppInfo() {
+		// info about the app (version, author, etc.)
+
+		const started = jrhMisc.getNiceDateValString(this.procesData.started);
+		const uptime = jrhMisc.getNiceDurationTimeMs(Date.now() - this.procesData.started);
+
+		const rawData = {
+			appData: {
+				started,
+				uptime,
+			},
+			appGlobals: arGlobals,
+		};
+
+		return rawData;
 	}
 	//---------------------------------------------------------------------------
 
@@ -2562,20 +2585,21 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	setupExpressErrorHandlers(expressApp) {
 		// catch 404 and forward to error handler
-		expressApp.use((req, res, next) => {
+		const mythis = this;
+		expressApp.use(async function myCustomErrorHandler404(req, res, next) {
 			// if we get here, nothing else has caught the request, so WE push on a 404 error for the next handler
-			this.handle404Error(req);
+			await mythis.handle404Error(req);
 			next(httpErrors(404));
 		});
 
 
 		// and then this is the fall through NEXT handler, which gets called when an error is unhandled by previous use() or pushed on with next(httperrors())
 		// error handler
-		expressApp.use((err, req, res, next) => {
+		expressApp.use(function myFallbackErrorHandle(err, req, res, next) {
 			// decide whether to show full error info
 			var errorDisplay;
-			if (this.isDevelopmentMode() && err.status !== 404) {
-				errorDisplay = this.isDevelopmentMode() ? err : {};
+			if (mythis.isDevelopmentMode() && err.status !== 404) {
+				errorDisplay = mythis.isDevelopmentMode() ? err : {};
 			}
 			// render the error page
 			res.status(err.status || 500);
@@ -2589,7 +2613,6 @@ class AppRoomServer {
 
 
 
-
 		// set up some fatal exception catchers, so we can log these things
 
 
@@ -2598,6 +2621,7 @@ class AppRoomServer {
 
 			if (true) {
 				// just throw it to get app to crash exit
+				// console.log("In unhandledRejection rethrowing reason..");
 				throw reason;
 			}
 
@@ -2622,45 +2646,66 @@ class AppRoomServer {
 		});
 
 
-		process.on("uncaughtException", (err, origin) => {
+
+		process.on("uncaughtException", async (err, origin) => {
+			// the problem here is that nodejs does not want us callinc await inside here and making this async
+			// @see https://stackoverflow.com/questions/51660355/async-code-inside-node-uncaughtexception-handler
+			// but that makes it difficult to log fatal errors, etc. since our logging functions are async.
+			// SO we kludge around this by using an async handler here, which nodejs does not officially support
+			// the side effect of doing so is that nodejs keeps rethrowing our error and never exists
+			// our solution is to set a flag and force a manual exit when it recurses
+
+			if (err.escapeLoops) {
+				console.log("\n\n----------------------------------------------------------------------");
+				console.log("In uncaughtException forcing process exit, error:");
+				console.log(err);
+				console.log("----------------------------------------------------------------------\n\n");
+				process.exit();
+				return;
+			}
+
+			// set flag so we don't recursively loop
+			err.escapeLoops = true;
 			err.origin = origin;
-			this.handleFatalError(err);
 
 			// tell stderr console that we have logged the error, before we re-throw it to display it
+			/*
 			fs.writeSync(
 				process.stderr.fd,
 				`\n\n\n\nFATAL ERROR: Terminating and logging uncaught exception from ${origin}:\n\n`,
 			);
+			*/
+
+			// handle the fatal error (by logging it presumably)
+			await this.handleFatalError(err);
 
 			// throw it up, this will display it on console and crash out of node
 			throw err;
 		});
 
-
-
 	}
 	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
-	handleFatalError(err) {
+	async handleFatalError(err) {
 		// ATTN: test
 		if (true) {
 			// log the critical error to file and database
-			const errString = jrhMisc.objToString(err, false);
-			this.logm(this.DefLogTypeErrorCritical, errString);
+			const errString = "Fatal/critical error occurred on " + jrhMisc.getNiceNowString() + ":\n\n" + jrhMisc.objToString(err, false);
+			await this.logm(appconst.DefLogTypeErrorCriticalException, errString);
 		}
-		process.exitCode = 1;
+		process.exitCode = 2;
 	}
 
 
-	handle404Error(req) {
+	async handle404Error(req) {
 		// caller will pass this along to show 404 error to user; we can do extra stuff here
 		if (true) {
 			const msg = {
 				url: req.url,
 			};
-			this.logr(req, appconst.DefLogTypeError404, msg);
+			await this.logr(req, appconst.DefLogTypeError404, msg);
 		} else if (true) {
 			const msg = {
 				url: req.url,
@@ -2670,10 +2715,10 @@ class AppRoomServer {
 				smore: "still some more",
 			};
 			//
-			this.logr(req, appconst.DefLogTypeError404, msg, extraData);
+			await this.logr(req, appconst.DefLogTypeError404, msg, extraData);
 		} else {
 			const msg = "req.url: " + req.url;
-			this.logr(req, appconst.DefLogTypeError404, msg);
+			await this.logr(req, appconst.DefLogTypeError404, msg);
 		}
 	}
 	//---------------------------------------------------------------------------

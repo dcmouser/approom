@@ -13,6 +13,12 @@
 // modules
 const util = require("util");
 
+// 3rd party for durations
+const humanizeDuration = require("humanize-duration");
+
+
+
+
 
 
 //---------------------------------------------------------------------------
@@ -254,6 +260,26 @@ function getNiceNowString() {
  */
 function getPreciseNowString() {
 	return new Date(Date.now()).toISOString();
+}
+
+
+/**
+ * Return date as a string in a nice format, in local time zone
+ * @returns current date as string
+ */
+function getNiceDateValString(val) {
+	return new Date(val).toLocaleString();
+}
+
+
+/**
+ * Nice string expressing duration at useful granularity
+ *
+ * @param {integer} elapsedMs
+ * @returns
+ */
+function getNiceDurationTimeMs(elapsedMs) {
+	return humanizeDuration(elapsedMs);
 }
 //---------------------------------------------------------------------------
 
@@ -608,6 +634,8 @@ module.exports = {
 	stringArrayToNiceString,
 	getNiceNowString,
 	getPreciseNowString,
+	getNiceDateValString,
+	getNiceDurationTimeMs,
 
 	regexEscapeStr,
 	makeSafeForFormInput,
@@ -625,6 +653,8 @@ module.exports = {
 	apiResultObjFromStringError,
 	apiResultObjFromStringSuccess,
 	apiResultObjSuccessData,
+
+	asyncNextTick,
 
 	ErrorToHashableMapObject,
 };

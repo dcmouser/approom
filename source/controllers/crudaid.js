@@ -302,6 +302,9 @@ class CrudAid {
 		// in the ADD case, this should just return a new blank object or complain if user specified an id
 		var obj = await modelClass.validateAddEditFormIdMakeObj(jrResult, req, res, formTypeStr);
 
+		// add creator
+		obj.creator = user.getIdAsString();
+
 		if (!jrResult.isError()) {
 			// now save add changes
 			var saveFields = modelClass.getSaveFields(req, "crudAdd");
@@ -486,7 +489,7 @@ class CrudAid {
 				// success! drop down with new blank form, or alternatively, we could redirect to a VIEW obj._id page
 
 				// log the action
-				const idLabel = modelClass.getNiceName() + " #" + savedobj.getLogIdString();
+				const idLabel = savedobj.getLogIdString();
 				arserver.logr(req, "crud.edit", "edited " + idLabel);
 
 				// success message

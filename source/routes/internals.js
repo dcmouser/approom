@@ -41,6 +41,7 @@ function setupRouter(urlPath) {
 
 	// setup routes
 	router.get("/", routerGetIndex);
+	router.get("/appinfo", routerGetAppInfo);
 	router.get("/config_options", routerGetConfigOptions);
 	router.get("/routes", routerGetRoutes);
 	router.get("/structure_db", routerGetStructureDb);
@@ -72,6 +73,22 @@ async function routerGetIndex(req, res, next) {
 		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 	});
 }
+
+
+async function routerGetAppInfo(req, res, next) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+		// all done
+		return;
+	}
+
+	var rawData = arserver.calcAppInfo();
+	res.render("internals/appinfo", {
+		rawData,
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+	});
+}
+
+
 
 
 async function routerGetConfigOptions(req, res, next) {

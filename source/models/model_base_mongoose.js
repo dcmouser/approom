@@ -80,6 +80,9 @@ class ModelBaseMongoose {
 			version: {
 				type: Number,
 			},
+			creator: {
+				type: mongoose.Schema.ObjectId,
+			},
 			creationDate: {
 				type: Date,
 			},
@@ -99,6 +102,7 @@ class ModelBaseMongoose {
 	}
 
 	static getBaseSchemaDefinitionExtra() {
+		const UserModel = jrequire("models/user");
 		// extra info for schema field to aid display in our code
 		return {
 			_id: {
@@ -110,6 +114,11 @@ class ModelBaseMongoose {
 				label: "Ver.",
 				readOnly: ["edit"],
 				filterSize: 2,
+			},
+			creator: {
+				label: "Creator",
+				hide: ["edit"],
+				valueFunction: this.makeModelValueFunctionObjectId(UserModel),
 			},
 			creationDate: {
 				label: "Date created",
@@ -247,6 +256,7 @@ class ModelBaseMongoose {
 	static createModel(inobj) {
 		var obj = {
 			version: this.getVersion(),
+			creator: null,
 			creationDate: new Date(),
 			modificationDate: null,
 			disabled: 0,

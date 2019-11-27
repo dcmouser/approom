@@ -37,6 +37,7 @@ exports.DefLogTypeError404 = exports.DefLogTypeError + ".404";
 exports.DefLogTypeErrorCritical = "errorCrit";
 exports.DefLogTypeErrorCriticalDb = exports.DefLogTypeErrorCritical + ".db";
 exports.DefLogTypeErrorCriticalAcl = exports.DefLogTypeErrorCritical + ".acl";
+exports.DefLogTypeErrorCriticalException = exports.DefLogTypeErrorCritical + ".exc";
 //
 exports.DefLogTypeAdmin = "admin";
 exports.DefLogTypeDebug = "debug";

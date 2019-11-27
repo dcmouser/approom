@@ -167,20 +167,53 @@ function normalizePort(portval) {
  * @returns object containing all middleware, suitable for json stringifcation to console, etc.
  */
 function calcExpressMiddleWare(app) {
+	const jrdebug = require("./jrdebug");
+	var middlewareName, middlewareHint;
 	var appStack = app._router.stack;
 	return Array.prototype.map.call(appStack, (middleware, index) => {
-		return index + ". " + (middleware.handle.name || "<anonymous function>") + " " + getFileLine(middleware.handle);
-	});
-	// force the middleware to produce an error to locate the file.
-	function getFileLine(handler) {
-		try {
-			handler(undefined);
-		} catch (e) {
-			return e.stack.split("\n")[1];
+		middlewareName = middleware.handle.name;
+		if (middleware.handle.name === "router") {
+			middlewareHint = calcExpressMiddlewareRouterHint(middleware.handle);
+			middlewareName += " (" + middlewareHint + ")";
+			// jrdebug.debugObj(middleware.handle, "got router");
+		} else if (false && middleware.handle.name === "") {
+			middlewareHint = calcExpressMiddlewareRouterHint(middleware.handle);
+			middlewareName += " (" + middlewareHint + ")";
+			// jrdebug.debugObj(middleware.handle, "got blank");
 		}
-		return null;
-	}
+		return index + ". " + (middlewareName || "<anonymous function>") + " " + calcExpressMiddlewareGetFileLine(middleware.handle);
+	});
 }
+
+
+
+/**
+ * Helper funciton to try to get function file line from handle
+ *
+ * @param {*} handler
+ * @returns
+ */
+function calcExpressMiddlewareGetFileLine(handler) {
+	try {
+		handler(undefined);
+	} catch (e) {
+		return e.stack.split("\n")[1];
+	}
+	return null;
+}
+
+
+
+/**
+ * Get a hint for a router middleware?
+ *
+ * @param {*} middlewareHandle
+ */
+function calcExpressMiddlewareRouterHint(middlewareHandle) {
+	return "";
+}
+
+
 
 
 /**
