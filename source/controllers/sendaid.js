@@ -24,10 +24,16 @@ const jrequire = require("../helpers/jrequire");
 const jrdebug = require("../helpers/jrdebug");
 const JrResult = require("../helpers/jrresult");
 const jrhMisc = require("../helpers/jrh_misc");
+const jrlog = require("../helpers/jrlog");
 
 
 // controllers
 const arserver = jrequire("arserver");
+
+// constants
+const appconst = jrequire("appconst");
+
+
 
 
 
@@ -150,7 +156,7 @@ class SendAid {
 		if (this.flagDebugMode) {
 			// don't actually mail, instead just log it to console and file
 			jrdebug.debug("Config flag mailer:DEBUG set, so mail to [" + mailobj.to + "] not actually sent (sending mail to debug log instead).");
-			arserver.logm("debug.mailer", "mailer:DEBUG option preventing mail from being sent", null, mailobj);
+			arserver.logm(appconst.DefLogTypeDebug + ".mailer", "mailer:DEBUG option preventing mail from being sent", null, mailobj);
 			return JrResult.makeSuccess();
 		}
 

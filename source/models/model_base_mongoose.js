@@ -281,7 +281,7 @@ class ModelBaseMongoose {
 			return;
 		}
 
-		jrdebug.cdebug("Setting up model schema for " + this.getCollectionName());
+		// jrdebug.debug("Setting up model schema for " + this.getCollectionName());
 
 		// compile the model scheme
 		this.modelSchema = this.buildSchema(mongooser);
@@ -918,7 +918,7 @@ class ModelBaseMongoose {
 			}
 			// permission was granted
 			// get object being edited
-			obj = await this.mongooseModel.findOneById(id);
+			obj = await this.findOneById(id);
 			if (!obj) {
 				jrResult.pushError("Could not find " + this.getNiceName() + " with that Id.");
 			}

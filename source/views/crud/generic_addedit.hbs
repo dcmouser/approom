@@ -20,7 +20,7 @@
 
 	   	<div>
         	<input type="submit" value="SUBMIT" />
-			<input action="action" onclick="window.history.go(-1); return false;" type="button" value="CANCEL" />
+			<input action="action" onclick="window.location.href = '{{cancelUrl}}'; return false;" type="button" value="CANCEL" />
     	</div>
 
     	<input type="hidden" name="_id" value="{{reqbody._id}}">

@@ -55,7 +55,7 @@ function setupRouter(urlPath) {
 
 
 async function routerGetIndex(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("analytics", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission("analytics", req, res)) {
 		// all done
 		return;
 	}

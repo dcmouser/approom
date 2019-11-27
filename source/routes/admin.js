@@ -62,7 +62,7 @@ function setupRouter(urlPath) {
 
 
 async function routerGetIndex(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}
@@ -74,7 +74,7 @@ async function routerGetIndex(req, res, next) {
 
 
 async function routerGetTesting(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}
@@ -86,7 +86,7 @@ async function routerGetTesting(req, res, next) {
 
 
 async function routerGetTestingMakeappsrooms(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}
@@ -102,7 +102,7 @@ async function routerGetTestingMakeappsrooms(req, res, next) {
 
 
 async function routerPostTestingMakeappsrooms(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}

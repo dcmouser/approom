@@ -33,6 +33,19 @@ const roleAcl = require("role-acl");
 // requirement service locator
 const jrequire = require("../helpers/jrequire");
 
+const jrdebug = require("../helpers/jrdebug");
+
+
+// constnats
+const appconst = jrequire("appconst");
+
+
+
+
+
+
+
+
 
 
 
@@ -69,11 +82,11 @@ class AclAid {
 		//
 		this.createAclEditViewGrantsForResource("file");
 		// files can be viewed by friends of the ROOM
-		this.roleAcl.grant("roomFriend").execute("view").on("file");
+		this.roleAcl.grant("roomFriend").execute(appconst.DefAclActionView).on("file");
 
 		this.createAclEditViewGrantsForResource("roomdata");
 		// files can be viewed by friends of the ROOM
-		this.roleAcl.grant("roomFriend").execute("view").on("roomdata");
+		this.roleAcl.grant("roomFriend").execute(appconst.DefAclActionView).on("roomdata");
 
 		// crud model access
 		this.createAclEditViewGrantsForResource("log");
@@ -85,15 +98,15 @@ class AclAid {
 		this.createAclEditViewGrantsForResource("user");
 
 		// global site admin
-		this.roleAcl.grant("siteAdmin").execute("admin").on("site");
+		this.roleAcl.grant(appconst.DefAclRoleSiteAdmin).execute(appconst.DefAclActionAdmin).on(appconst.DefAclObjectTypeSite);
 
 		// admin also inherits the permissions of globalModerator
-		this.roleAcl.extendRole("siteAdmin", "globalModerator");
+		this.roleAcl.extendRole(appconst.DefAclRoleSiteAdmin, appconst.DefAclRoleGlobalMod);
 
-		this.roleAcl.grant("globalModerator").execute("analytics").on("site");
+		this.roleAcl.grant(appconst.DefAclRoleGlobalMod).execute(appconst.DefAclActionAnalytics).on(appconst.DefAclObjectTypeSite);
 
 		// visitor role is for people not logged in
-		this.roleAcl.grant("visitor");
+		this.roleAcl.grant(appconst.DefAclRoleVisitor);
 
 		return true;
 	}
@@ -101,21 +114,21 @@ class AclAid {
 
 	createAclEditViewGrantsForResource(resourceName) {
 		// permission groups
-		const permAll = ["add", "edit", "view", "list", "delete"];
-		const permReadOnly = ["view", "list"];
+		const permAll = [appconst.DefAclActionAdd, appconst.DefAclActionEdit, appconst.DefAclActionView, appconst.DefAclActionList, appconst.DefAclActionDelete];
+		const permReadOnly = [appconst.DefAclActionView, appconst.DefAclActionList];
 
 		// moderator permissions
-		this.roleAcl.grant("globalModerator").execute(permAll).on(resourceName);
-		this.roleAcl.grant(resourceName + "Moderator").execute(permAll).on(resourceName);
+		this.roleAcl.grant(appconst.DefAclRoleGlobalMod).execute(permAll).on(resourceName);
+		this.roleAcl.grant(appconst.DefAclRoleModerator).execute(permAll).on(resourceName);
 
 		// now owner
-		this.roleAcl.grant(resourceName + "Owner").execute(permAll).on(resourceName);
+		this.roleAcl.grant(appconst.DefAclRoleOwner).execute(permAll).on(resourceName);
 
 		// friend
-		this.roleAcl.grant(resourceName + "Friend").execute(permReadOnly).on(resourceName);
+		this.roleAcl.grant(appconst.DefAclRoleFriend).execute(permReadOnly).on(resourceName);
 
 		// untested; the idea here is that we want users to be able to access models that have the public:true property
-		this.roleAcl.grant("none").execute(permReadOnly).when({ Fn: "EQUALS", args: { public: true } }).on(resourceName);
+		this.roleAcl.grant(appconst.DefAclRoleNone).execute(permReadOnly).when({ Fn: "EQUALS", args: { public: true } }).on(resourceName);
 	}
 	//---------------------------------------------------------------------------
 
@@ -141,9 +154,19 @@ class AclAid {
 	async roleImpliesPermission(role, action, target) {
 		// return true if the role implies the action
 
-		var permission = await this.roleAcl.can(role).execute(action).on(target);
-		var granted = (permission.granted === true);
-		return granted;
+		try {
+			var permission = await this.roleAcl.can(role).execute(action).on(target);
+			var granted = (permission.granted === true);
+			return granted;
+		} catch (err) {
+			// this error can be thrown if a role is not registered any longer
+			// log it (critical error should trigger emergency alert email to admin)
+			const arserver = jrequire("arserver");
+			const errmsg = "Acl permission check threw error while asking about roleAcl.can(" + role + ").execute(" + action + ").on(" + target + "): " + err.message;
+			await arserver.logm(appconst.DefLogTypeErrorCriticalAcl, errmsg, err);
+			// return permission denied
+			return false;
+		}
 	}
 	//---------------------------------------------------------------------------
 

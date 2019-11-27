@@ -56,26 +56,17 @@ const jrconfig = require("../helpers/jrconfig");
 const JrResult = require("../helpers/jrresult");
 const jrhHandlebars = require("../helpers/jrh_handlebars");
 
+
 // approomserver globals
 const arGlobals = require("../approomglobals");
 
+// constants
+const appconst = jrequire("appconst");
 
 
 
 
 
-
-//---------------------------------------------------------------------------
-// global constants
-const DefRequiredLoginMessage = "You need to log in before you can access the requested page.";
-// log categories
-const DefLoggingCategoryError = "error";
-const DefLoggingCategoryError404 = "404";
-const DefLoggingCategoryDebug = "debug";
-const DefLoggingCategory = "";
-// log types
-const DefLogMessageTypeError404 = "error.404";
-//---------------------------------------------------------------------------
 
 
 
@@ -90,6 +81,12 @@ const DefLogMessageTypeError404 = "error.404";
  * @class AppRoomServer
  */
 class AppRoomServer {
+
+
+
+
+
+
 
 
 	//---------------------------------------------------------------------------
@@ -317,10 +314,10 @@ class AppRoomServer {
 		jrlog.setup(arGlobals.programName, this.getLogDir());
 
 		// winston logger files
-		jrlog.setupWinstonLogger(DefLoggingCategoryError, DefLoggingCategoryError);
-		jrlog.setupWinstonLogger(DefLoggingCategoryError404, DefLoggingCategoryError404);
-		jrlog.setupWinstonLogger(DefLoggingCategoryDebug, DefLoggingCategoryDebug);
-		jrlog.setupWinstonLogger(DefLoggingCategory, DefLoggingCategory);
+		jrlog.setupWinstonLogger(appconst.DefLogCategoryError, appconst.DefLogCategoryError);
+		jrlog.setupWinstonLogger(appconst.DefLogCategoryError404, appconst.DefLogCategoryError404);
+		jrlog.setupWinstonLogger(appconst.DefLogCategoryDebug, appconst.DefLogCategoryDebug);
+		jrlog.setupWinstonLogger(appconst.DefLogCategory, appconst.DefLogCategory);
 	}
 	//---------------------------------------------------------------------------
 
@@ -1775,28 +1772,43 @@ class AppRoomServer {
 			ip,
 		};
 		// hand off to more generic function
-		await this.logm(type, message, extraData, mergeData);
+		await this.logm(type, message, extraData, mergeData, req);
 	}
 	//---------------------------------------------------------------------------
 
 
 
 	//---------------------------------------------------------------------------
-	async logm(type, message, extraData, mergeData) {
+	async logm(type, message, extraData, mergeData, req) {
 		// we now want to hand off the job of logging this item to any registered file and/or db loggers
 		var flagLogToDb = true;
 		var flagLogToFile = true;
 
+		// extra data fixups
+		var extraDataPlus;
+		// if its an error object it doesnt handle properly to mongoose hash or log merge
+		if (extraData instanceof Error) {
+			extraDataPlus = jrhMisc.ErrorToHashableMapObject(extraData);
+		} else {
+			extraDataPlus = extraData;
+		}
+
 		// save to db
 		if (flagLogToDb) {
 			const logModelClass = this.calcLoggingCategoryModelFromLogMessageType(type);
-			await this.logmToDbModelClass(logModelClass, type, message, extraData, mergeData);
+			await this.logmToDbModelClass(logModelClass, type, message, extraDataPlus, mergeData);
 		}
 
 		// save to file
 		if (flagLogToFile) {
 			var category = this.calcLoggingCategoryFromLogMessageType(type);
-			jrlog.logMessage(category, type, message, extraData, mergeData);
+			jrlog.logMessage(category, type, message, extraDataPlus, mergeData);
+		}
+
+		// some errors we should trigger emergency alert
+		if (this.shouldAlertOnLogMessageType(type)) {
+			// trigger emegency alert
+			await this.emergencyAlert(type, "Critical error logged", message, req, extraDataPlus);
 		}
 	}
 
@@ -1810,7 +1822,7 @@ class AppRoomServer {
 			// error while logging to db.
 			// log EXCEPTION message (INCLUDES original) to file; note we may still try to log the original cleanly to file below
 			jrdebug.debug("Logging fatal exception to error log file..");
-			jrlog.logExceptionErrorWithMessage(DefLoggingCategoryError, err, type, message, extraData, mergeData);
+			jrlog.logExceptionErrorWithMessage(appconst.DefLogCategoryError, err, type, message, extraData, mergeData);
 			// rethrow exception
 			throw err;
 		}
@@ -1826,20 +1838,20 @@ class AppRoomServer {
 		// ATTN: we might replace this with something that loops through an array of prefixes associated with categories to make it easier and less hard coded
 
 		// 404s go in their own file
-		if (type.startsWith("error.404")) {
-			return DefLoggingCategoryError404;
+		if (type.startsWith(appconst.DefLogTypeError404)) {
+			return appconst.DefLogCategoryError404;
 		}
 
-		if (type.startsWith("error")) {
-			return DefLoggingCategoryError;
+		if (type.startsWith(appconst.DefLogTypeError)) {
+			return appconst.DefLogCategoryError;
 		}
 
-		if (type.startsWith("debug")) {
-			return DefLoggingCategoryDebug;
+		if (type.startsWith(appconst.DefLogTypeDebug)) {
+			return appconst.DefLogCategoryDebug;
 		}
 
 		// fallback to default
-		return DefLoggingCategory;
+		return appconst.DefLogCategory;
 	}
 
 
@@ -1848,6 +1860,14 @@ class AppRoomServer {
 
 		// currently there is only the one
 		return this.LogModel;
+	}
+
+
+	shouldAlertOnLogMessageType(type) {
+		if (type.startsWith(appconst.DefLogTypeErrorCritical)) {
+			return true;
+		}
+		return false;
 	}
 	//---------------------------------------------------------------------------
 
@@ -1968,21 +1988,21 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	async requireLoggedInSitePermission(permission, req, res, goalRelUrl) {
-		return await this.requireLoggedInPermission(permission, "site", null, req, res, goalRelUrl);
+	async aclRequireLoggedInSitePermission(permission, req, res, goalRelUrl) {
+		return await this.aclRequireLoggedInPermission(permission, "site", null, req, res, goalRelUrl);
 	}
 
-	async requireLoggedInPermission(permission, permissionObjType, permissionObjId, req, res, goalRelUrl) {
+	async aclRequireLoggedInPermission(permission, permissionObjType, permissionObjId, req, res, goalRelUrl) {
 		var user = await this.getLoggedInUser(req);
 		// we just need to check if the user is non-empty
 		if (!user) {
 			// user is not logged in
-			this.handleRequireLoginFailure(req, res, user, goalRelUrl, null, DefRequiredLoginMessage);
+			this.handleRequireLoginFailure(req, res, user, goalRelUrl, null, appconst.DefRequiredLoginMessage);
 			return false;
 		}
 
 		// they are logged in, but do they have permission required
-		const hasPermission = await user.hasPermission(permission, permissionObjType, permissionObjId);
+		const hasPermission = await user.aclHasPermission(permission, permissionObjType, permissionObjId);
 		if (!hasPermission) {
 			this.handleRequireLoginFailure(req, res, user, goalRelUrl, null, "You do not have sufficient permission to accesss that page.");
 			return false;
@@ -2003,7 +2023,7 @@ class AppRoomServer {
 		// otherwise return true
 
 		if (!user) {
-			this.handleRequireLoginFailure(req, res, user, goalRelUrl, failureRelUrl, DefRequiredLoginMessage);
+			this.handleRequireLoginFailure(req, res, user, goalRelUrl, failureRelUrl, appconst.DefRequiredLoginMessage);
 			return false;
 		}
 
@@ -2030,7 +2050,7 @@ class AppRoomServer {
 	divertToLoginPageThenBackToCurrentUrl(req, res) {
 		// redirect them to login page and then back to their currently requested page
 		var failureRelUrl = "/login";
-		this.rememberDivertedRelUrlAndGo(req, res, null, failureRelUrl, DefRequiredLoginMessage);
+		this.rememberDivertedRelUrlAndGo(req, res, null, failureRelUrl, appconst.DefRequiredLoginMessage);
 	}
 
 
@@ -2319,7 +2339,7 @@ class AppRoomServer {
 		}
 
 		// check permission
-		const hasPermission = await user.hasPermission(permission, permissionObjType, permissionObjId);
+		const hasPermission = await user.aclHasPermission(permission, permissionObjType, permissionObjId);
 
 		if (!hasPermission) {
 			// tell them they don't have access
@@ -2628,7 +2648,7 @@ class AppRoomServer {
 		if (true) {
 			// log the critical error to file and database
 			const errString = jrhMisc.objToString(err, false);
-			this.logm("errorCrit", errString);
+			this.logm(this.DefLogTypeErrorCritical, errString);
 		}
 		process.exitCode = 1;
 	}
@@ -2640,7 +2660,7 @@ class AppRoomServer {
 			const msg = {
 				url: req.url,
 			};
-			this.logr(req, DefLogMessageTypeError404, msg);
+			this.logr(req, appconst.DefLogTypeError404, msg);
 		} else if (true) {
 			const msg = {
 				url: req.url,
@@ -2650,10 +2670,10 @@ class AppRoomServer {
 				smore: "still some more",
 			};
 			//
-			this.logr(req, DefLogMessageTypeError404, msg, extraData);
+			this.logr(req, appconst.DefLogTypeError404, msg, extraData);
 		} else {
 			const msg = "req.url: " + req.url;
-			this.logr(req, DefLogMessageTypeError404, msg);
+			this.logr(req, appconst.DefLogTypeError404, msg);
 		}
 	}
 	//---------------------------------------------------------------------------
@@ -2709,13 +2729,30 @@ class AppRoomServer {
 			recipients = jrhMisc.mergeArraysKeepDupes(recipients, this.getEmergencyAlertContactsSecondary());
 		}
 
-		// jrdebug.debugObj(recipients, "Recipients");
-		// return 0;
+
+		// add req info to extra data of message
+		var extraDataPlus;
+		if (req) {
+			// add req info
+			var ip = (req.ip && req.ip.length > 7 && req.ip.substr(0, 7) === "::ffff:") ? req.ip.substr(7) : req.ip;
+			extraDataPlus = {
+				...extraData,
+				req_userid: (req.user ? req.user.id : undefined),
+				req_ip: ip,
+			};
+		} else {
+			extraDataPlus = extraData;
+		}
+
+
+		// announce on console
+		jrdebug.debug("Emergency error alert triggered (see error log): " + subject);
+
 
 		// loop and send to all recipients
 		await jrhMisc.asyncAwaitForEachFunctionCall(recipients, async (recipient) => {
 			// do something
-			await this.sendAid.sendMessage(recipient, subject, message, extraData, true);
+			await this.sendAid.sendMessage(recipient, subject, message, extraDataPlus, true);
 			++messageSentCount;
 		});
 

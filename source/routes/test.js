@@ -61,7 +61,7 @@ function setupRouter(urlPath) {
 
 
 async function routerGetIndex(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}
@@ -73,7 +73,7 @@ async function routerGetIndex(req, res, next) {
 
 
 async function routerGetMakeappsrooms(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}
@@ -89,7 +89,7 @@ async function routerGetMakeappsrooms(req, res, next) {
 
 
 async function routerPostMakeappsrooms(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}
@@ -119,7 +119,7 @@ async function routerPostMakeappsrooms(req, res, next) {
 
 //---------------------------------------------------------------------------
 async function routerGetTestEmergencyAlerts(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}
@@ -135,7 +135,7 @@ async function routerGetTestEmergencyAlerts(req, res, next) {
 
 
 async function routerPostTestEmergencyAlerts(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}

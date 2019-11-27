@@ -30,10 +30,10 @@ const jrhExpress = require("../helpers/jrh_express");
 
 // controllers
 const arserver = jrequire("arserver");
+const aclAid = jrequire("aclaid");
 
-
-
-
+// constants
+const appconst = jrequire("appconst");
 
 
 
@@ -124,7 +124,7 @@ class CrudAid {
 		var user = await arserver.getLoggedInUser(req);
 
 		// acl test
-		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, "list")) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appconst.DefAclActionList)) {
 			return true;
 		}
 
@@ -140,7 +140,7 @@ class CrudAid {
 		var user = await arserver.getLoggedInUser(req);
 
 		// acl test
-		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, "list")) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appconst.DefAclActionList)) {
 			return true;
 		}
 
@@ -224,7 +224,7 @@ class CrudAid {
 			modelClass.validateId(jrResult, id);
 			if (!jrResult.isError()) {
 				// acl test to VIEW the item we are CLONING
-				if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, "view", id)) {
+				if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appconst.DefAclActionView, id)) {
 					return true;
 				}
 				// get object being edited
@@ -239,7 +239,7 @@ class CrudAid {
 		}
 
 		// acl test to add
-		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, "add")) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appconst.DefAclActionAdd)) {
 			return true;
 		}
 
@@ -255,6 +255,9 @@ class CrudAid {
 			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, reqbody, jrResult, "add", helperData);
 		}
 
+		// cancel button goes where?
+		const cancelUrl = baseCrudUrl;
+
 		// render
 		res.render(viewFile, {
 			headline: "Add " + modelClass.getNiceName(),
@@ -264,6 +267,7 @@ class CrudAid {
 			helperData,
 			genericMainHtml,
 			baseCrudUrl,
+			cancelUrl,
 			crudAdd: true,
 			extraViewData,
 		});
@@ -287,7 +291,7 @@ class CrudAid {
 			return true;
 		}
 		// acl test
-		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, "add")) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appconst.DefAclActionAdd)) {
 			return true;
 		}
 
@@ -309,18 +313,53 @@ class CrudAid {
 				// log the action
 				arserver.logr(req, "crud.create", "created " + savedobj.getLogIdString());
 
-				if (!baseCrudUrl) {
-					// just return to caller saying they should take over
-					return false;
+
+				// now we need to add user as owner and update user in db
+				// add owner role
+				user.addRole(appconst.DefAclRoleOwner, modelClass.getAclName(), savedobj.getIdAsString());
+				// save user
+				if (true) {
+					await user.dbSave(jrResult);
+				} else {
+					// test save failure
+					jrResult.pushError("fake usersaveerror test message see crudAid.handleAddPost()");
 				}
 
-				if (flagRepresentAfterSuccess) {
-					// success, so clear reqbody and drop down so they can add another
-					reqbody = {};
-				} else {
-					jrResult.addToSession(req);
-					res.redirect(baseCrudUrl + "/view/" + savedobj.getIdAsString());
-					return true;
+				if (jrResult.isError()) {
+					// we had an error saving user; this is serious because it leaves an orphaned object
+					var errmsg = "There was an error saving the new owner role for " + user.getLogIdString() + " after creation of new object " + savedobj.getLogIdString() + ": " + jrResult.getErrorsAsString() + ".";
+					// so first things first lets delete the object
+					var jrResultFollowup = JrResult.makeNew();
+					savedobj.doDelete(jrResultFollowup);
+					if (jrResultFollowup.isError()) {
+						// yikes we couldn't even delete the object
+						errmsg += "  In addition, the newly created object could not be rolled back and deleted.";
+					} else {
+						// at least we rolled back the object
+						errmsg += "  The newly created object was successfully rolled back and deleted: " + jrResultFollowup.getErrorsAsString();
+					}
+					// now log error
+					arserver.logr(req, appconst.DefLogTypeErrorCriticalDb, errmsg);
+
+					// clear object
+					savedobj = null;
+				}
+
+
+				if (!jrResult.isError()) {
+					if (!baseCrudUrl) {
+						// just return to caller saying they should take over
+						return false;
+					}
+
+					if (flagRepresentAfterSuccess) {
+						// success, so clear reqbody and drop down so they can add another
+						reqbody = {};
+					} else {
+						jrResult.addToSession(req);
+						res.redirect(baseCrudUrl + "/view/" + savedobj.getIdAsString());
+						return true;
+					}
 				}
 			}
 		}
@@ -337,6 +376,9 @@ class CrudAid {
 			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, reqbody, jrResult, "add", helperData);
 		}
 
+		// cancel button goes where?
+		const cancelUrl = baseCrudUrl;
+
 		// re-present form for another add?
 		res.render(viewFile, {
 			headline: "Add " + modelClass.getNiceName(),
@@ -346,6 +388,7 @@ class CrudAid {
 			helperData,
 			genericMainHtml,
 			baseCrudUrl,
+			cancelUrl,
 			crudAdd: true,
 			extraViewData,
 		});
@@ -364,7 +407,7 @@ class CrudAid {
 		var id = req.params.id;
 
 		// validate and get id, this will also do an ACL test
-		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, "edit");
+		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, appconst.DefAclActionEdit);
 		if (jrResult.isError()) {
 			return false;
 		}
@@ -384,6 +427,9 @@ class CrudAid {
 			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, reqbody, jrResult, "edit", helperData);
 		}
 
+		// cancel button goes where?
+		const cancelUrl = baseCrudUrl + "/view/" + id;
+
 		// render
 		res.render(viewFile, {
 			headline: "Edit " + modelClass.getNiceName() + " #" + id,
@@ -393,6 +439,7 @@ class CrudAid {
 			helperData,
 			genericMainHtml,
 			baseCrudUrl,
+			cancelUrl,
 			extraViewData,
 		});
 
@@ -419,9 +466,10 @@ class CrudAid {
 			return false;
 		}
 		// acl test
-		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, "edit", id)) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appconst.DefAclActionEdit, id)) {
 			return false;
 		}
+
 
 		// process
 		var reqbody = req.body;
@@ -433,18 +481,22 @@ class CrudAid {
 			// now save edit changes
 			var saveFields = modelClass.getSaveFields(req, "crudEdit");
 			var savedobj = await modelClass.validateAndSave(jrResult, {}, true, req, req.body, saveFields, null, obj);
+
 			if (!jrResult.isError()) {
 				// success! drop down with new blank form, or alternatively, we could redirect to a VIEW obj._id page
 
 				// log the action
-				arserver.logr(req, "crud.edit", "edited " + savedobj.getLogIdString());
+				const idLabel = modelClass.getNiceName() + " #" + savedobj.getLogIdString();
+				arserver.logr(req, "crud.edit", "edited " + idLabel);
 
+				// success message
 				jrResult.pushSuccess(modelClass.getNiceName() + " saved on " + jrhMisc.getNiceNowString() + ".");
 				if (!baseCrudUrl) {
 					// just return to caller saying they should take over
 					jrResult.addToSession(req);
 					return false;
 				}
+
 				if (flagRepresentAfterSuccess) {
 					// fill form data with object properties and drop down to let user re-edit
 					reqbody = savedobj.modelObjPropertyCopy(true);
@@ -494,7 +546,7 @@ class CrudAid {
 		var id = req.params.id;
 
 		// get obj AND perform acl test
-		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, "view");
+		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, appconst.DefAclActionView);
 		if (jrResult.isError()) {
 			return true;
 		}
@@ -536,7 +588,7 @@ class CrudAid {
 		var id = req.params.id;
 
 		// get object AND perform ACL test
-		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, "delete");
+		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, appconst.DefAclActionDelete);
 		if (jrResult.isError()) {
 			return true;
 		}
@@ -553,6 +605,9 @@ class CrudAid {
 			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, obj, jrResult, "delete", helperData);
 		}
 
+		// cancel button goes where?
+		const cancelUrl = baseCrudUrl + "/view/" + id;
+
 		// render
 		res.render(viewFile, {
 			headline: "Delete " + modelClass.getNiceName() + " #" + id,
@@ -563,6 +618,7 @@ class CrudAid {
 			genericMainHtml,
 			crudDelete: true,
 			baseCrudUrl,
+			cancelUrl,
 			extraViewData,
 		});
 
@@ -571,6 +627,8 @@ class CrudAid {
 
 
 	async handleDeletePost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+		// ATTN: TODO 11/26/19 - we do not currently handle case of deleting the role of the owner of this object, or other people pointing to it, etc.
+
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
 
@@ -582,8 +640,11 @@ class CrudAid {
 		if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
 			return true;
 		}
+
+		// jrdebug.debugObj(modelClass, "ModelClass");
+
 		// get object AND perform ACL test
-		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, "delete");
+		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, appconst.DefAclActionDelete);
 		if (jrResult.isError()) {
 			return true;
 		}
@@ -603,6 +664,9 @@ class CrudAid {
 			// log the action
 			arserver.logr(req, "crud.delete", "deleted " + logIdString);
 
+			// ATTN: TODO 11/26/19
+			// we should delete any references to this object (e.g. owner roles, etc.)
+
 			// redirect
 			jrResult.addToSession(req);
 			res.redirect(baseCrudUrl);
@@ -621,6 +685,9 @@ class CrudAid {
 			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, obj, jrResult, "delete", helperData);
 		}
 
+		// cancel button goes where?
+		const cancelUrl = baseCrudUrl + "/view/" + id;
+
 		// failed, present them with delete page like view?
 		res.render(viewFile, {
 			headline: "Delete " + modelClass.getNiceName() + " #" + id,
@@ -629,6 +696,7 @@ class CrudAid {
 			genericMainHtml,
 			crudDelete: true,
 			baseCrudUrl,
+			cancelUrl,
 			extraViewData,
 		});
 
@@ -641,7 +709,7 @@ class CrudAid {
 		var user = await arserver.getLoggedInUser(req);
 
 		// acl test
-		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, "stats")) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appconst.DefAclActionStats)) {
 			return true;
 		}
 
@@ -769,8 +837,8 @@ class CrudAid {
 			// label
 			label = modelClass.getSchemaExtraFieldVal(fieldName, "label", fieldName);
 			// error
-			if (jrResult && jrResult.fields && jrResult.fields[fieldName]) {
-				err = jrResult.fields[fieldName];
+			if (jrResult && jrResult.errorFields && jrResult.errorFields[fieldName]) {
+				err = jrResult.errorFields[fieldName];
 			} else {
 				err = "";
 			}
@@ -1006,17 +1074,11 @@ class CrudAid {
 	async doBulkAction(user, modelClass, bulkAction, idList) {
 
 		if (bulkAction === "delete") {
-			// do they have permission
-			// first check generic permission to delete ALL
-			const permission = "delete";
+			// do they have permission to delete all in the list
+			const permission = appconst.DefAclActionDelete;
 			const objectType = modelClass.getAclName();
-			if (!user.hasPermission(permission, objectType)) {
-				// they don't have blanket permission, so we have to check each one
-				for (let i = 0; i < idList.length; ++i) {
-					if (!user.hasPermission(permission, objectType, idList[i])) {
-						return JrResult.makeError("Permission denied; you do not have permission to do this on item [" + idList[i] + "]");
-					}
-				}
+			if (!await user.aclHasPermissionOnAll(permission, objectType, idList)) {
+				return JrResult.makeError("Permission denied; you do not have permission to do this on these items.");
 			}
 
 			// they have permission!

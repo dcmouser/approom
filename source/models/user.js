@@ -30,7 +30,8 @@ const jrhValidate = require("../helpers/jrh_validate");
 const arserver = jrequire("arserver");
 const aclAid = jrequire("aclaid");
 
-
+// constants
+const appconst = jrequire("appconst");
 
 
 
@@ -252,9 +253,9 @@ class UserModel extends ModelBaseMongoose {
 			// now create model (this will also add default properties to it)
 			var user = UserModel.createModel(userAdminObj);
 			// set some permissions for it
-			user.addRole("siteAdmin", "site");
+			user.addRole(appconst.DefAclRoleSiteAdmin, appconst.DefAclObjectTypeSite);
 			// test acl roles
-			user.addRole("owner", "app", "A1234");
+			// user.addRole(appconst.DefAclRoleOwner, "app", "A1234");
 			// and save it
 			var userdoc = await user.dbSave();
 			//
@@ -285,7 +286,7 @@ class UserModel extends ModelBaseMongoose {
 			var user = UserModel.createModel(userAdminObj);
 			// set some permissions for it
 			// test acl roles
-			user.addRole("moderator", "app", "A1234");
+			// user.addRole(appconst.DefAclRoleModerator, "app", "A1234");
 			// and save it
 			var userdoc = await user.dbSave();
 			//
@@ -316,7 +317,7 @@ class UserModel extends ModelBaseMongoose {
 			// now create model (this will also add default properties to it)
 			var user = UserModel.createModel(userAdminObj);
 			// add visitor role
-			user.addRole("visitor", "site");
+			user.addRole(appconst.DefAclRoleVisitor, appconst.DefAclObjectTypeSite);
 			// and save it
 			var userdoc = await user.dbSave();
 			//
@@ -1107,9 +1108,20 @@ class UserModel extends ModelBaseMongoose {
 		this.roles = [];
 		return foundCount;
 	}
+	//---------------------------------------------------------------------------
 
 
-	async hasPermission(permission, objectType = null, objectId = null) {
+
+	//---------------------------------------------------------------------------
+	/**
+	 * Check if user has the permission on the object (or all objects of this type)
+	 *
+	 * @param {string} permission
+	 * @param {string} [objectType=null]
+	 * @param {string} [objectId=null]
+	 * @returns true if they have permission
+	 */
+	async aclHasPermission(permission, objectType = null, objectId = null) {
 		// ATTN: TODO -- 11/20/19 - CACHE this answers to this function (with short duration), to save computation time (though it currently does not require db access)
 		// return true if user has permission on (optional) objectId
 		// permissions are derived from roles
@@ -1126,9 +1138,38 @@ class UserModel extends ModelBaseMongoose {
 	}
 
 
+
+	/**
+	 * Check if user has permission to do the operation on ALL ids in the objectIdList
+	 *
+	 * @param {string} permission
+	 * @param {string} objectType
+	 * @param {array} objectIdList
+	 * @returns true if they have permission
+	 */
+	async aclHasPermissionOnAll(permission, objectType, objectIdList) {
+		if (!this.aclHasPermission(permission, objectType)) {
+			// they don't have blanket permission, so we have to check each one
+			for (let i = 0; i < objectIdList.length; ++i) {
+				if (!this.aclHasPermission(permission, objectType, objectIdList[i])) {
+					return false;
+				}
+			}
+		}
+
+		// success!
+		return true;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+	//---------------------------------------------------------------------------
 	async isSiteAdmin() {
 		// just check if user has permission to admin the site
-		return await this.hasPermission("admin", "site");
+		return await this.aclHasPermission("admin", "site");
 	}
 
 
@@ -1213,7 +1254,6 @@ class UserModel extends ModelBaseMongoose {
 		return false;
 	}
 	//---------------------------------------------------------------------------
-
 
 
 

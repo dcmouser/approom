@@ -2,11 +2,12 @@
 
     <form action="" method="post">
 
+
 {{#if flagFullRegistrationForm}}
       <div>
         <label>Requested Username:</label>
         <input type="text" name="username" value="{{reqbody.username}}" />
-          <span class="jrErrorInline">{{jrResult.fields.username}}</span>
+          <span class="jrErrorInline">{{jrResult.errorFields.username}}</span>
         <br/>
       </div>
 {{/if}}
@@ -15,14 +16,14 @@
       <div>
         <label>Requested Email:</label>
         <input type="text" name="email" value="{{reqbody.email}}"/>
-          <span class="jrErrorInline">{{jrResult.fields.email}}</span>
+          <span class="jrErrorInline">{{jrResult.errorFields.email}}</span>
       </div>
 
 {{#if flagFullRegistrationForm}}
       <div>
         <label>Password:</label>
         <input type="password" name="password" value="{{reqbody.password}}" />
-          <span class="jrErrorInline">{{jrResult.fields.password}}</span>
+          <span class="jrErrorInline">{{jrResult.errorFields.password}}</span>
       </div>
 {{/if}}
 

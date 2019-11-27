@@ -63,7 +63,7 @@ function setupRouter(urlPath) {
 
 
 async function routerGetIndex(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}
@@ -75,7 +75,7 @@ async function routerGetIndex(req, res, next) {
 
 
 async function routerGetConfigOptions(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}
@@ -89,7 +89,7 @@ async function routerGetConfigOptions(req, res, next) {
 
 
 async function routerGetRoutes(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}
@@ -103,7 +103,7 @@ async function routerGetRoutes(req, res, next) {
 
 
 async function routerGetStructureDb(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}
@@ -117,7 +117,7 @@ async function routerGetStructureDb(req, res, next) {
 
 
 async function routerGetResourceuse(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}
@@ -133,7 +133,7 @@ async function routerGetResourceuse(req, res, next) {
 
 
 async function routerGetServerinfo(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}
@@ -149,7 +149,7 @@ async function routerGetServerinfo(req, res, next) {
 
 
 async function routerGetAclinfo(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}
@@ -165,7 +165,7 @@ async function routerGetAclinfo(req, res, next) {
 
 
 async function routerGetNodejs(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}
@@ -181,7 +181,7 @@ async function routerGetNodejs(req, res, next) {
 
 
 async function routerDependencies(req, res, next) {
-	if (!await arserver.requireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
 		// all done
 		return;
 	}

@@ -314,6 +314,21 @@ function isSimpleObject(maybeObj) {
 }
 
 
+
+/**
+ * Returns true if the passed value is derived from the Object class/constructor.
+ * @param {*} maybeObj
+ * @returns true if the passed value is a object
+ */
+function isObjectHashMappableType(maybeObj) {
+	// return (maybeObj !== undefined && maybeObj !== null && maybeObj.constructor === Object);
+	var type = typeof maybeObj;
+	return type === "object" && !!maybeObj;
+}
+
+
+
+
 /**
  * Returns true if the object passed is a promise
  * @see <a href="https://stackoverflow.com/questions/27746304/how-do-i-tell-if-an-object-is-a-promise">stackoverflow post</a>
@@ -554,6 +569,17 @@ function asyncTest(dummyval) {
 
 
 
+//---------------------------------------------------------------------------
+function ErrorToHashableMapObject(err) {
+	// mongo (and other cases) may have trouble getting properties of err objects (err instanceof Error), so we convert it to nice object
+	const obj = {
+		name: err.name,
+		message: err.message,
+		stack: err.stack,
+	};
+	return obj;
+}
+//---------------------------------------------------------------------------
 
 
 
@@ -586,7 +612,7 @@ module.exports = {
 	regexEscapeStr,
 	makeSafeForFormInput,
 
-	isSimpleObject,
+	isSimpleObject, isObjectHashMappableType,
 	isPromise,
 	createObjectFromJsonParse,
 
@@ -599,4 +625,6 @@ module.exports = {
 	apiResultObjFromStringError,
 	apiResultObjFromStringSuccess,
 	apiResultObjSuccessData,
+
+	ErrorToHashableMapObject,
 };
