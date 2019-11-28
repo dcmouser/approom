@@ -1609,7 +1609,7 @@ class AppRoomServer {
 			await mongoose.connect(mongoUrl, mongooseOptions);
 
 			// now setup each of the model schemas
-			const modelClassList = this.getmodelClassList();
+			const modelClassList = this.getModelClassList();
 			await jrhMisc.asyncAwaitForEachFunctionCall(modelClassList, async (modelClass) => {
 				await this.setupModelSchema(mongoose, modelClass);
 			});
@@ -1634,7 +1634,7 @@ class AppRoomServer {
 	}
 
 
-	getmodelClassList() {
+	getModelClassList() {
 		// get array of all required model modules
 		const modelClassList = [
 			// core models

@@ -101,7 +101,7 @@ async function routerPostMakeappsrooms(req, res, next) {
 
 	// do it using adminaid
 	const addCountApps = 5;
-	const addCountRooms = 25;
+	const addCountRooms = 3;
 	var bretv = await adminAid.addTestAppsAndRooms(req, addCountApps, addCountRooms);
 	//
 	if (bretv) {

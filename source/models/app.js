@@ -17,6 +17,8 @@ const jrequire = require("../helpers/jrequire");
 
 // our helper modules
 const jrhValidate = require("../helpers/jrh_validate");
+const jrdebug = require("../helpers/jrdebug");
+const jrhMongo = require("../helpers/jrh_mongo");
 
 // models
 const ModelBaseMongoose = jrequire("models/model_base_mongoose");
@@ -189,6 +191,59 @@ class AppModel extends ModelBaseMongoose {
 		return ids;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// delete any ancillary deletions AFTER the normal delete
+	static async deepPostDeleteById(id, jrResult) {
+		// for app model, this means deleting associated rooms
+		const roomIdList = await this.getAssociatedRoomsByAppId(id, jrResult);
+		if (jrResult.isError()) {
+			return;
+		}
+
+		if (roomIdList.length === 0) {
+			return;
+		}
+
+		// delete them
+		const RoomModel = jrequire("models/room");
+		await RoomModel.doDeleteByIdStringArrayDeep(roomIdList, jrResult);
+		if (!jrResult.isError()) {
+			jrResult.pushSuccess("Deleted " + RoomModel.getNiceNamePluralized(roomIdList.length) + " attached to " + this.getNiceName() + " #" + id + ".");
+		}
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	static async getAssociatedRoomsByAppId(appid, jrResult) {
+		// get a list (array) of all room ids that are attached to this app
+
+		const RoomModel = jrequire("models/room");
+		var roomObjs = await RoomModel.mongooseModel.find({ appid }, "_id", (err) => {
+			if (err) {
+				jrResult.pushError("Error while trying to find rooms attached to app #" + appid + ": " + err.message);
+			}
+		});
+		if (jrResult.isError()) {
+			return null;
+		}
+
+		// convert array of objects with _id fields to simple id array
+		var roomIds = jrhMongo.convertArrayOfObjectIdsToIdArray(roomObjs);
+
+		return roomIds;
+	}
+	//---------------------------------------------------------------------------
+
 
 
 }

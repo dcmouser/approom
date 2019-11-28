@@ -333,7 +333,7 @@ class CrudAid {
 					var errmsg = "There was an error saving the new owner role for " + user.getLogIdString() + " after creation of new object " + savedobj.getLogIdString() + ": " + jrResult.getErrorsAsString() + ".";
 					// so first things first lets delete the object
 					var jrResultFollowup = JrResult.makeNew();
-					savedobj.doDelete(jrResultFollowup);
+					await savedobj.doDeleteDeep(jrResultFollowup);
 					if (jrResultFollowup.isError()) {
 						// yikes we couldn't even delete the object
 						errmsg += "  In addition, the newly created object could not be rolled back and deleted.";
@@ -657,7 +657,7 @@ class CrudAid {
 		const logIdString = obj.getLogIdString();
 
 		// process delete
-		obj.doDelete(jrResult);
+		await obj.doDeleteDeep(jrResult);
 
 		// on success redirect to listview
 		if (!jrResult.isError()) {
@@ -1085,7 +1085,7 @@ class CrudAid {
 			}
 
 			// they have permission!
-			return await modelClass.doDeleteByIdStringArray(idList);
+			return await modelClass.doDeleteByIdStringArrayDeep(idList);
 		}
 
 		// dont know this bulk action

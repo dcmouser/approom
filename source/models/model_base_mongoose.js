@@ -68,6 +68,10 @@ class ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 
 
+
+
+
+
 	//---------------------------------------------------------------------------
 	static getBaseSchemaDefinition() {
 		// some base schema properties for ALL models
@@ -163,6 +167,8 @@ class ModelBaseMongoose {
 		};
 	}
 	//---------------------------------------------------------------------------
+
+
 
 
 
@@ -271,10 +277,10 @@ class ModelBaseMongoose {
 	// ATTN: TODO - this is messy and confusing, fix it
 	getModelObjPropertyList() {
 		// cached value
-		if (this.constructor.modelPropertyList) {
-			return this.constructor.modelPropertyList;
+		if (this.getModelClass().modelPropertyList) {
+			return this.getModelClass().modelPropertyList;
 		}
-		var propkeys = Object.keys(this.constructor.getSchemaDefinition());
+		var propkeys = Object.keys(this.getModelClass().getSchemaDefinition());
 		return propkeys;
 	}
 	//---------------------------------------------------------------------------
@@ -364,7 +370,7 @@ class ModelBaseMongoose {
 		}
 		// success
 		// we don't push a success result here because we would see it in operations we dont want messages on
-		// jrResult.pushSuccess(this.getmodelClass().getNiceName() + " saved on " + jrhMisc.getNiceNowString() + ".");
+		// jrResult.pushSuccess(this.getModelClass().getNiceName() + " saved on " + jrhMisc.getNiceNowString() + ".");
 		return retv;
 	}
 	//---------------------------------------------------------------------------
@@ -703,12 +709,15 @@ class ModelBaseMongoose {
 	getLogIdString() {
 		// human readable id string for use in log messages that we could parse to get a link
 		// ATTN: note we use the "this.constructor.staticfunc" syntax to access static class function from member
-		return this.constructor.getLoggingString() + "#" + this.getIdAsString();
+		return this.getModelClass().getLoggingString() + "#" + this.getIdAsString();
 	}
 
-	getmodelClass() {
+
+	getModelClass() {
+		// js pattern to get the CLASS of a particular instance; useful for access class static properties or member functions
 		return this.constructor;
 	}
+
 
 	getExtraData(key, defaultVal) {
 		var val = this.extraData.get(key);
@@ -802,12 +811,116 @@ class ModelBaseMongoose {
 
 		return obj;
 	}
+	//---------------------------------------------------------------------------
 
 
-	doDelete(jrResult) {
+
+
+
+
+	//---------------------------------------------------------------------------
+	/**
+	 * Just a pure delete in the database of this object
+	 * @param {object} jrResult
+	 */
+	async doDeleteShallow(jrResult) {
 		this.remove();
 	}
+
+
+	/**
+	 * Default the object AND do any cleanup, like deleteing accessory objects, removing references, etc.
+	 * By default just calls doDeleteShallow
+	 *
+	 * @param {object} jrResult
+	 */
+	async doDeleteDeep(jrResult) {
+		var id = this.getId();
+		this.doDeleteShallow(jrResult);
+		if (!jrResult.isError()) {
+			await this.getModelClass().deepPostDeleteById(id, jrResult);
+		}
+	}
+
+
+
+	static async doDeleteByIdShallow(id, jrResult) {
+		// direct database delete of many
+		await this.mongooseModel.deleteOne({ _id: id }, (err) => {
+			if (err) {
+				jrResult.pushError("Error while tryign to delete " + this.getNiceName() + "#" + id + ": " + err.message);
+			}
+		});
+	}
+
+
+	static async doDeleteByIdDeep(id, jrResult) {
+		await this.doDeleteByIdShallow(id, jrResult);
+		if (!jrResult.isError()) {
+			await this.deepPostDeleteById(id, jrResult);
+		}
+	}
+
+
+	static async doDeleteByIdStringArrayShallow(idList) {
+		// delete a bunch of items
+		var jrResult = JrResult.makeNew();
+
+		// direct database delete of many
+		await this.mongooseModel.deleteMany({ _id: { $in: idList } }, (err) => {
+			if (err) {
+				jrResult.pushError("Error while tryign to bulk delete " + this.getNiceNamePluralized(idList.length) + ": " + err.message);
+			}
+		});
+
+		if (!jrResult.isError()) {
+			jrResult.pushSuccess("Success. Deleted " + this.getNiceNamePluralized(idList.length) + ".");
+		}
+
+		return jrResult;
+	}
+
+
+	static async doDeleteByIdStringArrayDeep(idList) {
+		// delete a bunch of items deeply
+		var jrResult = JrResult.makeNew();
+		var deleteCount = 0;
+
+		// walk the list and do a deep delete of each
+		var id;
+		for (let i = 0; i < idList.length; ++i) {
+			id = idList[i];
+			await this.doDeleteByIdDeep(id, jrResult);
+			if (jrResult.isError()) {
+				break;
+			}
+			++deleteCount;
+		}
+
+		if (!jrResult.isError()) {
+			jrResult.pushSuccess("Success. Deleted " + this.getNiceNamePluralized(deleteCount) + ".");
+		} else {
+			if (deleteCount > 0) {
+				jrResult.pushError("Deleted " + this.getNiceNamePluralized(deleteCount) + " before error occurred.");
+			}
+		}
+
+		return jrResult;
+	}
+
+
+	// delete any ancillary deletions AFTER the normal delete
+	static async deepPostDeleteById(id, jrResult) {
+		// by default, nothing to do; subclasses can replace this
+	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
 
 
 	//---------------------------------------------------------------------------
@@ -1018,25 +1131,15 @@ class ModelBaseMongoose {
 
 
 
+
 	//---------------------------------------------------------------------------
-	static async doDeleteByIdStringArray(idList) {
-		// delete a bunch of items
-		var jrResult = JrResult.makeNew();
-
-		await this.mongooseModel.deleteMany({ _id: { $in: idList } }, (err) => {
-			if (err) {
-				jrResult.pushError("Error while tryign to bulk delete items: " + err.message);
-			}
-		});
-
-		if (!jrResult.isError()) {
-			jrResult.pushSuccess("Success. Deleted " + jrhText.jrPluralizeCount(idList.length, "item", "items") + ".");
+	static getNiceNamePluralized(num) {
+		if (num === 1) {
+			return num.toString() + " " + this.getNiceName();
 		}
-
-		return jrResult;
+		return num.toString() + " " + this.getNiceName() + "s";
 	}
 	//---------------------------------------------------------------------------
-
 
 
 }

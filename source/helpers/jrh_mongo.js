@@ -126,6 +126,19 @@ function isValidMongooseObjectId(str) {
 
 
 
+/**
+ * We are passed an array of objects, with _id being a field of each object.
+ * We return an array of just the ids of each object
+ * @todo this is probably a fancy js way to get these quickly
+ * @see <a href="https://stackoverflow.com/questions/19590865/from-an-array-of-objects-extract-value-of-a-property-as-array"> stackoverflow </a>
+ *
+ * @param {array} objArray
+ */
+function convertArrayOfObjectIdsToIdArray(objArray) {
+	const idArray = objArray.map((oneObj) => oneObj._id);
+	return idArray;
+}
+//---------------------------------------------------------------------------
 
 
 
@@ -135,5 +148,6 @@ module.exports = {
 	calcDatabaseStructure,
 	calcDatabaseResourceUse,
 	isValidMongooseObjectId,
+	convertArrayOfObjectIdsToIdArray,
 };
 
