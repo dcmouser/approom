@@ -18,6 +18,7 @@ const jrequire = require("../helpers/jrequire");
 
 // controllers
 const arserver = jrequire("arserver");
+const appconst = jrequire("appconst");
 
 // our helper modules
 const jrdebug = require("../helpers/jrdebug");
@@ -30,6 +31,8 @@ const JrResult = require("../helpers/jrresult");
 
 
 
+
+
 /**
  *The main base class we use to derive all database model objects
  *
@@ -37,6 +40,13 @@ const JrResult = require("../helpers/jrresult");
  */
 class ModelBaseMongoose {
 
+
+	// CLASS data, which can be prolematic when we try to access from an instance (via getModelClass())
+	// this.mongooseclass <-- this is the one we get caught on as being undefined
+	// this.crudBaseUrl
+	// this.schema
+	// this.modelSchema
+	// this.modelPropertyList
 
 	//---------------------------------------------------------------------------
 	// subclasses implement these
@@ -69,6 +79,21 @@ class ModelBaseMongoose {
 
 
 
+	//---------------------------------------------------------------------------
+	getModelClass() {
+		// new attempt, a subclass overriding function that returns hardcoded class
+		return ModelBaseMongoose;
+	}
+	//---------------------------------------------------------------------------
+
+	//---------------------------------------------------------------------------
+	getModelClassOLDUNUSED() {
+		// js pattern to get the CLASS of a particular instance; useful for access class static properties or member functions
+		// ATTENTION: THIS CAN BREAK 11/29/19 when we try to access "this" inside the static function we invoke.
+		// FUCKED JS &%(*#(*&(*&^()*&^()*&))))
+		return this.constructor;
+	}
+	//---------------------------------------------------------------------------
 
 
 
@@ -136,11 +161,15 @@ class ModelBaseMongoose {
 			},
 			disabled: {
 				label: "Disabled?",
-				choices: {
-					0: "Enabled",
-					1: "Disabled",
-					2: "Deleted",
+				format: "choices",
+				choices: appconst.DefDeleteDisableLabels,
+				/*
+				{
+					[appconst.DefMdbEnable]: "Enabled",
+					[appconst.DefMdbDisable]: "Disabled",
+					[appconst.DefMdbVirtDelete]: "Deleted",
 				},
+				*/
 				filterSize: 3,
 			},
 			extraData: {
@@ -257,6 +286,20 @@ class ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 
 
+
+	//---------------------------------------------------------------------------
+	static getMongooseModel() {
+		return this.mongooseModel;
+	}
+
+	static setMongooseModel(val) {
+		this.mongooseModel = val;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
 	//---------------------------------------------------------------------------
 	// create new obj
 	static createModel(inobj) {
@@ -313,7 +356,8 @@ class ModelBaseMongoose {
 
 		// create the mongoose model
 		var collectionName = this.getCollectionName();
-		this.mongooseModel = await mongooser.model(collectionName, this.modelSchema);
+		this.setMongooseModel(await mongooser.model(collectionName, this.modelSchema));
+
 
 		// ensure the collection is created now even though it's blank
 		// ATTN: 5/11/19 - mongoose/mongodb is having a weird fit here, where it is throwing an error
@@ -610,6 +654,7 @@ class ModelBaseMongoose {
 		return val;
 	}
 
+
 	static async validateShortcodeUnique(jrResult, key, val, existingModel) {
 
 		// first basic validation (and fixing) of shortcode syntax
@@ -713,11 +758,6 @@ class ModelBaseMongoose {
 	}
 
 
-	getModelClass() {
-		// js pattern to get the CLASS of a particular instance; useful for access class static properties or member functions
-		return this.constructor;
-	}
-
 
 	getExtraData(key, defaultVal) {
 		var val = this.extraData.get(key);
@@ -743,6 +783,36 @@ class ModelBaseMongoose {
 		this.modificationDate = new Date();
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 	//---------------------------------------------------------------------------
@@ -772,6 +842,26 @@ class ModelBaseMongoose {
 		return retv;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -818,102 +908,52 @@ class ModelBaseMongoose {
 
 
 
-	//---------------------------------------------------------------------------
-	/**
-	 * Just a pure delete in the database of this object
-	 * @param {object} jrResult
-	 */
-	async doDeleteShallow(jrResult) {
-		this.remove();
-	}
-
-
-	/**
-	 * Default the object AND do any cleanup, like deleteing accessory objects, removing references, etc.
-	 * By default just calls doDeleteShallow
-	 *
-	 * @param {object} jrResult
-	 */
-	async doDeleteDeep(jrResult) {
-		var id = this.getId();
-		this.doDeleteShallow(jrResult);
-		if (!jrResult.isError()) {
-			await this.getModelClass().deepPostDeleteById(id, jrResult);
-		}
-	}
 
 
 
-	static async doDeleteByIdShallow(id, jrResult) {
-		// direct database delete of many
-		await this.mongooseModel.deleteOne({ _id: id }, (err) => {
-			if (err) {
-				jrResult.pushError("Error while tryign to delete " + this.getNiceName() + "#" + id + ": " + err.message);
-			}
-		});
-	}
 
 
-	static async doDeleteByIdDeep(id, jrResult) {
-		await this.doDeleteByIdShallow(id, jrResult);
-		if (!jrResult.isError()) {
-			await this.deepPostDeleteById(id, jrResult);
-		}
-	}
 
 
-	static async doDeleteByIdStringArrayShallow(idList) {
-		// delete a bunch of items
-		var jrResult = JrResult.makeNew();
-
-		// direct database delete of many
-		await this.mongooseModel.deleteMany({ _id: { $in: idList } }, (err) => {
-			if (err) {
-				jrResult.pushError("Error while tryign to bulk delete " + this.getNiceNamePluralized(idList.length) + ": " + err.message);
-			}
-		});
-
-		if (!jrResult.isError()) {
-			jrResult.pushSuccess("Success. Deleted " + this.getNiceNamePluralized(idList.length) + ".");
-		}
-
-		return jrResult;
-	}
 
 
-	static async doDeleteByIdStringArrayDeep(idList) {
-		// delete a bunch of items deeply
-		var jrResult = JrResult.makeNew();
-		var deleteCount = 0;
-
-		// walk the list and do a deep delete of each
-		var id;
-		for (let i = 0; i < idList.length; ++i) {
-			id = idList[i];
-			await this.doDeleteByIdDeep(id, jrResult);
-			if (jrResult.isError()) {
-				break;
-			}
-			++deleteCount;
-		}
-
-		if (!jrResult.isError()) {
-			jrResult.pushSuccess("Success. Deleted " + this.getNiceNamePluralized(deleteCount) + ".");
-		} else {
-			if (deleteCount > 0) {
-				jrResult.pushError("Deleted " + this.getNiceNamePluralized(deleteCount) + " before error occurred.");
-			}
-		}
-
-		return jrResult;
-	}
 
 
-	// delete any ancillary deletions AFTER the normal delete
-	static async deepPostDeleteById(id, jrResult) {
-		// by default, nothing to do; subclasses can replace this
-	}
-	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1140,6 +1180,134 @@ class ModelBaseMongoose {
 		return num.toString() + " " + this.getNiceName() + "s";
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	/**
+	 * Delete the object AND do any cleanup, like deleteing accessory objects, removing references, etc.
+	 *
+	 * @param {string} mode
+	 * @param {object} jrResult
+	 */
+	async doDeleteDisable(mode, jrResult) {
+		// just hand off to static class version
+		await this.getModelClass().doDeleteDisableById(this.getId(), mode, jrResult);
+	}
+
+
+
+	/**
+	 * Delete the object AND do any cleanup, like deleteing accessory objects, removing references, etc.
+	 *
+	 * @static
+	 * @param {string} id
+	 * @param {string} mode
+	 * @param {object} jrResult
+	 */
+	static async doDeleteDisableById(id, mode, jrResult) {
+
+		// var thethis = this;
+		// var mongoosem = this.getMongooseModel();
+		// jrdebug.debugObj(mongoosem, "the mongoosem");
+		// jrdebug.debugObj(this, "the this");
+
+		if (mode === appconst.DefMdbRealDelete) {
+			// direct database delete
+			await this.getMongooseModel().deleteOne({ _id: id }, (err) => {
+				if (err) {
+					jrResult.pushError("Error while tryign to delete " + this.getNiceName() + "#" + id + ": " + err.message);
+				}
+			});
+		} else {
+			// it's a virtual delete or disable
+			throw new Error("Virtual delete/disable not implemented yet.");
+		}
+
+		if (jrResult.isError()) {
+			return;
+		}
+
+		// success
+		await this.postDeleteDisableById(id, mode, jrResult);
+	}
+
+
+
+
+	static async doDeleteDisableByIdList(idList, mode, jrResult, flagSupressSuccessMessage) {
+		// delete/disable a bunch of items
+		var successCount = 0;
+
+		// walk the list and do a deep delete of each
+		var id;
+		for (let i = 0; i < idList.length; ++i) {
+			id = idList[i];
+			await this.doDeleteDisableById(id, mode, jrResult);
+			if (jrResult.isError()) {
+				break;
+			}
+			++successCount;
+		}
+
+		const modeLabel = jrhText.capitalizeFirstLetter(appconst.DefDeleteDisableLabels[mode]);
+		if (!jrResult.isError()) {
+			if (!flagSupressSuccessMessage) {
+				jrResult.pushSuccess(modeLabel + " " + this.getNiceNamePluralized(successCount) + ".");
+			}
+		} else {
+			if (successCount > 0) {
+				jrResult.pushError(modeLabel + " " + this.getNiceNamePluralized(successCount) + " before error occurred.");
+			}
+		}
+	}
+
+
+
+	// delete any ancillary deletions AFTER the normal delete
+	// this would normally be subclassed by specific model
+	static async postDeleteDisableById(id, mode, jrResult) {
+		// by default, nothing to do; subclasses can replace this
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
 
 
 }

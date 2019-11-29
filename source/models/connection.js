@@ -30,6 +30,14 @@ const ModelBaseMongoose = jrequire("models/model_base_mongoose");
 class ConnectionModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
+	getModelClass() {
+		// new attempt, a subclass overriding function that returns hardcoded class
+		return ConnectionModel;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
 	// global static version info
 	static getVersion() { return 1; }
 

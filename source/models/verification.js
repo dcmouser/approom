@@ -82,6 +82,13 @@ const DefExpirationDurationMinutesShort = 5;
  */
 class VerificationModel extends ModelBaseMongoose {
 
+	//---------------------------------------------------------------------------
+	getModelClass() {
+		// new attempt, a subclass overriding function that returns hardcoded class
+		return VerificationModel;
+	}
+	//---------------------------------------------------------------------------
+
 
 	//---------------------------------------------------------------------------
 	// global static version info

@@ -241,10 +241,21 @@ function logMessage(category, type, message, extraData, mergeData) {
 
 
 
+//---------------------------------------------------------------------------
+/**
+ * Simple default error log that sets category and type to error
+ * useful for calling from sources that don't know what to specify
+ * @param {string} err
+ */
+function logDefaultError(err) {
+	logMessage("error", "error", err);
+}
+//---------------------------------------------------------------------------
 
 
 
 
+//---------------------------------------------------------------------------
 /**
  * Shortcut for logging an exception error
  *
@@ -393,6 +404,7 @@ module.exports = {
 	log,
 
 	logMessage,
+	logDefaultError,
 	logExceptionError,
 	logExceptionErrorWithMessage,
 

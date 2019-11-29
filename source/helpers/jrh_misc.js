@@ -608,6 +608,11 @@ function ErrorToHashableMapObject(err) {
 //---------------------------------------------------------------------------
 
 
+//---------------------------------------------------------------------------
+function objectHasProperty(obj, prop) {
+	return (prop in obj);
+}
+//---------------------------------------------------------------------------
 
 
 
@@ -657,4 +662,6 @@ module.exports = {
 	asyncNextTick,
 
 	ErrorToHashableMapObject,
+
+	objectHasProperty,
 };

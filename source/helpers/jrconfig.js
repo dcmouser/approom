@@ -153,7 +153,7 @@ function runQueuedCommands(flagErrorIfNone) {
 		if (yargsObj !== undefined) {
 			yargsObj.showHelp();
 		} else {
-			jrlog.error("Error: No command specified to run on commandline.");
+			jrlog.logDefaultError("Error: No command specified to run on commandline.");
 		}
 		return;
 	}
@@ -163,7 +163,7 @@ function runQueuedCommands(flagErrorIfNone) {
 		if (cmdEntry.callback) {
 			cmdEntry.callback(cmdEntry.command, cmdEntry.argv);
 		} else {
-			jrlog.log("Warning: No callback to run for command " + cmdEntry.cmd);
+			jrlog.logDefaultError("Warning: No callback to run for command " + cmdEntry.cmd);
 		}
 	});
 }

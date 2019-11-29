@@ -37,6 +37,14 @@ const jrhText = require("../helpers/jrh_text");
 class RoomdataModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
+	getModelClass() {
+		// new attempt, a subclass overriding function that returns hardcoded class
+		return RoomdataModel;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
 	// global static version info
 	static getVersion() { return 1; }
 

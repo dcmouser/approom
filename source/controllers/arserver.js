@@ -872,7 +872,8 @@ class AppRoomServer {
 		var listener = expressServer.listen(normalizedPort);
 
 		// add event handlers (after server is listening)
-		expressServer.on("error", (...args) => { this.onErrorEs(listener, expressServer, flagHttps, ...args); });
+		// expressServer.on("error", (...args) => { this.onErrorEs(listener, expressServer, flagHttps, ...args); });
+		expressServer.on("error", async (...args) => { await this.onErrorEs(listener, expressServer, flagHttps, ...args); });
 		expressServer.on("listening", (...args) => { this.onListeningEs(listener, expressServer, flagHttps, ...args); });
 
 		return expressServer;
@@ -1476,7 +1477,7 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	// Event listener for HTTP server "error" event.
-	onErrorEs(listener, expressServer, flagHttps, error) {
+	async onErrorEs(listener, expressServer, flagHttps, error) {
 		// called not on 404 errors but other internal errors?
 		var msg;
 
@@ -1490,7 +1491,7 @@ class AppRoomServer {
 		if (addr === null) {
 			msg = "Could not bind server listener, got null return from listener.address paramater.  Is server already running (in debugger) ?";
 			jrdebug.debug(msg);
-			jrlog.error(msg);
+			await this.logm(appconst.DefLogTypeErrorServer, msg);
 			process.exit(1);
 		} else if (typeof addr === "string") {
 			bind = "pipe " + addr;
@@ -1499,18 +1500,18 @@ class AppRoomServer {
 		} else {
 			msg = "Could not bind server listener, the listener.address paramater was not understood: " + addr;
 			jrdebug.debug(msg);
-			jrlog.error(msg);
+			await this.logm(appconst.DefLogTypeErrorServer, msg);
 			process.exit(1);
 		}
 
 		// handle specific listen errors with friendly messages
 		switch (error.code) {
 			case "EACCES":
-				jrlog.error(bind + " requires elevated privileges");
+				this.logm(appconst.DefLogTypeErrorServer, bind + " requires elevated privileges");
 				process.exit(1);
 				break;
 			case "EADDRINUSE":
-				jrlog.error(bind + " is already in use");
+				this.logm(appconst.DefLogTypeErrorServer, bind + " is already in use");
 				process.exit(1);
 				break;
 			default:
@@ -1713,7 +1714,7 @@ class AppRoomServer {
 		if (this.isDevelopmentMode()) {
 			msg += "  Development mode enabled.";
 		}
-		await this.logm("info.server", msg);
+		await this.logm(appconst.DefLogTypeInfoServer, msg);
 	}
 	//---------------------------------------------------------------------------
 
@@ -2647,7 +2648,8 @@ class AppRoomServer {
 
 
 
-		process.on("uncaughtException", async (err, origin) => {
+		// ATTN: disable this (add something to change "uncaughtexception" string in order to throw full error to better see it on console)
+		process.on("ZZZuncaughtException", async (err, origin) => {
 			// the problem here is that nodejs does not want us callinc await inside here and making this async
 			// @see https://stackoverflow.com/questions/51660355/async-code-inside-node-uncaughtexception-handler
 			// but that makes it difficult to log fatal errors, etc. since our logging functions are async.

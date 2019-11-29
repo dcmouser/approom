@@ -38,6 +38,14 @@ const jrhValidate = require("../helpers/jrh_validate");
 class RoomModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
+	getModelClass() {
+		// new attempt, a subclass overriding function that returns hardcoded class
+		return RoomModel;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
 	// global static version info
 	static getVersion() { return 1; }
 

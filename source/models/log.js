@@ -32,6 +32,14 @@ const ModelBaseMongooseMinimal = jrequire("models/model_base_mongoose_minimal");
 class LogModel extends ModelBaseMongooseMinimal {
 
 	//---------------------------------------------------------------------------
+	getModelClass() {
+		// new attempt, a subclass overriding function that returns hardcoded class
+		return LogModel;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
 	// global static version info
 	static getVersion() { return 1; }
 

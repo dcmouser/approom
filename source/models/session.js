@@ -30,6 +30,14 @@ const ModelBaseMongooseMinimal = jrequire("models/model_base_mongoose_minimal");
 class SessionModel extends ModelBaseMongooseMinimal {
 
 	//---------------------------------------------------------------------------
+	getModelClass() {
+		// new attempt, a subclass overriding function that returns hardcoded class
+		return SessionModel;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
 	// NOTE: we have to replace this function because _id is a string in this 3rd party db table
 	// ATTN: is there a danger of OUR db definition overriding the 3rd party one, when we just want to peek into theirs?
 	static getBaseSchemaDefinition() {

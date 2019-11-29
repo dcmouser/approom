@@ -36,6 +36,14 @@ const jrhMongo = require("../helpers/jrh_mongo");
 class LoginModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
+	getModelClass() {
+		// new attempt, a subclass overriding function that returns hardcoded class
+		return LoginModel;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
 	// global static version info
 	static getVersion() { return 1; }
 

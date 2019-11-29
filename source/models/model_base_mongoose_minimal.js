@@ -36,6 +36,14 @@ const JrResult = require("../helpers/jrresult");
 class ModelBaseMongooseMinimal extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
+	getModelClass() {
+		// new attempt, a subclass overriding function that returns hardcoded class
+		return ModelBaseMongooseMinimal;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
 	// Overrides for more minimal core fields
 
 	static getBaseSchemaDefinition() {

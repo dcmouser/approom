@@ -333,7 +333,8 @@ class CrudAid {
 					var errmsg = "There was an error saving the new owner role for " + user.getLogIdString() + " after creation of new object " + savedobj.getLogIdString() + ": " + jrResult.getErrorsAsString() + ".";
 					// so first things first lets delete the object
 					var jrResultFollowup = JrResult.makeNew();
-					await savedobj.doDeleteDeep(jrResultFollowup);
+					// we do a REAL delete here (as opposed to a virtual one) since the object was just added in failure
+					await savedobj.doDeleteDisable(appconst.DefMdbRealDelete, jrResultFollowup);
 					if (jrResultFollowup.isError()) {
 						// yikes we couldn't even delete the object
 						errmsg += "  In addition, the newly created object could not be rolled back and deleted.";
@@ -657,12 +658,16 @@ class CrudAid {
 		const logIdString = obj.getLogIdString();
 
 		// process delete
-		await obj.doDeleteDeep(jrResult);
+
+		// what kind of delete do we want, virtual or real?
+		const deleteDisableMode = appconst.DefMdbRealDelete;
+		//
+		await obj.doDeleteDisable(deleteDisableMode, jrResult);
 
 		// on success redirect to listview
 		if (!jrResult.isError()) {
-			// success
-			jrResult.pushSuccess(modelClass.getNiceName() + " #" + objIdString + " has been deleted.");
+			// success (push message to top since helper deleted may have been pushed on earlier)
+			jrResult.pushSuccess(modelClass.getNiceName() + " #" + objIdString + " has been deleted.", true);
 
 			// log the action
 			arserver.logr(req, "crud.delete", "deleted " + logIdString);
@@ -1085,7 +1090,13 @@ class CrudAid {
 			}
 
 			// they have permission!
-			return await modelClass.doDeleteByIdStringArrayDeep(idList);
+
+			// what kind of delete should we do? real or virtual?
+			const mode = appconst.DefMdbRealDelete;
+			//
+			var jrResult = JrResult.makeNew();
+			await modelClass.doDeleteDisableByIdList(idList, mode, jrResult, false);
+			return jrResult;
 		}
 
 		// dont know this bulk action

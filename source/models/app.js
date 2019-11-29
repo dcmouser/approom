@@ -19,9 +19,13 @@ const jrequire = require("../helpers/jrequire");
 const jrhValidate = require("../helpers/jrh_validate");
 const jrdebug = require("../helpers/jrdebug");
 const jrhMongo = require("../helpers/jrh_mongo");
+const jrhText = require("../helpers/jrh_text");
 
 // models
 const ModelBaseMongoose = jrequire("models/model_base_mongoose");
+
+// controllers
+const appconst = jrequire("appconst");
 
 
 
@@ -33,6 +37,14 @@ const ModelBaseMongoose = jrequire("models/model_base_mongoose");
  * @extends {ModelBaseMongoose}
  */
 class AppModel extends ModelBaseMongoose {
+
+	//---------------------------------------------------------------------------
+	getModelClass() {
+		// new attempt, a subclass overriding function that returns hardcoded class
+		return AppModel;
+	}
+	//---------------------------------------------------------------------------
+
 
 	//---------------------------------------------------------------------------
 	// global static version info
@@ -202,7 +214,7 @@ class AppModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// delete any ancillary deletions AFTER the normal delete
-	static async deepPostDeleteById(id, jrResult) {
+	static async postDeleteDisableById(id, mode, jrResult) {
 		// for app model, this means deleting associated rooms
 		const roomIdList = await this.getAssociatedRoomsByAppId(id, jrResult);
 		if (jrResult.isError()) {
@@ -215,9 +227,10 @@ class AppModel extends ModelBaseMongoose {
 
 		// delete them
 		const RoomModel = jrequire("models/room");
-		await RoomModel.doDeleteByIdStringArrayDeep(roomIdList, jrResult);
+		await RoomModel.doDeleteDisableByIdList(roomIdList, mode, jrResult, true);
 		if (!jrResult.isError()) {
-			jrResult.pushSuccess("Deleted " + RoomModel.getNiceNamePluralized(roomIdList.length) + " attached to " + this.getNiceName() + " #" + id + ".");
+			const modeLabel = jrhText.capitalizeFirstLetter(appconst.DefDeleteDisableLabels[mode]);
+			jrResult.pushSuccess(modeLabel + " " + RoomModel.getNiceNamePluralized(roomIdList.length) + " attached to " + this.getNiceName() + " #" + id + ".");
 		}
 	}
 	//---------------------------------------------------------------------------

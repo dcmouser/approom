@@ -228,9 +228,39 @@ function jrHtmlFormInputPassword(fieldName, obj, flagRequired, flagExistingIsNon
 
 
 
+//---------------------------------------------------------------------------
+/**
+ * Format a value for a grid, when given an associated choice map
+ * valchoices are like {0: "Enabled", 1: "Disabled", 2: "Deleted"}
+ * @param {*} val
+ * @param {object} valchoices
+ */
+function formatChoiceValueForGridDisplay(val, valchoices) {
+	if (val === undefined) {
+		return "";
+	}
+	if (val === null) {
+		return "null";
+	}
+
+	return ((val in valchoices) ? valchoices[val] : "unknown") + " (" + val.toString() + ")";
+}
+//---------------------------------------------------------------------------
 
 
 
+
+//---------------------------------------------------------------------------
+/**
+ * @see <a href="https://stackoverflow.com/questions/1026069/how-do-i-make-the-first-letter-of-a-string-uppercase-in-javascript">stackoverflow</a>
+ *
+ * @param {*} string
+ * @returns string with capitalized first letter
+ */
+function capitalizeFirstLetter(str) {
+	return str.charAt(0).toUpperCase() + str.slice(1);
+}
+//---------------------------------------------------------------------------
 
 
 
@@ -244,5 +274,7 @@ module.exports = {
 	jrBootstrapCollapseBox,
 	jrHtmlStrigifyObject,
 	jrHtmlFormInputPassword,
+	formatChoiceValueForGridDisplay,
+	capitalizeFirstLetter,
 };
 

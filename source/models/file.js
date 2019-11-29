@@ -34,6 +34,13 @@ const jrhValidate = require("../helpers/jrh_validate");
 class FileModel extends RoomdataModel {
 
 	//---------------------------------------------------------------------------
+	getModelClass() {
+		// new attempt, a subclass overriding function that returns hardcoded class
+		return FileModel;
+	}
+	//---------------------------------------------------------------------------
+
+	//---------------------------------------------------------------------------
 	// global static version info
 	static getVersion() { return 1; }
 

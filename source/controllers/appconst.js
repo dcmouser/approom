@@ -32,12 +32,16 @@ exports.DefLogCategory = "";
 //
 // types
 exports.DefLogTypeError = "error";
-exports.DefLogTypeError404 = exports.DefLogTypeError + ".404";
 //
 exports.DefLogTypeErrorCritical = "errorCrit";
 exports.DefLogTypeErrorCriticalDb = exports.DefLogTypeErrorCritical + ".db";
 exports.DefLogTypeErrorCriticalAcl = exports.DefLogTypeErrorCritical + ".acl";
 exports.DefLogTypeErrorCriticalException = exports.DefLogTypeErrorCritical + ".exc";
+exports.DefLogTypeError404 = exports.DefLogTypeError + ".404";
+exports.DefLogTypeErrorServer = exports.DefLogTypeError + ".server";
+//
+exports.DefLogTypeInfo = "info";
+exports.DefLogTypeInfoServer = "info.server";
 //
 exports.DefLogTypeAdmin = "admin";
 exports.DefLogTypeDebug = "debug";
@@ -79,4 +83,21 @@ exports.DefAclActionAnalytics = "analytics";
 //---------------------------------------------------------------------------
 
 
+
+
+
+//---------------------------------------------------------------------------
+// model constants
+
+exports.DefMdbEnable = 0;
+exports.DefMdbDisable = 1;
+exports.DefMdbVirtDelete = 2;
+exports.DefMdbRealDelete = 3;
+exports.DefDeleteDisableLabels = {
+	[exports.DefMdbEnable]: "enabled",
+	[exports.DefMdbDisable]: "disabled",
+	[exports.DefMdbVirtDelete]: "virtually deleted",
+	[exports.DefMdbRealDelete]: "deleted",
+};
+//---------------------------------------------------------------------------
 

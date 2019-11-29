@@ -39,6 +39,7 @@ const appconst = jrequire("appconst");
 
 
 //---------------------------------------------------------------------------
+// ATTN: Note that these constants may be hard to use outside of this module; we could move them to appconst instead for more global use
 // constants
 const DefDefaultUsername = "Usr";
 const DefRandomUsernameRandomSuffixLength = 4;
@@ -77,6 +78,13 @@ const DefDisallowedUsernameList = ["admin*", "root", "guest", "user", "moderator
  * @extends {ModelBaseMongoose}
  */
 class UserModel extends ModelBaseMongoose {
+
+	//---------------------------------------------------------------------------
+	getModelClass() {
+		// new attempt, a subclass overriding function that returns hardcoded class
+		return UserModel;
+	}
+	//---------------------------------------------------------------------------
 
 	//---------------------------------------------------------------------------
 	// global static version info

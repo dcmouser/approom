@@ -176,10 +176,11 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 			valformat: listHelperData.modelClass.getSchemaExtraFieldVal(key, "format"),
 			valfunc: listHelperData.modelClass.getSchemaExtraFieldVal(key, "valueFunction"),
 			crudlink: listHelperData.modelClass.getSchemaExtraFieldVal(key, "crudlink"),
+			valchoices: listHelperData.modelClass.getSchemaExtraFieldVal(key, "choices"),
 		};
 	});
 
-	var val, valtype, valfunc, valformat, valDisplay, crudLink;
+	var val, valtype, valfunc, valformat, valDisplay, valchoices, crudLink;
 	var extraInfoKey;
 	var item;
 	var numItems = gridItems.length;
@@ -213,6 +214,7 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 				val = item[key];
 				valformat = extraInfoKey.valformat;
 				valfunc = extraInfoKey.valfunc;
+				valchoices = extraInfoKey.valchoices;
 				if (valfunc) {
 					// use custom value resolving callback function
 					valDisplay = await valfunc("list", key, req, item, listHelperData);
@@ -223,6 +225,9 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 						} else {
 							valDisplay = "false";
 						}
+					} else if (valformat === "choices") {
+						// choices can be tricky.. because we'd like to show the nice choice option, but we also want to show underlying values so user can filter (esp. if it's numerical
+						valDisplay = jrhText.formatChoiceValueForGridDisplay(val, valchoices);
 					} else if (val === undefined) {
 						valDisplay = "";
 					} else if (val === null) {
