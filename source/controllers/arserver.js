@@ -690,7 +690,7 @@ class AppRoomServer {
 				var jrResult;
 				jrdebug.cdebugf("In passport local strategy test with username=%s and password=%s", usernameEmail, password);
 
-				var user = await this.UserModel.findOneByUsernameEmail(usernameEmail);
+				var user = await this.UserModel.findUserByUsernameEmail(usernameEmail);
 				if (!user) {
 					// not found
 					jrResult = JrResult.makeNew().pushFieldError("usernameEmail", "Username/Email-address not found");

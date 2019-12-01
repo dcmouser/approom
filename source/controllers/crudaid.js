@@ -597,6 +597,14 @@ class CrudAid {
 			return true;
 		}
 
+		return await this.handleDeletePresentView(id, obj, req, res, modelClass, baseCrudUrl, viewFileSet, extraViewData);
+	}
+
+
+
+	async handleDeletePresentView(id, obj, req, res, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+		var jrResult = JrResult.makeNew();
+
 		// any helper data
 		const helperData = await modelClass.calcCrudViewHelperData(req, res, id, obj);
 
@@ -614,11 +622,10 @@ class CrudAid {
 
 		// render
 		res.render(viewFile, {
-			headline: "Delete " + modelClass.getNiceName() + " #" + id,
+			headline: "Delete " + modelClass.getNiceName() + " #" + id + "?",
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
 			csrfToken: arserver.makeCsrf(req, res),
 			obj,
-			helperData,
 			genericMainHtml,
 			crudDelete: true,
 			baseCrudUrl,
@@ -660,17 +667,17 @@ class CrudAid {
 		// process delete
 
 		// what kind of delete do we want, virtual or real?
-		const deleteDisableMode = appconst.DefMdbRealDelete;
+		const deleteDisableMode = modelClass.getDefaultDeleteDisableMode();
 		//
 		await obj.doDeleteDisable(deleteDisableMode, jrResult);
 
 		// on success redirect to listview
 		if (!jrResult.isError()) {
 			// success (push message to top since helper deleted may have been pushed on earlier)
-			jrResult.pushSuccess(modelClass.getNiceName() + " #" + objIdString + " has been deleted.", true);
+			jrResult.pushSuccess(modelClass.getNiceName() + " #" + objIdString + " has been " + appconst.DefDeleteDisableLabels[deleteDisableMode] + ".", true);
 
 			// log the action
-			arserver.logr(req, "crud.delete", "deleted " + logIdString);
+			arserver.logr(req, "crud.delete", appconst.DefDeleteDisableLabels[deleteDisableMode] + " " + logIdString);
 
 			// ATTN: TODO 11/26/19
 			// we should delete any references to this object (e.g. owner roles, etc.)
@@ -681,34 +688,7 @@ class CrudAid {
 			return true;
 		}
 
-		// any helper data
-		const helperData = await modelClass.calcCrudViewHelperData(req, res, id, obj);
-
-		// parse view file set
-		var { viewFile, isGeneric } = viewFileSet;
-
-		// generic main html for page (delete form)
-		var genericMainHtml;
-		if (isGeneric) {
-			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, obj, jrResult, "delete", helperData);
-		}
-
-		// cancel button goes where?
-		const cancelUrl = baseCrudUrl + "/view/" + id;
-
-		// failed, present them with delete page like view?
-		res.render(viewFile, {
-			headline: "Delete " + modelClass.getNiceName() + " #" + id,
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
-			obj,
-			genericMainHtml,
-			crudDelete: true,
-			baseCrudUrl,
-			cancelUrl,
-			extraViewData,
-		});
-
-		return true;
+		return await this.handleDeletePresentView(id, obj, req, res, modelClass, baseCrudUrl, viewFileSet, extraViewData);
 	}
 
 
@@ -881,7 +861,10 @@ class CrudAid {
 				}
 
 				// is it multiple choice type?
-				choices = modelClass.getSchemaExtraFieldVal(fieldName, "choices", null);
+				choices = modelClass.getSchemaExtraFieldVal(fieldName, "choicesEdit", null);
+				if (!choices) {
+					choices = modelClass.getSchemaExtraFieldVal(fieldName, "choices", null);
+				}
 
 				if (isReadOnly) {
 					// read only value
@@ -1092,7 +1075,7 @@ class CrudAid {
 			// they have permission!
 
 			// what kind of delete should we do? real or virtual?
-			const mode = appconst.DefMdbRealDelete;
+			const mode = modelClass.getDefaultDeleteDisableMode();
 			//
 			var jrResult = JrResult.makeNew();
 			await modelClass.doDeleteDisableByIdList(idList, mode, jrResult, false);

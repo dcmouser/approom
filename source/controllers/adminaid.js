@@ -66,8 +66,10 @@ class AdminAid {
 				appindexString = (appindexStart + appsAdded).toString();
 				shortcode = "A" + appindexString;
 				foundone = await AppModel.findOneByShortcode(shortcode);
-				++clashTryCount;
-				++appindexStart;
+				if (foundone) {
+					++clashTryCount;
+					++appindexStart;
+				}
 			} while (foundone && clashTryCount <= maxTrysPerClash);
 			if (clashTryCount > maxTrysPerClash) {
 				// return false;
@@ -94,8 +96,10 @@ class AdminAid {
 					roomindexString = (roomindexStart + roomsAdded).toString();
 					shortcode = "R" + roomindexString + "A" + appindexString;
 					foundone = await RoomModel.findOneByShortcode(shortcode);
-					++clashTryCount;
-					++roomindexStart;
+					if (foundone) {
+						++clashTryCount;
+						++roomindexStart;
+					}
 				} while (foundone && clashTryCount <= maxTrysPerClash);
 				if (clashTryCount > maxTrysPerClash) {
 					// return false;

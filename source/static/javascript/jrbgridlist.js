@@ -7,7 +7,7 @@
 
 // alert("hello");
 
-function requestGridUpdate(tableId, varChangeObj) {
+function requestGridUpdate(tableId, varChangeObj, flagClearPager) {
 	// resubmit request for grid with new parameters, in url or in post
 	// use starting request based on data object on page, with changes specified in varChangeObj
 	// this provides a fairly compact way to change the grid
@@ -23,6 +23,11 @@ function requestGridUpdate(tableId, varChangeObj) {
 
 	// merge in filters
 	jrGridDataMerge(tableData.fieldFilters, filterData);
+
+	if (flagClearPager) {
+		// clear page offset
+		tableData.pageNum = 1;
+	}
 
 	// now merge in any changes
 	jrGridDataMerge(tableData, varChangeObj);
@@ -85,10 +90,14 @@ function jrGridBuildUrl(tableData) {
 	// build the url up
 	url = tableData.baseUrl + "?";
 	// add stuff
-	url += "pageNum=" + tableData.pageNum;
-	url += "&pageSize=" + tableData.pageSize;
-	url += "&sortField=" + tableData.sortField;
-	url += "&sortDir=" + tableData.sortDir;
+	if (!tableData.pageNum) {
+		url += "pageNum=1&";
+	} else {
+		url += "pageNum=" + tableData.pageNum + "&";
+	}
+	url += "pageSize=" + tableData.pageSize + "&";
+	url += "sortField=" + tableData.sortField + "&";
+	url += "sortDir=" + tableData.sortDir;
 	// filter fields
 	var fieldKeys = Object.keys(tableData.fieldFilters);
 	var key;
@@ -104,12 +113,12 @@ function jrGridBuildUrl(tableData) {
 }
 
 
-function jrGridGenericOnEnterRefresh(event, tableId) {
+function jrGridGenericOnEnterRefresh(event, tableId, flagClearPager) {
 	if (!event) {
 		event = window.event;
 	}
 	if (event.key === "Enter") {
-		requestGridUpdate(tableId, {});
+		requestGridUpdate(tableId, {}, flagClearPager);
 	}
 }
 
@@ -169,13 +178,15 @@ function jrGridClearFilters(tableId) {
 
 function requestGridBulkAction(tableId) {
 	// submit checkbox batch
-	
+
 	var itemCountString;
 	var itemCount = jrCountCheckedItems(tableId);
-	if (itemCount == 0) {
+	if (itemCount === 0) {
 		alert("You need to check some items first.");
 		return;
-	} else if (itemCount == 1) {
+	}
+
+	if (itemCount === 1) {
 		itemCountString = "this " + itemCount.toString() + " item";
 	} else {
 		itemCountString = "these " + itemCount.toString() + " items";
@@ -194,19 +205,19 @@ function requestGridBulkAction(tableId) {
 		return;
 	}
 	var actionString = bulkAction.options[bulkAction.selectedIndex].value;
-	
-	if (actionString == "") {
+
+	if (actionString === "") {
 		alert("You need to select a bulk action first.");
 		return;
 	}
-	
+
 	var bretv = window.confirm("Are you sure you want to " + actionString + " " + itemCountString + "?");
 	if (!bretv) {
 		return;
 	}
 
 
-
+	// change form methos to post and then submit
 	formObj.method = "POST";
 	formObj.submit();
 }

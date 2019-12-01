@@ -37,7 +37,7 @@ class LoginModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	getModelClass() {
-		// new attempt, a subclass overriding function that returns hardcoded class
+		// subclass overriding function that returns class instance (each subclass MUST implement this)
 		return LoginModel;
 	}
 	//---------------------------------------------------------------------------
@@ -132,7 +132,7 @@ class LoginModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// lookup user by their id
-	static async findOneByProviderInfo(provider, providerUserId, flagUpdateLoginDate) {
+	static async findLoginByProviderInfo(provider, providerUserId, flagUpdateLoginDate) {
 		// return null if not found
 		if (!providerUserId) {
 			return null;
@@ -140,22 +140,11 @@ class LoginModel extends ModelBaseMongoose {
 		//
 		var login;
 		if (flagUpdateLoginDate) {
-			login = await this.mongooseModel.findOneAndUpdate({ provider, providerUserId }, { $set: { loginDate: new Date() } }).exec();
+			login = await this.findOneAndUpdateExec({ provider, providerUserId }, { $set: { loginDate: new Date() } });
 		} else {
-			login = await this.mongooseModel.findOne({ provider, providerUserId }).exec();
+			login = await this.findOneExec({ provider, providerUserId });
 		}
 		//
-		return login;
-	}
-
-	// lookup by id
-	static async findOneById(id) {
-		// return null if not found
-		if (!id) {
-			return null;
-		}
-		//
-		var login = await this.mongooseModel.findOne({ _id: id }).exec();
 		return login;
 	}
 	//---------------------------------------------------------------------------
@@ -196,13 +185,13 @@ class LoginModel extends ModelBaseMongoose {
 		// ok first let's see if we can find an existing bridged login
 		jrdebug.cdebugObj(bridgedLoginObj, "Looking for existing bridged login.");
 		// find it and ALSO atomically at same time update date of login
-		var login = await this.findOneByProviderInfo(bridgedLoginObj.provider, bridgedLoginObj.providerUserId, true);
+		var login = await this.findLoginByProviderInfo(bridgedLoginObj.provider, bridgedLoginObj.providerUserId, true);
 		if (login !== null) {
 			// we found the bridged login, so just grab the associated user and return them
 			jrdebug.cdebugObj(login, "Found a matching login.");
 			//
 			if (login.userId) {
-				user = await UserModel.findOneById(login.userId, true);
+				user = await UserModel.findUserByIdAndUpdateLoginDate(login.userId);
 				if (user) {
 					jrdebug.cdebugObj(user, "Found a matching user.");
 				} else {
@@ -217,7 +206,7 @@ class LoginModel extends ModelBaseMongoose {
 			// but first, let's ask -- is there a user already logged in that we want to connect? if not, we should create one
 			if (existingUserId != null) {
 				// there is already a user logged in, so just load this user
-				user = await UserModel.findOneById(existingUserId, true);
+				user = await UserModel.findUserByIdAndUpdateLoginDate(existingUserId);
 			}
 
 			if (!user) {

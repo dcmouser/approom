@@ -81,19 +81,16 @@ class ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	getModelClass() {
-		// new attempt, a subclass overriding function that returns hardcoded class
+		// subclass overriding function that returns class instance (each subclass MUST implement this)
+		// useful when we want to invoke a static function from instance.
 		return ModelBaseMongoose;
+
+		// old automatic method which is recommended online doesn't work if you need to access "this" from the static function
+		// FUCKED JS &%(*#(*&(*&^()*&^()*&))))
+		// return this.constructor;
 	}
 	//---------------------------------------------------------------------------
 
-	//---------------------------------------------------------------------------
-	getModelClassOLDUNUSED() {
-		// js pattern to get the CLASS of a particular instance; useful for access class static properties or member functions
-		// ATTENTION: THIS CAN BREAK 11/29/19 when we try to access "this" inside the static function we invoke.
-		// FUCKED JS &%(*#(*&(*&^()*&^()*&))))
-		return this.constructor;
-	}
-	//---------------------------------------------------------------------------
 
 
 
@@ -142,7 +139,7 @@ class ModelBaseMongoose {
 			version: {
 				label: "Ver.",
 				readOnly: ["edit"],
-				filterSize: 2,
+				filterSize: 5,
 			},
 			creator: {
 				label: "Creator",
@@ -163,14 +160,8 @@ class ModelBaseMongoose {
 				label: "Disabled?",
 				format: "choices",
 				choices: appconst.DefDeleteDisableLabels,
-				/*
-				{
-					[appconst.DefMdbEnable]: "Enabled",
-					[appconst.DefMdbDisable]: "Disabled",
-					[appconst.DefMdbVirtDelete]: "Deleted",
-				},
-				*/
-				filterSize: 3,
+				choicesEdit: appconst.DefDeleteDisableLabelsEdit,
+				filterSize: 8,
 			},
 			extraData: {
 				label: "Extra data",
@@ -194,6 +185,11 @@ class ModelBaseMongoose {
 			sortField: "_id",
 			sortDir: "asc",
 		};
+	}
+
+	// override this to default to real delete for some models
+	static getDefaultDeleteDisableMode() {
+		return appconst.DefMdbVirtDelete;
 	}
 	//---------------------------------------------------------------------------
 
@@ -287,15 +283,13 @@ class ModelBaseMongoose {
 
 
 
-	//---------------------------------------------------------------------------
-	static getMongooseModel() {
-		return this.mongooseModel;
-	}
 
-	static setMongooseModel(val) {
-		this.mongooseModel = val;
-	}
-	//---------------------------------------------------------------------------
+
+
+
+
+
+
 
 
 
@@ -312,7 +306,7 @@ class ModelBaseMongoose {
 			notes: "",
 			...inobj,
 		};
-		var model = new this.mongooseModel(obj);
+		var model = this.newMongooseModel(obj);
 		return model;
 	}
 
@@ -365,7 +359,7 @@ class ModelBaseMongoose {
 		// so we are going to try to check for collection manually before creating it.
 		// note that even with this check, we must use the default strict:false, otherwise we still get a complaint
 		if (!await this.collectionExists(mongooser, collectionName)) {
-			await this.mongooseModel.createCollection({ strict: false });
+			await this.getMongooseModel().createCollection({ strict: false });
 		}
 
 		// any database initialization to be done (e.g. create initial objects/documents, etc.)
@@ -620,7 +614,7 @@ class ModelBaseMongoose {
 			};
 		}
 
-		var clashObj = await this.mongooseModel.findOne(criteria).exec();
+		var clashObj = await this.findOneExec(criteria);
 		if (clashObj) {
 			// error
 			jrResult.pushFieldError(key, "Duplicate " + key + " entry found for another " + this.getNiceName());
@@ -677,7 +671,7 @@ class ModelBaseMongoose {
 			};
 		}
 
-		var clashObj = await this.mongooseModel.findOne(criteria).exec();
+		var clashObj = await this.findOneExec(criteria);
 		if (clashObj) {
 			// error
 			jrResult.pushFieldError(key, "Duplicate " + key + " entry found for another " + this.getNiceName());
@@ -815,14 +809,150 @@ class ModelBaseMongoose {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 	//---------------------------------------------------------------------------
+	// isolate use of this.mongooseModel
+	static getMongooseModel() {
+		return this.mongooseModel;
+	}
+
+	static setMongooseModel(val) {
+		this.mongooseModel = val;
+	}
+
+	static newMongooseModel(obj) {
+		// const mmodel = this.mongooseModel;
+		// jrdebug.debugObj(mmodel, "MongooseModelm");
+		return new this.mongooseModel(obj);
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// rather than letting different models call mongoose directly, we try to put a thin wrapper of our own
+
+
+	static async findOneExec(...args) {
+		// actually call mongooseModel findOne
+		var retv = await this.mongooseModel.findOne(...args).exec();
+		return retv;
+	}
+
+
+	static async findOneAndUpdateExec(criteria, setObject) {
+		// actually call mongooseModel findOneAndUpdateExec
+		var retv = await this.mongooseModel.findOneAndUpdateExec(criteria, setObject).exec();
+		return retv;
+	}
+
+
+	static async findAllAndSelect(...args) {
+		// actually call mongooseModel findOneAndUpdateExec
+		var retv = await this.mongooseModel.find().select(...args);
+		return retv;
+	}
+
+
+	static async findAllExec(...args) {
+		// actually call mongooseModel findOneAndUpdateExec
+		var retv = await this.mongooseModel.find(...args).exec();
+		return retv;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// more elaborate helpers
+
+	/**
+	 * Find some items (possibly paginated)
+	 *
+	 * @static
+	 * @param {object} query
+	 * @param {object} queryOptions
+	 * @param {object} jrResult
+	 * @returns a tuble [items, fullQueryResultCount] - where fullQueryResultCount may be larger than items.length if pagination is only bringing us some of the reulst
+	 * @memberof ModelBaseMongoose
+	 */
+	static async findSomeByQuery(query, queryOptions, jrResult) {
+		// fetch the array of items to be displayed in grid
+		// see https://thecodebarbarian.com/how-find-works-in-mongoose
+		var queryProjection = "";
+		try {
+			var items = await this.getMongooseModel().find(query, queryProjection, queryOptions).exec();
+
+			var resultCount;
+			var isQueryEmpty = ((Object.keys(query)).length === 0);
+			if (isQueryEmpty) {
+				resultCount = await this.getMongooseModel().countDocuments();
+			} else {
+				resultCount = await this.getMongooseModel().countDocuments(query).exec();
+			}
+
+			return [items, resultCount];
+		} catch (err) {
+			jrResult.pushError("Error executing find filter: " + JSON.stringify(query, null, " ") + ":" + err.message);
+			return [[], 0];
+		}
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+	//---------------------------------------------------------------------------
+	static async findAndDeleteMany(criteria) {
+		await this.getMongooseModel().deleteMany(criteria).exec();
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// shortcuts that call above
+
 	static async findOneByShortcode(shortcodeval) {
 		// return null if not found
 		if (!shortcodeval) {
 			return null;
 		}
-		return await this.mongooseModel.findOne({ shortcode: shortcodeval }).exec();
+		return await this.findOneExec({ shortcode: shortcodeval });
 	}
+
 
 	// lookup user by their id
 	static async findOneById(id) {
@@ -830,18 +960,21 @@ class ModelBaseMongoose {
 		if (!id) {
 			return null;
 		}
-		return await this.mongooseModel.findOne({ _id: id }).exec();
+		return await this.findOneExec({ _id: id });
 	}
 
+
 	static async findOneByKeyValue(key, val) {
-		// return null if not found
-		if (!val) {
-			return null;
-		}
-		var retv = await this.mongooseModel.findOne({ [key]: val }).exec();
-		return retv;
+		return await this.findOneExec({ [key]: val });
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
 
 
 
@@ -969,10 +1102,12 @@ class ModelBaseMongoose {
 		return undefined;
 	}
 
+
 	// subclasses can subclass this for crud view
 	static async calcCrudViewHelperData(req, res, id, obj) {
 		return undefined;
 	}
+
 
 	// subclasses can subclass this list grid helper
 	static async calcCrudListHelperData(req, res, baseUrl, protectedFields, hiddenFields, jrResult) {
@@ -1006,33 +1141,18 @@ class ModelBaseMongoose {
 			hiddenFields,
 		};
 
+		// convert filter into query and options
 		const jrhMongoFilter = require("../helpers/jrh_mongo_filter");
 		var { query, queryOptions, queryUrlData } = jrhMongoFilter.buildMongooseQueryFromReq(filterOptions, gridSchema, req, jrResult);
 
-		var queryProjection = "";
+		// Force the lean option to speed up retrieving of results, since we only need for read-only display here; see https://mongoosejs.com/docs/tutorials/lean.html
+		// Note that if we wanted to call methods on the model class we couldn't do this, as it returns results as plain generic objects
+		queryOptions.lean = true;
 
-		// fetch the array of items to be displayed in grid
-		// see https://thecodebarbarian.com/how-find-works-in-mongoose
-		var gridItems;
+		// get the items using query
+		var [gridItems, resultcount] = await this.findSomeByQuery(query, queryOptions, jrResult);
+		queryUrlData.resultCount = resultcount;
 
-		try {
-			// Set the lean option to speed up retrieving of results, since we only need for read-only display here; see https://mongoosejs.com/docs/tutorials/lean.html
-			// Note that if we wanted to call methods on the model class we couldn't do this, as it returns results as plain generic objects
-			queryOptions.lean = true;
-			//
-			gridItems = await this.mongooseModel.find(query, queryProjection, queryOptions).exec();
-			// ATTN: TODO is there a more efficient way to get total count of results for pager?
-			var isQueryEmpty = ((Object.keys(query)).length === 0);
-			if (isQueryEmpty) {
-				queryUrlData.resultCount = await this.mongooseModel.countDocuments();
-			} else {
-				queryUrlData.resultCount = await this.mongooseModel.countDocuments(query).exec();
-			}
-		} catch (err) {
-			jrResult.pushError("Error executing find filter: " + JSON.stringify(query, null, " ") + ":" + err.message);
-			gridItems = [];
-			queryUrlData.resultCount = 0;
-		}
 		// store other stuff in queryUrl data to aid in making urls for pager and grid links, etc.
 		queryUrlData.baseUrl = baseUrl;
 		queryUrlData.tableId = this.getCollectionName();
@@ -1050,6 +1170,7 @@ class ModelBaseMongoose {
 			filterOptions,
 		};
 	}
+
 
 
 	static async calcCrudStatsHelperData(req, res) {
@@ -1118,29 +1239,33 @@ class ModelBaseMongoose {
 	static makeModelValueFunctionPasswordAdminEyesOnly(flagRequired) {
 		// a value function usable by model definitions
 		return async (viewType, fieldName, req, obj, helperData) => {
+			var retv;
 			var isLoggedInUserSiteAdmin = await arserver.isLoggedInUserSiteAdmin(req);
 			if (viewType === "view") {
 				if (isLoggedInUserSiteAdmin) {
 					// for debuging
-					return obj.passwordHashed;
+					retv = obj.passwordhashed;
+				} else {
+					// safe
+					retv = this.safeDisplayPasswordInfoFromPasswordHashed(obj.passwordHashed);
 				}
-				// safe
-				return this.safeDisplayPasswordInfoFromPasswordHashed(obj.passwordHashed);
-			}
-			if (viewType === "edit") {
+			} else if (viewType === "edit") {
 				var flagExistingIsNonBlank = (obj && (obj.passwordHashed !== undefined && obj.passwordHashed !== null && obj.password !== ""));
-				return jrhText.jrHtmlFormInputPassword("password", obj, flagRequired, flagExistingIsNonBlank);
-			}
-			if (viewType === "list") {
+				retv = jrhText.jrHtmlFormInputPassword("password", obj, flagRequired, flagExistingIsNonBlank);
+			} else if (viewType === "list") {
 				if (isLoggedInUserSiteAdmin) {
-					return obj.passwordHashed;
+					retv = obj.passwordHashed;
+				} else if (!obj.passwordHashed) {
+					retv = "";
+				} else {
+					retv = "[HIDDEN]";
 				}
-				if (!obj.passwordHashed) {
-					return "";
-				}
-				return "[HIDDEN]";
 			}
-			return undefined;
+			//
+			if (retv === undefined) {
+				return "";
+			}
+			return retv;
 		};
 	}
 
@@ -1179,6 +1304,11 @@ class ModelBaseMongoose {
 		}
 		return num.toString() + " " + this.getNiceName() + "s";
 	}
+
+
+	static getNiceNameWithId(id) {
+		return this.getNiceName() + " #" + id;
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -1214,6 +1344,7 @@ class ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	/**
 	 * Delete the object AND do any cleanup, like deleteing accessory objects, removing references, etc.
+	 * Just hand off to static class method
 	 *
 	 * @param {string} mode
 	 * @param {object} jrResult
@@ -1235,21 +1366,22 @@ class ModelBaseMongoose {
 	 */
 	static async doDeleteDisableById(id, mode, jrResult) {
 
-		// var thethis = this;
-		// var mongoosem = this.getMongooseModel();
-		// jrdebug.debugObj(mongoosem, "the mongoosem");
-		// jrdebug.debugObj(this, "the this");
-
 		if (mode === appconst.DefMdbRealDelete) {
 			// direct database delete
 			await this.getMongooseModel().deleteOne({ _id: id }, (err) => {
 				if (err) {
-					jrResult.pushError("Error while tryign to delete " + this.getNiceName() + "#" + id + ": " + err.message);
+					jrResult.pushError("Error while tryign to delete " + this.getNiceNameWithId(id) + ": " + err.message);
 				}
 			});
 		} else {
 			// it's a virtual delete or disable
-			throw new Error("Virtual delete/disable not implemented yet.");
+			// we set the field "disabled" to mode value
+			// see https://mongoosejs.com/docs/documents.html#updating
+			await this.getMongooseModel().updateOne({ _id: id }, { $set: { disabled: mode } }, (err) => {
+				if (err) {
+					jrResult.pushError("Error while tryign to " + appconst.DefDeleteDisableLabels[mode] + "  " + this.getNiceNameWithId(id) + ": " + err.message);
+				}
+			});
 		}
 
 		if (jrResult.isError()) {
@@ -1257,7 +1389,7 @@ class ModelBaseMongoose {
 		}
 
 		// success
-		await this.postDeleteDisableById(id, mode, jrResult);
+		await this.auxDeleteDisableById(id, mode, jrResult);
 	}
 
 
@@ -1294,7 +1426,7 @@ class ModelBaseMongoose {
 
 	// delete any ancillary deletions AFTER the normal delete
 	// this would normally be subclassed by specific model
-	static async postDeleteDisableById(id, mode, jrResult) {
+	static async auxDeleteDisableById(id, mode, jrResult) {
 		// by default, nothing to do; subclasses can replace this
 	}
 	//---------------------------------------------------------------------------

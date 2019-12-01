@@ -116,10 +116,15 @@ class AclAid {
 		// permission groups
 		const permAll = [appconst.DefAclActionAdd, appconst.DefAclActionEdit, appconst.DefAclActionView, appconst.DefAclActionList, appconst.DefAclActionDelete];
 		const permReadOnly = [appconst.DefAclActionView, appconst.DefAclActionList];
+		const permExtraAdminMods = [appconst.DefAclActionUnDelete, appconst.DefAclActionSeeVdeletes];
 
 		// moderator permissions
 		this.roleAcl.grant(appconst.DefAclRoleGlobalMod).execute(permAll).on(resourceName);
 		this.roleAcl.grant(appconst.DefAclRoleModerator).execute(permAll).on(resourceName);
+
+		// give global mods (site admin) ability to see deleted items and undelete them
+		this.roleAcl.grant(appconst.DefAclRoleGlobalMod).execute(permExtraAdminMods).on(resourceName);
+		this.roleAcl.grant(appconst.DefAclRoleModerator).execute(permExtraAdminMods).on(resourceName);
 
 		// now owner
 		this.roleAcl.grant(appconst.DefAclRoleOwner).execute(permAll).on(resourceName);

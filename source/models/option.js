@@ -27,7 +27,7 @@ class OptionModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	getModelClass() {
-		// new attempt, a subclass overriding function that returns hardcoded class
+		// subclass overriding function that returns class instance (each subclass MUST implement this)
 		return OptionModel;
 	}
 	//---------------------------------------------------------------------------

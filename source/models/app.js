@@ -40,7 +40,7 @@ class AppModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	getModelClass() {
-		// new attempt, a subclass overriding function that returns hardcoded class
+		// subclass overriding function that returns class instance (each subclass MUST implement this)
 		return AppModel;
 	}
 	//---------------------------------------------------------------------------
@@ -188,7 +188,7 @@ class AppModel extends ModelBaseMongoose {
 
 	// see http://thecodebarbarian.com/whats-new-in-mongoose-53-async-iterators.html
 	static async buildSimpleAppList(user) {
-		const docs = await this.mongooseModel.find().select("_id shortcode label");
+		const docs = await this.findAllAndSelect("_id shortcode label");
 		var applist = [];
 		for (const doc of docs) {
 			applist[doc._id] = doc.shortcode + " - " + doc.label;
@@ -214,7 +214,7 @@ class AppModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// delete any ancillary deletions AFTER the normal delete
-	static async postDeleteDisableById(id, mode, jrResult) {
+	static async auxDeleteDisableById(id, mode, jrResult) {
 		// for app model, this means deleting associated rooms
 		const roomIdList = await this.getAssociatedRoomsByAppId(id, jrResult);
 		if (jrResult.isError()) {
@@ -241,14 +241,7 @@ class AppModel extends ModelBaseMongoose {
 		// get a list (array) of all room ids that are attached to this app
 
 		const RoomModel = jrequire("models/room");
-		var roomObjs = await RoomModel.mongooseModel.find({ appid }, "_id", (err) => {
-			if (err) {
-				jrResult.pushError("Error while trying to find rooms attached to app #" + appid + ": " + err.message);
-			}
-		});
-		if (jrResult.isError()) {
-			return null;
-		}
+		var roomObjs = await RoomModel.findAllExec({ appid }, "_id");
 
 		// convert array of objects with _id fields to simple id array
 		var roomIds = jrhMongo.convertArrayOfObjectIdsToIdArray(roomObjs);

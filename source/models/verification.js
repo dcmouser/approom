@@ -84,7 +84,7 @@ class VerificationModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	getModelClass() {
-		// new attempt, a subclass overriding function that returns hardcoded class
+		// subclass overriding function that returns class instance (each subclass MUST implement this)
 		return VerificationModel;
 	}
 	//---------------------------------------------------------------------------
@@ -220,18 +220,6 @@ class VerificationModel extends ModelBaseMongoose {
 
 
 
-	//---------------------------------------------------------------------------
-	// lookup by id
-	static async findOneById(id) {
-		// return null if not found
-		if (!id) {
-			return null;
-		}
-		//
-		var doc = await this.mongooseModel.findOne({ _id: id }).exec();
-		return doc;
-	}
-	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
@@ -468,12 +456,12 @@ If this request was not made by you, please ignore this email.
 
 
 	//---------------------------------------------------------------------------
-	static async findOneByCode(verificationCode) {
+	static async findVerificationByCode(verificationCode) {
 		// find it and return it
 		// hash code (predictable hash)
 		var verificationCodeHashed = await this.calcHashOfVerificationCode(verificationCode);
 		// find it
-		var verification = await this.findOneByCodeHashed(verificationCodeHashed);
+		var verification = await this.findVerificationByCodeHashed(verificationCodeHashed);
 		// NOW we save in it the plaintext code, in case caller wants to refer to it (it will NOT be saved in db)
 		if (verification) {
 			verification.uniqueCode = verificationCode;
@@ -482,9 +470,9 @@ If this request was not made by you, please ignore this email.
 	}
 
 
-	static async findOneByCodeHashed(verificationCodeHashed) {
+	static async findVerificationByCodeHashed(verificationCodeHashed) {
 		// find it and return it
-		var verification = this.mongooseModel.findOne({ uniqueCodeHashed: verificationCodeHashed }).exec();
+		var verification = this.findOneExec({ uniqueCodeHashed: verificationCodeHashed });
 		return verification;
 	}
 	//---------------------------------------------------------------------------
@@ -521,7 +509,7 @@ If this request was not made by you, please ignore this email.
 	// this is called by verify route
 	static async verifiyCode(code, extraValues, req, res) {
 
-		var verification = await this.findOneByCode(code);
+		var verification = await this.findVerificationByCode(code);
 		if (!verification) {
 			// not found
 			return {
@@ -543,7 +531,7 @@ If this request was not made by you, please ignore this email.
 		var userId = verification.getUserId();
 		var user;
 		if (userId) {
-			user = await UserModel.findOneById(userId, true);
+			user = await UserModel.findUserByIdAndUpdateLoginDate(userId);
 			if (!user) {
 				return {
 					jrResult: JrResult.makeError("The user associated with this verification code could not be found."),
@@ -782,7 +770,7 @@ If this request was not made by you, please ignore this email.
 		var passwordHashed = this.getExtraData("passwordHashed");
 
 		// first step, let's check if the email has alread been used by someone, if so then we can just redirect them to try to sign up again and cancel this verification
-		var existingUserWithEmail = await UserModel.findOneByUsernameEmail(email);
+		var existingUserWithEmail = await UserModel.findUserByUsernameEmail(email);
 		if (existingUserWithEmail) {
 			// error, a user with this email already exist; but they just confirmed that THEY own the email which means that
 			// first they signed up when the email wasn't in use, and then later confirmed it through another different verification, and then tried to access via this verification
@@ -919,7 +907,7 @@ If this request was not made by you, please ignore this email.
 	//---------------------------------------------------------------------------
 	static async cancelVerifications(findObj) {
 		// delete any extant verifications that match findObj; this is called when sending new ones that should override old
-		await VerificationModel.mongooseModel.deleteMany(findObj).exec();
+		await VerificationModel.findAndDeleteMany(findObj);
 	}
 	//---------------------------------------------------------------------------
 

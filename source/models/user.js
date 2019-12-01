@@ -81,7 +81,7 @@ class UserModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	getModelClass() {
-		// new attempt, a subclass overriding function that returns hardcoded class
+		// subclass overriding function that returns class instance (each subclass MUST implement this)
 		return UserModel;
 	}
 	//---------------------------------------------------------------------------
@@ -243,7 +243,7 @@ class UserModel extends ModelBaseMongoose {
 
 	static async createAdminUser() {
 		// see if admin user exists, if not add it
-		var doc = await this.mongooseModel.findOne({ username: "admin" }).exec();
+		var doc = await this.findOneExec({ username: "admin" });
 		if (!doc) {
 			// create admin object
 			jrdebug.cdebug("  Creating admin user");
@@ -275,7 +275,7 @@ class UserModel extends ModelBaseMongoose {
 
 	static async createTestUser() {
 		// see if testuser user exists, if not add it
-		var doc = await this.mongooseModel.findOne({ username: "testuser" }).exec();
+		var doc = await this.findOneExec({ username: "testuser" });
 		if (!doc) {
 			// create admin object
 			jrdebug.cdebug("  Creating testuser user");
@@ -306,7 +306,7 @@ class UserModel extends ModelBaseMongoose {
 
 	static async createVisitorUser() {
 		// this is a user object shared between all non-logged-in visitors
-		var doc = await this.mongooseModel.findOne({ username: "visitor" }).exec();
+		var doc = await this.findOneExec({ username: "visitor" });
 		if (!doc) {
 			// create admin object
 			jrdebug.cdebug("  Creating testuser user");
@@ -403,7 +403,7 @@ class UserModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static async findOneByUsernameEmail(usernameEmail) {
+	static async findUserByUsernameEmail(usernameEmail) {
 		// find a user by their username and return the matching model
 		// return null if not found
 		// ATTN: Note that it is very important that our syntax forbids anyone having a username formatted like an email, or an email formatted like a username, otherwise
@@ -411,54 +411,49 @@ class UserModel extends ModelBaseMongoose {
 		if (!usernameEmail) {
 			return null;
 		}
-		var user = await this.mongooseModel.findOne({
+		var user = await this.findOneExec({
 			$or: [
 				{ username: usernameEmail },
 				{ email: usernameEmail },
 			],
-		}).exec();
+		});
 
 		return user;
 	}
 
 
 	// lookup user by their username
-	static async findOneByUsername(username) {
+	static async findUserByUsername(username) {
 		// find a user by their username and return the matching model
 		// return null if not found
 		if (!username) {
 			return null;
 		}
-		var user = await this.mongooseModel.findOne({ username }).exec();
-		jrdebug.cdebugObj(user, "in findOneByUsername");
+		var user = await this.findOneExec({ username });
+		jrdebug.cdebugObj(user, "in findUserByUsername");
 		return user;
 	}
 
 	// lookup user by their id
-	static async findOneById(id, flagUpdateLoginDate) {
+	static async findUserByIdAndUpdateLoginDate(id) {
 		// return null if not found
 		if (!id) {
 			return null;
 		}
 		//
-		var user;
-		if (flagUpdateLoginDate) {
-			user = await this.mongooseModel.findOneAndUpdate({ _id: id }, { $set: { loginDate: new Date() } }).exec();
-		} else {
-			user = await this.mongooseModel.findOne({ _id: id }).exec();
-		}
+		var user = await this.findOneAndUpdateExec({ _id: id }, { $set: { loginDate: new Date() } });
 		//
 		return user;
 	}
 
 	// fine user by email
-	static async findOneByEmail(email) {
+	static async findUserByEmail(email) {
 		if (!email) {
 			return null;
 		}
 		// ask user model to find user by email
 		// return null if not found
-		var user = await this.mongooseModel.findOne({ email }).exec();
+		var user = await this.findOneExec({ email });
 		return user;
 	}
 	//---------------------------------------------------------------------------
@@ -489,7 +484,7 @@ class UserModel extends ModelBaseMongoose {
 
 		// check if used by someone already
 		if (flagMustBeUnique) {
-			var user = await this.findOneByEmail(email);
+			var user = await this.findUserByEmail(email);
 			if (user && (!existingUser || existingUser.id !== user.id)) {
 				jrResult.pushFieldError("email", "Email already in use (" + email + ").");
 				return undefined;
@@ -531,7 +526,7 @@ class UserModel extends ModelBaseMongoose {
 
 		// check if used by someone already
 		if (flagMustBeUnique) {
-			var user = await this.findOneByUsername(username);
+			var user = await this.findUserByUsername(username);
 			if (user && (!existingUser || existingUser.id !== user.id)) {
 				jrResult.pushFieldError("username", "Username already in use.");
 				return undefined;

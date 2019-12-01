@@ -39,7 +39,7 @@ class RoomModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	getModelClass() {
-		// new attempt, a subclass overriding function that returns hardcoded class
+		// subclass overriding function that returns class instance (each subclass MUST implement this)
 		return RoomModel;
 	}
 	//---------------------------------------------------------------------------
@@ -248,7 +248,7 @@ class RoomModel extends ModelBaseMongoose {
 
 	// see http://thecodebarbarian.com/whats-new-in-mongoose-53-async-iterators.html
 	static async buildSimpleRoomList(user) {
-		const docs = await this.mongooseModel.find().select("_id shortcode label");
+		const docs = await this.findAllSelect("_id shortcode label");
 		var roomlist = [];
 		for (const doc of docs) {
 			roomlist[doc._id] = doc.shortcode + " - " + doc.label;

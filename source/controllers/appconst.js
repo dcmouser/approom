@@ -77,7 +77,10 @@ exports.DefAclActionEdit = "edit";
 exports.DefAclActionList = "list";
 exports.DefAclActionView = "view";
 exports.DefAclActionDelete = "delete";
+exports.DefAclActionUnDelete = "undelete";
 exports.DefAclActionStats = "stats";
+//
+exports.DefAclActionSeeVdeletes = "seevdel";
 //
 exports.DefAclActionAnalytics = "analytics";
 //---------------------------------------------------------------------------
@@ -96,8 +99,26 @@ exports.DefMdbRealDelete = 3;
 exports.DefDeleteDisableLabels = {
 	[exports.DefMdbEnable]: "enabled",
 	[exports.DefMdbDisable]: "disabled",
-	[exports.DefMdbVirtDelete]: "virtually deleted",
+	[exports.DefMdbVirtDelete]: "vdeleted",
 	[exports.DefMdbRealDelete]: "deleted",
+};
+exports.DefDeleteDisableLabelsEdit = {
+	[exports.DefMdbEnable]: "enabled",
+	[exports.DefMdbDisable]: "disabled",
+	[exports.DefMdbVirtDelete]: "vdeleted",
+	// [exports.DefMdbRealDelete]: "deleted",
 };
 //---------------------------------------------------------------------------
 
+
+
+//---------------------------------------------------------------------------
+// showing disabled, etc
+exports.DefShowDisableLabels = {
+	onlyEnabled: "Only enabled",
+	enabledDisabled: "Enabled/Disabled",
+	onlyDisabled: "Only disabled",
+	onlyDeleted: "Only deleted",
+	all: "All (enabled, disabled, deleted)",
+};
+//---------------------------------------------------------------------------

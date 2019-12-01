@@ -14,6 +14,8 @@
 const jrhMisc = require("./jrh_misc");
 const jrhText = require("./jrh_text");
 
+const jrequire = require("./jrequire");
+
 
 
 
@@ -28,7 +30,10 @@ const jrhText = require("./jrh_text");
  * @returns raw html string
  */
 async function jrGridList(req, listHelperData) {
+	//
 	var rethtml = "";
+	const flagShowDebugInfo = false;
+	const flagShowTopPager = false;
 
 	// destructure parts
 	const queryUrlData = listHelperData.queryUrlData;
@@ -49,7 +54,7 @@ async function jrGridList(req, listHelperData) {
 
 	var pagerHtml = jrGridListPager(queryUrlData);
 
-	// ADD link
+	// link to ADD a new item
 	var addUrl = queryUrlData.baseUrl + "/add";
 	var addLabel = listHelperData.modelClass.getNiceName();
 	rethtml += `
@@ -57,12 +62,19 @@ async function jrGridList(req, listHelperData) {
 		`;
 
 	// add pager at top
-	if (false) {
+	if (flagShowTopPager) {
 		rethtml += pagerHtml;
 	}
 
+	// show result count
+	var resultCount = queryUrlData.resultCount;
+	rethtml += "<div><strong>Total items:" + resultCount.toString() + "</strong></div>";
+
 	// build table
 	rethtml += await jrGridListTable(req, listHelperData, queryUrlData);
+
+	// show deleted/hidden options
+	rethtml += await jrGridListShowHiddenOptions(req, listHelperData, queryUrlData);
 
 	// build "with all checked" input
 	rethtml += await jrGridListBulkActions(req, listHelperData, queryUrlData, tableid);
@@ -71,7 +83,7 @@ async function jrGridList(req, listHelperData) {
 	rethtml += pagerHtml;
 
 	// debug info
-	if (false) {
+	if (flagShowDebugInfo) {
 		rethtml += "<br/><hr/>";
 		var debugHtml = "<pre>listHelperData: " + JSON.stringify(listHelperData, null, "  ") + "</pre>";
 		rethtml += debugHtml;
@@ -82,8 +94,10 @@ async function jrGridList(req, listHelperData) {
 		</form>
 		`;
 
-	// debug extra stuff
-	rethtml += "\n<br/><hr/>\n" + jrhText.jrBootstrapCollapseBox("Table Debug", listHelperData, "");
+	if (flagShowDebugInfo) {
+		// debug extra stuff
+		rethtml += "\n<br/><hr/>\n" + jrhText.jrBootstrapCollapseBox("Table Debug", listHelperData, "");
+	}
 
 	// return it as raw html
 	return rethtml;
@@ -279,6 +293,8 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 
 
 
+
+//---------------------------------------------------------------------------
 /**
  * Builds html for a with all checked drop down box and button
  *
@@ -415,7 +431,7 @@ function jrGridListPagerItem(label, pageIndex, flagLink, flagActive, queryUrlDat
 	}
 	var url = "#";
 	var updateObjString = "{pageNum: '" + pageIndex.toString() + "'}";
-	var onclick = "requestGridUpdate('" + queryUrlData.tableId + "', " + updateObjString + ");return false;";
+	var onclick = "requestGridUpdate('" + queryUrlData.tableId + "', " + updateObjString + ", false);return false;";
 
 	var rethtml = `
 		<li class="page-item${liclass}">
@@ -454,7 +470,7 @@ function jrGridListPagerItemPerPage(label, newPageSize, currentPageSize, flagLin
 
 	var url = "#"; // queryUrlData.baseUrl + "?pageSize=" + newPageSize.toString();
 	var updateObjString = "{pageSize: '" + newPageSize.toString() + "'}";
-	var onclick = "requestGridUpdate('" + queryUrlData.tableId + "', " + updateObjString + ");return false;";
+	var onclick = "requestGridUpdate('" + queryUrlData.tableId + "', " + updateObjString + ", true);return false;";
 
 	var rethtml = `
 		<li class="page-item${liclass}">
@@ -536,7 +552,7 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 				updateObjString = "{sortField:'" + key + "', sortDir: 'asc'}";
 				title = "sort on this variable";
 			}
-			onclick = "requestGridUpdate('" + queryUrlData.tableId + "', " + updateObjString + ");return false;";
+			onclick = "requestGridUpdate('" + queryUrlData.tableId + "', " + updateObjString + ", true);return false;";
 			//
 			// use label?
 			if (flagUseLabel) {
@@ -568,7 +584,7 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 			return;
 		}
 		if (key === "_checkbox") {
-			onclick = "jrGridClearFilters('" + queryUrlData.tableId + "'); requestGridUpdate('" + queryUrlData.tableId + "', {}); return false;";
+			onclick = "jrGridClearFilters('" + queryUrlData.tableId + "'); requestGridUpdate('" + queryUrlData.tableId + "', {}, true); return false;";
 			rethtml += `
 					<th scope="col"> <a href="#" onclick="${onclick}" title="clear all filters"> &#x2717; </a> </th>
 				`;
@@ -588,7 +604,7 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 			} else {
 				val = jrhMisc.makeSafeForFormInput(val);
 			}
-			var onkeydown = "jrGridGenericOnEnterRefresh(event, '" + queryUrlData.tableId + "', this)";
+			var onkeydown = "jrGridGenericOnEnterRefresh(event, '" + queryUrlData.tableId + "', this, true)";
 			var size = listHelperData.modelClass.getSchemaExtraFieldVal(key, "filterSize", defaultFilterInputSize);
 			if (!size) {
 				rethtml += `
@@ -649,6 +665,47 @@ function calcHeaderKeysNicely(gridSchema) {
 	return headerKeys;
 }
 //---------------------------------------------------------------------------
+
+
+
+
+
+
+
+//---------------------------------------------------------------------------
+function jrGridListShowHiddenOptions(req, listHelperData, queryUrlData) {
+	// show a drop down with hidden options
+	// what we show may depend on user acl permissions
+	const tableid = queryUrlData.tableId;
+
+
+	var rethtml = "<hr/><div>";
+
+	const appconst = jrequire("appconst");
+
+	// build form input
+	var selectedid = "all";
+	rethtml += "Show: " + jrhText.jrHtmlFormOptionListSelect("showdisabled", appconst.DefShowDisableLabels, selectedid);
+
+	// end stuff
+	rethtml += "</div><hr/>";
+
+	return rethtml;
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

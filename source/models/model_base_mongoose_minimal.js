@@ -19,6 +19,8 @@ const jrequire = require("../helpers/jrequire");
 // models
 const ModelBaseMongoose = jrequire("models/model_base_mongoose");
 
+// controllers
+const appconst = jrequire("appconst");
 
 // our helper modules
 const jrlog = require("../helpers/jrlog");
@@ -37,7 +39,7 @@ class ModelBaseMongooseMinimal extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	getModelClass() {
-		// new attempt, a subclass overriding function that returns hardcoded class
+		// subclass overriding function that returns class instance (each subclass MUST implement this)
 		return ModelBaseMongooseMinimal;
 	}
 	//---------------------------------------------------------------------------
@@ -77,16 +79,26 @@ class ModelBaseMongooseMinimal extends ModelBaseMongoose {
 		var obj = {
 			...inobj,
 		};
-		var model = new this.mongooseModel(obj);
+		var model = this.newMongooseModel(obj);
 		return model;
 	}
 	//---------------------------------------------------------------------------
 
 
 
+
+
 	//---------------------------------------------------------------------------
 	static async validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj) {
 		// nothing to do for minimal
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	// override this to default to real delete for some models
+	static getDefaultDeleteDisableMode() {
+		return appconst.DefMdbRealDelete;
 	}
 	//---------------------------------------------------------------------------
 

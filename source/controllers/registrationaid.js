@@ -385,7 +385,7 @@ class RegistrationAid {
 		const verificationCode = req.body.verificationCode;
 		if (!verification && verificationCode) {
 			// first lookup verify code if code provided in form
-			verification = await VerificationModel.findOneByCode(verificationCode);
+			verification = await VerificationModel.findVerificationByCode(verificationCode);
 		}
 		if (!verification) {
 			// not found in form, maybe there is a remembered verification id in ession regarding new account email verified, then show full

@@ -109,7 +109,7 @@ describe("user", function test() {
 
 	it("Checking admin password is still set to default", async () => {
 		// get admin user
-		var user = await UserModel.findOneByUsername("admin");
+		var user = await UserModel.findUserByUsername("admin");
 		assert(user, "user with 'admin' username not found");
 
 		// test password see if its default
