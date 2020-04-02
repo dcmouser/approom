@@ -7,18 +7,27 @@
 		<nav>
 			<ul class="pagination">
 				<li class="page-item"><a href="{{baseCrudUrl}}/edit/{{obj._id}}" class="page-link">Edit</a></li>
-				{{#if crudDelete}}
-				{{else}}
+				{{#if flagOfferDelete}}
 				<li class="page-item"><a href="{{baseCrudUrl}}/delete/{{obj._id}}" class="page-link">Delete</a></li>
+				{{/if}}
+				{{#if flagOfferUnDelete}}
+				<li class="page-item"><a href="{{baseCrudUrl}}/undelete/{{obj._id}}" class="page-link">Un-delete</a></li>
 				{{/if}}
 				<li class="page-item"><a href="{{baseCrudUrl}}" class="page-link">List All</a></li>
 			</ul>
 		</nav>
 
-		{{#if crudDelete}}
+		{{#if flagConfirmDelete}}
 		<hr/>
 	   	<div>
         	<input type="submit" value="CONFIRM DELETE NOW" />
+			<input action="action" onclick="window.location.href = '{{cancelUrl}}'; return false;" type="button" value="CANCEL" />
+    	</div>
+		{{/if}}
+		{{#if flagConfirmUnDelete}}
+		<hr/>
+	   	<div>
+        	<input type="submit" value="CONFIRM UN-DELETE NOW" />
 			<input action="action" onclick="window.location.href = '{{cancelUrl}}'; return false;" type="button" value="CANCEL" />
     	</div>
 		{{/if}}

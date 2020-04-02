@@ -214,7 +214,18 @@ class AppModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// delete any ancillary deletions AFTER the normal delete
-	static async auxDeleteDisableById(id, mode, jrResult) {
+	static async auxChangeModeById(id, mode, jrResult) {
+		// call super callss
+		super.auxChangeModeById(id, mode, jrResult);
+
+		// if we are enabling or disabling, then we don't touch rooms
+		if (mode === appconst.DefMdbEnable || mode === appconst.DefMdbDisable) {
+			// nothing to do
+			return;
+		}
+
+		// this is a virtual delete or real delete
+
 		// for app model, this means deleting associated rooms
 		const roomIdList = await this.getAssociatedRoomsByAppId(id, jrResult);
 		if (jrResult.isError()) {
@@ -227,9 +238,9 @@ class AppModel extends ModelBaseMongoose {
 
 		// delete them
 		const RoomModel = jrequire("models/room");
-		await RoomModel.doDeleteDisableByIdList(roomIdList, mode, jrResult, true);
+		await RoomModel.doChangeModeByIdList(roomIdList, mode, jrResult, true);
 		if (!jrResult.isError()) {
-			const modeLabel = jrhText.capitalizeFirstLetter(appconst.DefDeleteDisableLabels[mode]);
+			const modeLabel = jrhText.capitalizeFirstLetter(appconst.DefStateModeLabels[mode]);
 			jrResult.pushSuccess(modeLabel + " " + RoomModel.getNiceNamePluralized(roomIdList.length) + " attached to " + this.getNiceName() + " #" + id + ".");
 		}
 	}

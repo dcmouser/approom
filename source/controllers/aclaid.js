@@ -96,6 +96,8 @@ class AclAid {
 		this.createAclEditViewGrantsForResource("login");
 		this.createAclEditViewGrantsForResource("session");
 		this.createAclEditViewGrantsForResource("user");
+		this.createAclEditViewGrantsForResource("subscription");
+		this.createAclEditViewGrantsForResource("modqueue");
 
 		// global site admin
 		this.roleAcl.grant(appconst.DefAclRoleSiteAdmin).execute(appconst.DefAclActionAdmin).on(appconst.DefAclObjectTypeSite);

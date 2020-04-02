@@ -219,11 +219,20 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 					`;
 			} else if (key === "_actions") {
 				// action column
+				rethtml += "<td scope=\"col\">";
+				// edit
 				var urlEdit = queryUrlData.baseUrl + "/edit/" + item._id;
-				var urlDelete = queryUrlData.baseUrl + "/delete/" + item._id;
-				rethtml += `
-						<td scope="col"> <a href="${urlEdit}" title="edit">&#9998;</a>  <a href="${urlDelete}" title="delete">&#10008;</a> </td>
-					`;
+				rethtml += `<a href="${urlEdit}" title="edit">&#9998;</a> `;
+				// undelete
+				if (("disabled" in item) && item.disabled === 2) {
+					var urlUnDelete = queryUrlData.baseUrl + "/undelete/" + item._id;
+					rethtml += ` <a href="${urlUnDelete}" title="undelete">&#9852;</a> `;
+				} else {
+					// delete
+					var urlDelete = queryUrlData.baseUrl + "/delete/" + item._id;
+					rethtml += ` <a href="${urlDelete}" title="delete">&#10008;</a> `;
+				}
+				rethtml += "</td>";
 			} else {
 				val = item[key];
 				valformat = extraInfoKey.valformat;
@@ -313,6 +322,7 @@ async function jrGridListBulkActions(req, listHelperData, queryUrlData, tableid)
 	rethtml += `<select name="bulkaction">
 		<option value=""></option>
 		<option value="delete">Delete All</option>
+		<option value="undelete">Un-delete All</option>
 		</select>`;
 
 	// go button
@@ -685,7 +695,7 @@ function jrGridListShowHiddenOptions(req, listHelperData, queryUrlData) {
 
 	// build form input
 	var selectedid = "all";
-	rethtml += "Show: " + jrhText.jrHtmlFormOptionListSelect("showdisabled", appconst.DefShowDisableLabels, selectedid);
+	rethtml += "Show: " + jrhText.jrHtmlFormOptionListSelect("showdisabled", appconst.DefShowStateModeLabels, selectedid);
 
 	// end stuff
 	rethtml += "</div><hr/>";

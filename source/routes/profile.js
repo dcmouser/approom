@@ -75,6 +75,8 @@ function setupRouter(urlPath) {
 
 
 // edit profile form
+// ATTN: it's not clear to me why we have this code here, except as a demonstration of how you can use crudAid functions OUTSIDE the normal crud system
+
 async function routerGetEdit(req, res, next) {
 	// require them to be logged in, or creates a redirect
 	var user = await arserver.getLoggedInUser(req);
@@ -101,6 +103,7 @@ async function routerGetEdit(req, res, next) {
 
 
 // edit profile submit
+// ATTN: it's not clear to me why we have this code here, except as a demonstration of how you can use crudAid functions OUTSIDE the normal crud system
 async function routerPostEdit(req, res, next) {
 	// require them to be logged in, or creates a redirect
 	var user = await arserver.getLoggedInUser(req);

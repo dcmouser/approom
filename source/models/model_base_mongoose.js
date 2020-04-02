@@ -159,8 +159,8 @@ class ModelBaseMongoose {
 			disabled: {
 				label: "Disabled?",
 				format: "choices",
-				choices: appconst.DefDeleteDisableLabels,
-				choicesEdit: appconst.DefDeleteDisableLabelsEdit,
+				choices: appconst.DefStateModeLabels,
+				choicesEdit: appconst.DefStateModeLabelsEdit,
 				filterSize: 8,
 			},
 			extraData: {
@@ -861,7 +861,7 @@ class ModelBaseMongoose {
 
 	static async findOneAndUpdateExec(criteria, setObject) {
 		// actually call mongooseModel findOneAndUpdateExec
-		var retv = await this.mongooseModel.findOneAndUpdateExec(criteria, setObject).exec();
+		var retv = await this.mongooseModel.findOneAndUpdate(criteria, setObject).exec();
 		return retv;
 	}
 
@@ -889,6 +889,7 @@ class ModelBaseMongoose {
 
 	/**
 	 * Find some items (possibly paginated)
+	 * This is used in our crud system
 	 *
 	 * @static
 	 * @param {object} query
@@ -902,14 +903,14 @@ class ModelBaseMongoose {
 		// see https://thecodebarbarian.com/how-find-works-in-mongoose
 		var queryProjection = "";
 		try {
-			var items = await this.getMongooseModel().find(query, queryProjection, queryOptions).exec();
+			var items = await this.mongooseModel.find(query, queryProjection, queryOptions).exec();
 
 			var resultCount;
 			var isQueryEmpty = ((Object.keys(query)).length === 0);
 			if (isQueryEmpty) {
-				resultCount = await this.getMongooseModel().countDocuments();
+				resultCount = await this.mongooseModel.countDocuments();
 			} else {
-				resultCount = await this.getMongooseModel().countDocuments(query).exec();
+				resultCount = await this.mongooseModel.countDocuments(query).exec();
 			}
 
 			return [items, resultCount];
@@ -1110,7 +1111,7 @@ class ModelBaseMongoose {
 
 
 	// subclasses can subclass this list grid helper
-	static async calcCrudListHelperData(req, res, baseUrl, protectedFields, hiddenFields, jrResult) {
+	static async calcCrudListHelperData(req, res, user, baseUrl, protectedFields, hiddenFields, jrResult) {
 		// perform a find filter and create table grid
 
 		// schema for obj
@@ -1149,6 +1150,15 @@ class ModelBaseMongoose {
 		// Note that if we wanted to call methods on the model class we couldn't do this, as it returns results as plain generic objects
 		queryOptions.lean = true;
 
+		// test
+		// jrdebug.debugObj(query, "111 Test query in calcCrudListHelperData.");
+
+		// add filter to not show vdeletes if appropriate
+		await this.addUserDisabledVisibilityToQuery(user, query);
+
+		// test
+		// jrdebug.debugObj(query, "222 Test query in calcCrudListHelperData.");
+
 		// get the items using query
 		var [gridItems, resultcount] = await this.findSomeByQuery(query, queryOptions, jrResult);
 		queryUrlData.resultCount = resultcount;
@@ -1180,6 +1190,51 @@ class ModelBaseMongoose {
 
 
 
+
+
+
+	//---------------------------------------------------------------------------
+	/**
+	 * This adds to a query a filter that makes virtually deleted objects inaccessible if the user doesn't have permission.
+	 * Modifies the passed query.
+	 *
+	 * @static
+	 * @param {object} user
+	 * @param {object} query
+	 * @memberof ModelBaseMongoose
+	 */
+	static async addUserDisabledVisibilityToQuery(user, query) {
+
+		if (await user.aclHasPermissionSeeVDeletes(this)) {
+			// they are allowed to see the virtually deleted, so just return
+			return;
+		}
+
+		// we need to filter out virtual deletes
+		const addFilter = {
+			$ne: 2,
+		};
+		if (!query.disabled) {
+			// just add the filter
+			query.disabled = addFilter;
+		} else {
+			// more complicated, we have to inject it
+			var oldDisabled = query.disabled;
+			delete query.disabled;
+			if (query.$and) {
+				// there is an and we need to add it to
+				query.$and.push(oldDisabled);
+				query.$and.push(addFilter);
+			} else {
+				// there is no and, so create one
+				query.$and = [
+					{ disabled: oldDisabled },
+					{ disabled: addFilter },
+				];
+			}
+		}
+	}
+	//---------------------------------------------------------------------------
 
 
 
@@ -1349,22 +1404,22 @@ class ModelBaseMongoose {
 	 * @param {string} mode
 	 * @param {object} jrResult
 	 */
-	async doDeleteDisable(mode, jrResult) {
+	async doChangeMode(mode, jrResult) {
 		// just hand off to static class version
-		await this.getModelClass().doDeleteDisableById(this.getId(), mode, jrResult);
+		await this.getModelClass().doChangeModeById(this.getId(), mode, jrResult);
 	}
 
 
 
 	/**
-	 * Delete the object AND do any cleanup, like deleteing accessory objects, removing references, etc.
+	 * change mode (delete) the object AND do any cleanup, like deleteing accessory objects, removing references, etc.
 	 *
 	 * @static
 	 * @param {string} id
 	 * @param {string} mode
 	 * @param {object} jrResult
 	 */
-	static async doDeleteDisableById(id, mode, jrResult) {
+	static async doChangeModeById(id, mode, jrResult) {
 
 		if (mode === appconst.DefMdbRealDelete) {
 			// direct database delete
@@ -1374,12 +1429,13 @@ class ModelBaseMongoose {
 				}
 			});
 		} else {
-			// it's a virtual delete or disable
-			// we set the field "disabled" to mode value
+			// change mode (enable, disable, vdelete, etc.)
+			// just sets the field "disabled" to mode value
 			// see https://mongoosejs.com/docs/documents.html#updating
-			await this.getMongooseModel().updateOne({ _id: id }, { $set: { disabled: mode } }, (err) => {
+			const nowDate = new Date();
+			await this.getMongooseModel().updateOne({ _id: id }, { $set: { disabled: mode, modificationDate: nowDate } }, (err) => {
 				if (err) {
-					jrResult.pushError("Error while tryign to " + appconst.DefDeleteDisableLabels[mode] + "  " + this.getNiceNameWithId(id) + ": " + err.message);
+					jrResult.pushError("Error while changing to " + appconst.DefStateModeLabels[mode] + "  " + this.getNiceNameWithId(id) + ": " + err.message);
 				}
 			});
 		}
@@ -1388,14 +1444,14 @@ class ModelBaseMongoose {
 			return;
 		}
 
-		// success
-		await this.auxDeleteDisableById(id, mode, jrResult);
+		// success, now handle any post change operations (like deleting accessory objects, etc.)
+		await this.auxChangeModeById(id, mode, jrResult);
 	}
 
 
 
 
-	static async doDeleteDisableByIdList(idList, mode, jrResult, flagSupressSuccessMessage) {
+	static async doChangeModeByIdList(idList, mode, jrResult, flagSupressSuccessMessage) {
 		// delete/disable a bunch of items
 		var successCount = 0;
 
@@ -1403,14 +1459,14 @@ class ModelBaseMongoose {
 		var id;
 		for (let i = 0; i < idList.length; ++i) {
 			id = idList[i];
-			await this.doDeleteDisableById(id, mode, jrResult);
+			await this.doChangeModeById(id, mode, jrResult);
 			if (jrResult.isError()) {
 				break;
 			}
 			++successCount;
 		}
 
-		const modeLabel = jrhText.capitalizeFirstLetter(appconst.DefDeleteDisableLabels[mode]);
+		const modeLabel = jrhText.capitalizeFirstLetter(appconst.DefStateModeLabels[mode]);
 		if (!jrResult.isError()) {
 			if (!flagSupressSuccessMessage) {
 				jrResult.pushSuccess(modeLabel + " " + this.getNiceNamePluralized(successCount) + ".");
@@ -1426,7 +1482,7 @@ class ModelBaseMongoose {
 
 	// delete any ancillary deletions AFTER the normal delete
 	// this would normally be subclassed by specific model
-	static async auxDeleteDisableById(id, mode, jrResult) {
+	static async auxChangeModeById(id, mode, jrResult) {
 		// by default, nothing to do; subclasses can replace this
 	}
 	//---------------------------------------------------------------------------

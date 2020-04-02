@@ -1,8 +1,8 @@
 <h1>{{message}}</h1>
 <h2>{{status}}</h2>
 
-{{#if isVideoAvailable}}
-	<h2>Debugging stack info from error view:</h2>
-	<pre>{{error.stack}}</pre>
+{{#if errorDetails}}
+	<h2>DEVELOPMENT MODE Debugging stack info from error view:</h2>
+	<pre>{{errorDetails}}</pre>
 {{/if}}
 

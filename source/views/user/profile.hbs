@@ -2,7 +2,8 @@
 
 <div>Session user info:<pre>{{extraViewData.userInfo}}</pre></div>
 
-
+{{#if csrfToken}}
+	<!-- as a demonstration of using crud form from profile editing data -->
 	<form action="" method="post">
 
 		{{genericMainHtml}}
@@ -15,4 +16,9 @@
     	<input type="hidden" name="_csrf" value="{{csrfToken}}">
 
     </form>
+{{else}}
+
+		{{genericMainHtml}}
+
+{{/if}}
 

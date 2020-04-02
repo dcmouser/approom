@@ -51,12 +51,19 @@ function setupRouter(urlPath) {
 	// setup routes
 	router.get("/", routerGetIndex);
 	router.post("/", routerPostIndex);
+
 	router.get("/facebook", passport.authenticate("facebook", {}));
 	router.get("/facebook/auth", routerGetFacebookAuth);
-	router.get("/twitter", passport.authenticate("twitter", {}));
-	router.get("/twitter/auth", routerGetTwitterAuth);
+
 	router.get("/email", routerGetEmail);
 	router.post("/email", routerPostEmail);
+
+	// not implemented yet but placeholders
+	router.get("/twitter", passport.authenticate("twitter", {}));
+	router.get("/twitter/auth", routerGetTwitterAuth);
+	router.get("/google", passport.authenticate("google", {}));
+	router.get("/google/auth", routerGetGoogleAuth);
+
 
 	// return router
 	return router;
@@ -70,7 +77,7 @@ function setupRouter(urlPath) {
 // router functions
 
 
-// present login form
+// present local email/password login form
 async function routerGetIndex(req, res, next) {
 	// ATTN: unfinished - if they have just created an account and been redirected here to login (in order to encourage them to remember their password),
 	//  we could try to be a bit nice and pre-fill their username, eg. req.body.usernameEmail
@@ -83,7 +90,7 @@ async function routerGetIndex(req, res, next) {
 }
 
 
-// process login form
+// process local email/password login form
 // see https://www.sitepoint.com/local-authentication-using-passport-node-js/
 async function routerPostIndex(req, res, next) {
 	// our manual passport authentification helper, sends user to /profile on success or /login on failure
@@ -117,13 +124,6 @@ async function routerPostIndex(req, res, next) {
 async function routerGetFacebookAuth(req, res, next) {
 	// our manual passport authentification helper, sends user to /profile on success or /login on failure
 	await arserver.asyncRoutePassportAuthenticate("facebook", "via facebook", req, res, next, null, true, true);
-}
-
-
-// twiter auth callback
-async function routerGetTwitterAuth(req, res, next) {
-	// our manual passport authentification helper, sends user to /profile on success or /login on failure
-	await arserver.asyncRoutePassportAuthenticate("twitter", "via twitter", req, res, next, null, true, true);
 }
 
 
@@ -180,6 +180,28 @@ async function routerPostEmail(req, res, next) {
 	});
 }
 //---------------------------------------------------------------------------
+
+
+
+
+//---------------------------------------------------------------------------
+// ATTN: These login bridges are not implemented yet
+
+// twiter auth callback
+async function routerGetTwitterAuth(req, res, next) {
+	// our manual passport authentification helper, sends user to /profile on success or /login on failure
+	await arserver.asyncRoutePassportAuthenticate("twitter", "via twitter", req, res, next, null, true, true);
+}
+
+
+// google auth callback
+async function routerGetGoogleAuth(req, res, next) {
+	// our manual passport authentification helper, sends user to /profile on success or /login on failure
+	await arserver.asyncRoutePassportAuthenticate("google", "via google", req, res, next, null, true, true);
+}
+//---------------------------------------------------------------------------
+
+
 
 
 

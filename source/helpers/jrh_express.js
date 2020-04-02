@@ -186,7 +186,6 @@ function calcExpressMiddleWare(app) {
 }
 
 
-
 /**
  * Helper funciton to try to get function file line from handle
  *
@@ -194,8 +193,19 @@ function calcExpressMiddleWare(app) {
  * @returns
  */
 function calcExpressMiddlewareGetFileLine(handler) {
+
+	// This is a little trick we found to get the line number
+	// ATTN: But on 3/31/20 it stopped working, due to our custom error handler catching this exception; we fixed the custom error catcher so it works now but I'm leaving this a flag so it can be bypassed if it ceases to work in the future
+	const flagTryGetFileLine = true;
+	//
+	if (!flagTryGetFileLine) {
+		return "[file line n/a]";
+	}
+
 	try {
-		handler(undefined);
+		// trigger an ignorable exception (caught in arserver and ignored)
+		handler("IGNORE_EXCEPTION");
+		// handler(undefined);
 	} catch (e) {
 		return e.stack.split("\n")[1];
 	}

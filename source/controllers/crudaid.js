@@ -96,10 +96,19 @@ class CrudAid {
 		//---------------------------------------------------------------------------
 		// delete (get)
 		const viewFilePathDelete = this.calcViewFile("viewdelete", modelClass);
-		router.get("/delete/:id", async (req, res, next) => await this.handleDeleteGet(req, res, next, modelClass, baseCrudUrl, viewFilePathDelete, extraViewData));
+		router.get("/delete/:id", async (req, res, next) => await this.handleChangeModeGet(req, res, next, modelClass, baseCrudUrl, viewFilePathDelete, extraViewData, "delete"));
 		// delete (post submit)
-		router.post("/delete/:ignoredid?", async (req, res, next) => await this.handleDeletePost(req, res, next, modelClass, baseCrudUrl, viewFilePathDelete, extraViewData));
+		router.post("/delete/:ignoredid?", async (req, res, next) => await this.handleChangeModePost(req, res, next, modelClass, baseCrudUrl, viewFilePathDelete, extraViewData, "delete"));
 		//---------------------------------------------------------------------------
+
+		//---------------------------------------------------------------------------
+		// delete (get)
+		const viewFilePathUnDelete = this.calcViewFile("viewdelete", modelClass);
+		router.get("/undelete/:id", async (req, res, next) => await this.handleChangeModeGet(req, res, next, modelClass, baseCrudUrl, viewFilePathUnDelete, extraViewData, "undelete"));
+		// delete (post submit)
+		router.post("/undelete/:ignoredid?", async (req, res, next) => await this.handleChangeModePost(req, res, next, modelClass, baseCrudUrl, viewFilePathUnDelete, extraViewData, "undelete"));
+		//---------------------------------------------------------------------------
+
 
 		//---------------------------------------------------------------------------
 		// stats
@@ -129,7 +138,7 @@ class CrudAid {
 		}
 
 		// present the list
-		return await this.doHandleList(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData);
+		return await this.doHandleList(req, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
 	}
 
 
@@ -156,13 +165,13 @@ class CrudAid {
 		jrResult.addToSession(req);
 
 		// present the list
-		return await this.doHandleList(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData);
+		return await this.doHandleList(req, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
 	}
 
 
 
 
-	async doHandleList(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	async doHandleList(req, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		var jrResult = JrResult.makeNew();
 
 		// ATTN: We might set these differently based on who is logged in and looking at the list
@@ -179,7 +188,7 @@ class CrudAid {
 		hiddenFields = jrhMisc.mergeArraysDedupe(hiddenFields, hiddenFiledsExtraSchema);
 
 		// make helper data
-		const helperData = await modelClass.calcCrudListHelperData(req, res, baseCrudUrl, protectedFields, hiddenFields, jrResult);
+		const helperData = await modelClass.calcCrudListHelperData(req, res, user, baseCrudUrl, protectedFields, hiddenFields, jrResult);
 
 		// generic main html for page (add form)
 		var genericMainHtml;
@@ -334,7 +343,7 @@ class CrudAid {
 					// so first things first lets delete the object
 					var jrResultFollowup = JrResult.makeNew();
 					// we do a REAL delete here (as opposed to a virtual one) since the object was just added in failure
-					await savedobj.doDeleteDisable(appconst.DefMdbRealDelete, jrResultFollowup);
+					await savedobj.doChangeMode(appconst.DefMdbRealDelete, jrResultFollowup);
 					if (jrResultFollowup.isError()) {
 						// yikes we couldn't even delete the object
 						errmsg += "  In addition, the newly created object could not be rolled back and deleted.";
@@ -434,6 +443,10 @@ class CrudAid {
 		// cancel button goes where?
 		const cancelUrl = baseCrudUrl + "/view/" + id;
 
+		//
+		const flagOfferDelete = obj.disabled === 0 || (obj.disabled !== appconst.DefMdbVirtDelete);
+		const flagOfferUnDelete = obj.disabled === appconst.DefMdbVirtDelete;
+
 		// render
 		res.render(viewFile, {
 			headline: "Edit " + modelClass.getNiceName() + " #" + id,
@@ -445,6 +458,8 @@ class CrudAid {
 			baseCrudUrl,
 			cancelUrl,
 			extraViewData,
+			flagOfferDelete,
+			flagOfferUnDelete,
 		});
 
 		return true;
@@ -525,6 +540,10 @@ class CrudAid {
 			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, reqbody, jrResult, "edit", helperData);
 		}
 
+		//
+		const flagOfferDelete = obj.disabled === 0 || (obj.disabled !== appconst.DefMdbVirtDelete);
+		const flagOfferUnDelete = obj.disabled === appconst.DefMdbVirtDelete;
+
 		// render -- just like original edit
 		res.render(viewFile, {
 			headline: "Edit " + modelClass.getNiceName() + " #" + id,
@@ -535,6 +554,8 @@ class CrudAid {
 			genericMainHtml,
 			baseCrudUrl,
 			extraViewData,
+			flagOfferDelete,
+			flagOfferUnDelete,
 		});
 
 		return true;
@@ -567,6 +588,9 @@ class CrudAid {
 			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, obj, jrResult, "view", helperData);
 		}
 
+		const flagOfferDelete = obj.disabled === 0 || (obj.disabled !== appconst.DefMdbVirtDelete);
+		const flagOfferUnDelete = obj.disabled === appconst.DefMdbVirtDelete;
+
 		// render
 		res.render(viewFile, {
 			headline: "View " + modelClass.getNiceName() + " #" + id,
@@ -574,7 +598,9 @@ class CrudAid {
 			obj,
 			helperData,
 			genericMainHtml,
-			crudDelete: false,
+			reqmode: "view",
+			flagOfferDelete,
+			flagOfferUnDelete,
 			baseCrudUrl,
 			extraViewData,
 		});
@@ -583,26 +609,107 @@ class CrudAid {
 	}
 
 
-	async handleDeleteGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
-		// get logged in user
-		var user = await arserver.getLoggedInUser(req);
 
-		var jrResult = JrResult.makeNew();
-		// get id from get param
-		var id = req.params.id;
 
-		// get object AND perform ACL test
-		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, appconst.DefAclActionDelete);
-		if (jrResult.isError()) {
-			return true;
+	getAclActionForChangeReqMode(reqmode) {
+		if (reqmode === "delete") {
+			return appconst.DefAclActionDelete;
 		}
-
-		return await this.handleDeletePresentView(id, obj, req, res, modelClass, baseCrudUrl, viewFileSet, extraViewData);
+		if (reqmode === "undelete") {
+			return appconst.DefAclActionUnDelete;
+		}
+		throw new Error("Unknown reqmode in getAclActionForChangeReqMode: " + reqmode);
 	}
 
 
 
-	async handleDeletePresentView(id, obj, req, res, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+
+
+
+	async handleChangeModeGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode) {
+		var jrResult = JrResult.makeNew();
+
+		// get logged in user
+		var user = await arserver.getLoggedInUser(req);
+
+		// get id from get param
+		var id = req.params.id;
+
+		// which acl permission to check for
+		const aclAction = this.getAclActionForChangeReqMode(reqmode);
+
+		// get object AND perform ACL test
+		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, aclAction);
+		if (jrResult.isError()) {
+			return true;
+		}
+
+		return await this.handleChangeModePresentView(id, obj, req, res, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode);
+	}
+
+
+
+	async handleChangeModePost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode) {
+		var jrResult = JrResult.makeNew();
+
+		// get logged in user
+		var user = await arserver.getLoggedInUser(req);
+
+		// get id from post, ignore url param
+		var id = req.body._id;
+
+		// check required csrf token
+		if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
+			return true;
+		}
+
+		// which acl permission to check for
+		const aclAction = this.getAclActionForChangeReqMode(reqmode);
+
+		// get object AND perform ACL test
+		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, aclAction);
+		if (jrResult.isError()) {
+			return true;
+		}
+
+		// process delete
+
+		// what kind of delete do we want, virtual or real?
+		var newmode;
+		if (reqmode === "delete") {
+			newmode = modelClass.getDefaultDeleteDisableMode();
+		} else if (reqmode === "undelete") {
+			newmode = appconst.DefMdbEnable;
+		} else {
+			throw new Error("Unknown reqmode in handleChangeModePost: " + reqmode);
+		}
+
+		// do the actual mode change (delete / virtual or real)
+		await obj.doChangeMode(newmode, jrResult);
+
+		// on success redirect to listview
+		if (!jrResult.isError()) {
+			// success (push message to top since helper deleted may have been pushed on earlier)
+			const objIdString = obj.getIdAsString();
+			jrResult.pushSuccess(modelClass.getNiceName() + " #" + objIdString + " has been " + appconst.DefStateModeLabels[newmode] + ".", true);
+
+			// log the action
+			const logIdString = obj.getLogIdString();
+			arserver.logr(req, "crud." + reqmode, appconst.DefStateModeLabels[newmode] + " " + logIdString);
+
+			// redirect
+			jrResult.addToSession(req);
+			res.redirect(baseCrudUrl);
+			return true;
+		}
+
+		// error, re-present form
+		return await this.handleChangeModePresentView(id, obj, req, res, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode);
+	}
+
+
+
+	async handleChangeModePresentView(id, obj, req, res, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode) {
 		var jrResult = JrResult.makeNew();
 
 		// any helper data
@@ -614,20 +721,25 @@ class CrudAid {
 		// generic main html for page (delete form)
 		var genericMainHtml;
 		if (isGeneric) {
-			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, obj, jrResult, "delete", helperData);
+			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, obj, jrResult, reqmode, helperData);
 		}
 
 		// cancel button goes where?
 		const cancelUrl = baseCrudUrl + "/view/" + id;
 
+		//
+		var flagConfirmDelete = (reqmode === "delete");
+		var flagConfirmUnDelete = (reqmode === "undelete");
+
 		// render
 		res.render(viewFile, {
-			headline: "Delete " + modelClass.getNiceName() + " #" + id + "?",
+			headline: jrhText.capitalizeFirstLetter(reqmode) + " " + modelClass.getNiceName() + " #" + id + "?",
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
 			csrfToken: arserver.makeCsrf(req, res),
 			obj,
 			genericMainHtml,
-			crudDelete: true,
+			flagConfirmDelete,
+			flagConfirmUnDelete,
 			baseCrudUrl,
 			cancelUrl,
 			extraViewData,
@@ -637,59 +749,22 @@ class CrudAid {
 	}
 
 
-	async handleDeletePost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
-		// ATTN: TODO 11/26/19 - we do not currently handle case of deleting the role of the owner of this object, or other people pointing to it, etc.
 
-		// get logged in user
-		var user = await arserver.getLoggedInUser(req);
 
-		var jrResult = JrResult.makeNew();
-		// get id from post, ignore url param
-		var id = req.body._id;
 
-		// check required csrf token
-		if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
-			return true;
-		}
 
-		// jrdebug.debugObj(modelClass, "ModelClass");
 
-		// get object AND perform ACL test
-		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, appconst.DefAclActionDelete);
-		if (jrResult.isError()) {
-			return true;
-		}
 
-		// object id for display.
-		const objIdString = obj.getIdAsString();
-		const logIdString = obj.getLogIdString();
 
-		// process delete
 
-		// what kind of delete do we want, virtual or real?
-		const deleteDisableMode = modelClass.getDefaultDeleteDisableMode();
-		//
-		await obj.doDeleteDisable(deleteDisableMode, jrResult);
 
-		// on success redirect to listview
-		if (!jrResult.isError()) {
-			// success (push message to top since helper deleted may have been pushed on earlier)
-			jrResult.pushSuccess(modelClass.getNiceName() + " #" + objIdString + " has been " + appconst.DefDeleteDisableLabels[deleteDisableMode] + ".", true);
 
-			// log the action
-			arserver.logr(req, "crud.delete", appconst.DefDeleteDisableLabels[deleteDisableMode] + " " + logIdString);
 
-			// ATTN: TODO 11/26/19
-			// we should delete any references to this object (e.g. owner roles, etc.)
 
-			// redirect
-			jrResult.addToSession(req);
-			res.redirect(baseCrudUrl);
-			return true;
-		}
 
-		return await this.handleDeletePresentView(id, obj, req, res, modelClass, baseCrudUrl, viewFileSet, extraViewData);
-	}
+
+
+
 
 
 	async handleStatsGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
@@ -772,7 +847,7 @@ class CrudAid {
 		if (crudSubType === "add" || crudSubType === "edit") {
 			// build form html for adding or editing
 			rethtml = await this.buildGenericMainHtmlAddEdit(modelClass, req, obj, helperData, jrResult);
-		} else if (crudSubType === "delete" || crudSubType === "view") {
+		} else if (crudSubType === "delete" || crudSubType === "undelete" || crudSubType === "view") {
 			// build form html for viewing
 			rethtml = await this.buildGenericMainHtmlView(modelClass, req, obj, helperData, jrResult);
 		} else if (crudSubType === "stats") {
@@ -1063,24 +1138,42 @@ class CrudAid {
 
 	//---------------------------------------------------------------------------
 	async doBulkAction(user, modelClass, bulkAction, idList) {
+		var jrResult = JrResult.makeNew();
 
 		if (bulkAction === "delete") {
 			// do they have permission to delete all in the list
 			const permission = appconst.DefAclActionDelete;
 			const objectType = modelClass.getAclName();
 			if (!await user.aclHasPermissionOnAll(permission, objectType, idList)) {
-				return JrResult.makeError("Permission denied; you do not have permission to do this on these items.");
+				return JrResult.makeError("Permission denied; you do not have permission to " + bulkAction + " these items.");
 			}
 
 			// they have permission!
 
 			// what kind of delete should we do? real or virtual?
 			const mode = modelClass.getDefaultDeleteDisableMode();
-			//
-			var jrResult = JrResult.makeNew();
-			await modelClass.doDeleteDisableByIdList(idList, mode, jrResult, false);
+
+			await modelClass.doChangeModeByIdList(idList, mode, jrResult, false);
 			return jrResult;
 		}
+
+		if (bulkAction === "undelete") {
+			// do they have permission to undelete all in the list
+			const permission = appconst.DefAclActionUnDelete;
+			const objectType = modelClass.getAclName();
+			if (!await user.aclHasPermissionOnAll(permission, objectType, idList)) {
+				return JrResult.makeError("Permission denied; you do not have permission to " + bulkAction + " these items.");
+			}
+
+			// they have permission!
+
+			// undelete means make enabled
+			const mode = appconst.DefMdbEnable;
+
+			await modelClass.doChangeModeByIdList(idList, mode, jrResult, false);
+			return jrResult;
+		}
+
 
 		// dont know this bulk action
 		return JrResult.makeError("Internal error - unknown bulk operation [" + bulkAction + "]");

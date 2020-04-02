@@ -1,7 +1,7 @@
 /**
  * @module controllers/arserver
  * @author jesse reichler <mouser@donationcoder.com>
- * @copyright 5/1/19
+ * @copyright 5/1/19 - 3/31/20
  * @description
  * This module defines the main class representing the server system that sets up the web server and handles all requests.
  * It is the central object in the project.
@@ -104,6 +104,36 @@ class AppRoomServer {
 	}
 	//---------------------------------------------------------------------------
 
+
+
+
+	//---------------------------------------------------------------------------
+	// used for database construction/init
+
+	getModelClassList() {
+		// get array of all required model modules
+		const modelClassList = [
+			// core models
+			jrequire("models/connection"),
+			jrequire("models/option"),
+			jrequire("models/user"),
+			jrequire("models/verification"),
+			jrequire("models/log"),
+			jrequire("models/login"),
+			jrequire("models/session"),
+			jrequire("models/subscription"),
+			jrequire("models/modqueue"),
+
+			// specific models
+			jrequire("models/file"),
+			jrequire("models/room"),
+			jrequire("models/app"),
+			jrequire("models/roomdata"),
+		];
+
+		return modelClassList;
+	}
+	//---------------------------------------------------------------------------
 
 
 
@@ -309,6 +339,8 @@ class AppRoomServer {
 		this.SessionModel = jrequire("models/session");
 		this.UserModel = jrequire("models/user");
 		this.VerificationModel = jrequire("models/verification");
+		this.SubscriptionModel = jrequire("models/subscription");
+		this.ModQueueModel = jrequire("models/modqueue");
 	}
 	//---------------------------------------------------------------------------
 
@@ -376,7 +408,6 @@ class AppRoomServer {
 
 
 	setupExpressEarlyInjections(expressApp) {
-
 		// we are deciding whether we want this
 		if (false) {
 			expressApp.use((req, res, next) => {
@@ -430,7 +461,7 @@ class AppRoomServer {
 		// session store
 		// db session backend storage (we avoid file in case future cloud operation)
 		// connect-mongo see https://www.npmjs.com/package/connect-mongo
-		// ATTN: we could try to share the mongood connection instead of re-specifying it here; not clear what performance implications are
+		// ATTN: we could try to share the mongod connection instead of re-specifying it here; not clear what performance implications are
 		const mongoStoreOptions = {
 			url: this.getOptionDbUrl(),
 			autoRemove: "interval",
@@ -542,6 +573,8 @@ class AppRoomServer {
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/option", this.OptionModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/log", this.LogModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/session", this.SessionModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/modqueue", this.ModQueueModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/subscription", this.SubscriptionModel);
 	}
 
 
@@ -1635,27 +1668,6 @@ class AppRoomServer {
 	}
 
 
-	getModelClassList() {
-		// get array of all required model modules
-		const modelClassList = [
-			// core models
-			jrequire("models/connection"),
-			jrequire("models/option"),
-			jrequire("models/user"),
-			jrequire("models/verification"),
-			jrequire("models/log"),
-			jrequire("models/login"),
-			jrequire("models/session"),
-
-			// specific models
-			jrequire("models/file"),
-			jrequire("models/room"),
-			jrequire("models/app"),
-			jrequire("models/roomdata"),
-		];
-
-		return modelClassList;
-	}
 
 
 	async setupModelSchema(mongooser, modelClass) {
@@ -2393,7 +2405,7 @@ class AppRoomServer {
 	}
 
 
-	calcWebServerInformation() {
+	async calcWebServerInformation() {
 		// return info about web server
 		const serverInfo = {};
 
@@ -2589,27 +2601,83 @@ class AppRoomServer {
 		const mythis = this;
 		expressApp.use(async function myCustomErrorHandler404(req, res, next) {
 			// if we get here, nothing else has caught the request, so WE push on a 404 error for the next handler
-			await mythis.handle404Error(req);
-			next(httpErrors(404));
+
+			// ATTN: 3/31/20 -- this is newly trapping here other exceptions, such as  on calcExpressMiddlewareGetFileLine in jrh_express with a deliberately thrown exception
+			// so now we check to make sure we don't handle the stuff we shouldn't
+
+			if (req !== undefined) {
+				await mythis.handle404Error(req);
+			}
+			if (next !== undefined) {
+				next(httpErrors(404));
+			}
 		});
 
 
 		// and then this is the fall through NEXT handler, which gets called when an error is unhandled by previous use() or pushed on with next(httperrors())
+		// this can get called for example on a passport error
 		// error handler
-		expressApp.use(function myFallbackErrorHandle(err, req, res, next) {
+		expressApp.use(async function myFallbackErrorHandle(err, req, res, next) {
 			// decide whether to show full error info
+
+			if (err === "IGNORE_EXCEPTION") {
+				// ATTN: purposeful ignorable exception; its used in jrh_express to trick the system into throwing an exception
+				return;
+			}
+			if (false && err === undefined) {
+				// ATTN: it may be that in the future some other tool purposefully throws an exception of some other type that we need to gnore
+				return;
+			}
+
+
+			if (err === undefined) {
+				var stack = new Error().stack;
+				err = {
+					message: "Undefined error in myFallbackErrorHandle",
+					status: 0,
+					stack,
+				};
+				console.log(err.message);
+				console.log(err.stack);
+			}
+
 			var errorDisplay;
 			if (mythis.isDevelopmentMode() && err.status !== 404) {
-				errorDisplay = mythis.isDevelopmentMode() ? err : {};
+				errorDisplay = mythis.isDevelopmentMode() ? err.stack : {};
 			}
+
+			// extra (session) error info
+			var jrResultError;
+			if (req !== undefined) {
+				jrResultError = JrResult.getMergeSessionResultAndClear(req, res);
+			} else {
+				jrResultError = new JrResult();
+			}
+
+			// log the actual exception error plus extra
+			var errorLog = err;
+			if (jrResultError && jrResultError.isError()) {
+				errorLog += "\n" + jrResultError.getErrorsAsString();
+			}
+			await mythis.handleUncaughtError(errorLog);
+
 			// render the error page
-			res.status(err.status || 500);
-			res.render("error", {
-				message: err.message,
-				error: errorDisplay,
-				status: err.status,
-				jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-			});
+			if (res !== undefined) {
+				res.status(err.status || 500);
+				res.render("error", {
+					message: err.message,
+					errorDetails: errorDisplay,
+					status: err.status,
+					jrResult: jrResultError,
+				});
+			} else {
+				// only thing to do is exit?
+				if (true) {
+					process.exitCode = 2;
+					process.exit();
+				}
+			}
+
 		});
 
 
@@ -2620,9 +2688,10 @@ class AppRoomServer {
 		// most of our exceptions trigger this because they happen in an await aync with no catch block..
 		process.on("unhandledRejection", (reason, promise) => {
 
-			if (true) {
+			if (reason !== undefined) {
 				// just throw it to get app to crash exit
-				// console.log("In unhandledRejection rethrowing reason..");
+				console.log("In unhandledRejection rethrowing reason..");
+				console.log(reason);
 				throw reason;
 			}
 
@@ -2631,7 +2700,7 @@ class AppRoomServer {
 			// is there a way for us to get the current request being processes
 			fs.writeSync(
 				process.stderr.fd,
-				`unhandledRejection: ${reason}\n promist: ${promise}`,
+				`unhandledRejection: ${reason}\n promise: ${promise}`,
 			);
 			const err = {
 				message: "unhandledRejection",
@@ -2690,6 +2759,16 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
+	async handleUncaughtError(err) {
+		// ATTN: test
+		if (true) {
+			// log the critical error to file and database
+			const errString = "Uncaught error occurred on " + jrhMisc.getNiceNowString() + ":\n\n" + jrhMisc.objToString(err, false);
+			await this.logm(appconst.DefLogTypeErrorCriticalException, errString);
+		}
+		// process.exitCode = 2;
+	}
+
 	async handleFatalError(err) {
 		// ATTN: test
 		if (true) {
@@ -2703,6 +2782,7 @@ class AppRoomServer {
 
 	async handle404Error(req) {
 		// caller will pass this along to show 404 error to user; we can do extra stuff here
+
 		if (true) {
 			const msg = {
 				url: req.url,

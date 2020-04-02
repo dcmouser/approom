@@ -96,13 +96,13 @@ exports.DefMdbEnable = 0;
 exports.DefMdbDisable = 1;
 exports.DefMdbVirtDelete = 2;
 exports.DefMdbRealDelete = 3;
-exports.DefDeleteDisableLabels = {
+exports.DefStateModeLabels = {
 	[exports.DefMdbEnable]: "enabled",
 	[exports.DefMdbDisable]: "disabled",
 	[exports.DefMdbVirtDelete]: "vdeleted",
 	[exports.DefMdbRealDelete]: "deleted",
 };
-exports.DefDeleteDisableLabelsEdit = {
+exports.DefStateModeLabelsEdit = {
 	[exports.DefMdbEnable]: "enabled",
 	[exports.DefMdbDisable]: "disabled",
 	[exports.DefMdbVirtDelete]: "vdeleted",
@@ -114,7 +114,7 @@ exports.DefDeleteDisableLabelsEdit = {
 
 //---------------------------------------------------------------------------
 // showing disabled, etc
-exports.DefShowDisableLabels = {
+exports.DefShowStateModeLabels = {
 	onlyEnabled: "Only enabled",
 	enabledDisabled: "Enabled/Disabled",
 	onlyDisabled: "Only disabled",

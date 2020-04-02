@@ -1163,6 +1163,17 @@ class UserModel extends ModelBaseMongoose {
 		// success!
 		return true;
 	}
+
+
+	/**
+	 * Return true if user has permission to see virtually deleted items on a model
+	 *
+	 * @param {*} modelClass
+	 * @returns true if they have permission
+	 */
+	async aclHasPermissionSeeVDeletes(modelClass) {
+		return await this.aclHasPermission(appconst.DefAclActionSeeVdeletes, modelClass.getAclName(), null);
+	}
 	//---------------------------------------------------------------------------
 
 

@@ -10,7 +10,12 @@
 		<nav>
 			<ul class="pagination">
 				<li class="page-item"><a href="{{baseCrudUrl}}/view/{{reqbody._id}}" class="page-link">View</a></li>
+				{{#if flagOfferDelete}}
 				<li class="page-item"><a href="{{baseCrudUrl}}/delete/{{reqbody._id}}" class="page-link">Delete</a></li>
+				{{/if}}
+				{{#if flagOfferUnDelete}}
+				<li class="page-item"><a href="{{baseCrudUrl}}/undelete/{{reqbody._id}}" class="page-link">Un-delete</a></li>
+				{{/if}}
 				<li class="page-item"><a href="{{baseCrudUrl}}" class="page-link">List All</a></li>
 			</ul>
 		</nav>
