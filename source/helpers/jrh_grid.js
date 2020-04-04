@@ -321,8 +321,17 @@ async function jrGridListBulkActions(req, listHelperData, queryUrlData, tableid)
 	// drop down box of choices
 	rethtml += `<select name="bulkaction">
 		<option value=""></option>
-		<option value="delete">Delete All</option>
-		<option value="undelete">Un-delete All</option>
+	`;
+
+	if (listHelperData.modelClass.getDefaultDeleteDisableModeIsVirtual()) {
+		rethtml += `
+			<option value="delete">Delete All</option>
+		`;
+	}
+
+	rethtml += `
+	<option value="undelete">Un-delete All</option>
+		<option value="permdelete">Permanently Delete All (!)</option>
 		</select>`;
 
 	// go button
@@ -687,15 +696,17 @@ function jrGridListShowHiddenOptions(req, listHelperData, queryUrlData) {
 	// show a drop down with hidden options
 	// what we show may depend on user acl permissions
 	const tableid = queryUrlData.tableId;
-
-
-	var rethtml = "<hr/><div>";
-
 	const appconst = jrequire("appconst");
 
-	// build form input
-	var selectedid = "all";
-	rethtml += "Show: " + jrhText.jrHtmlFormOptionListSelect("showdisabled", appconst.DefShowStateModeLabels, selectedid);
+	var rethtml = "";
+
+	if (false) {
+		// start stuff
+		rethtml += "<hr/><div>";
+		// build form input
+		var selectedid = "all";
+		rethtml += "Show: " + jrhText.jrHtmlFormOptionListSelect("showdisabled", appconst.DefShowStateModeLabels, selectedid);
+	}
 
 	// end stuff
 	rethtml += "</div><hr/>";

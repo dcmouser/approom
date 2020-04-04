@@ -16,10 +16,17 @@
 
 // modules
 
+// nconf
 const nconf = require("nconf");
+
+// support yaml config files
+const yaml = require("js-yaml");
 
 const path = require("path");
 const fs = require("fs");
+
+// for stupid nconf display dump.. ugh we need to get rid of nconf
+const assignDeep = require("assign-deep");
 
 
 // our helpers
@@ -85,6 +92,7 @@ function parse() {
 
 	// 2. commandline (via yargs?) [dominates all others]
 	if (yargsObj !== undefined) {
+		// ATTN: i think yargsObj has a bunch of stuff we don't really want.. maybe there's a better way to get a more compact version
 		nconf.argv(yargsObj);
 	} else {
 		nconf.argv();
@@ -377,8 +385,38 @@ function nconfMergeConfigFile(filepath, flagErrorOnFileNotExist) {
 	configFileCount += 1;
 	var rootTag = "jrConfigFile_" + (configFileCount).toString();
 	// merge in file options, under rootTag
-	nconf.file(rootTag, filepath);
+	doNconfFile(rootTag, filepath);
 	return true;
+}
+
+
+/**
+ * Invoke the nconf.file function but check file extension and support yaml files
+ * @private
+ *
+ * @param {*} rootTag tag for nconf
+ * @param {*} filepath filepath for nconf
+ */
+function doNconfFile(rootTag, filepath) {
+	var retv;
+
+	if (filepath.indexOf(".yaml") !== -1 || filepath.indexOf(".yml") !== -1) {
+		// ok its a yaml file
+		// see https://gist.github.com/clarkdave/f31d92ca88d11ef5340c
+		// console.log("ATTN: doNconfFile yaml file: " + filepath);
+		retv = nconf.file(rootTag, {
+			file: filepath,
+			format: {
+				parse: yaml.safeLoad,
+				stringify: yaml.safeDump,
+			},
+		});
+	} else {
+		// fall back on json/native nconf file we assume
+		// console.log("ATTN: doNconfFile JSON file: " + filepath);
+		retv = nconf.file(rootTag, filepath);
+	}
+	return retv;
 }
 
 
@@ -388,7 +426,7 @@ function nconfMergeConfigFile(filepath, flagErrorOnFileNotExist) {
  * @todo support jsoc files?
  *
  * @param {string} filepath
- * @returns filepath with base directory and .json added
+ * @returns filepath with base directory and extension (yml) added
  */
 function fixConfigFilePathName(filepath) {
 	// fixup filepath specified to add extension and relative to our base path
@@ -396,9 +434,10 @@ function fixConfigFilePathName(filepath) {
 	// fixup special fields
 	filepath = filepath.replace("%SERVERPREFIX%", serverFilenamePrefix);
 
-	// add .json
-	if (filepath.indexOf(".jso") === -1) {
-		filepath += ".json";
+	// add assumed extension
+	if (filepath.indexOf(".yaml") === -1 && filepath.indexOf(".yml") === -1 && filepath.indexOf(".json") === -1) {
+		// ATTN: new default is yml (yaml)
+		filepath += ".yml";
 	}
 	// add path
 	if (!fs.existsSync(filepath)) {
@@ -486,10 +525,25 @@ function ipStringToSafeFilenameString(val) {
  */
 function getDebugObj() {
 	// for debug introspection
-	var configFileList = configFiles;
+
+	// iterate nconf stores and merge them -- THIS is how we get a compact list of the nconf values actually available -- a dump of nconf values
+	// it is necesary to be so ridiculous because nconf does not store a merged set of keyvalues as you might expect if you were sane, but instead
+	// it keeps all values and does a full lookup each time you query.
+	// This is why we need to get rid of nconf asap
+	var nconfDataMerged = {};
+	var astore;
+	var storekeys = Object.keys(nconf.stores);
+	storekeys.reverse();
+	storekeys.forEach((key) => {
+		astore = nconf.stores[key].store;
+		assignDeep(nconfDataMerged, astore);
+	});
+
 	var debugObj = {
-		nconfData: nconf.get(),
-		configFiles: configFileList,
+		nconfMerged: nconfDataMerged,
+		configFiles,
+		nconfRaw: nconf.stores,
+		argv: yargsObj.argv,
 	};
 	return debugObj;
 }

@@ -1,0 +1,45 @@
+DEBUG: true
+NODE_ENV: development
+crypto:
+  VERIFICATIONCODESALT: your_site_salt_for_verification_token_hashing
+emergencyAlert:
+  primary:
+    - email: emailaddress1@test.com
+  secondary:
+    - email: emailaddress2@test.com
+    - email: emailaddress3@test.com
+mailer:
+  DEBUG: false
+  FROM: me@mydomain.com
+  HOST: smtp.YOUR.SERVER.net
+  PASSWORD: YOU_SMTP_USERPASSS
+  PORT: 465
+  SECURE: true
+  USERNAME: YOUR_SMTP_USERNAME
+options:
+  ACCOUNTREQUIRE_EMAIL: false
+  ACCOUNTREQUIRE_PASSWORD: false
+  GRAVATAR_OPTIONS:
+    d: monsterid
+  SIGNUP_FULLREGISTRATIONFORM: true
+passport:
+  FACEBOOK_APP_ID: YOUR_FACEBOOK_APP_LOGIN_ID
+  FACEBOOK_APP_SECRET: YOUR_FACEBOOK_APP_LOGIN_SECRET
+plugins: {}
+server:
+  DB_URL: 'mongodb://localhost/approomdb'
+  HTTP: true
+  HTTPS: true
+  HTTPS_CERT: full/path/to/server.cert
+  HTTPS_KEY: full/path/to/server.key
+  HTTPS_PORT: 8080
+  HTTP_PORT: 8088
+  SITE_DOMAIN: localhost
+session:
+  SESSIONIDNAME: coookie_session_id_name
+  SESSIONSECRET: secret_for_session_cookies
+token:
+  CRYPTOKEY: SECRET_CRYPTO_KEY_FOR_SIGNING_JWT_TOKENS
+  EXPIRATIONSECS_ACCESS: 60
+  EXPIRATIONSECS_REFRESH: 31536000
+  ISSUER: your_company_or_domain

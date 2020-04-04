@@ -102,10 +102,18 @@ class CrudAid {
 		//---------------------------------------------------------------------------
 
 		//---------------------------------------------------------------------------
-		// delete (get)
+		// PermDelete (get)
+		const viewFilePathPermDelete = this.calcViewFile("viewdelete", modelClass);
+		router.get("/permdelete/:id", async (req, res, next) => await this.handleChangeModeGet(req, res, next, modelClass, baseCrudUrl, viewFilePathPermDelete, extraViewData, "permdelete"));
+		// PermDelete (post submit)
+		router.post("/permdelete/:ignoredid?", async (req, res, next) => await this.handleChangeModePost(req, res, next, modelClass, baseCrudUrl, viewFilePathPermDelete, extraViewData, "permdelete"));
+		//---------------------------------------------------------------------------
+
+		//---------------------------------------------------------------------------
+		// UNdelete (get)
 		const viewFilePathUnDelete = this.calcViewFile("viewdelete", modelClass);
 		router.get("/undelete/:id", async (req, res, next) => await this.handleChangeModeGet(req, res, next, modelClass, baseCrudUrl, viewFilePathUnDelete, extraViewData, "undelete"));
-		// delete (post submit)
+		// UNdelete (post submit)
 		router.post("/undelete/:ignoredid?", async (req, res, next) => await this.handleChangeModePost(req, res, next, modelClass, baseCrudUrl, viewFilePathUnDelete, extraViewData, "undelete"));
 		//---------------------------------------------------------------------------
 
@@ -198,7 +206,7 @@ class CrudAid {
 
 		// render
 		res.render(viewFile, {
-			headline: "List " + modelClass.getNiceName() + "s",
+			headline: modelClass.getNiceName() + " List",
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
 			csrfToken: arserver.makeCsrf(req, res),
 			helperData,
@@ -444,8 +452,9 @@ class CrudAid {
 		const cancelUrl = baseCrudUrl + "/view/" + id;
 
 		//
-		const flagOfferDelete = obj.disabled === 0 || (obj.disabled !== appconst.DefMdbVirtDelete);
+		const flagOfferDelete = modelClass.getDefaultDeleteDisableModeIsVirtual() && (obj.disabled === 0 || (obj.disabled !== appconst.DefMdbVirtDelete));
 		const flagOfferUnDelete = obj.disabled === appconst.DefMdbVirtDelete;
+		const flagOfferPermDelete = true;
 
 		// render
 		res.render(viewFile, {
@@ -459,6 +468,7 @@ class CrudAid {
 			cancelUrl,
 			extraViewData,
 			flagOfferDelete,
+			flagOfferPermDelete,
 			flagOfferUnDelete,
 		});
 
@@ -541,8 +551,9 @@ class CrudAid {
 		}
 
 		//
-		const flagOfferDelete = obj.disabled === 0 || (obj.disabled !== appconst.DefMdbVirtDelete);
+		const flagOfferDelete = modelClass.getDefaultDeleteDisableModeIsVirtual() && (obj.disabled === 0 || (obj.disabled !== appconst.DefMdbVirtDelete));
 		const flagOfferUnDelete = obj.disabled === appconst.DefMdbVirtDelete;
+		const flagOfferPermDelete = true;
 
 		// render -- just like original edit
 		res.render(viewFile, {
@@ -555,6 +566,7 @@ class CrudAid {
 			baseCrudUrl,
 			extraViewData,
 			flagOfferDelete,
+			flagOfferPermDelete,
 			flagOfferUnDelete,
 		});
 
@@ -588,8 +600,9 @@ class CrudAid {
 			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, obj, jrResult, "view", helperData);
 		}
 
-		const flagOfferDelete = obj.disabled === 0 || (obj.disabled !== appconst.DefMdbVirtDelete);
+		const flagOfferDelete = modelClass.getDefaultDeleteDisableModeIsVirtual() && (obj.disabled === 0 || (obj.disabled !== appconst.DefMdbVirtDelete));
 		const flagOfferUnDelete = obj.disabled === appconst.DefMdbVirtDelete;
+		const flagOfferPermDelete = true;
 
 		// render
 		res.render(viewFile, {
@@ -600,6 +613,7 @@ class CrudAid {
 			genericMainHtml,
 			reqmode: "view",
 			flagOfferDelete,
+			flagOfferPermDelete,
 			flagOfferUnDelete,
 			baseCrudUrl,
 			extraViewData,
@@ -614,6 +628,9 @@ class CrudAid {
 	getAclActionForChangeReqMode(reqmode) {
 		if (reqmode === "delete") {
 			return appconst.DefAclActionDelete;
+		}
+		if (reqmode === "permdelete") {
+			return appconst.DefAclActionPermDelete;
 		}
 		if (reqmode === "undelete") {
 			return appconst.DefAclActionUnDelete;
@@ -678,6 +695,8 @@ class CrudAid {
 		var newmode;
 		if (reqmode === "delete") {
 			newmode = modelClass.getDefaultDeleteDisableMode();
+		} else if (reqmode === "permdelete") {
+			newmode = appconst.DefMdbRealDelete;
 		} else if (reqmode === "undelete") {
 			newmode = appconst.DefMdbEnable;
 		} else {
@@ -729,16 +748,18 @@ class CrudAid {
 
 		//
 		var flagConfirmDelete = (reqmode === "delete");
+		var flagConfirmPermDelete = (reqmode === "permdelete");
 		var flagConfirmUnDelete = (reqmode === "undelete");
 
 		// render
 		res.render(viewFile, {
-			headline: jrhText.capitalizeFirstLetter(reqmode) + " " + modelClass.getNiceName() + " #" + id + "?",
+			headline: "Confirmation required.\n" + jrhText.capitalizeFirstLetter(reqmode) + " " + modelClass.getNiceName() + " #" + id + "?",
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
 			csrfToken: arserver.makeCsrf(req, res),
 			obj,
 			genericMainHtml,
 			flagConfirmDelete,
+			flagConfirmPermDelete,
 			flagConfirmUnDelete,
 			baseCrudUrl,
 			cancelUrl,
@@ -847,7 +868,7 @@ class CrudAid {
 		if (crudSubType === "add" || crudSubType === "edit") {
 			// build form html for adding or editing
 			rethtml = await this.buildGenericMainHtmlAddEdit(modelClass, req, obj, helperData, jrResult);
-		} else if (crudSubType === "delete" || crudSubType === "undelete" || crudSubType === "view") {
+		} else if (crudSubType === "delete" || crudSubType === "permdelete" || crudSubType === "undelete" || crudSubType === "view") {
 			// build form html for viewing
 			rethtml = await this.buildGenericMainHtmlView(modelClass, req, obj, helperData, jrResult);
 		} else if (crudSubType === "stats") {
@@ -1152,6 +1173,23 @@ class CrudAid {
 
 			// what kind of delete should we do? real or virtual?
 			const mode = modelClass.getDefaultDeleteDisableMode();
+
+			await modelClass.doChangeModeByIdList(idList, mode, jrResult, false);
+			return jrResult;
+		}
+
+		if (bulkAction === "permdelete") {
+			// do they have permission to delete all in the list
+			const permission = appconst.DefAclActionPermDelete;
+			const objectType = modelClass.getAclName();
+			if (!await user.aclHasPermissionOnAll(permission, objectType, idList)) {
+				return JrResult.makeError("Permission denied; you do not have permission to " + bulkAction + " these items.");
+			}
+
+			// they have permission!
+
+			// real permanent delete
+			const mode = appconst.DefMdbRealDelete;
 
 			await modelClass.doChangeModeByIdList(idList, mode, jrResult, false);
 			return jrResult;

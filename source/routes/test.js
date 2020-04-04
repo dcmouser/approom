@@ -48,6 +48,9 @@ function setupRouter(urlPath) {
 	router.get("/emergencyalert", routerGetTestEmergencyAlerts);
 	router.post("/emergencyalert", routerPostTestEmergencyAlerts);
 
+	router.get("/trigger_crash", routerGetTriggerCrash);
+	router.post("/trigger_crash", routerPostTriggerCrash);
+
 	// return router
 	return router;
 }
@@ -70,21 +73,13 @@ async function routerGetIndex(req, res, next) {
 		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 	});
 }
+//---------------------------------------------------------------------------
 
 
+
+//---------------------------------------------------------------------------
 async function routerGetMakeappsrooms(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
-		// all done
-		return;
-	}
-
-	res.render("generic/confirmpage", {
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-		csrfToken: arserver.makeCsrf(req, res),
-		headline: "Generate some test Apps and Rooms",
-		message: "This operation will bulk create a bunch of apps and rooms.  Note it will fail if run twice, due to clashing shortcodes.",
-		formExtraSafeHtml: "",
-	});
+	await arserver.confirmUrlPost(req, res, "admin", "Generate some test Apps and Rooms", "This operation will bulk create a bunch of apps and rooms.  Note it will fail if run twice, due to clashing shortcodes.");
 }
 
 
@@ -95,7 +90,7 @@ async function routerPostMakeappsrooms(req, res, next) {
 	}
 	// check required csrf token
 	if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
-		// csrf error, next will have been called with it
+		// csrf error will be handled by exception; we just need to return
 		return;
 	}
 
@@ -119,18 +114,7 @@ async function routerPostMakeappsrooms(req, res, next) {
 
 //---------------------------------------------------------------------------
 async function routerGetTestEmergencyAlerts(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
-		// all done
-		return;
-	}
-
-	res.render("generic/confirmpage", {
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-		csrfToken: arserver.makeCsrf(req, res),
-		headline: "Test emergency alert functionality",
-		message: "This function will send out some emergency alerts and test that rate limiting works for them.",
-		formExtraSafeHtml: "",
-	});
+	await arserver.confirmUrlPost(req, res, "admin", "Test emergency alert functionality", "This function will send out some emergency alerts and test that rate limiting works for them.");
 }
 
 
@@ -169,6 +153,17 @@ async function routerPostTestEmergencyAlerts(req, res, next) {
 
 
 
+
+//---------------------------------------------------------------------------
+async function routerGetTriggerCrash(req, res, next) {
+	await arserver.confirmUrlPost(req, res, "admin", "Test fatal uncaught nodejs crash/exception", "This function will deliberately throw an uncaught nodejs exception to test how the system deals with it; it will likely exit nodejs, but hopefully log+email an error message and trace.");
+}
+
+async function routerPostTriggerCrash(req, res, next) {
+	// trigger a crash to check handling
+	throw "PURPOSEFUL_TEST_CRASH_EXCEPTION";
+}
+//---------------------------------------------------------------------------
 
 
 

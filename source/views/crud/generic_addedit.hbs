@@ -16,6 +16,9 @@
 				{{#if flagOfferUnDelete}}
 				<li class="page-item"><a href="{{baseCrudUrl}}/undelete/{{reqbody._id}}" class="page-link">Un-delete</a></li>
 				{{/if}}
+				{{#if flagOfferPermDelete}}
+				<li class="page-item"><a href="{{baseCrudUrl}}/permdelete/{{reqbody._id}}" class="page-link">Permanently Delete</a></li>
+				{{/if}}
 				<li class="page-item"><a href="{{baseCrudUrl}}" class="page-link">List All</a></li>
 			</ul>
 		</nav>

@@ -191,6 +191,10 @@ class ModelBaseMongoose {
 	static getDefaultDeleteDisableMode() {
 		return appconst.DefMdbVirtDelete;
 	}
+
+	static getDefaultDeleteDisableModeIsVirtual() {
+		return (this.getDefaultDeleteDisableMode() === appconst.DefMdbVirtDelete);
+	}
 	//---------------------------------------------------------------------------
 
 

@@ -13,6 +13,9 @@
 				{{#if flagOfferUnDelete}}
 				<li class="page-item"><a href="{{baseCrudUrl}}/undelete/{{obj._id}}" class="page-link">Un-delete</a></li>
 				{{/if}}
+				{{#if flagOfferPermDelete}}
+				<li class="page-item"><a href="{{baseCrudUrl}}/permdelete/{{obj._id}}" class="page-link">Permanently Delete</a></li>
+				{{/if}}
 				<li class="page-item"><a href="{{baseCrudUrl}}" class="page-link">List All</a></li>
 			</ul>
 		</nav>
@@ -28,6 +31,13 @@
 		<hr/>
 	   	<div>
         	<input type="submit" value="CONFIRM UN-DELETE NOW" />
+			<input action="action" onclick="window.location.href = '{{cancelUrl}}'; return false;" type="button" value="CANCEL" />
+    	</div>
+		{{/if}}
+		{{#if flagConfirmPermDelete}}
+		<hr/>
+	   	<div>
+        	<input type="submit" value="CONFIRM PERMANENT DELETE NOW" />
 			<input action="action" onclick="window.location.href = '{{cancelUrl}}'; return false;" type="button" value="CANCEL" />
     	</div>
 		{{/if}}

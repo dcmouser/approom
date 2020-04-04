@@ -586,7 +586,7 @@ If this request was not made by you, please ignore this email.
 			return JrResult.makeError("Verification code (" + this.getUniqueCode() + ") has expired.");
 		}
 		// all good
-		return JrResult.makeSuccess();
+		return JrResult.makeSuccess("Verification code is valid.");
 	}
 
 
@@ -710,7 +710,7 @@ If this request was not made by you, please ignore this email.
 			// remember it in session; this is useful for multi-step verification, such as creating an account after verifying email addres
 			this.saveSessionUse(req);
 		}
-		return JrResult.makeSuccess();
+		return JrResult.makeSuccess("Verification code successfully consumed.");
 	}
 	//---------------------------------------------------------------------------
 

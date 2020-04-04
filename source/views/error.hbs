@@ -1,8 +1,11 @@
-<h1>{{message}}</h1>
-<h2>{{status}}</h2>
+<h1>{{errorMessage}}</h1>
+<h2>{{errprStatus}}</h2>
 
 {{#if errorDetails}}
-	<h2>DEVELOPMENT MODE Debugging stack info from error view:</h2>
 	<pre>{{errorDetails}}</pre>
 {{/if}}
 
+{{#if errorDebugDetails}}
+	<h2>DEVELOPMENT MODE - Debugging info:</h2>
+	<pre>{{errorDebugDetails}}</pre>
+{{/if}}

@@ -50,6 +50,7 @@ function setupRouter(urlPath) {
 	router.get("/aclinfo", routerGetAclinfo);
 	router.get("/nodejs", routerGetNodejs);
 	router.get("/dependencies", routerDependencies);
+	router.get("/plugins", routerPlugins);
 
 	// return router
 	return router;
@@ -211,9 +212,23 @@ async function routerDependencies(req, res, next) {
 		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 	});
 }
+
+
+async function routerPlugins(req, res, next) {
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+		// all done
+		return;
+	}
+
+	// get database resource use
+	var rawData = arserver.calcPluginInfo();
+
+	res.render("internals/plugins", {
+		rawData,
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+	});
+}
 //---------------------------------------------------------------------------
-
-
 
 
 

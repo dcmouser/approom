@@ -2446,7 +2446,6 @@ class AppRoomServer {
 
 
 	calcNodeJsInfo() {
-
 		// Getting commandline
 		var comlinestr = process.execPath;
 		process.argv.forEach((val, index, array) => {
@@ -2472,7 +2471,6 @@ class AppRoomServer {
 	calcDependencyInfo() {
 		const rawData = {
 			jrequire: jrequire.calcDebugInfo(),
-			configPlugins: this.getConfigVal("plugins"),
 		};
 
 		return rawData;
@@ -2491,6 +2489,36 @@ class AppRoomServer {
 				uptime,
 			},
 			appGlobals: arGlobals,
+		};
+
+		return rawData;
+	}
+
+
+	calcPluginInfo() {
+
+		// get info about LOADED plugins
+		var loadedPluginData = {};
+		var category, pluginmodule;
+		const plugins = jrequire.getAllPlugins();
+		// iterate all categories
+		Object.keys(plugins).forEach((categoryKey) => {
+			// iterate all modules in this category
+			category = plugins[categoryKey];
+			Object.keys(category).forEach((name) => {
+				pluginmodule = jrequire.plugin(name);
+				if (loadedPluginData[categoryKey] === undefined) {
+					loadedPluginData[categoryKey] = {};
+				}
+				loadedPluginData[categoryKey][name] = pluginmodule.getDebugInfo(this);
+			});
+		});
+
+
+
+		const rawData = {
+			configPlugins: this.getConfigVal("plugins"),
+			loadedPluginsByCategory: loadedPluginData,
 		};
 
 		return rawData;
@@ -2594,9 +2622,79 @@ class AppRoomServer {
 
 
 
+	//---------------------------------------------------------------------------
+	shouldIgnoreError(err) {
+		if (err === "IGNORE_EXCEPTION") {
+			// ATTN: purposeful ignorable exception; its used in jrh_express to trick the system into throwing an exception
+			return true;
+		}
+
+		// TEST
+		if (false) {
+			var stack = new Error().stack;
+			console.log("ATTN:TEST stack");
+			console.log(stack);
+			console.log("ERR:");
+			console.log(err);
+		}
+
+		return false;
+	}
+
+
+	shouldLogError(err) {
+		if (err !== undefined && err.status !== undefined) {
+			if (err.status === 404) {
+				return false;
+			}
+		}
+
+		if (err !== undefined && err.code === "EBADCSRFTOKEN") {
+			// thrown by csrf
+			return false;
+		}
+
+
+		return true;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	//---------------------------------------------------------------------------
+	// ATTN: 4/2/20 -- these are really confusing and seem to be overlapping
+	// and confusion seems greater than when initially coded.. I think they need to be reorganized..
+
 	setupExpressErrorHandlers(expressApp) {
+
 		// catch 404 and forward to error handler
 		const mythis = this;
 		expressApp.use(async function myCustomErrorHandler404(req, res, next) {
@@ -2605,45 +2703,69 @@ class AppRoomServer {
 			// ATTN: 3/31/20 -- this is newly trapping here other exceptions, such as  on calcExpressMiddlewareGetFileLine in jrh_express with a deliberately thrown exception
 			// so now we check to make sure we don't handle the stuff we shouldn't
 
-			if (req !== undefined) {
-				await mythis.handle404Error(req);
+			if (mythis.shouldIgnoreError(req)) {
+				return;
 			}
+
+			var handled = false;
+			if (req !== undefined) {
+				// this doesn't display anything, just handled preliminary recording, etc.
+
+				if (req.url !== undefined) {
+					await mythis.handle404Error(req);
+				} else {
+					// this isn't really a 404 error??! for example can get triggered on a generic exception thrown..
+				}
+			}
+
+			// ATTN: should this be done even if its not a real 404 error?? (i.e. no req.url)
+			// then this gets called even if its a 404
 			if (next !== undefined) {
 				next(httpErrors(404));
 			}
 		});
 
 
+
 		// and then this is the fall through NEXT handler, which gets called when an error is unhandled by previous use() or pushed on with next(httperrors())
+		// NOTE that this will also be called by a 404 error
 		// this can get called for example on a passport error
 		// error handler
 		expressApp.use(async function myFallbackErrorHandle(err, req, res, next) {
 			// decide whether to show full error info
 
-			if (err === "IGNORE_EXCEPTION") {
-				// ATTN: purposeful ignorable exception; its used in jrh_express to trick the system into throwing an exception
-				return;
-			}
-			if (false && err === undefined) {
-				// ATTN: it may be that in the future some other tool purposefully throws an exception of some other type that we need to gnore
+			if (mythis.shouldIgnoreError(err)) {
 				return;
 			}
 
-
-			if (err === undefined) {
+			if (err === undefined || err.status === undefined) {
 				var stack = new Error().stack;
-				err = {
-					message: "Undefined error in myFallbackErrorHandle",
+				var fullerError = {
+					message: "Uncaught error",
 					status: 0,
 					stack,
+					err,
 				};
-				console.log(err.message);
-				console.log(err.stack);
+				err = fullerError;
 			}
 
-			var errorDisplay;
+			// error message (e.g. "NOT FOUND")
+			var errorMessage = err.message;
+
+			// error status (e.g. 404)
+			var errorStatus = err.status;
+
+			// error details
+			var errorDetails = "";
+			// add url to display
+			if (req !== undefined && req.url !== undefined) {
+				errorDetails += "\nRequested url: " + req.url;
+			}
+
+			// extra details if in development mode
+			var errorDebugDetails = "";
 			if (mythis.isDevelopmentMode() && err.status !== 404) {
-				errorDisplay = mythis.isDevelopmentMode() ? err.stack : {};
+				errorDebugDetails = mythis.isDevelopmentMode() ? err.stack : "";
 			}
 
 			// extra (session) error info
@@ -2654,20 +2776,26 @@ class AppRoomServer {
 				jrResultError = new JrResult();
 			}
 
-			// log the actual exception error plus extra
-			var errorLog = err;
-			if (jrResultError && jrResultError.isError()) {
-				errorLog += "\n" + jrResultError.getErrorsAsString();
+
+			// ATTN: 4/2/20 is this a serious error? if so, log (and possibly email) it
+			if (mythis.shouldLogError(err)) {
+				// log the actual exception error plus extra
+				var errorLog = err;
+				if (jrResultError && jrResultError.isError()) {
+					errorLog += "\n" + jrResultError.getErrorsAsString();
+				}
+				await mythis.handleUncaughtError(errorLog);
 			}
-			await mythis.handleUncaughtError(errorLog);
+
 
 			// render the error page
 			if (res !== undefined) {
 				res.status(err.status || 500);
 				res.render("error", {
-					message: err.message,
-					errorDetails: errorDisplay,
-					status: err.status,
+					errorStatus,
+					errorMessage,
+					errorDetails,
+					errorDebugDetails,
 					jrResult: jrResultError,
 				});
 			} else {
@@ -2682,13 +2810,16 @@ class AppRoomServer {
 
 
 
+
+
+
 		// set up some fatal exception catchers, so we can log these things
 
 
 		// most of our exceptions trigger this because they happen in an await aync with no catch block..
 		process.on("unhandledRejection", (reason, promise) => {
 
-			if (reason !== undefined) {
+			if (true && reason !== undefined) {
 				// just throw it to get app to crash exit
 				console.log("In unhandledRejection rethrowing reason..");
 				console.log(reason);
@@ -2717,9 +2848,10 @@ class AppRoomServer {
 
 
 
-		// ATTN: disable this (add something to change "uncaughtexception" string in order to throw full error to better see it on console)
-		process.on("ZZZuncaughtException", async (err, origin) => {
-			// the problem here is that nodejs does not want us callinc await inside here and making this async
+
+
+		process.on("uncaughtException", async (err, origin) => {
+			// the problem here is that nodejs does not want us calling await inside here and making this async
 			// @see https://stackoverflow.com/questions/51660355/async-code-inside-node-uncaughtexception-handler
 			// but that makes it difficult to log fatal errors, etc. since our logging functions are async.
 			// SO we kludge around this by using an async handler here, which nodejs does not officially support
@@ -2735,23 +2867,18 @@ class AppRoomServer {
 				return;
 			}
 
-			// set flag so we don't recursively loop
-			err.escapeLoops = true;
-			err.origin = origin;
-
-			// tell stderr console that we have logged the error, before we re-throw it to display it
-			/*
-			fs.writeSync(
-				process.stderr.fd,
-				`\n\n\n\nFATAL ERROR: Terminating and logging uncaught exception from ${origin}:\n\n`,
-			);
-			*/
-
 			// handle the fatal error (by logging it presumably)
 			await this.handleFatalError(err);
 
+			// wrap error for re-throwing so we don't recursively loop
+			const reerr = {
+				err,
+				escapeLoops: true,
+				origin,
+			};
+
 			// throw it up, this will display it on console and crash out of node
-			throw err;
+			throw reerr;
 		});
 
 	}
@@ -2760,13 +2887,18 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	async handleUncaughtError(err) {
-		// ATTN: test
+
+		const errString = "Uncaught error occurred on " + jrhMisc.getNiceNowString() + ":\n\n" + jrhMisc.objToString(err, false);
+
 		if (true) {
 			// log the critical error to file and database
-			const errString = "Uncaught error occurred on " + jrhMisc.getNiceNowString() + ":\n\n" + jrhMisc.objToString(err, false);
 			await this.logm(appconst.DefLogTypeErrorCriticalException, errString);
 		}
-		// process.exitCode = 2;
+
+		if (true) {
+			// let's log it on screen:
+			console.error(errString);
+		}
 	}
 
 	async handleFatalError(err) {
@@ -2782,28 +2914,38 @@ class AppRoomServer {
 
 	async handle404Error(req) {
 		// caller will pass this along to show 404 error to user; we can do extra stuff here
-
 		if (true) {
 			const msg = {
 				url: req.url,
 			};
 			await this.logr(req, appconst.DefLogTypeError404, msg);
-		} else if (true) {
-			const msg = {
-				url: req.url,
-			};
-			const extraData = {
-				more: "some more",
-				smore: "still some more",
-			};
-			//
-			await this.logr(req, appconst.DefLogTypeError404, msg, extraData);
-		} else {
-			const msg = "req.url: " + req.url;
-			await this.logr(req, appconst.DefLogTypeError404, msg);
 		}
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2820,7 +2962,7 @@ class AppRoomServer {
 	 * @param {req} express request (or null if not part of one)
 	 * @param {object} extraData
 	 * @param {boolean} flagAlsoSendToSecondaries - if false, only the main admin is notified; if true then the primary AND secondary list of emails, etc. is notified
-	 * @returns # of messages sent
+	 * @returns number of messages sent
 	 */
 
 	async emergencyAlert(eventType, subject, message, req, extraData, flagAlsoSendToSecondaries) {
@@ -2887,6 +3029,50 @@ class AppRoomServer {
 		return messageSentCount;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	/**
+	 * Helper function used by some simple test pages (see admin/test), where we just want to check user's access, then show user a message and have them CONFIRM that they really do want to perform a given action
+	 *
+	 * @param {*} req
+	 * @param {*} res
+	 * @param {*} permission
+	 * @param {*} headline
+	 * @param {*} message
+	 * @returns false if permission fails and displaying error message (caller needs do nothing); actually it should throw an error and not return on failure to meet permission
+	 * @memberof AppRoomServer
+	 */
+	async confirmUrlPost(req, res, permission, headline, message) {
+		if (!await this.aclRequireLoggedInSitePermission(permission, req, res)) {
+			// all done
+			return false;
+		}
+		res.render("generic/confirmpage", {
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+			csrfToken: this.makeCsrf(req, res),
+			headline,
+			message,
+			formExtraSafeHtml: "",
+		});
+		return true;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
 
 
 

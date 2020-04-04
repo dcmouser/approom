@@ -276,7 +276,7 @@ function getNiceDateValString(val) {
  * Nice string expressing duration at useful granularity
  *
  * @param {integer} elapsedMs
- * @returns
+ * @returns human readable string describing the durations in milliseconds
  */
 function getNiceDurationTimeMs(elapsedMs) {
 	return humanizeDuration(elapsedMs);

@@ -76,6 +76,10 @@ class JrResult {
 	 * @returns new JrResult object
 	 */
 	static makeSuccess(msg) {
+		if (msg === "" || msg === undefined) {
+			// throw an error, or just do nothing, since lack of error means success
+			throw new Error("makeSuccessInJrResultCannotHaveBlankReason");
+		}
 		var jrResult = new JrResult();
 		jrResult.pushSuccess(msg);
 		return jrResult;

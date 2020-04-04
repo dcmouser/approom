@@ -190,7 +190,7 @@ function calcExpressMiddleWare(app) {
  * Helper funciton to try to get function file line from handle
  *
  * @param {*} handler
- * @returns
+ * @returns string specifying the line number of the handler
  */
 function calcExpressMiddlewareGetFileLine(handler) {
 
@@ -437,7 +437,7 @@ function getRequestLogString(req) {
  * @see https://expressjs.com/en/api.html#req
  *
  * @param {*} req
- * @returns
+ * @returns the url of the request
  */
 function reqUrlWithPath(req) {
 	if (!req) {
@@ -451,7 +451,7 @@ function reqUrlWithPath(req) {
  * @see https://expressjs.com/en/api.html#req
  *
  * @param {*} req
- * @returns
+ * @returns the original url of the request
  */
 function reqOriginalUrl(req) {
 	if (!req) {

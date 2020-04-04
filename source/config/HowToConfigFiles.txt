@@ -1,4 +1,4 @@
-Make a file defaultPrivate.json with your PRIVATE local server settings.
+Make a file defaultPrivate.yml with your PRIVATE local server settings.
 Values in this file will override those in default.json
 The .gitignore file will not share this private file so you don't share private information.
 
