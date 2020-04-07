@@ -90,33 +90,6 @@ class FileModel extends RoomdataModel {
 		return {
 			// ...(this.getBaseSchemaDefinitionExtra()),
 			...super.getSchemaDefinitionExtra(),
-			/*
-			roomid: {
-				label: "Room Id",
-				valueFunction: (viewType, fieldName, req, obj, helperData) => {
-					var viewUrl, roomLabel, rethtml, roomid;
-					if (viewType === "view") {
-						viewUrl = RoomModel.getCrudUrlBase("view", obj.roomid);
-						roomLabel = helperData.roomLabel;
-						rethtml = `${roomLabel} (<a href="${viewUrl}">#${obj.roomid}</a>)`;
-						return rethtml;
-					}
-					if (viewType === "edit") {
-						roomid = obj ? obj.roomid : null;
-						rethtml = jrhText.jrHtmlFormOptionListSelect("roomid", helperData.roomlist, roomid);
-						return rethtml;
-					}
-					if (viewType === "list") {
-						viewUrl = RoomModel.getCrudUrlBase("view", obj.roomid);
-						rethtml = `<a href="${viewUrl}">${obj.roomid}</a>`;
-						return rethtml;
-					}
-					return undefined;
-				},
-				// alternative generic way to have crud pages link to this val
-				// crudLink: AppModel.getCrudUrlBase(),
-			},
-			*/
 			path: {
 				label: "Path",
 			},

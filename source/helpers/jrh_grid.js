@@ -705,7 +705,7 @@ function jrGridListShowHiddenOptions(req, listHelperData, queryUrlData) {
 		rethtml += "<hr/><div>";
 		// build form input
 		var selectedid = "all";
-		rethtml += "Show: " + jrhText.jrHtmlFormOptionListSelect("showdisabled", appconst.DefShowStateModeLabels, selectedid);
+		rethtml += "Show: " + jrhText.jrHtmlFormOptionListSelect("showdisabled", appconst.DefShowStateModeLabels, selectedid, false);
 	}
 
 	// end stuff

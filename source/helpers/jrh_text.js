@@ -75,8 +75,8 @@ function jrPluralize(number, singular, plural) {
  * @param {*} selectedid - id of currently select id (if any)
  * @returns html for inclusion in form
  */
-function jrHtmlFormOptionListSelect(selectName, pairlist, selectedid) {
-	var appHtmlList = jrHtmlFormOptionList(pairlist, selectedid);
+function jrHtmlFormOptionListSelect(selectName, pairlist, selectedid, flagShowBlank) {
+	var appHtmlList = jrHtmlFormOptionList(pairlist, selectedid, flagShowBlank);
 	var rethtml = `
 		<select name="${selectName}">
 			${appHtmlList}
@@ -93,11 +93,16 @@ function jrHtmlFormOptionListSelect(selectName, pairlist, selectedid) {
  * @param {*} selectedid - id of currently select id (if any)
  * @returns html for inclusion in form (inside a select form object usually)
  */
-function jrHtmlFormOptionList(pairlist, selectedid) {
+function jrHtmlFormOptionList(pairlist, selectedid, flagShowBlank) {
 	var rethtml = "";
 	var foundId = false;
 	// cast id to a string
 	selectedid = (selectedid === null || selectedid === undefined) ? "" : selectedid.toString();
+
+	if (flagShowBlank) {
+		rethtml += "<option value=\"\" > </option>\n";
+	}
+
 	// now find it in list
 	if (pairlist) {
 		var seltext;

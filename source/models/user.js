@@ -192,7 +192,7 @@ class UserModel extends ModelBaseMongoose {
 			roles: {
 				label: "Roles",
 				readOnly: ["edit"],
-				valueFunction: async (viewType, fieldName, req, obj, helperData) => { return this.stringifyRoles(obj.roles); },
+				valueFunction: async (viewType, fieldName, req, obj, helperData) => { if (obj !== undefined) return this.stringifyRoles(obj.roles); return ""; },
 			},
 		};
 	}

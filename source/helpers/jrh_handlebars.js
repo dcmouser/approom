@@ -38,7 +38,7 @@ function setupJrHandlebarHelpers() {
 	hbs.registerHelper("jrPluralizeCount", (number, singular, plural) => jrhText.jrPluralizeCount(number, singular, plural));
 
 	// form helper for drop down inputs
-	hbs.registerHelper("jrHtmlFormOptionList", (pairlist, selectedid) => new hbs.SafeString(jrhText.jrHtmlFormOptionList(pairlist, selectedid)));
+	hbs.registerHelper("jrHtmlFormOptionList", (pairlist, selectedid, flagShowBlank) => new hbs.SafeString(jrhText.jrHtmlFormOptionList(pairlist, selectedid, flagShowBlank)));
 
 	// simple object debug display helper
 	hbs.registerHelper("jrHtmlDebugObj", (obj) => new hbs.SafeString(jrhText.jrHtmlStrigifyObject(obj)));

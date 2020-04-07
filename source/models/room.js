@@ -103,7 +103,7 @@ class RoomModel extends ModelBaseMongoose {
 				label: "App Id",
 				valueFunction: (viewType, fieldName, req, obj, helperData) => {
 					var viewUrl, appLabel, rethtml, appid;
-					if (viewType === "view") {
+					if (viewType === "view" && obj !== undefined) {
 						viewUrl = AppModel.getCrudUrlBase("view", obj.appid);
 						appLabel = helperData.appLabel;
 						rethtml = `${appLabel} (<a href="${viewUrl}">#${obj.appid}</a>)`;
@@ -111,10 +111,10 @@ class RoomModel extends ModelBaseMongoose {
 					}
 					if (viewType === "edit") {
 						appid = obj ? obj.appid : null;
-						rethtml = jrhText.jrHtmlFormOptionListSelect("appid", helperData.applist, appid);
+						rethtml = jrhText.jrHtmlFormOptionListSelect("appid", helperData.applist, appid, true);
 						return rethtml;
 					}
-					if (viewType === "list") {
+					if (viewType === "list" && obj !== undefined) {
 						viewUrl = AppModel.getCrudUrlBase("view", obj.appid);
 						rethtml = `<a href="${viewUrl}">${obj.appid}</a>`;
 						return rethtml;
@@ -248,7 +248,7 @@ class RoomModel extends ModelBaseMongoose {
 
 	// see http://thecodebarbarian.com/whats-new-in-mongoose-53-async-iterators.html
 	static async buildSimpleRoomList(user) {
-		const docs = await this.findAllSelect("_id shortcode label");
+		const docs = await this.findAllAndSelect("_id shortcode label");
 		var roomlist = [];
 		for (const doc of docs) {
 			roomlist[doc._id] = doc.shortcode + " - " + doc.label;

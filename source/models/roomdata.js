@@ -89,7 +89,7 @@ class RoomdataModel extends ModelBaseMongoose {
 				label: "Room Id",
 				valueFunction: (viewType, fieldName, req, obj, helperData) => {
 					var viewUrl, roomLabel, rethtml, roomid;
-					if (viewType === "view") {
+					if (viewType === "view" && obj !== undefined) {
 						viewUrl = RoomModel.getCrudUrlBase("view", obj.roomid);
 						roomLabel = helperData.roomLabel;
 						rethtml = `${roomLabel} (<a href="${viewUrl}">#${obj.roomid}</a>)`;
@@ -97,10 +97,10 @@ class RoomdataModel extends ModelBaseMongoose {
 					}
 					if (viewType === "edit") {
 						roomid = obj ? obj.roomid : null;
-						rethtml = jrhText.jrHtmlFormOptionListSelect("roomid", helperData.roomlist, roomid);
+						rethtml = jrhText.jrHtmlFormOptionListSelect("roomid", helperData.roomlist, roomid, true);
 						return rethtml;
 					}
-					if (viewType === "list") {
+					if (viewType === "list" && obj !== undefined) {
 						viewUrl = RoomModel.getCrudUrlBase("view", obj.roomid);
 						rethtml = `<a href="${viewUrl}">${obj.roomid}</a>`;
 						return rethtml;

@@ -930,7 +930,7 @@ class CrudAid {
 			// now value
 			valHtml = undefined;
 			valfunc = modelClass.getSchemaExtraFieldVal(fieldName, "valueFunction");
-			if (obj && valfunc) {
+			if (valfunc) {
 				// ok we have a custom function to call to get html to show for value
 				valHtml = await valfunc("edit", fieldName, req, obj, helperData);
 			}
@@ -979,7 +979,8 @@ class CrudAid {
 						}
 					}
 				} else if (choices) {
-					valHtml = this.buildChoiceHtmlForAddEdit(fieldName, choices, val);
+					var flagShowBlank = true;
+					valHtml = this.buildChoiceHtmlForAddEdit(fieldName, choices, val, flagShowBlank);
 				} else if (format === "textarea") {
 					// textview block
 					valHtml = `<textarea name="${fieldName}" rows="4" cols="80">${val}</textarea>`;
@@ -1139,8 +1140,8 @@ class CrudAid {
 
 
 	//---------------------------------------------------------------------------
-	buildChoiceHtmlForAddEdit(fieldName, choices, val) {
-		var rethtml = jrhText.jrHtmlFormOptionListSelect(fieldName, choices, val);
+	buildChoiceHtmlForAddEdit(fieldName, choices, val, flagShowBlank) {
+		var rethtml = jrhText.jrHtmlFormOptionListSelect(fieldName, choices, val, flagShowBlank);
 		return rethtml;
 	}
 

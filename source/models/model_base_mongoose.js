@@ -702,8 +702,12 @@ class ModelBaseMongoose {
 	static async validateModelFieldAppId(jrResult, key, val, user) {
 		const AppModel = jrequire("models/app");
 		const appIds = await AppModel.buildSimpleAppIdListUserTargetable(user);
+		if (val === "") {
+			jrResult.pushFieldError(key, "The App ID may not be blank.");
+			return null;
+		}
 		if (!appIds || appIds.indexOf(val) === -1) {
-			jrResult.pushError("The specified App ID is inaccessible.");
+			jrResult.pushFieldError(key, "The specified App ID is inaccessible.");
 			return null;
 		}
 		// valid
@@ -713,8 +717,12 @@ class ModelBaseMongoose {
 	static async validateModelFieldRoomId(jrResult, key, val, user) {
 		const RoomModel = jrequire("models/room");
 		const roomIds = await RoomModel.buildSimpleRoomIdListUserTargetable(user);
+		if (val === "") {
+			jrResult.pushFieldError(key, "The Room ID may not be blank.");
+			return null;
+		}
 		if (!roomIds || roomIds.indexOf(val) === -1) {
-			jrResult.pushError("The specified Room ID is inaccessible.");
+			jrResult.pushFieldError(key, "The specified Room ID is inaccessible.");
 			return null;
 		}
 		// valid
@@ -1300,7 +1308,7 @@ class ModelBaseMongoose {
 		return async (viewType, fieldName, req, obj, helperData) => {
 			var retv;
 			var isLoggedInUserSiteAdmin = await arserver.isLoggedInUserSiteAdmin(req);
-			if (viewType === "view") {
+			if (viewType === "view" && obj !== undefined) {
 				if (isLoggedInUserSiteAdmin) {
 					// for debuging
 					retv = obj.passwordhashed;
@@ -1311,7 +1319,7 @@ class ModelBaseMongoose {
 			} else if (viewType === "edit") {
 				var flagExistingIsNonBlank = (obj && (obj.passwordHashed !== undefined && obj.passwordHashed !== null && obj.password !== ""));
 				retv = jrhText.jrHtmlFormInputPassword("password", obj, flagRequired, flagExistingIsNonBlank);
-			} else if (viewType === "list") {
+			} else if (viewType === "list" && obj !== undefined) {
 				if (isLoggedInUserSiteAdmin) {
 					retv = obj.passwordHashed;
 				} else if (!obj.passwordHashed) {
@@ -1332,7 +1340,7 @@ class ModelBaseMongoose {
 	static makeModelValueFunctionExtraData() {
 		// a value function usable by model definitions
 		return async (viewType, fieldName, req, obj, helperData) => {
-			if (obj.extraData) {
+			if (obj !== undefined && obj.extraData) {
 				return JSON.stringify(obj.extraData, null, " ");
 			}
 			return "";
@@ -1342,11 +1350,13 @@ class ModelBaseMongoose {
 
 	static makeModelValueFunctionObjectId(modelClass) {
 		return async (viewType, fieldName, req, obj, helperData) => {
-			const objid = obj[fieldName];
-			if (objid) {
-				// jrdebug.debugObj(obj, "Obj test");
-				const alink = modelClass.getCrudUrlBase("view", objid);
-				return `<a href="${alink}">${objid}</a>`;
+			if (obj !== undefined) {
+				const objid = obj[fieldName];
+				if (objid) {
+					// jrdebug.debugObj(obj, "Obj test");
+					const alink = modelClass.getCrudUrlBase("view", objid);
+					return `<a href="${alink}">${objid}</a>`;
+				}
 			}
 			return "";
 		};
