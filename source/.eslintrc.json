@@ -11,6 +11,9 @@
         "Atomics": "readonly",
         "SharedArrayBuffer": "readonly"
     },
+
+    "ignorePatterns": ["jsdoc/"],
+
     "parserOptions": {
         "ecmaFeatures": {
             "jsx": true

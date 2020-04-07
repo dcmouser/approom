@@ -2438,9 +2438,9 @@ class AppRoomServer {
 	}
 
 
-	calcAclInfo() {
-		const aclInfo = this.aclAid.calcAclInfo();
-		return aclInfo;
+	calcAclStructure() {
+		const aclStructure = this.aclAid.calcAclStructure();
+		return aclStructure;
 	}
 
 

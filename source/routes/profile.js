@@ -151,10 +151,19 @@ async function routerGetIndex(req, res, next) {
 		userInfo,
 	};
 
-	res.render("user/profile", {
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-		extraViewData,
-	});
+	if (true) {
+		// force id
+		req.body._id = user.getIdAsString();
+		req.params.id = req.body._id;
+
+		// hand off work to crudAid
+		var bretv = await crudAid.handleViewGet(req, res, next, UserModel, "", viewFilePathEdit, extraViewData);
+	} else {
+		res.render("user/profile", {
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+			extraViewData,
+		});
+	}
 }
 //---------------------------------------------------------------------------
 

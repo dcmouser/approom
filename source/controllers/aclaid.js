@@ -179,11 +179,11 @@ class AclAid {
 
 
 	//---------------------------------------------------------------------------
-	calcAclInfo() {
+	calcAclStructure() {
 		// return an object with all acl info for debugging
-		var aclInfo = {};
-		aclInfo.grants = this.roleAcl.getGrants();
-		return aclInfo;
+		var aclStructure = {};
+		aclStructure.grants = this.roleAcl.getGrants();
+		return aclStructure;
 	}
 	//---------------------------------------------------------------------------
 

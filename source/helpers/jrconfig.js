@@ -26,7 +26,7 @@ const path = require("path");
 const fs = require("fs");
 
 // for stupid nconf display dump.. ugh we need to get rid of nconf
-const assignDeep = require("assign-deep");
+const mergeDeep = require("merge-deep");
 
 
 // our helpers
@@ -516,14 +516,20 @@ function ipStringToSafeFilenameString(val) {
 	val = val.replace(/[.:]+/g, "_");
 	return val;
 }
+//---------------------------------------------------------------------------
 
 
+
+
+
+
+//---------------------------------------------------------------------------
 /**
  * Function for diagnostics/debugging.
  *
- * @returns an object that contains the nconf.get() full set of assignments of configuration variables, as well as the priority order list of configuration files loaded (and not found)
+ * @returns an object that contains the merged set of options, so that overridden options are respected
  */
-function getDebugObj() {
+function getDebugOptions() {
 	// for debug introspection
 
 	// iterate nconf stores and merge them -- THIS is how we get a compact list of the nconf values actually available -- a dump of nconf values
@@ -536,14 +542,45 @@ function getDebugObj() {
 	storekeys.reverse();
 	storekeys.forEach((key) => {
 		astore = nconf.stores[key].store;
-		assignDeep(nconfDataMerged, astore);
+		nconfDataMerged = mergeDeep(nconfDataMerged, astore);
 	});
 
 	var debugObj = {
-		nconfMerged: nconfDataMerged,
+		options: nconfDataMerged,
+	};
+	return debugObj;
+}
+
+
+
+/**
+ * Function for diagnostics/debugging.
+ *
+ * @returns an object that contains a list of the config files in order of priority
+ */
+function getDebugFiles() {
+	// for debug introspection
+
+	var debugObj = {
 		configFiles,
-		nconfRaw: nconf.stores,
-		argv: yargsObj.argv,
+	};
+	return debugObj;
+}
+
+
+
+
+
+/**
+ * Function for diagnostics/debugging.
+ *
+ * @returns an object that contains a list of the config files in order of priority
+ */
+function getDebugHierarchy() {
+	// for debug introspection
+
+	var debugObj = {
+		nconf_stores: nconf.stores,
 	};
 	return debugObj;
 }
@@ -574,6 +611,9 @@ module.exports = {
 	getVal,
 	getValDefault,
 	setServerFilenamePrefixFromServerIp,
-	getDebugObj,
+
+	getDebugOptions,
+	getDebugFiles,
+	getDebugHierarchy,
 };
 

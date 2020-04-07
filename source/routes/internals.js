@@ -43,11 +43,13 @@ function setupRouter(urlPath) {
 	router.get("/", routerGetIndex);
 	router.get("/appinfo", routerGetAppInfo);
 	router.get("/config_options", routerGetConfigOptions);
+	router.get("/config_files", routerGetConfigFiles);
+	router.get("/config_hierarchy", routerGetConfigHierarchy);
 	router.get("/routes", routerGetRoutes);
 	router.get("/structure_db", routerGetStructureDb);
 	router.get("/resourceuse", routerGetResourceuse);
 	router.get("/serverinfo", routerGetServerinfo);
-	router.get("/aclinfo", routerGetAclinfo);
+	router.get("/aclstructure", routerGetAclStructure);
 	router.get("/nodejs", routerGetNodejs);
 	router.get("/dependencies", routerDependencies);
 	router.get("/plugins", routerPlugins);
@@ -65,168 +67,154 @@ function setupRouter(urlPath) {
 
 
 async function routerGetIndex(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
-		// all done
-		return;
+	if (await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+		res.render("internals/index", {
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		});
 	}
-
-	res.render("internals/index", {
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-	});
 }
 
 
 async function routerGetAppInfo(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
-		// all done
-		return;
+	if (await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+		var rawData = arserver.calcAppInfo();
+		res.render("internals/appinfo", {
+			rawData,
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		});
 	}
-
-	var rawData = arserver.calcAppInfo();
-	res.render("internals/appinfo", {
-		rawData,
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-	});
 }
 
 
 
-
+//---------------------------------------------------------------------------
 async function routerGetConfigOptions(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
-		// all done
-		return;
-	}
+	// await arserver.adminPermissionRenderRawData(req, res, () => {} );
 
-	var rawData = arserver.getJrConfig().getDebugObj();
-	res.render("internals/config_options", {
-		rawData,
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-	});
+	if (await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+		var rawData = arserver.getJrConfig().getDebugOptions();
+		res.render("internals/config", {
+			rawData,
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		});
+	}
 }
+
+
+async function routerGetConfigFiles(req, res, next) {
+	if (await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+		var rawData = arserver.getJrConfig().getDebugFiles();
+		res.render("internals/config", {
+			rawData,
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		});
+	}
+}
+
+async function routerGetConfigHierarchy(req, res, next) {
+	if (await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+		var rawData = arserver.getJrConfig().getDebugHierarchy();
+		res.render("internals/config", {
+			rawData,
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		});
+	}
+}
+//---------------------------------------------------------------------------
+
 
 
 async function routerGetRoutes(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
-		// all done
-		return;
+	if (await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+		var rawData = arserver.calcExpressRoutePathData();
+		res.render("internals/routes", {
+			rawData,
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		});
 	}
-
-	var rawData = arserver.calcExpressRoutePathData();
-	res.render("internals/routes", {
-		rawData,
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-	});
 }
 
 
 async function routerGetStructureDb(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
-		// all done
-		return;
+	if (await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+		var rawData = await arserver.calcDatabaseStructure();
+		res.render("internals/structure_db", {
+			rawData,
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		});
 	}
-
-	var rawData = await arserver.calcDatabaseStructure();
-	res.render("internals/structure_db", {
-		rawData,
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-	});
 }
 
 
 async function routerGetResourceuse(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
-		// all done
-		return;
+	if (await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+		// get database resource use
+		var rawDataDb = await arserver.calcDatabaseResourceUse();
+		res.render("internals/resourceuse", {
+			rawDataDb,
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		});
 	}
-
-	// get database resource use
-	var rawDataDb = await arserver.calcDatabaseResourceUse();
-
-	res.render("internals/resourceuse", {
-		rawDataDb,
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-	});
 }
 
 
 async function routerGetServerinfo(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
-		// all done
-		return;
+	if (await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+		// get database resource use
+		var rawData = await arserver.calcWebServerInformation();
+		res.render("internals/serverinfo", {
+			rawData,
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		});
 	}
-
-	// get database resource use
-	var rawData = await arserver.calcWebServerInformation();
-
-	res.render("internals/serverinfo", {
-		rawData,
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-	});
 }
 
 
-async function routerGetAclinfo(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
-		// all done
-		return;
+async function routerGetAclStructure(req, res, next) {
+	if (await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+		// get database resource use
+		var rawData = arserver.calcAclStructure();
+		res.render("internals/aclstructure", {
+			rawData,
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		});
 	}
-
-	// get database resource use
-	var rawData = arserver.calcAclInfo();
-
-	res.render("internals/aclinfo", {
-		rawData,
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-	});
 }
 
 
 async function routerGetNodejs(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
-		// all done
-		return;
+	if (await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+		// get database resource use
+		var rawData = arserver.calcNodeJsInfo();
+		res.render("internals/nodejs", {
+			rawData,
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		});
 	}
-
-	// get database resource use
-	var rawData = arserver.calcNodeJsInfo();
-
-	res.render("internals/nodejs", {
-		rawData,
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-	});
 }
 
 
 async function routerDependencies(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
-		// all done
-		return;
+	if (await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+		// get database resource use
+		var rawData = arserver.calcDependencyInfo();
+		res.render("internals/dependencies", {
+			rawData,
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		});
 	}
-
-	// get database resource use
-	var rawData = arserver.calcDependencyInfo();
-
-	res.render("internals/dependencies", {
-		rawData,
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-	});
 }
 
 
 async function routerPlugins(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
-		// all done
-		return;
+	if (await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+		// get database resource use
+		var rawData = arserver.calcPluginInfo();
+		res.render("internals/plugins", {
+			rawData,
+			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		});
 	}
-
-	// get database resource use
-	var rawData = arserver.calcPluginInfo();
-
-	res.render("internals/plugins", {
-		rawData,
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-	});
 }
 //---------------------------------------------------------------------------
 
