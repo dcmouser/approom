@@ -162,7 +162,17 @@ async function routerGetTriggerCrash(req, res, next) {
 
 async function routerPostTriggerCrash(req, res, next) {
 	// trigger a crash to check handling
-	throw "PURPOSEFUL_TEST_CRASH_EXCEPTION";
+	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+		// all done
+		return;
+	}
+	// check required csrf token
+	if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
+		// csrf error, next will have been called with it
+		return;
+	}
+
+	throw new Error("PURPOSEFUL_TEST_CRASH_EXCEPTION");
 }
 //---------------------------------------------------------------------------
 

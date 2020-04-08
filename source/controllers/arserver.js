@@ -2258,6 +2258,8 @@ class AppRoomServer {
 
 	forgetCsrfToken(req) {
 		jrhExpress.forgetSessionVar(req, "csrfSecret");
+		// force save of session right away, so that if app crashes, it's still consumed
+		req.session.save();
 	}
 	//---------------------------------------------------------------------------
 
@@ -2853,8 +2855,10 @@ class AppRoomServer {
 
 			if (true && reason !== undefined) {
 				// just throw it to get app to crash exit
-				console.log("In unhandledRejection rethrowing reason..");
-				console.log(reason);
+				// console.log("In unhandledRejection rethrowing reason:");
+				// console.log(reason);
+				// console.log("promise");
+				// console.log(promise);
 				throw reason;
 			}
 
