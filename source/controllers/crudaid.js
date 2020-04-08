@@ -948,10 +948,9 @@ class CrudAid {
 
 			// if we havent yet set a value using valueFunctions (or if that returns undefined) then use default value
 			if (valHtml === undefined) {
-				if (!obj) {
-					val = "";
-				} else if (obj[fieldName] === null || obj[fieldName] === undefined) {
-					val = "";
+				if (!obj || obj[fieldName] === null || obj[fieldName] === undefined) {
+					// default value
+					val = modelClass.getSchemaExtraFieldVal(fieldName, "defaultValue", "");
 				} else {
 					val = obj[fieldName];
 				}

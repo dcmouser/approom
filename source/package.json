@@ -6,6 +6,7 @@
   "scripts": {
     "test": "cls && mocha",
     "testuser": "cls && mocha --grep user",
+    "testserver": "cls && mocha --grep server",
     "mongod": "C:\\Programs\\MongoDB\\Server\\4.0\\bin\\mongod.exe -f C:\\Programs\\MongoDB\\Server\\4.0\\bin\\mongod.cfg",
     "help": "cls && node approom.js --help",
     "runserver": "cls && node approom.js runserver",
@@ -41,6 +42,7 @@
     "cookie-parser": "^1.4.5",
     "csurf": "^1.11.0",
     "debug": "^4.1.1",
+    "del-cli": "^3.0.0",
     "docdash": "^1.2.0",
     "express": "^4.17.1",
     "express-session": "^1.17.0",

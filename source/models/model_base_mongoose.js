@@ -162,6 +162,7 @@ class ModelBaseMongoose {
 				choices: appconst.DefStateModeLabels,
 				choicesEdit: appconst.DefStateModeLabelsEdit,
 				filterSize: 8,
+				defaultValue: appconst.DefMdbEnable,
 			},
 			extraData: {
 				label: "Extra data",

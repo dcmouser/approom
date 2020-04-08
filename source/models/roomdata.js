@@ -24,6 +24,7 @@ const arserver = jrequire("arserver");
 
 // our helper modules
 const jrhText = require("../helpers/jrh_text");
+const jrhValidate = require("../helpers/jrh_validate");
 
 
 
@@ -77,6 +78,12 @@ class RoomdataModel extends ModelBaseMongoose {
 				type: mongoose.Schema.ObjectId,
 				required: true,
 			},
+			label: {
+				type: String,
+			},
+			description: {
+				type: String,
+			},
 		};
 	}
 
@@ -109,6 +116,13 @@ class RoomdataModel extends ModelBaseMongoose {
 				},
 				// alternative generic way to have crud pages link to this val
 				// crudLink: AppModel.getCrudUrlBase(),
+			},
+			label: {
+				label: "Label",
+			},
+			description: {
+				label: "Description",
+				format: "textarea",
 			},
 		};
 	}
@@ -163,7 +177,7 @@ class RoomdataModel extends ModelBaseMongoose {
 		// NOTE: this list can be generated dynamically based on logged in user
 		var reta;
 		if (operationType === "crudAdd" || operationType === "crudEdit") {
-			reta = ["roomid", "disabled", "notes"];
+			reta = ["roomid", "label", "description", "disabled", "notes"];
 		}
 		return reta;
 	}
@@ -184,6 +198,9 @@ class RoomdataModel extends ModelBaseMongoose {
 
 		// set fields from form and validate
 		await this.validateMergeAsync(jrResult, "roomid", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => this.validateModelFieldRoomId(jrr, keyname, inVal, user));
+		//
+		await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrResult, "description", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
 
 		// base fields shared between all? (notes, etc.)
 		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj);

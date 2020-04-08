@@ -402,6 +402,8 @@ class AppRoomServer {
 		this.setupExpressRoutesCore(expressApp);
 		this.setupExpressRoutesSpecialized(expressApp);
 
+
+
 		// fallback error handlers
 		this.setupExpressErrorHandlers(expressApp);
 	}
@@ -455,6 +457,9 @@ class AppRoomServer {
 
 
 	setupExpressSessionCookieStuff(expressApp) {
+
+		// ATTN: 4/8/20 - cookie stuff locks server listener so we dont exit cleanly??
+
 		// cookie support
 		expressApp.use(cookieParser());
 
@@ -477,14 +482,18 @@ class AppRoomServer {
 
 		// sesssion support
 		// see https://github.com/expressjs/session
-		expressApp.use(session({
+		const asession = session({
 			name: this.getConfigVal("session:SESSIONIDNAME"),
 			secret: this.getConfigVal("session:SESSIONSECRET"),
 			resave: false,
 			cookie: cookieOptions,
 			saveUninitialized: false,
 			store: sessionStore,
-		}));
+		});
+		expressApp.use(asession);
+
+		// ATTN: We need to remember this sessionStore so we can close it down on exit gracefully
+		this.rememberedSessionStore = sessionStore;
 	}
 
 
@@ -1678,13 +1687,36 @@ class AppRoomServer {
 
 	closeDown() {
 		// close down the server
+		jrdebug.debug("Server shutting down..");
+
+		// close the listeners
+		if (this.serverHttps) {
+			this.serverHttps.close(() => {
+			});
+			this.serverHttps = undefined;
+		}
+		if (this.serverHttp) {
+			this.serverHttp.close(() => {
+			});
+			this.serverHttp = undefined;
+		}
+
+		// now disconnect the database connections
 		this.dbDisconnect();
+
+		jrdebug.debug("Server shutdown complete.");
 	}
+
 
 	dbDisconnect() {
 		// disconnect from mongoose/mongodb
-		jrdebug.debug("Closing mongoose-mongodb connection.");
+		jrdebug.debug("Closing mongoose-mongodb connection..");
 		mongoose.disconnect();
+		mongoose.connection.close();
+
+		// ATTN: took several hours to track this down why mocha tests could not shut down server
+		// session store needs explicit close to exit gracefully 
+		this.rememberedSessionStore.close();
 	}
 	//---------------------------------------------------------------------------
 

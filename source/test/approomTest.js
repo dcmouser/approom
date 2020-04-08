@@ -64,11 +64,15 @@ describe("server", function test() {
 	before(async () => {
 		// connect server and db
 		await arserver.createAndConnectToDatabase();
+		await arserver.runServer();
 	});
+
 	after(async () => {
 		// disconnect server
-		await arserver.closeDown();
+		console.log("In after..");
+		arserver.closeDown();
 	});
+
 
 
 	// sample test #1
@@ -102,7 +106,7 @@ describe("user", function test() {
 
 	after(async () => {
 		// disconnect server
-		await arserver.closeDown();
+		arserver.closeDown();
 	});
 
 
