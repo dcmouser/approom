@@ -3,3 +3,5 @@
 *private*
 *junk*
 *unused*
+*.log
+logs/

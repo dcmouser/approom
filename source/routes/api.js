@@ -24,7 +24,7 @@ const arserver = jrequire("arserver");
 // helpers
 const JrResult = require("../helpers/jrresult");
 const jrhMisc = require("../helpers/jrh_misc");
-
+const jrhExpress = require("../helpers/jrh_express");
 
 
 
@@ -116,7 +116,7 @@ async function routerPostReqrefresh(req, res, next) {
 	var jrResult = JrResult.makeNew();
 	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateNonSessionGetUserTuple("local", "with username and password", req, res, next, jrResult, true);
 	if (jrResult.isError()) {
-		res.status(401).send(jrResult.toApiResultObj());
+		jrhExpress.sendResJsonJrResult(res, 401, jrResult);
 		return;
 	}
 
@@ -127,7 +127,7 @@ async function routerPostReqrefresh(req, res, next) {
 	arserver.logr(req, "api.token", "made refresh token for " + user.getLogIdString());
 
 	// provide it
-	res.status(200).send(jrhMisc.apiResultObjSuccessData("token generated", secureToken));
+	jrhExpress.sendResJsonData(res, 200, "token generated", secureToken);
 }
 
 
@@ -144,7 +144,7 @@ async function routerGetRefreshaccess(req, res, next) {
 	var jrResult = JrResult.makeNew();
 	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult);
 	if (jrResult.isError()) {
-		res.status(403).send(jrResult.toApiResultObj());
+		jrhExpress.sendResJsonJrResult(res, 403, jrResult);
 		return;
 	}
 
@@ -153,7 +153,7 @@ async function routerGetRefreshaccess(req, res, next) {
 	// it's a token, but is it the right type?
 	const tokenType = userPassport.token.type;
 	if (tokenType !== "refresh") {
-		res.status(403).send(jrhMisc.apiResultObjFromStringError("A valid REFRESH token must be passed to request an access token."));
+		jrhExpress.sendResJsonError(res, 403, "A valid REFRESH token must be passed to request an access token.");
 		return;
 	}
 
@@ -166,7 +166,7 @@ async function routerGetRefreshaccess(req, res, next) {
 	arserver.logr(req, "api.token", "refreshed access token for " + user.getLogIdString());
 
 	// provide it
-	res.status(200).send(jrhMisc.apiResultObjSuccessData("token generated", secureToken));
+	jrhExpress.sendResJsonData(res, 200, "token generated", secureToken);
 }
 
 
@@ -182,7 +182,7 @@ async function routerAllTokentest(req, res, next) {
 	var jrResult = JrResult.makeNew();
 	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult);
 	if (jrResult.isError()) {
-		res.status(403).send(jrResult.toApiResultObj());
+		jrhExpress.sendResJsonJrResult(res, 403, jrResult);
 		return;
 	}
 
@@ -190,7 +190,7 @@ async function routerAllTokentest(req, res, next) {
 	const resultObj = {
 		userPassport,
 	};
-	res.status(200).send(jrhMisc.apiResultObjSuccessData("Valid token parsed in API test", resultObj));
+	jrhExpress.sendResJsonData(res, 200, "Valid token parsed in API test", resultObj);
 }
 
 
@@ -214,12 +214,12 @@ async function routerGetWildcard(req, res, next) {
 		await rateLimiter.consume(rateLimiterKey, 1);
 	} catch (rateLimiterRes) {
 		// rate limiter triggered
-		res.status(429).send(jrhMisc.apiResultObjFromStringError("API rate limiting triggered; your ip has been blocked for " + rateLimiter.blockDuration + " seconds."));
+		jrhExpress.sendResJsonError(res, 429, "API rate limiting triggered; your ip has been blocked for " + (rateLimiter.blockDuration).toString() + " seconds.");
 		// exit from function
 		return;
 	}
 
-	res.status(404).send(jrhMisc.apiResultObjFromStringError("API Route " + req.baseUrl + "/" + req.path + " not found.  API not implemented yet."));
+	jrhExpress.sendResJsonError(res, 404, "API Route " + req.baseUrl + "/" + req.path + " not found.  API not implemented yet.");
 }
 //---------------------------------------------------------------------------
 

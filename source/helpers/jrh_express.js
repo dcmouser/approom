@@ -464,6 +464,42 @@ function reqOriginalUrl(req) {
 
 
 
+//---------------------------------------------------------------------------
+function sendResJsonData(res, status, str, obj) {
+	var data;
+	if (str === null || str === undefined || str === "") {
+		data = {
+			...obj,
+		};
+	} else {
+		data = {
+			success: str,
+			...obj,
+		};
+	}
+	//
+	res.status(status).send(data);
+}
+
+function sendResJsonError(res, status, errorStr) {
+	const data = {
+		error: errorStr,
+	};
+	res.status(status).send(data);
+}
+
+
+function sendResJsonJrResult(res, status, jrResult) {
+	// is it error?
+	if (jrResult.isError()) {
+		return sendResJsonError(res, status, jrResult.getErrorsAsString());
+	}
+	// it's a success
+	return sendResJsonData(res, status, jrResult.getSuccessAsString(), undefined);
+}
+//---------------------------------------------------------------------------
+
+
 
 
 
@@ -490,4 +526,8 @@ module.exports = {
 
 	reqUrlWithPath,
 	reqOriginalUrl,
+
+	sendResJsonData,
+	sendResJsonError,
+	sendResJsonJrResult,
 };

@@ -1,4 +1,5 @@
 DEBUG: true
+PROFILE: false
 NODE_ENV: development
 crypto:
   VERIFICATIONCODESALT: your_site_salt_for_verification_token_hashing

@@ -143,7 +143,7 @@ async function commandDbSetup() {
 	// setup initial database and acl stuff
 	const bretv = await arserver.createAndConnectToDatabase();
 	jrdebug.debug("Finished dbsetup.");
-	arserver.closeDown();
+	arserver.shutDown();
 	return bretv;
 }
 //---------------------------------------------------------------------------

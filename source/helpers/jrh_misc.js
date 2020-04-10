@@ -281,6 +281,24 @@ function getNiceDateValString(val) {
 function getNiceDurationTimeMs(elapsedMs) {
 	return humanizeDuration(elapsedMs);
 }
+
+/**
+ * Return current date as a compact string suitable for filename
+ * @returns current date as string
+ */
+function getCompactNowString() {
+	const dt = new Date(Date.now());
+	const str = dt.getFullYear() + jrZeroPadInt(dt.getMonth() + 1, 2) + jrZeroPadInt(dt.getDate(), 2) + "_" + jrZeroPadInt(dt.getHours(), 2) + jrZeroPadInt(dt.getMinutes(), 2) + jrZeroPadInt(dt.getSeconds(), 2);
+	return str;
+}
+
+function jrZeroPadInt(intval, padding) {
+	var str = intval.toString();
+	while (str.length < padding) {
+		str = "0" + str;
+	}
+	return str;
+}
 //---------------------------------------------------------------------------
 
 
@@ -538,28 +556,6 @@ function objToString(obj, flagCompact) {
 
 
 
-//---------------------------------------------------------------------------
-function apiResultObjFromStringError(str) {
-	return {
-		error: str,
-	};
-}
-
-
-function apiResultObjFromStringSuccess(str) {
-	return {
-		success: str,
-	};
-}
-
-
-function apiResultObjSuccessData(str, data) {
-	return {
-		success: str,
-		...data,
-	};
-}
-//---------------------------------------------------------------------------
 
 
 
@@ -641,6 +637,7 @@ module.exports = {
 	getPreciseNowString,
 	getNiceDateValString,
 	getNiceDurationTimeMs,
+	getCompactNowString,
 
 	regexEscapeStr,
 	makeSafeForFormInput,
@@ -654,10 +651,6 @@ module.exports = {
 	findLongestPrefixAndRemainder,
 
 	objToString,
-
-	apiResultObjFromStringError,
-	apiResultObjFromStringSuccess,
-	apiResultObjSuccessData,
 
 	asyncNextTick,
 

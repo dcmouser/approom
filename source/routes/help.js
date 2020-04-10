@@ -20,6 +20,7 @@ const jrequire = require("../helpers/jrequire");
 // helpers
 const JrResult = require("../helpers/jrresult");
 const jrdebug = require("../helpers/jrdebug");
+const jrhExpress = require("../helpers/jrh_express");
 
 // controllers
 const adminAid = jrequire("adminaid");
@@ -42,17 +43,8 @@ function setupRouter(urlPath) {
 
 	// setup routes
 	router.get("/", routerGetIndex);
-	router.get("/makeappsrooms", routerGetMakeappsrooms);
-	router.post("/makeappsrooms", routerPostMakeappsrooms);
 
-	router.get("/emergencyalert", routerGetTestEmergencyAlerts);
-	router.post("/emergencyalert", routerPostTestEmergencyAlerts);
-
-	router.get("/trigger_crash", routerGetTriggerCrash);
-	router.post("/trigger_crash", routerPostTriggerCrash);
-
-	router.get("/shutdown", routerGetShutdown);
-	router.post("/shutdown", routerPostShutdown);
+	router.get("/about", routerAbout);
 
 	// return router
 	return router;
@@ -67,12 +59,7 @@ function setupRouter(urlPath) {
 
 
 async function routerGetIndex(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
-		// all done
-		return;
-	}
-
-	res.render("test/index", {
+	res.render("help/index", {
 		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 	});
 }
@@ -81,37 +68,10 @@ async function routerGetIndex(req, res, next) {
 
 
 //---------------------------------------------------------------------------
-async function routerGetMakeappsrooms(req, res, next) {
-	await arserver.confirmUrlPost(req, res, "admin", "Generate some test Apps and Rooms", "This operation will bulk create a bunch of apps and rooms.  Note it will fail if run twice, due to clashing shortcodes.");
-}
-
-
-async function routerPostMakeappsrooms(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
-		// all done
-		return;
-	}
-	// check required csrf token
-	if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
-		// csrf error will be handled by exception; we just need to return
-		return;
-	}
-
-	// do it using adminaid
-	const addCountApps = 5;
-	const addCountRooms = 3;
-	const addCountRoomDatas = 3;
-	var bretv = await adminAid.addTestAppsAndRooms(req, addCountApps, addCountRooms, addCountRoomDatas);
-	//
-	if (bretv) {
-		// return them to admin testing page
-		res.redirect("/test");
-	} else {
-		res.redirect("/test/makeappsrooms");
-	}
+async function routerAbout(req, res, next) {
+	jrhExpress.sendResJsonData(res, 200, "About", arserver.getAboutInfo());
 }
 //---------------------------------------------------------------------------
-
 
 
 

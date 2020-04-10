@@ -62,15 +62,13 @@ describe("server", function test() {
 
 	// connect to db at start, and tear down at end
 	before(async () => {
-		// connect server and db
-		await arserver.createAndConnectToDatabase();
-		await arserver.runServer();
+		// connect server and db and run it to listen for connections
+		await arserver.startForTesting(true);
 	});
 
 	after(async () => {
 		// disconnect server
-		console.log("In after..");
-		arserver.closeDown();
+		arserver.shutDown();
 	});
 
 
@@ -100,18 +98,59 @@ describe("user", function test() {
 
 	// connect to db at start, and tear down at end
 	before(async () => {
-		// connect server and db
-		await arserver.createAndConnectToDatabase();
+		// connect server and db but no need to listen for connections
+		await arserver.startForTesting(false);
 	});
 
 	after(async () => {
 		// disconnect server
-		arserver.closeDown();
+		arserver.shutDown();
 	});
 
 
 
 	it("Checking admin password is still set to default", async () => {
+		// get admin user
+		var user = await UserModel.findUserByUsername("admin");
+		assert(user, "user with 'admin' username not found");
+
+		// test password see if its default
+		var plaintextPassword = UserModel.getPasswordAdminPlaintextDefault();
+		var bretv = await user.testPlaintextPassword(plaintextPassword);
+
+		assert(bretv, "admin user password is not set to default value");
+	});
+
+});
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+//---------------------------------------------------------------------------
+// user model tests
+describe("user", function test() {
+
+	// we need to change timeout for this test
+	this.timeout(10000);
+
+	// connect to db at start, and tear down at end
+	before(async () => {
+		// connect server and db and run it to listen for connections
+		await arserver.startForTesting(true);
+	});
+
+	after(async () => {
+		// disconnect server
+		arserver.shutDown();
+	});
+
+
+
+	it("Fetching about page", async () => {
 		// get admin user
 		var user = await UserModel.findUserByUsername("admin");
 		assert(user, "user with 'admin' username not found");

@@ -15,6 +15,7 @@ const assert = require("assert");
 
 // helper modules
 const jrhMisc = require("./jrh_misc");
+const jrhExpress = require("./jrh_express");
 
 
 
@@ -726,16 +727,6 @@ class JrResult {
 	//---------------------------------------------------------------------------
 
 
-
-	//---------------------------------------------------------------------------
-	toApiResultObj() {
-		if (this.isError()) {
-			return jrhMisc.apiResultObjFromStringError(this.getErrorsAsString());
-		}
-		// success
-		return jrhMisc.apiResultObjFromStringSuccess(this.getSuccessAsString());
-	}
-	//---------------------------------------------------------------------------
 }
 
 

@@ -43,6 +43,10 @@ const util = require("util");
 // misc 3rd party modules
 const gravatar = require("gravatar");
 
+// profiler (only used when PROFILE option set)
+var profiler = require("v8-profiler-next");
+// var profiler;
+
 // requirement service locator
 const jrequire = require("../helpers/jrequire");
 
@@ -157,6 +161,8 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	// getting options via jrconfig
 	//
+
+
 	getOptionDbUrl() { return this.getConfigVal("server:DB_URL"); }
 
 	getOptionHttp() { return this.getConfigVal("server:HTTP"); }
@@ -174,6 +180,8 @@ class AppRoomServer {
 	getOptionSiteDomain() { return this.getConfigVal("server:SITE_DOMAIN"); }
 
 	getOptionDebugEnabled() { return this.getConfigValDefault("DEBUG", false); }
+
+	getOptionProfileEnabled() { return this.getConfigVal("PROFILE", false); }
 
 	getOptionUseFullRegistrationForm() { return this.getConfigValDefault("options:SIGNUP_FULLREGISTRATIONFORM", false); }
 
@@ -215,7 +223,11 @@ class AppRoomServer {
 		this.setupPreConfig();
 		this.processConfig();
 		this.setupPostConfig();
+
+		// start profiling?
+		this.engageProfilerIfAppropriate();
 	}
+
 
 
 	setupPreConfig() {
@@ -402,8 +414,6 @@ class AppRoomServer {
 		this.setupExpressRoutesCore(expressApp);
 		this.setupExpressRoutesSpecialized(expressApp);
 
-
-
 		// fallback error handlers
 		this.setupExpressErrorHandlers(expressApp);
 	}
@@ -572,6 +582,8 @@ class AppRoomServer {
 		this.setupRoute(expressApp, "/analytics", "analytics");
 		// testing
 		this.setupRoute(expressApp, "/test", "test");
+		// help/about
+		this.setupRoute(expressApp, "/help", "help");
 
 		// crud routes
 		var crudUrlBase = "/crud";
@@ -1634,6 +1646,14 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
+	async startForTesting(flagRunServer) {
+		await this.createAndConnectToDatabase();
+		if (flagRunServer) {
+			await this.runServer();
+		}
+	}
+
+
 	async createAndConnectToDatabase() {
 		// setup database stuff (create and connect to models -- callable whether db is already created or not)
 		var bretv = false;
@@ -1685,7 +1705,7 @@ class AppRoomServer {
 	}
 
 
-	closeDown() {
+	shutDown() {
 		// close down the server
 		jrdebug.debug("Server shutting down..");
 
@@ -1705,6 +1725,9 @@ class AppRoomServer {
 		this.dbDisconnect();
 
 		jrdebug.debug("Server shutdown complete.");
+
+		// shutdown profiler?
+		this.disEngageProfilerIfAppropriate();
 	}
 
 
@@ -1872,10 +1895,9 @@ class AppRoomServer {
 		} catch (err) {
 			// error while logging to db.
 			// log EXCEPTION message (INCLUDES original) to file; note we may still try to log the original cleanly to file below
-			jrdebug.debug("Logging fatal exception to error log file..");
+			jrdebug.debug("Logging fatal exception to error log file:");
+			jrdebug.debugObj(err, "Error");
 			jrlog.logExceptionErrorWithMessage(appconst.DefLogCategoryError, err, type, message, extraData, mergeData);
-			// rethrow exception
-			throw err;
 		}
 	}
 	//---------------------------------------------------------------------------
@@ -2899,6 +2921,10 @@ class AppRoomServer {
 				console.log("In uncaughtException forcing process exit, error:");
 				console.log(err);
 				console.log("----------------------------------------------------------------------\n\n");
+
+				// shutdown profiler?
+				this.disEngageProfilerIfAppropriate();
+
 				process.exit();
 				return;
 			}
@@ -2912,6 +2938,9 @@ class AppRoomServer {
 				escapeLoops: true,
 				origin,
 			};
+
+			// shutdown profiler?
+			this.disEngageProfilerIfAppropriate();
 
 			// throw it up, this will display it on console and crash out of node
 			throw reerr;
@@ -3102,8 +3131,47 @@ class AppRoomServer {
 
 
 
+	//---------------------------------------------------------------------------
+	engageProfilerIfAppropriate() {
+		// see https://npmdoc.github.io/node-npmdoc-v8-profiler/build/apidoc.html#apidoc.element.v8-profiler.startProfiling
+		if (this.getOptionProfileEnabled()) {
+			// profiler = require("v8-profiler-next");
+			jrdebug.debug("Engaging v8 profiler.");
+			profiler.startProfiling("", true);
+		}
+	}
 
 
+	disEngageProfilerIfAppropriate() {
+		if (this.getOptionProfileEnabled() && profiler !== undefined) {
+			var profileResult = profiler.stopProfiling("");
+			var profileOutputPath = this.getProfileOutputFile();
+			profileResult.export().pipe(fs.createWriteStream(profileOutputPath)).on("finish", () => {
+				profileResult.delete();
+				const errmsg = "Wrote profile data to " + profileOutputPath + ".";
+				jrdebug.debug(errmsg);
+			});
+			profiler = undefined;
+		}
+	}
+
+	getProfileOutputFile() {
+		return this.getLogDir() + "/" + arGlobals.programName + "_" + jrhMisc.getCompactNowString() + ".cpuprofile";
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	getAboutInfo() {
+		const data = {
+			name: arGlobals.programName,
+			version: arGlobals.programVersion,
+			date: arGlobals.programDate,
+			author: arGlobals.programAuthor,
+		};
+		return data;
+	}
+	//---------------------------------------------------------------------------
 
 
 
