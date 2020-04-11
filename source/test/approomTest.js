@@ -10,8 +10,14 @@
 "use strict";
 
 
-// misc modules
+
+//---------------------------------------------------------------------------
+// testing modules
 const assert = require("assert");
+const axios = require("axios");
+const https = require("https");
+//---------------------------------------------------------------------------
+
 
 
 
@@ -19,21 +25,16 @@ const assert = require("assert");
 // program globals (version, author, etc.)
 const arGlobals = require("../approomglobals");
 
-// dynamic dependencies instead of using require
+// initialize the service dependency requires helper
 arGlobals.setupDefaultModulePaths();
 
 // requirement service locator
 const jrequire = require("../helpers/jrequire");
 
+// dynamic dependency requires
 const arserver = jrequire("arserver");
 const UserModel = jrequire("models/user");
 //---------------------------------------------------------------------------
-
-
-
-
-
-
 
 
 //---------------------------------------------------------------------------
@@ -42,6 +43,9 @@ const UserModel = jrequire("models/user");
 // setup initial config stuff
 arserver.setup();
 //---------------------------------------------------------------------------
+
+
+
 
 
 
@@ -63,7 +67,7 @@ describe("server", function test() {
 	// connect to db at start, and tear down at end
 	before(async () => {
 		// connect server and db and run it to listen for connections
-		await arserver.startForTesting(true);
+		await arserver.startUp(true);
 	});
 
 	after(async () => {
@@ -99,7 +103,7 @@ describe("user", function test() {
 	// connect to db at start, and tear down at end
 	before(async () => {
 		// connect server and db but no need to listen for connections
-		await arserver.startForTesting(false);
+		await arserver.startUp(false);
 	});
 
 	after(async () => {
@@ -112,13 +116,13 @@ describe("user", function test() {
 	it("Checking admin password is still set to default", async () => {
 		// get admin user
 		var user = await UserModel.findUserByUsername("admin");
-		assert(user, "user with 'admin' username not found");
+		assert(user, "User with 'admin' username not found");
 
 		// test password see if its default
 		var plaintextPassword = UserModel.getPasswordAdminPlaintextDefault();
 		var bretv = await user.testPlaintextPassword(plaintextPassword);
 
-		assert(bretv, "admin user password is not set to default value");
+		assert(bretv, "Admin user password is not set to default value");
 	});
 
 });
@@ -132,7 +136,7 @@ describe("user", function test() {
 
 //---------------------------------------------------------------------------
 // user model tests
-describe("user", function test() {
+describe("fetch", function test() {
 
 	// we need to change timeout for this test
 	this.timeout(10000);
@@ -140,7 +144,7 @@ describe("user", function test() {
 	// connect to db at start, and tear down at end
 	before(async () => {
 		// connect server and db and run it to listen for connections
-		await arserver.startForTesting(true);
+		await arserver.startUp(true);
 	});
 
 	after(async () => {
@@ -151,16 +155,32 @@ describe("user", function test() {
 
 
 	it("Fetching about page", async () => {
-		// get admin user
-		var user = await UserModel.findUserByUsername("admin");
-		assert(user, "user with 'admin' username not found");
+		// fetch about page
 
-		// test password see if its default
-		var plaintextPassword = UserModel.getPasswordAdminPlaintextDefault();
-		var bretv = await user.testPlaintextPassword(plaintextPassword);
+		// ignore cert expired
+		// see https://github.com/axios/axios/issues/535
+		const agent = new https.Agent({
+			rejectUnauthorized: false,
+		});
 
-		assert(bretv, "admin user password is not set to default value");
+		var url, responseData, data;
+
+		// test http server
+		url = arserver.getBaseServerIpHttp() + "/help/about";
+		console.log("Fetching from url: " + url);
+		responseData = await axios.get(url, { httpsAgent: agent });
+		data = responseData.data;
+		assert((data && data.success === "About"), "Failed to fetch About info.");
+
+		// test https server
+		url = arserver.getBaseServerIpHttps() + "/help/about";
+		console.log("Fetching from url: " + url);
+		responseData = await axios.get(url, { httpsAgent: agent });
+		data = responseData.data;
+		assert((data && data.success === "About"), "Failed to fetch About info.");
+
 	});
 
 });
+
 //---------------------------------------------------------------------------

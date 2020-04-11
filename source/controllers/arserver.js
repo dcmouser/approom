@@ -104,6 +104,8 @@ class AppRoomServer {
 		this.serverHttps = undefined;
 		this.serverHttp = undefined;
 		//
+		this.needsShutdown = false;
+		//
 		this.procesData = {};
 	}
 	//---------------------------------------------------------------------------
@@ -156,12 +158,19 @@ class AppRoomServer {
 	getLogDir() {
 		return this.getBaseSubDir("logs");
 	}
+
+	getNeedsShutdown() {
+		return this.needsShutdown;
+	}
+
+	setNeedsShutdown(val) {
+		this.needsShutdown = val;
+	}
 	//---------------------------------------------------------------------------
 
 	//---------------------------------------------------------------------------
 	// getting options via jrconfig
 	//
-
 
 	getOptionDbUrl() { return this.getConfigVal("server:DB_URL"); }
 
@@ -223,11 +232,12 @@ class AppRoomServer {
 		this.setupPreConfig();
 		this.processConfig();
 		this.setupPostConfig();
-
-		// start profiling?
-		this.engageProfilerIfAppropriate();
 	}
 
+
+	getServerIp() {
+		return jrhMisc.getServerIpAddress();
+	}
 
 
 	setupPreConfig() {
@@ -250,7 +260,7 @@ class AppRoomServer {
 		jrdebug.debugf("%s v%s (%s) by %s", arGlobals.programName, arGlobals.programVersion, arGlobals.programDate, arGlobals.programAuthor);
 
 		// try to get server ip
-		var serverIp = jrhMisc.getServerIpAddress();
+		var serverIp = this.getServerIp();
 		jrconfig.setServerFilenamePrefixFromServerIp(serverIp);
 		jrdebug.debugf("Running on server: %s", serverIp);
 
@@ -292,6 +302,9 @@ class AppRoomServer {
 
 		// cache any options for faster access
 		this.cacheMiscOptions();
+
+		// misc global hooks
+		this.setupGlobalHooks();
 	}
 	//---------------------------------------------------------------------------
 
@@ -1596,6 +1609,9 @@ class AppRoomServer {
 	async runServer() {
 		// run the server -- this is called AFTER other setup stuff
 
+		// we need to shutdown
+		this.setNeedsShutdown(true);
+
 		// setup express stuff
 		this.setupExpress();
 
@@ -1645,18 +1661,31 @@ class AppRoomServer {
 
 
 
+
+
+
+
+
 	//---------------------------------------------------------------------------
-	async startForTesting(flagRunServer) {
-		await this.createAndConnectToDatabase();
+	async startUp(flagRunServer) {
+
+		// start profiling?
+		this.engageProfilerIfAppropriate();
+
+		var bretv = await this.createAndConnectToDatabase();
 		if (flagRunServer) {
-			await this.runServer();
+			bretv = await this.runServer();
 		}
+		return bretv;
 	}
 
 
 	async createAndConnectToDatabase() {
 		// setup database stuff (create and connect to models -- callable whether db is already created or not)
 		var bretv = false;
+
+		// we need to shutdown
+		this.setNeedsShutdown(true);
 
 		const mongooseOptions = {
 			useNewUrlParser: true,
@@ -1707,7 +1736,17 @@ class AppRoomServer {
 
 	shutDown() {
 		// close down the server
+
+		// do we need to shutdown
+		if (!this.getNeedsShutdown()) {
+			// already called
+			return;
+		}
+
 		jrdebug.debug("Server shutting down..");
+
+		// clear flat
+		this.setNeedsShutdown(false);
 
 		// close the listeners
 		if (this.serverHttps) {
@@ -1738,7 +1777,7 @@ class AppRoomServer {
 		mongoose.connection.close();
 
 		// ATTN: took several hours to track this down why mocha tests could not shut down server
-		// session store needs explicit close to exit gracefully 
+		// session store needs explicit close to exit gracefully
 		this.rememberedSessionStore.close();
 	}
 	//---------------------------------------------------------------------------
@@ -2945,7 +2984,6 @@ class AppRoomServer {
 			// throw it up, this will display it on console and crash out of node
 			throw reerr;
 		});
-
 	}
 	//---------------------------------------------------------------------------
 
@@ -3099,6 +3137,22 @@ class AppRoomServer {
 
 
 
+	//---------------------------------------------------------------------------
+	/**
+	 * Setup any global hooks not covered by express
+	 *
+	 * @memberof AppRoomServer
+	 */
+	setupGlobalHooks() {
+		process.on("exit", () => {
+			// try to shutdown, if not already done, on exit
+			// console.log("Exiting application.");
+			this.shutDown();
+		});
+	}
+	//---------------------------------------------------------------------------
+
+
 
 
 	//---------------------------------------------------------------------------
@@ -3176,6 +3230,31 @@ class AppRoomServer {
 
 
 
+	//---------------------------------------------------------------------------
+	getBaseServerIpHttp() {
+		return this.getBaseServerUrl("http", this.serverHttp);
+	}
+
+	getBaseServerIpHttps() {
+		return this.getBaseServerUrl("https", this.serverHttps);
+	}
+
+
+	getBaseServerUrl(protocolStr, server) {
+		if (server == null) {
+			return null;
+		}
+		var serverIp = this.getServerIp();
+		var addr = server.address();
+		if (typeof addr === "string") {
+			serverIp += ":" + addr;
+		} else {
+			serverIp += ":" + addr.port;
+		}
+
+		var url = protocolStr + "://" + serverIp;
+		return url;
+	}
 
 
 

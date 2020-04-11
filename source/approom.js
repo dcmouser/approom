@@ -7,8 +7,12 @@
 "use strict";
 
 
+//---------------------------------------------------------------------------
 // modules
 const yargs = require("yargs");
+//---------------------------------------------------------------------------
+
+
 
 
 //---------------------------------------------------------------------------
@@ -21,10 +25,12 @@ arGlobals.setupDefaultModulePaths();
 // requirement service locator
 const jrequire = require("./helpers/jrequire");
 
+// dynamic dependency requires
+const arserver = jrequire("arserver");
+
+// some helpers
 const jrconfig = require("./helpers/jrconfig");
 const jrdebug = require("./helpers/jrdebug");
-
-const arserver = jrequire("arserver");
 //---------------------------------------------------------------------------
 
 
@@ -33,17 +39,19 @@ const arserver = jrequire("arserver");
 
 
 //---------------------------------------------------------------------------
+// Parse commandline
+// The code for setting commandline options is in createYargsObj() object below
+
 // create custom yargs object for commandline options and commands
 // you might have multiple cli apps, each with their own createYargsObj
-// NOTE: you MUST do this before calling jrconfig.parse or setup, etc.
+// NOTE: you MUST do this before calling jrconfig.parse() or arserver.setup(), etc.
 jrconfig.setYargs(createYargsObj());
 //---------------------------------------------------------------------------
 
 
 
-
 //---------------------------------------------------------------------------
-// this should be done by even the unit test runners
+// Generic setup call after commandline options are parsed; this call should be done by even the unit test runners
 arserver.setup();
 //---------------------------------------------------------------------------
 
@@ -83,7 +91,7 @@ function processJrConfigAndCommandline() {
 // commandline options for this program
 
 function createYargsObj() {
-	yargs.version(arGlobals.programVersion);
+	yargs.version("v" + arGlobals.programVersion);
 	yargs.epilog("copyright " + arGlobals.programDate + " by " + arGlobals.programAuthor);
 	yargs.strict();
 	yargs.options({
@@ -93,18 +101,8 @@ function createYargsObj() {
 	});
 	//
 	yargs.command({
-		command: "dbsetup",
-		desc: "Setup the approoom database",
-		handler: (argv) => {
-			jrconfig.queueYargsCommand("dbsetup", argv, (cmd) => {
-				commandDbSetup();
-			});
-		},
-	});
-	//
-	yargs.command({
 		command: "runserver",
-		desc: "Run the approoom server",
+		desc: "Run the approom server",
 		handler: (argv) => {
 			jrconfig.queueYargsCommand("runserver", argv, (cmd) => {
 				commandRunServer();
@@ -131,19 +129,8 @@ function createYargsObj() {
 // functions callable from commandline
 
 async function commandRunServer() {
-	// first setup db stuff
-	var bretv = await arserver.createAndConnectToDatabase();
-	// now launch server
-	bretv = await arserver.runServer();
-	return bretv;
-}
-
-
-async function commandDbSetup() {
-	// setup initial database and acl stuff
-	const bretv = await arserver.createAndConnectToDatabase();
-	jrdebug.debug("Finished dbsetup.");
-	arserver.shutDown();
+	// startup server and run it
+	var bretv = await arserver.startUp(true);
 	return bretv;
 }
 //---------------------------------------------------------------------------
