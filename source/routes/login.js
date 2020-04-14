@@ -58,10 +58,10 @@ function setupRouter(urlPath) {
 	router.get("/email", routerGetEmail);
 	router.post("/email", routerPostEmail);
 
-	// not implemented yet but placeholders
 	router.get("/twitter", passport.authenticate("twitter", {}));
 	router.get("/twitter/auth", routerGetTwitterAuth);
-	router.get("/google", passport.authenticate("google", {}));
+
+	router.get("/google", passport.authenticate("google", { scope: ["profile"] }));
 	router.get("/google/auth", routerGetGoogleAuth);
 
 
@@ -185,16 +185,21 @@ async function routerPostEmail(req, res, next) {
 
 
 //---------------------------------------------------------------------------
-// ATTN: These login bridges are not implemented yet
-
 // twiter auth callback
+// see http://www.passportjs.org/packages/passport-twitter/
+// see arserver.js setupPassportStrategyTwitter
 async function routerGetTwitterAuth(req, res, next) {
 	// our manual passport authentification helper, sends user to /profile on success or /login on failure
 	await arserver.asyncRoutePassportAuthenticate("twitter", "via twitter", req, res, next, null, true, true);
 }
+//---------------------------------------------------------------------------
 
 
+
+
+//---------------------------------------------------------------------------
 // google auth callback
+// see http://www.passportjs.org/packages/passport-google-oauth20/
 async function routerGetGoogleAuth(req, res, next) {
 	// our manual passport authentification helper, sends user to /profile on success or /login on failure
 	await arserver.asyncRoutePassportAuthenticate("google", "via google", req, res, next, null, true, true);

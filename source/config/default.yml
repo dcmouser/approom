@@ -26,6 +26,10 @@ options:
 passport:
   FACEBOOK_APP_ID: YOUR_FACEBOOK_APP_LOGIN_ID
   FACEBOOK_APP_SECRET: YOUR_FACEBOOK_APP_LOGIN_SECRET
+  TWITTER_consumerKey: TWITTER_CONSUMER_KEY
+  TWITTER_consumerSecret: TWITTER_CONSUMER_SECRET
+  GOOGLE_clientid: 1025110957335-prhntovvt98g9l8jrhvbtea59d7r4lmt.apps.googleusercontent.com
+  GOOGLE_secret: 2Dql46zylOmhnN5WAWOziSHu
 plugins: {}
 server:
   DB_URL: 'mongodb://localhost/approomdb'

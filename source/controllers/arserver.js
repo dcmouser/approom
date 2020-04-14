@@ -32,6 +32,8 @@ const jsonwebtoken = require("jsonwebtoken");
 const passport = require("passport");
 const passportLocal = require("passport-local");
 const passportFacebook = require("passport-facebook");
+const passportTwitter = require("passport-twitter");
+const passportGoogle = require("passport-google-oauth20");
 const passportJwt = require("passport-jwt");
 
 // misc node core modules
@@ -733,6 +735,8 @@ class AppRoomServer {
 		// setup any login/auth strategies
 		this.setupPassportStrategyLocal();
 		this.setupPassportStrategyFacebook();
+		this.setupPassportStrategyTwitter();
+		this.setupPassportStrategyGoogle();
 		this.setupPassportJwt();
 	}
 
@@ -812,22 +816,8 @@ class AppRoomServer {
 						realName: profile.displayName,
 					},
 				};
-				// created bridged user
-				var { user, jrResult } = await this.LoginModel.processBridgedLoginGetOrCreateUserOrProxy(bridgedLoginObj, req);
-				// if user could not be created, it's an error
-				// add jrResult to session in case we did extra stuff and info to show the user
-				if (jrResult) {
-					jrResult.addToSession(req);
-				}
-				// otherwise log in the user -- either with a REAL user account, OR if user is a just a namless proxy for the bridged login, with that
-				var userProfile;
-				if (user) {
-					userProfile = user.getMinimalPassportProfile();
-				} else {
-					userProfile = null;
-				}
-				// return success
-				return done(null, userProfile);
+				// make or connect account to bridge
+				return await this.setupPassportStrategyFromBridge(req, bridgedLoginObj, done);
 			},
 		));
 	}
@@ -876,6 +866,108 @@ class AppRoomServer {
 	}
 	//---------------------------------------------------------------------------
 
+
+
+
+	//---------------------------------------------------------------------------
+	setupPassportStrategyTwitter() {
+		// see http://www.passportjs.org/packages/passport-twitter/
+		const Strategy = passportTwitter.Strategy;
+
+		var strategyOptions = {
+			consumerKey: this.getConfigVal("passport:TWITTER_consumerKey"),
+			consumerSecret: this.getConfigVal("passport:TWITTER_consumerSecret"),
+			callbackURL: this.calcAbsoluteSiteUrlPreferHttps("/login/twitter/auth"),
+			passReqToCallback: true,
+		};
+
+		// debug info
+		jrdebug.cdebugObj(strategyOptions, "setupPassportStrategyTwitter options");
+
+		passport.use(new Strategy(
+			strategyOptions,
+			async (req, token, tokenSecret, profile, done) => {
+				jrdebug.cdebugObj(token, "twitter token");
+				jrdebug.cdebugObj(tokenSecret, "twitter tokenSecret");
+				jrdebug.cdebugObj(profile, "twitter profile");
+				// get user associated with this twitter profile, OR create one, etc.
+				var bridgedLoginObj = {
+					provider: profile.provider,
+					providerUserId: profile.id,
+					extraData: {
+						realName: profile.displayName,
+					},
+				};
+				// make or connect account to bridge
+				return await this.setupPassportStrategyFromBridge(req, bridgedLoginObj, done);
+			},
+		));
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	setupPassportStrategyGoogle() {
+		// see http://www.passportjs.org/packages/passport-google-oauth20/
+		const Strategy = passportGoogle.Strategy;
+
+		var strategyOptions = {
+			clientID: this.getConfigVal("passport:GOOGLE_clientid"),
+			clientSecret: this.getConfigVal("passport:GOOGLE_secret"),
+			callbackURL: this.calcAbsoluteSiteUrlPreferHttps("/login/google/auth"),
+			passReqToCallback: true,
+		};
+
+		// debug info
+		jrdebug.cdebugObj(strategyOptions, "setupPassportStrategyTwitter options");
+
+		passport.use(new Strategy(
+			strategyOptions,
+			async (req, accessToken, refreshToken, profile, done) => {
+				jrdebug.cdebugObj(accessToken, "google accessToken");
+				jrdebug.cdebugObj(refreshToken, "google refreshToken");
+				jrdebug.cdebugObj(profile, "google profile");
+				// get user associated with this profile, OR create one, etc.
+				var bridgedLoginObj = {
+					provider: profile.provider,
+					providerUserId: profile.id,
+					extraData: {
+						realName: profile.displayName,
+					},
+				};
+				// make or connect account to bridge
+				return await this.setupPassportStrategyFromBridge(req, bridgedLoginObj, done);
+			},
+		));
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// bridge helper for facebook, twitter, etc.
+	async setupPassportStrategyFromBridge(req, bridgedLoginObj, done) {
+		// created bridged user
+		var { user, jrResult } = await this.LoginModel.processBridgedLoginGetOrCreateUserOrProxy(bridgedLoginObj, req);
+		// if user could not be created, it's an error
+		// add jrResult to session in case we did extra stuff and info to show the user
+		if (jrResult) {
+			jrResult.addToSession(req);
+		}
+		// otherwise log in the user -- either with a REAL user account, OR if user is a just a namless proxy for the bridged login, with that
+		var userProfile;
+		if (user) {
+			userProfile = user.getMinimalPassportProfile();
+		} else {
+			userProfile = null;
+		}
+		// return success
+		return done(null, userProfile);
+	}
+	//---------------------------------------------------------------------------
 
 
 
@@ -1778,7 +1870,9 @@ class AppRoomServer {
 
 		// ATTN: took several hours to track this down why mocha tests could not shut down server
 		// session store needs explicit close to exit gracefully
-		this.rememberedSessionStore.close();
+		if (this.rememberedSessionStore) {
+			this.rememberedSessionStore.close();
+		}
 	}
 	//---------------------------------------------------------------------------
 

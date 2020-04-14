@@ -151,12 +151,14 @@ async function routerGetIndex(req, res, next) {
 		userInfo,
 	};
 
-	if (true) {
+	if (false) {
 		// force id
 		req.body._id = user.getIdAsString();
 		req.params.id = req.body._id;
 
 		// hand off work to crudAid
+		// ATTN: this will fail if user does not have high level permission to access crud
+		// as such, it is not suitable for this current way of using it
 		var bretv = await crudAid.handleViewGet(req, res, next, UserModel, "", viewFilePathEdit, extraViewData);
 	} else {
 		res.render("user/profile", {
