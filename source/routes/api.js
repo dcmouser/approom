@@ -25,7 +25,7 @@ const arserver = jrequire("arserver");
 const JrResult = require("../helpers/jrresult");
 const jrhMisc = require("../helpers/jrh_misc");
 const jrhExpress = require("../helpers/jrh_express");
-
+const jrdebug = require("../helpers/jrdebug");
 
 
 
@@ -111,6 +111,9 @@ async function routerGetReqrefresh(req, res, next) {
  * * The refresh token should only be used to request access tokens, which are short-lived tokens that can be use to perform actual api functions.
  */
 async function routerPostReqrefresh(req, res, next) {
+
+	// jrdebug.cdebug("In routerPostReqrefresh.");
+	// jrdebug.cdebugObj(req.body, "REQ BODY");
 
 	// do a local login with passed username and password; DONT store session info
 	var jrResult = JrResult.makeNew();

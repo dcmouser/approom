@@ -99,6 +99,8 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	// constructor
 	constructor() {
+		// set flag
+		this.didSetup = false;
 		// csrf
 		this.csrfInstance = undefined;
 		this.gravatarOptions = undefined;
@@ -231,6 +233,15 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	setup() {
+		if (this.didSetup) {
+			// jrdebug.debug("Ignoring additional call to arserver.setup().");
+			return;
+		}
+
+		// set flag
+		this.didSetup = true;
+
+		// do one-time setup
 		this.setupPreConfig();
 		this.processConfig();
 		this.setupPostConfig();
@@ -785,45 +796,11 @@ class AppRoomServer {
 			},
 		));
 	}
+	//---------------------------------------------------------------------------
 
 
 
-	setupPassportStrategyFacebook() {
-		// see http://www.passportjs.org/packages/passport-facebook/
-		const Strategy = passportFacebook.Strategy;
-
-		var strategyOptions = {
-			clientID: this.getConfigVal("passport:FACEBOOK_APP_ID"),
-			clientSecret: this.getConfigVal("passport:FACEBOOK_APP_SECRET"),
-			callbackURL: this.calcAbsoluteSiteUrlPreferHttps("/login/facebook/auth"),
-			passReqToCallback: true,
-		};
-
-		// debug info
-		jrdebug.cdebugObj(strategyOptions, "setupPassportStrategyFacebook options");
-
-		passport.use(new Strategy(
-			strategyOptions,
-			async (req, accessToken, refreshToken, profile, done) => {
-				jrdebug.cdebugObj(accessToken, "facebook accessToken");
-				jrdebug.cdebugObj(refreshToken, "facebook refreshToken");
-				jrdebug.cdebugObj(profile, "facebook profile");
-				// get user associated with this facebook profile, OR create one, etc.
-				var bridgedLoginObj = {
-					provider: profile.provider,
-					providerUserId: profile.id,
-					extraData: {
-						realName: profile.displayName,
-					},
-				};
-				// make or connect account to bridge
-				return await this.setupPassportStrategyFromBridge(req, bridgedLoginObj, done);
-			},
-		));
-	}
-
-
-
+	//---------------------------------------------------------------------------
 	setupPassportJwt() {
 		// see http://www.passportjs.org/packages/passport-facebook/
 		const Strategy = passportJwt.Strategy;
@@ -867,6 +844,42 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 
 
+
+	//---------------------------------------------------------------------------
+	setupPassportStrategyFacebook() {
+		// see http://www.passportjs.org/packages/passport-facebook/
+		const Strategy = passportFacebook.Strategy;
+
+		var strategyOptions = {
+			clientID: this.getConfigVal("passport:FACEBOOK_APP_ID"),
+			clientSecret: this.getConfigVal("passport:FACEBOOK_APP_SECRET"),
+			callbackURL: this.calcAbsoluteSiteUrlPreferHttps("/login/facebook/auth"),
+			passReqToCallback: true,
+		};
+
+		// debug info
+		jrdebug.cdebugObj(strategyOptions, "setupPassportStrategyFacebook options");
+
+		passport.use(new Strategy(
+			strategyOptions,
+			async (req, token, tokenSecret, profile, done) => {
+				jrdebug.cdebugObj(token, "facebook token");
+				jrdebug.cdebugObj(tokenSecret, "facebook tokenSecret");
+				jrdebug.cdebugObj(profile, "facebook profile");
+				// get user associated with this facebook profile, OR create one, etc.
+				var bridgedLoginObj = {
+					provider: profile.provider,
+					providerUserId: profile.id,
+					extraData: {
+						realName: profile.displayName,
+					},
+				};
+				// make or connect account to bridge
+				return await this.setupPassportStrategyFromBridge(req, bridgedLoginObj, done);
+			},
+		));
+	}
+	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
@@ -924,9 +937,9 @@ class AppRoomServer {
 
 		passport.use(new Strategy(
 			strategyOptions,
-			async (req, accessToken, refreshToken, profile, done) => {
-				jrdebug.cdebugObj(accessToken, "google accessToken");
-				jrdebug.cdebugObj(refreshToken, "google refreshToken");
+			async (req, token, tokenSecret, profile, done) => {
+				jrdebug.cdebugObj(token, "google token");
+				jrdebug.cdebugObj(tokenSecret, "google tokenSecret");
 				jrdebug.cdebugObj(profile, "google profile");
 				// get user associated with this profile, OR create one, etc.
 				var bridgedLoginObj = {
@@ -1463,6 +1476,8 @@ class AppRoomServer {
 			jrResult = JrResult.makeNew();
 		}
 
+		jrdebug.cdebug("In asyncRoutePassportAuthenticateNonSessionGetUserTuple 1.");
+
 		const thisArserver = this;
 		var user;
 
@@ -1471,6 +1486,7 @@ class AppRoomServer {
 
 		// error?
 		if (jrResult.isError()) {
+			jrdebug.cdebug("In asyncRoutePassportAuthenticateNonSessionGetUserTuple 2 error from userPassport :" + jrResult.getErrorsAsString());
 			return [null, null];
 		}
 

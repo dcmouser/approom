@@ -15,8 +15,7 @@
     "eslint": "cls && eslint .",
     "npmcheck": "cls && npm audit || npm-check --skip-unused || exit 0",
     "npmupdate": "cls && npm update --no-optional",
-    "makedoc": "cls && node_modules/.bin/jsdoc --private --readme ../README.md --configure jsdoc.json && copyfiles -u 3 ../docs/jsdoc/**/* static/jsdoc",
-    "copydoc": "cls && copyfiles -u 3 --verbose ../docs/jsdoc/**/* static/jsdoc",
+    "makedoc": "cls && jsdoc --private --readme ../README.md --configure jsdoc.json && copyfiles -u 3 ../docs/jsdoc/**/* static/jsdoc",
     "deletelogs": "cls && del-cli logs/*.log"
   },
   "author": "jesse reichler / mouser (mouser@donationcoder.com)",
@@ -53,7 +52,6 @@
     "humanize-duration": "^3.22.0",
     "jquery": "^3.5.0",
     "js-yaml": "^3.13.1",
-    "jsdoc": "^3.6.4",
     "jsonwebtoken": "^8.5.1",
     "merge-deep": "^3.0.2",
     "mongodb": "^3.5.5",

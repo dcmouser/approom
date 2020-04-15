@@ -13,8 +13,8 @@
 // the jrequire module (singleton) is where we registere the module paths
 const jrequire = require("../helpers/jrequire");
 
-
-
+// set module flag so we dont run setup twice
+var didSetup = false;
 
 
 
@@ -30,6 +30,14 @@ const jrequire = require("../helpers/jrequire");
  * You might call setDeferredLoading(false) first if you want to disable deferred loading of requirements, which can be useful to force a predictable order of requirements to bypass any potential cyclical dependencies
  */
 function setupDefaultModulePaths() {
+
+	if (didSetup) {
+		// ignoore secondary call
+		return;
+	}
+
+	// set flag
+	didSetup = true;
 
 	// initialize it with all of the dependencies in the system
 	// NOTE: Because of circular dependencies, if we use deferred requirement resolution on the jrequire helper, then the order we declare things here does not matter;
@@ -56,6 +64,8 @@ function setupDefaultModulePaths() {
 	jrequire.registerPath("ratelimiteraid", require.resolve("./ratelimiteraid"));
 	jrequire.registerPath("aclaid", require.resolve("./aclaid"));
 	jrequire.registerPath("arserver", require.resolve("./arserver"));
+
+	jrequire.registerPath("arclient", require.resolve("../client/arclient"));
 
 	// models
 	jrequire.registerPath("models/model_base_mongoose", require.resolve("../models/model_base_mongoose"));

@@ -18,8 +18,8 @@
 //---------------------------------------------------------------------------
 // OPTIONS
 const programName = "approom";
-const programVersion = "1.0.5";
-const programDate = "5/1/19 - 4/2/20";
+const programVersion = "1.0.6";
+const programDate = "5/1/19 - 4/14/20";
 const programAuthor = "mouser@donationcoder.com";
 const programDescription = "multi-user room-based coordination framework (mewlo2)";
 //---------------------------------------------------------------------------

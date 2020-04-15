@@ -1,5 +1,5 @@
 /**
- * @module approomTest
+ * @module serverTests
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 4/26/19
 
@@ -15,7 +15,9 @@
 // testing modules
 const assert = require("assert");
 const axios = require("axios");
-const https = require("https");
+//
+// helper modules
+const jrhAxios = require("../helpers/jrh_axios");
 //---------------------------------------------------------------------------
 
 
@@ -157,25 +159,19 @@ describe("fetch", function test() {
 	it("Fetching about page", async () => {
 		// fetch about page
 
-		// ignore cert expired
-		// see https://github.com/axios/axios/issues/535
-		const agent = new https.Agent({
-			rejectUnauthorized: false,
-		});
-
 		var url, responseData, data;
 
 		// test http server
 		url = arserver.getBaseServerIpHttp() + "/help/about";
 		console.log("Fetching from url: " + url);
-		responseData = await axios.get(url, { httpsAgent: agent });
+		responseData = await axios.get(url, { httpsAgent: jrhAxios.makeAgentHelper() });
 		data = responseData.data;
 		assert((data && data.success === "About"), "Failed to fetch About info.");
 
 		// test https server
 		url = arserver.getBaseServerIpHttps() + "/help/about";
 		console.log("Fetching from url: " + url);
-		responseData = await axios.get(url, { httpsAgent: agent });
+		responseData = await axios.get(url, { httpsAgent: jrhAxios.makeAgentHelper() });
 		data = responseData.data;
 		assert((data && data.success === "About"), "Failed to fetch About info.");
 
