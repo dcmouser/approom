@@ -497,6 +497,52 @@ function sendResJsonJrResult(res, status, jrResult) {
 	// it's a success
 	return sendResJsonData(res, status, jrResult.getSuccessAsString(), undefined);
 }
+
+
+function sendResJsonJrResultTokenError(res, jrResult) {
+	const status = 403;
+	const data = {
+		error: jrResult.getErrorsAsString(),
+		tokenError: true,
+	};
+	res.status(status).send(data);
+}
+//---------------------------------------------------------------------------
+
+
+
+//---------------------------------------------------------------------------
+/**
+ * We expect a json encodd string in the request body under a certain field (post var) name.
+ * Get it and parse it to json and return the json
+ * Caller should check jrResult for any error
+ *
+ * @param {*} req - express request object
+ * @param {*} keyName - name of the post var to get the data from
+ * @param {*} jrResult - errors are pushed into here.
+ * @returns the json object encoded by the post var
+ */
+function parseReqGetJsonField(req, keyName, jrResult) {
+	if (!req.body[keyName]) {
+		jrResult.pushError("Missing json data, expected in post variable " + keyName + ".");
+		return null;
+	}
+
+	var jsonVal;
+	try {
+		// var jsonStr = req.body[keyName];
+		// It's already in json format(!)
+		// console.log("ATTN: debug trying to decode jsonstr:");
+		// console.log(jsonStr);
+		// jsonVal = JSON.parse(jsonStr);
+		jsonVal = req.body[keyName];
+	} catch (e) {
+		jrResult.pushException("Invalid json data in field " + keyName, e);
+		return null;
+	}
+
+	return jsonVal;
+}
 //---------------------------------------------------------------------------
 
 
@@ -530,4 +576,7 @@ module.exports = {
 	sendResJsonData,
 	sendResJsonError,
 	sendResJsonJrResult,
+	sendResJsonJrResultTokenError,
+
+	parseReqGetJsonField,
 };

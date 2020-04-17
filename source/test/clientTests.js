@@ -34,6 +34,7 @@ const arserver = jrequire("arserver");
 const arclient = jrequire("arclient");
 
 // helper modules
+const JrResult = require("../helpers/jrresult");
 const jrdebug = require("../helpers/jrdebug");
 //---------------------------------------------------------------------------
 
@@ -59,7 +60,7 @@ arserver.setup();
 
 
 //---------------------------------------------------------------------------
-// server tests
+// client tests
 describe("client", function test() {
 	// we need to change timeout for this test
 	this.timeout(10000);
@@ -82,23 +83,34 @@ describe("client", function test() {
 			client.debugToConsole();
 		}
 		// close client
-		client.shutdown();
+		client.shutDown();
 	});
 
 
-
-	// Client test
+	// Test intial api token process
 	it("Client connect and get api keys", async () => {
 		// connect
-		await client.connect(true);
-		if (!client.getValidApiAccess()) {
-			console.log("Client last error: " + client.getLastError());
-		}
-		assert(client.getValidApiAccess() === true, "Client failed to get valid api key.");
+		await assertClientConnect(client, true);
+	});
+
+
+	// Test roomdata request
+	it("Make simple roomdata query", async () => {
+		var query = {
+			val1: "value 1",
+			val2: [1, 2, 3],
+			val3: {
+				a: "thing a",
+				b: "thing b",
+			},
+		};
+		var reply = await client.invoke("/api/roomdata/list", query);
+		assertNoErrorInReply(reply, "Querying for roomdata.");
+		console.log("Reply from roomdata query:");
+		console.log(reply);
 	});
 
 });
-
 //---------------------------------------------------------------------------
 
 
@@ -146,6 +158,30 @@ async function handleErrorFunction(clientp, errorMessage) {
 
 async function handleDebugFunction(clientp, debugMessage) {
 	jrdebug.cdebug("DEBUG - in client callback  DBG: " + debugMessage);
+}
+
+
+async function assertClientConnect(client, flagReconnect) {
+	await client.connect(true);
+	if (!client.getValidApiAccess()) {
+		console.log("Client last error: " + client.getLastError());
+	}
+	assert(client.getValidApiAccess() === true, "Client failed to get valid api key.");
+}
+
+function assertJrResultSuccess(jrResult, hintMessage) {
+	if (jrResult.isError()) {
+		console.log("Error details:");
+		console.log(jrResult.getErrorsAsString());
+	}
+	assert(!jrResult.isError(), "Error returned in " + hintMessage);
+}
+
+function assertNoErrorInReply(reply, hintMessage) {
+	// if (reply.error) {
+	// 	console.log("Error details: " + reply.error);
+	// }
+	assert(!reply.error, "Error returned in " + hintMessage + ": " + reply.error);
 }
 //---------------------------------------------------------------------------
 

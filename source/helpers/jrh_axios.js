@@ -13,6 +13,8 @@
 const axios = require("axios");
 const https = require("https");
 
+const jrhMisc = require("./jrh_misc");
+
 
 
 
@@ -38,25 +40,24 @@ function calcAxiosOptions() {
 
 //---------------------------------------------------------------------------
 /**
- * Post to the url and get the responseData.
- * Importantly, while axios throws errors when it gets a 403, 401, etc., we do not -- instead we catch the error and embed it in the {data.error} field of the responseData
+ * Post to the url and get the response.
+ * Importantly, while axios throws errors when it gets a 403, 401, etc., we do not -- instead we catch the error and embed it in the {data.error} field of the response
  *
  * @param {*} url - url to post to
  * @param {*} postData - data to post
- * @returns the responseData object
+ * @returns the response object
  */
 async function postCatchError(url, postData) {
-	var responseData;
+	var response;
 	try {
-		responseData = await axios.post(url, postData, calcAxiosOptions());
+		response = await axios.post(url, postData, calcAxiosOptions());
 	} catch (e) {
-		responseData = {
-			data: {
-				error: "Exception: " + e.toString(),
-			},
-		};
+		response = e.response;
+		if (!response.data.error) {
+			response.data.error = "Error exception in request; status " + e.status;
+		}
 	}
-	return responseData;
+	return response;
 }
 //---------------------------------------------------------------------------
 
@@ -66,20 +67,19 @@ async function postCatchError(url, postData) {
  * Just wrap the axios get to catch errors and embed in response data
  *
  * @param {*} url
- * @returns responseData
+ * @returns response
  */
 async function getCatchError(url) {
-	var responseData;
+	var response;
 	try {
-		responseData = axios.get(url, calcAxiosOptions());
+		response = axios.get(url, calcAxiosOptions());
 	} catch (e) {
-		responseData = {
-			data: {
-				error: "Exception: " + e.toString(),
-			},
-		};
+		response = e.response;
+		if (!response.data.error) {
+			response.data.error = "Error exception in request; status " + e.status;
+		}
 	}
-	return responseData;
+	return response;
 }
 //---------------------------------------------------------------------------
 

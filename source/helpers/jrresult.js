@@ -294,6 +294,17 @@ class JrResult {
 		return this;
 	}
 
+	/**
+	 * Add a generic exception error to the result
+	 *
+	 * @param {string} msg
+	 * @returns this
+	 */
+	pushException(msg, e) {
+		this.push("error", msg + ": " + e.toString());
+		return this;
+	}
+
 
 	/**
 	 * Add a generic error to the result, pushing it to the top of the error list

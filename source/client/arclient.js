@@ -35,8 +35,6 @@ class AppRoomClient {
 		//
 		this.options = {
 			serverUrlBase: null,
-			refreshToken: null,
-			accessToken: null,
 			getCredentialsFunction: null,
 			errorFunction: null,
 			debugFunction: null,
@@ -124,6 +122,14 @@ class AppRoomClient {
 	getLastError() {
 		return this.status.lastError;
 	}
+
+	getAccessToken() {
+		return this.cache.accessToken;
+	}
+
+	setAccessToken(val) {
+		this.cache.accessToken = val;
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -147,7 +153,7 @@ class AppRoomClient {
 
 		// ok now, we may have some information for the connection already stored (refreshToken, etc.)
 
-		if (this.cache.accessToken && !flagReconnect) {
+		if (this.getAccessToken() && !flagReconnect) {
 			// we already have an access token -- we just need to see if its stil VALID
 			await this.validateAccessToken();
 			if (this.getStatusSuccess()) {
@@ -204,17 +210,17 @@ class AppRoomClient {
 	 * Extra the data field from the response.
 	 * Set this.status.success and data.error, which we check for in a variety of ways.  We expect all api calls should have a success = true in the reply, but we might also check for presence of a key-value pair
 	 *
-	 * @param {*} responseData - the object returned from a post/get
+	 * @param {*} response - the object returned from a post/get
 	 * @param {*} url - url string that fetched the data, for debugging purposes only
 	 * @param {*} hintActionString - for debugging purposes
 	 * @param {*} expectedKey - if this key is not in the response data then the response is an error
-	 * @returns responseData.data
+	 * @returns response.data
 	 * @memberof AppRoomClient
 	 */
-	async extractDataTriggerError(responseData, url, hintActionString, expectedKey) {
+	async extractDataTriggerError(response, url, hintActionString, expectedKey) {
 
 		// get data from response
-		var data = responseData.data;
+		var data = response.data;
 
 		// debug message
 		await this.triggerDebugMessageWithData("Performed " + hintActionString + " on " + url + ", with result: ", data);
@@ -263,12 +269,12 @@ class AppRoomClient {
 		// post data
 		var url = this.getOptionServerUrlBase() + this.pathTokenValidate;
 		var postData = {
-			token: this.cache.accessToken,
+			token: this.getAccessToken(),
 		};
-		var responseData = await jrhAxios.postCatchError(url, postData);
+		var response = await jrhAxios.postCatchError(url, postData);
 
 		// extract data, check for error, set succsss status, last error, etc.
-		var data = await this.extractDataTriggerError(responseData, url, "validateAccessToken", "");
+		var data = await this.extractDataTriggerError(response, url, "validateAccessToken", "");
 	}
 
 
@@ -290,7 +296,7 @@ class AppRoomClient {
 		// extract data, check for error, set succsss status, last error, etc.
 		var data = await this.extractDataTriggerError(responseData, url, "retrieveAccessTokenFromRefreshToken", "token");
 		if (!data.error) {
-			this.cache.accessToken = data.token;
+			this.setAccessToken(data.token);
 		}
 	}
 
@@ -467,11 +473,76 @@ class AppRoomClient {
 
 
 	//---------------------------------------------------------------------------
-	shutdown() {
+	shutDown() {
 		// shutdown client
 		this.status.validApiAccess = false;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	/**
+	 * Post a request to an api endpoint return the json result
+	 * On error the error field of data will be non-empty
+	 *
+	 * @param {*} urlEndpoint - url string relative path to base
+	 * @param {*} query - json object containing query to be passed in post variable "query"
+	 * @returns = json object with repl data
+	 * @memberof AppRoomClient
+	 */
+	async invoke(urlEndpoint, query) {
+
+		// url to hit
+		var url = this.getOptionServerUrlBase() + urlEndpoint;
+
+		// data to post
+		var postData = {
+			token: this.getAccessToken(),
+			query,
+		};
+
+		// now a small loop to post the data and get a reply; we loop so that if we get an error about an invalid/expired access token, we can auto request a new one
+		var responseData;
+		var data;
+		var tryCount = 0;
+		while (tryCount < 2) {
+			tryCount += 1;
+			// if not connected (which may be case after our first fail or initially), lets try to connect
+			if (!this.getValidApiAccess()) {
+				// try to reconnect and then try again
+				await this.connect(true);
+				if (!this.getValidApiAccess() && data) {
+					// no point trying to query again since we didnt get valid access and we already failed a call prior
+					// so just drop out with the prior failed call
+					break;
+				}
+				// drop down and send request
+			}
+
+			// post and get response
+			responseData = await jrhAxios.postCatchError(url, postData);
+			// extract data, check for error, set succsss status, last error, etc.
+			data = await this.extractDataTriggerError(responseData, url, "invoking", "");
+
+			// IFF we get a token error reply, we might have an expired access token that we need to renew
+			if (!data.tokenError) {
+				break;
+			}
+			// clear valid api access flag and re-loop
+			this.setValidApiAccess(false);
+		}
+
+		return data;
+	}
+	//---------------------------------------------------------------------------
+
 
 
 

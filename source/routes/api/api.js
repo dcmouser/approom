@@ -149,7 +149,7 @@ async function routerAllRefreshaccess(req, res, next) {
 	var jrResult = JrResult.makeNew();
 	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "refresh");
 	if (jrResult.isError()) {
-		jrhExpress.sendResJsonJrResult(res, 403, jrResult);
+		jrhExpress.sendResJsonJrResultTokenError(res, jrResult);
 		return;
 	}
 
@@ -180,7 +180,7 @@ async function routerAllTokentest(req, res, next) {
 	var jrResult = JrResult.makeNew();
 	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, null);
 	if (jrResult.isError()) {
-		jrhExpress.sendResJsonJrResult(res, 403, jrResult);
+		jrhExpress.sendResJsonJrResultTokenError(res, jrResult);
 		return;
 	}
 

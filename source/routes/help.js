@@ -69,7 +69,7 @@ async function routerGetIndex(req, res, next) {
 
 //---------------------------------------------------------------------------
 async function routerAbout(req, res, next) {
-	jrhExpress.sendResJsonData(res, 200, "About", arserver.getAboutInfo());
+	jrhExpress.sendResJsonData(res, 200, "about", arserver.getAboutInfo());
 }
 //---------------------------------------------------------------------------
 

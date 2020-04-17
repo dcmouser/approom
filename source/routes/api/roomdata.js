@@ -49,7 +49,10 @@ function setupRouter(urlPath) {
 
 	// setup routes
 	router.get("/", routerGetIndex);
+	//
 	router.all("/list", routerList);
+	router.all("/datadownload", routerDataDownload);
+	router.all("/dataupload", routerDataUpload);
 
 	// return router
 	return router;
@@ -82,27 +85,46 @@ async function routerGetIndex(req, res, next) {
 		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 	});
 }
+//---------------------------------------------------------------------------
 
 
 
-
+//---------------------------------------------------------------------------
 async function routerList(req, res, next) {
 	// consume access token
 	var jrResult = JrResult.makeNew();
 	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "access");
 	if (jrResult.isError()) {
-		jrhExpress.sendResJsonJrResult(res, 403, jrResult);
+		jrhExpress.sendResJsonJrResultTokenError(res, jrResult);
+		return;
+	}
+
+	// the api roomdata list function is for retrieving a list of (matching) roomdata items
+	// for a specific appid, and roomid, with optional filters (on data)
+	jrResult.clear();
+	var query = jrhExpress.parseReqGetJsonField(req, "query", jrResult);
+	if (jrResult.isError()) {
+		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
 		return;
 	}
 
 	// success
 	var result = {
-		roomdata: {
-		},
+		roomdata: "intentionally empty",
+		oringinalQuery: query,
 	};
 
 	// provide it
-	jrhExpress.sendResJsonData(res, 200, "result", result);
+	jrhExpress.sendResJsonData(res, 200, "roomdata", result);
+}
+
+
+
+async function routerDataDownload(req, res, next) {
+}
+
+
+async function routerDataUpload(req, res, next) {
 }
 //---------------------------------------------------------------------------
 
