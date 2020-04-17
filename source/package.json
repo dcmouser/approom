@@ -6,6 +6,8 @@
   "scripts": {
     "test": "cls && mocha",
     "testg": "cls && mocha --grep ",
+    "test2file": "mocha > testoutput.txt 2>&1",
+    "ctest2file": "mocha --grep client > testoutput.txt 2>&1",
     "mongod": "C:\\Programs\\MongoDB\\Server\\4.0\\bin\\mongod.exe -f C:\\Programs\\MongoDB\\Server\\4.0\\bin\\mongod.cfg",
     "help": "cls && node approom.js --help",
     "runserver": "cls && node approom.js runserver",

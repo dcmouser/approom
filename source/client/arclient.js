@@ -8,12 +8,12 @@
 
 "use strict";
 
-// modules
-const axios = require("axios");
-const https = require("https");
+
 
 // helper modules
 const jrhAxios = require("../helpers/jrh_axios");
+const jrhMisc = require("../helpers/jrh_misc");
+
 
 
 /**
@@ -30,7 +30,7 @@ class AppRoomClient {
 		this.status = {
 			lastError: "",
 			success: true,
-			connected: false,
+			validApiAccess: false,
 		};
 		//
 		this.options = {
@@ -49,8 +49,8 @@ class AppRoomClient {
 
 		//
 		this.pathRefreshTokenRequest = "/api/reqrefresh";
-		this.pathAccessTokenRequest = "/api/refreshaccess?token=";
-		this.pathTokenValidate = "/api/tokentest?token=";
+		this.pathAccessTokenRequest = "/api/refreshaccess";
+		this.pathTokenValidate = "/api/tokentest";
 	}
 
 
@@ -97,12 +97,32 @@ class AppRoomClient {
 	 * Returns the status of the connection, an object with the following values:
 	 *  lastError - string with the last error from the last call
 	 *  success - true if last api call was a success
-	 *  connected - true if we successfully connected
+	 *  validApiAccess - true if we successfully gotten an api access key that works
 	 *
 	 * @memberof AppRoomClient
 	 */
 	getStatus() {
 		return this.status;
+	}
+
+	getStatusSuccess() {
+		return this.status.success;
+	}
+
+	setStatusSuccess(val) {
+		this.status.success = val;
+	}
+
+	setValidApiAccess(val) {
+		this.status.validApiAccess = val;
+	}
+
+	getValidApiAccess() {
+		return this.status.validApiAccess;
+	}
+
+	getLastError() {
+		return this.status.lastError;
 	}
 	//---------------------------------------------------------------------------
 
@@ -120,18 +140,20 @@ class AppRoomClient {
 
 		// clear any prior errors
 		this.clearErrors();
+		// reset connected state
+		this.setValidApiAccess(false);
+		//
 		var hintMessage = "Your credentials are required in order to retrieve an API refresh key";
-		var retvstatus;
 
 		// ok now, we may have some information for the connection already stored (refreshToken, etc.)
 
 		if (this.cache.accessToken && !flagReconnect) {
 			// we already have an access token -- we just need to see if its stil VALID
-			retvstatus = await this.validateAccessToken();
-			if (retvstatus.success) {
+			await this.validateAccessToken();
+			if (this.getStatusSuccess()) {
 				// all good
-				this.status.connected = true;
-				return retvstatus;
+				this.setValidApiAccess(true);
+				return;
 			}
 			// access token is bad (expired, revoked, etc.)
 			// drop down and try to get a new one
@@ -139,10 +161,11 @@ class AppRoomClient {
 
 		if (this.cache.refreshToken) {
 			// we have a refresh token, now we need to try to use it to get an access token (which is either expired or bad or missing)
-			retvstatus = await this.retrieveAccessTokenFromRefreshToken();
-			if (retvstatus.success) {
+			await this.retrieveAccessTokenFromRefreshToken();
+			if (this.getStatusSuccess()) {
 				// all good
-				return retvstatus;
+				this.setValidApiAccess(true);
+				return;
 			}
 			// add to hint message for when we ask for username/pass
 			hintMessage += "(" + this.status.lastError + ")";
@@ -151,23 +174,75 @@ class AppRoomClient {
 		}
 
 		// we need a new refresh token
-		retvstatus = await this.retrieveRefreshTokenUsingCredentials(hintMessage);
-		if (!retvstatus.success) {
-			// error, return it
-			return retvstatus;
+		await this.retrieveRefreshTokenUsingCredentials(hintMessage);
+		if (!this.getStatusSuccess()) {
+			// error, return
+			return;
 		}
 
 		// we have a NEW refresh token, now we need to get access token from it
-		retvstatus = await this.retrieveAccessTokenFromRefreshToken();
-
-		if (retvstatus.success) {
-			this.status.connected = true;
+		await this.retrieveAccessTokenFromRefreshToken();
+		if (this.getStatusSuccess()) {
+			// success!
+			this.setValidApiAccess(true);
 		}
-
-		// error or success, return it
-		return retvstatus;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	/**
+	 * Extra the data field from the response.
+	 * Set this.status.success and data.error, which we check for in a variety of ways.  We expect all api calls should have a success = true in the reply, but we might also check for presence of a key-value pair
+	 *
+	 * @param {*} responseData - the object returned from a post/get
+	 * @param {*} url - url string that fetched the data, for debugging purposes only
+	 * @param {*} hintActionString - for debugging purposes
+	 * @param {*} expectedKey - if this key is not in the response data then the response is an error
+	 * @returns responseData.data
+	 * @memberof AppRoomClient
+	 */
+	async extractDataTriggerError(responseData, url, hintActionString, expectedKey) {
+
+		// get data from response
+		var data = responseData.data;
+
+		// debug message
+		await this.triggerDebugMessageWithData("Performed " + hintActionString + " on " + url + ", with result: ", data);
+
+		// check for success, and trigger error if error
+		if (data.success && (!expectedKey || expectedKey === "" || data[expectedKey] !== undefined)) {
+			// set success true
+			this.setStatusSuccess(true);
+		} else {
+			// set success false
+			this.setStatusSuccess(false);
+			// make sure it has an error and trigger it
+			if (!data.error) {
+				if (expectedKey && expectedKey !== "" && data[expectedKey] === undefined) {
+					data.error = "unexpected reply; missing key value in reply [" + expectedKey + "]";
+				} else {
+					data.error = "unexpected reply";
+				}
+			}
+			this.triggerError("Error reply during " + hintActionString + " at " + url + ": " + data.error);
+		}
+
+		// return data
+		return data;
+	}
+	//---------------------------------------------------------------------------
+
+
 
 
 
@@ -180,26 +255,23 @@ class AppRoomClient {
 	//---------------------------------------------------------------------------
 	/**
 	 * We have an access token, ask server if its still valid
+	 * NOTE: this actually will return true even if its a REFRESH token not an access token
 	 *
 	 * @memberof AppRoomClient
 	 */
 	async validateAccessToken() {
-		// ATTN: TODO - change this to a POST request with the acccess token as a post field
-		var url = this.getOptionServerUrlBase() + this.pathTokenValidate + this.cache.accessToken;
-		var responseData = await axios.get(url, { httpsAgent: jrhAxios.makeAgentHelper() });
-		var data = responseData.data;
-		await this.triggerDebugMessageWithData("Calling " + url, data);
-		if (data.success) {
-			this.status.success = true;
-		} else {
-			if (data.error) {
-				this.triggerError("Error reply during validateAccessToken at " + url + ": " + data.error);
-			} else {
-				this.triggerError("Error reply during validateAccessToken at " + url + ": unexpected reply.");
-			}
-		}
-		return this.status;
+		// post data
+		var url = this.getOptionServerUrlBase() + this.pathTokenValidate;
+		var postData = {
+			token: this.cache.accessToken,
+		};
+		var responseData = await jrhAxios.postCatchError(url, postData);
+
+		// extract data, check for error, set succsss status, last error, etc.
+		var data = await this.extractDataTriggerError(responseData, url, "validateAccessToken", "");
 	}
+
+
 
 
 	/**
@@ -208,23 +280,18 @@ class AppRoomClient {
 	 * @memberof AppRoomClient
 	 */
 	async retrieveAccessTokenFromRefreshToken() {
-		// ATTN: TODO - change this to a POST request with the acccess token as a post field
-		var url = this.getOptionServerUrlBase() + this.pathAccessTokenRequest + this.cache.refreshToken;
-		var responseData = await axios.get(url, { httpsAgent: jrhAxios.makeAgentHelper() });
-		var data = responseData.data;
-		await this.triggerDebugMessageWithData("Calling " + url, data);
-		if (data.success && data.token) {
-			this.status.success = true;
-			this.cache.accessToken = data.token;
-		} else {
-			if (data.error) {
-				this.triggerError("Error reply during retrieveAccessTokenFromRefreshToken at " + url + ": " + data.error);
-			} else {
-				this.triggerError("Error reply during retrieveAccessTokenFromRefreshToken at " + url + ": unexpected reply.");
-			}
-		}
-		return this.status;
+		// post data
+		var url = this.getOptionServerUrlBase() + this.pathAccessTokenRequest;
+		var postData = {
+			token: this.cache.refreshToken,
+		};
+		var responseData = await jrhAxios.postCatchError(url, postData);
 
+		// extract data, check for error, set succsss status, last error, etc.
+		var data = await this.extractDataTriggerError(responseData, url, "retrieveAccessTokenFromRefreshToken", "token");
+		if (!data.error) {
+			this.cache.accessToken = data.token;
+		}
 	}
 
 
@@ -235,52 +302,48 @@ class AppRoomClient {
 	 * @memberof AppRoomClient
 	 */
 	async retrieveRefreshTokenUsingCredentials(hintMessage) {
+		// get login credentials
 		var credentials = await this.triggerRequestCredentials(hintMessage);
 		if (!credentials.usernameEmail || !credentials.password) {
 			this.triggerError("Credentials missing; aborting request for refresh token.");
-			return this.status;
+			this.setStatusSuccess(false);
 		}
 
-		// let's post it
+		// post data
 		var url = this.getOptionServerUrlBase() + this.pathRefreshTokenRequest;
 		var postData = {
 			usernameEmail: credentials.usernameEmail,
 			password: credentials.password,
 		};
+		var responseData = await jrhAxios.postCatchError(url, postData);
 
-		var responseData;
-		try {
-			responseData = await axios.post(url, postData, { httpsAgent: jrhAxios.makeAgentHelper() });
-		} catch (e) {
-			responseData = {
-				data: {
-					error: "Exception: " + e.toString(),
-				},
-			};
-		}
-
-		// process reply
-		var data = responseData.data;
-		await this.triggerDebugMessageWithData("Calling " + url, data);
-
-		if (data.success && data.token) {
-			// ok we got success!
-			this.status.success = true;
+		// extract data, check for error, set succsss status, last error, etc.
+		var data = await this.extractDataTriggerError(responseData, url, "retrieveRefreshTokenUsingCredentials", "token");
+		if (!data.error) {
 			this.cache.refreshToken = data.token;
-		} else {
-			if (data.error) {
-				this.triggerError("Error reply during retrieveRefreshTokenUsingCredentials at " + url + ": " + data.error);
-			} else {
-				this.triggerError("Error reply during retrieveRefreshTokenUsingCredentials at " + url + ": unexpected reply.");
-			}
 		}
-		return this.status;
-
-
-		this.triggerError("retrieveRefreshTokenUsingCredentials failed.");
-		return this.status;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -316,6 +379,26 @@ class AppRoomClient {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	//---------------------------------------------------------------------------
 	debugToConsole() {
 		console.log("Debugging arclient object.");
@@ -332,7 +415,7 @@ class AppRoomClient {
 	//---------------------------------------------------------------------------
 	async triggerError(errorMessage) {
 		// call error callback function if one is registered
-		this.status.success = false;
+		this.setStatusSuccess(false);
 		this.status.lastError = errorMessage;
 		if (this.options.errorFunction) {
 			await this.options.errorFunction(this, errorMessage);
@@ -360,7 +443,7 @@ class AppRoomClient {
 	async triggerDebugMessageWithData(debugMessage, data) {
 		if (this.options.debugFunction) {
 			if (data && data.toString) {
-				await this.options.debugFunction(this, debugMessage + ": " + data.toString());
+				await this.options.debugFunction(this, debugMessage + ": " + jrhMisc.objToString(data, true));
 			} else {
 				await this.options.debugFunction(this, debugMessage);
 			}
@@ -377,7 +460,7 @@ class AppRoomClient {
 	}
 
 	isError() {
-		return this.success === true;
+		return (this.success === true);
 	}
 	//---------------------------------------------------------------------------
 
@@ -386,13 +469,26 @@ class AppRoomClient {
 	//---------------------------------------------------------------------------
 	shutdown() {
 		// shutdown client
-		this.status.connected = false;
+		this.status.validApiAccess = false;
 	}
 	//---------------------------------------------------------------------------
 
 
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -404,6 +500,7 @@ function makeNewAppRoomClient() {
 	return new AppRoomClient();
 }
 //---------------------------------------------------------------------------
+
 
 
 

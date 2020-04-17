@@ -10,17 +10,80 @@
 "use strict";
 
 // modules
+const axios = require("axios");
 const https = require("https");
 
 
-function makeAgentHelper() {
+
+
+
+
+
+//---------------------------------------------------------------------------
+function calcAxiosOptions() {
 	// ignore cert expired
 	// see https://github.com/axios/axios/issues/535
-	const agent = new https.Agent({
-		rejectUnauthorized: false,
-	});
-	return agent;
+	return {
+		httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+	};
 }
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+//---------------------------------------------------------------------------
+/**
+ * Post to the url and get the responseData.
+ * Importantly, while axios throws errors when it gets a 403, 401, etc., we do not -- instead we catch the error and embed it in the {data.error} field of the responseData
+ *
+ * @param {*} url - url to post to
+ * @param {*} postData - data to post
+ * @returns the responseData object
+ */
+async function postCatchError(url, postData) {
+	var responseData;
+	try {
+		responseData = await axios.post(url, postData, calcAxiosOptions());
+	} catch (e) {
+		responseData = {
+			data: {
+				error: "Exception: " + e.toString(),
+			},
+		};
+	}
+	return responseData;
+}
+//---------------------------------------------------------------------------
+
+
+//---------------------------------------------------------------------------
+/**
+ * Just wrap the axios get to catch errors and embed in response data
+ *
+ * @param {*} url
+ * @returns responseData
+ */
+async function getCatchError(url) {
+	var responseData;
+	try {
+		responseData = axios.get(url, calcAxiosOptions());
+	} catch (e) {
+		responseData = {
+			data: {
+				error: "Exception: " + e.toString(),
+			},
+		};
+	}
+	return responseData;
+}
+//---------------------------------------------------------------------------
+
+
 
 
 
@@ -29,5 +92,7 @@ function makeAgentHelper() {
 
 // export the class as the sole export
 module.exports = {
-	makeAgentHelper,
+	calcAxiosOptions,
+	postCatchError,
+	getCatchError,
 };

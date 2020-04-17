@@ -635,7 +635,8 @@ class AppRoomServer {
 		this.setupRoute(expressApp, "/room", "room");
 
 		// api routes
-		this.setupRoute(expressApp, "/api", "api");
+		this.setupRoute(expressApp, "/api", "api/api");
+		this.setupRoute(expressApp, "/api/roomdata", "api/roomdata");
 
 		// test stuff
 		this.setupRoute(expressApp, "/membersonly", "membersonly");
@@ -808,7 +809,8 @@ class AppRoomServer {
 
 		var strategyOptions = {
 			secretOrKey: this.getConfigVal("token:CRYPTOKEY"),
-			jwtFromRequest: ExtractJwt.fromUrlQueryParameter("token"),
+			// get jwt from URL or from post body if not in url
+			jwtFromRequest: ExtractJwt.fromExtractors([ExtractJwt.fromUrlQueryParameter("token"), ExtractJwt.fromBodyField("token")]),
 			// we ignore expiration auto handling; we will check it ourselves
 			ignoreExpiration: true,
 		};
@@ -1189,20 +1191,28 @@ class AppRoomServer {
 	// jwt token access for api access; credential passed in via access token
 	// 3 ways to call depending on which data you want
 
-	async asyncRoutePassportAuthenticateFromTokenNonSessionGetMinimalPassportUserData(req, res, next, jrResult) {
+	async asyncRoutePassportAuthenticateFromTokenNonSessionGetMinimalPassportUserData(req, res, next, jrResult, requiredTokenType) {
 		// force passport authentication from request, looking for jwt token
 
 		var [userMinimalProfile, dummyNullUser] = await this.asyncRoutePassportAuthenticateNonSessionGetUserTuple("jwt", "using jwt", req, res, next, jrResult, false);
 
 		if (!jrResult.isError()) {
 			// let's check token validity (expiration, etc.); this may push an error into jrResult
-			// note that this does NOT check user.apiCode, that is done later
-			// jrlog.debugObj(userMinimalProfile.token, "access token pre validate.");
-			this.validateSecureTokenGeneric(userMinimalProfile.token, jrResult);
+
+			// it's a token, but is it the right type?
+			const tokenType = userMinimalProfile.token.type;
+			if (requiredTokenType && tokenType !== requiredTokenType) {
+				jrResult.pushErrorOnTop("Incorrect api token type (" + tokenType + "); expected '" + requiredTokenType + "' token");
+			} else {
+				// ATTN: TODO - This does NOT check user.apiCode, which can be used to revoke api keys
+				// BUT this should be done after we load the users full profile, which the CALLER of our function does (see asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser);
+				// I believe this function is never called EXCEPT inside that one, so it will always be performed
+				// jrlog.debugObj(userMinimalProfile.token, "access token pre validate.");
+				this.validateSecureTokenGeneric(userMinimalProfile.token, jrResult);
+			}
 		} else {
 			// change error code from generic to token specific or add?
 			jrResult.pushErrorOnTop("Invalid access token");
-			// jrResult.setError("Invalid access token");
 		}
 
 		// return fale or null
@@ -1210,20 +1220,22 @@ class AppRoomServer {
 	}
 
 
-	async asyncRoutePassportAuthenticateFromTokenNonSessionGetFullUserObject(req, res, next, jrResult) {
-		var [userMinimalProfile, user] = this.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult);
+	async asyncRoutePassportAuthenticateFromTokenNonSessionGetFullUserObject(req, res, next, jrResult, requiredTokenType) {
+		var [userMinimalProfile, user] = this.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, requiredTokenType);
 		return user;
 	}
 
 
-	async asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult) {
+	async asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, requiredTokenType) {
 		// force passport authentication from request, looking for jwt token
-		var userMinimalProfile = await this.asyncRoutePassportAuthenticateFromTokenNonSessionGetMinimalPassportUserData(req, res, next, jrResult);
+		var userMinimalProfile = await this.asyncRoutePassportAuthenticateFromTokenNonSessionGetMinimalPassportUserData(req, res, next, jrResult, requiredTokenType);
 
 		if (jrResult.isError()) {
 			return [userMinimalProfile, null];
 		}
 
+		// load full profile from minimal -- this should check apicode because of the final true parameter for flagCheckAccessCode
+		// in this way we will record an error if the token has been revoked (apicode does not match)
 		const user = await this.loadUserFromMinimalPassportUserData(userMinimalProfile, jrResult, true);
 		return [userMinimalProfile, user];
 	}

@@ -14,10 +14,6 @@
 //---------------------------------------------------------------------------
 // testing modules
 const assert = require("assert");
-const axios = require("axios");
-const https = require("https");
-//
-const jrdebug = require("../helpers/jrdebug");
 //---------------------------------------------------------------------------
 
 
@@ -36,6 +32,9 @@ const jrequire = require("../helpers/jrequire");
 // dynamic dependency requires
 const arserver = jrequire("arserver");
 const arclient = jrequire("arclient");
+
+// helper modules
+const jrdebug = require("../helpers/jrdebug");
 //---------------------------------------------------------------------------
 
 
@@ -90,10 +89,12 @@ describe("client", function test() {
 
 	// Client test
 	it("Client connect and get api keys", async () => {
-
 		// connect
-		var retstatus = await client.connect(true);
-		assert(retstatus.connected === true, "Client failed to connect.");
+		await client.connect(true);
+		if (!client.getValidApiAccess()) {
+			console.log("Client last error: " + client.getLastError());
+		}
+		assert(client.getValidApiAccess() === true, "Client failed to get valid api key.");
 	});
 
 });

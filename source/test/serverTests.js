@@ -14,10 +14,6 @@
 //---------------------------------------------------------------------------
 // testing modules
 const assert = require("assert");
-const axios = require("axios");
-//
-// helper modules
-const jrhAxios = require("../helpers/jrh_axios");
 //---------------------------------------------------------------------------
 
 
@@ -36,7 +32,12 @@ const jrequire = require("../helpers/jrequire");
 // dynamic dependency requires
 const arserver = jrequire("arserver");
 const UserModel = jrequire("models/user");
+
+// helper modules
+const jrhAxios = require("../helpers/jrh_axios");
+const jrdebug = require("../helpers/jrdebug");
 //---------------------------------------------------------------------------
+
 
 
 //---------------------------------------------------------------------------
@@ -156,25 +157,29 @@ describe("fetch", function test() {
 
 
 
-	it("Fetching about page", async () => {
+	it("Fetching about page from http server", async () => {
 		// fetch about page
-
 		var url, responseData, data;
 
-		// test http server
+		// test http server by getting about page
 		url = arserver.getBaseServerIpHttp() + "/help/about";
-		console.log("Fetching from url: " + url);
-		responseData = await axios.get(url, { httpsAgent: jrhAxios.makeAgentHelper() });
+		jrdebug.cdebug("Fetching from url: " + url);
+		responseData = await jrhAxios.getCatchError(url);
 		data = responseData.data;
-		assert((data && data.success === "About"), "Failed to fetch About info.");
+		assert((data && data.success === "About"), "Failed to fetch About info from http server.");
+	});
 
-		// test https server
+
+	it("Fetching about page from https server", async () => {
+		// fetch about page
+		var url, responseData, data;
+
+		// test https server by getting about page
 		url = arserver.getBaseServerIpHttps() + "/help/about";
-		console.log("Fetching from url: " + url);
-		responseData = await axios.get(url, { httpsAgent: jrhAxios.makeAgentHelper() });
+		jrdebug.cdebug("Fetching from url: " + url);
+		responseData = await jrhAxios.getCatchError(url);
 		data = responseData.data;
-		assert((data && data.success === "About"), "Failed to fetch About info.");
-
+		assert((data && data.success === "About"), "Failed to fetch About info from https server.");
 	});
 
 });

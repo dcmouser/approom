@@ -1,5 +1,5 @@
 /**
- * @module routes/api
+ * @module routes/api/api
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 10/28/19
  * @description
@@ -16,16 +16,15 @@ const express = require("express");
 
 
 // requirement service locator
-const jrequire = require("../helpers/jrequire");
+const jrequire = require("../../helpers/jrequire");
 
 // controllers
 const arserver = jrequire("arserver");
 
 // helpers
-const JrResult = require("../helpers/jrresult");
-const jrhMisc = require("../helpers/jrh_misc");
-const jrhExpress = require("../helpers/jrh_express");
-const jrdebug = require("../helpers/jrdebug");
+const JrResult = require("../../helpers/jrresult");
+const jrhExpress = require("../../helpers/jrh_express");
+const jrdebug = require("../../helpers/jrdebug");
 
 
 
@@ -52,9 +51,9 @@ function setupRouter(urlPath) {
 	router.get("/", routerGetIndex);
 	router.get("/reqrefresh", routerGetReqrefresh);
 	router.post("/reqrefresh", routerPostReqrefresh);
-	router.get("/refreshaccess", routerGetRefreshaccess);
+	router.all("/refreshaccess", routerAllRefreshaccess);
 	router.all("/tokentest", routerAllTokentest);
-	router.get("*", routerGetWildcard);
+	router.get("/dos", routerGetDos);
 
 	// return router
 	return router;
@@ -141,24 +140,20 @@ async function routerPostReqrefresh(req, res, next) {
  * ##### NOTES
  * * see <a href="https://scotch.io/@devGson/api-authentication-with-json-web-tokensjwt-and-passport">using refresh tokens with jwt</a>
  */
-async function routerGetRefreshaccess(req, res, next) {
+async function routerAllRefreshaccess(req, res, next) {
+
+	jrdebug.cdebug("In routerAllRefreshaccess.");
+	jrdebug.cdebugObj(req.body, "REQ BODY");
 
 	// first the user has to give us a valid REFRESH token
 	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult);
+	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "refresh");
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResult(res, 403, jrResult);
 		return;
 	}
 
 	// while testing this we also want to make sure the refresh token wasn't revoked
-
-	// it's a token, but is it the right type?
-	const tokenType = userPassport.token.type;
-	if (tokenType !== "refresh") {
-		jrhExpress.sendResJsonError(res, 403, "A valid REFRESH token must be passed to request an access token.");
-		return;
-	}
 
 	// jrdebug.debugObj(userPassport.token);
 
@@ -183,7 +178,7 @@ async function routerAllTokentest(req, res, next) {
 	// test if user has passed user login info through api token
 
 	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult);
+	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, null);
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResult(res, 403, jrResult);
 		return;
@@ -199,12 +194,12 @@ async function routerAllTokentest(req, res, next) {
 
 /**
  * @description
- * Test function, catches all other api routes (so no 404s), and just complains and checks for rate limiting.
+ * Test function, and just complains and checks for rate limiting.
  * ##### NOTES
  * * Currently this function is just used to test rate limiting for DOS type attacks.
  */
 // test rate limiting of generic 404s at api route
-async function routerGetWildcard(req, res, next) {
+async function routerGetDos(req, res, next) {
 	var msg;
 
 	// ATTN: test of rate limiting block
