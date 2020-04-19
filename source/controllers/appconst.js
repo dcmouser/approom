@@ -76,6 +76,7 @@ exports.DefAclActionAdd = "add";
 exports.DefAclActionEdit = "edit";
 exports.DefAclActionList = "list";
 exports.DefAclActionView = "view";
+exports.DefAclActionViewData = "viewdata";
 exports.DefAclActionDelete = "delete";
 exports.DefAclActionPermDelete = "permdelete";
 exports.DefAclActionUnDelete = "undelete";

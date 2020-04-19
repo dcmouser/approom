@@ -22,10 +22,13 @@ const ModelBaseMongoose = jrequire("models/model_base_mongoose");
 
 // controllers
 const arserver = jrequire("arserver");
+const appconst = jrequire("appconst");
+
 
 // our helper modules
 const jrhText = require("../helpers/jrh_text");
 const jrhValidate = require("../helpers/jrh_validate");
+const jrhMongo = require("../helpers/jrh_mongo");
 
 
 
@@ -150,7 +153,7 @@ class RoomModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static getSaveFields(req, operationType) {
+	static getSaveFields(operationType) {
 		// operationType is commonly "crudAdd", "crudEdit"
 		// return an array of field names that the user can modify when saving an object
 		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
@@ -158,7 +161,7 @@ class RoomModel extends ModelBaseMongoose {
 		// NOTE: this list can be generated dynamically based on logged in user
 		var reta;
 		if (operationType === "crudAdd" || operationType === "crudEdit") {
-			reta = ["appid", "shortcode", "label", "description", "password", "passwordHashed", "disabled", "notes"];
+			reta = ["extraData", "appid", "shortcode", "label", "description", "password", "passwordHashed", "disabled", "notes"];
 		}
 		return reta;
 	}
@@ -167,17 +170,14 @@ class RoomModel extends ModelBaseMongoose {
 
 
 	// crud add/edit
-	static async validateAndSave(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj) {
+	static async validateAndSave(jrResult, options, flagSave, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 		var objdoc;
 		const UserModel = jrequire("models/user");
 
-		// get logged in user
-		var user = await arserver.getLoggedInUser(req);
-
 		// set fields from form and validate
-		await this.validateMergeAsync(jrResult, "appid", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => this.validateModelFieldAppId(jrr, keyname, inVal, user));
+		await this.validateMergeAsync(jrResult, "appid", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => this.validateModelFieldAppId(jrr, keyname, inVal, loggedInUser));
 		await this.validateMergeAsync(jrResult, "shortcode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await this.validateShortcodeUnique(jrr, keyname, inVal, obj));
 		await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
 		await this.validateMergeAsync(jrResult, "description", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
@@ -185,8 +185,10 @@ class RoomModel extends ModelBaseMongoose {
 		await this.validateMergeAsync(jrResult, "password", "passwordHashed", source, saveFields, preValidatedFields, obj, false, async (jrr, keyname, inVal, flagRequired) => await UserModel.validatePlaintextPasswordConvertToHash(jrr, inVal, flagRequired, true));
 
 		// base fields shared between all? (notes, etc.)
-		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj);
+		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, source, saveFields, preValidatedFields, obj);
 
+		// complain about fields in source that we aren't allowed to save
+		await this.validateComplainExtraFields(jrResult, options, source, saveFields, preValidatedFields, ignoreFields);
 
 		// any validation errors?
 		if (jrResult.isError()) {
@@ -263,6 +265,86 @@ class RoomModel extends ModelBaseMongoose {
 		return ids;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	static async findOneByAppIdAndRoomShortcode(appId, roomShortcode) {
+		// first we need to find the app id from the appShortcode
+		// now find the room by its appid and shortcode
+		var args = {
+			appid: appId,
+			shortcode: roomShortcode,
+		};
+		var retv = await this.findOneExec(args);
+		return retv;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// delete any ancillary deletions AFTER the normal delete
+	static async auxChangeModeById(id, mode, jrResult) {
+		// call super callss
+		super.auxChangeModeById(id, mode, jrResult);
+
+		// if we are enabling or disabling, then we don't touch rooms
+		if (mode === appconst.DefMdbEnable || mode === appconst.DefMdbDisable) {
+			// nothing to do
+			return;
+		}
+
+		// this is a virtual delete or real delete
+
+		// for app model, this means deleting associated rooms
+		const roomDataIdList = await this.getAssociatedRoomDatasByRoomId(id, jrResult);
+		if (jrResult.isError()) {
+			return;
+		}
+
+		if (roomDataIdList.length === 0) {
+			return;
+		}
+
+		// delete them
+		const RoomDataModel = jrequire("models/roomdata");
+		await RoomDataModel.doChangeModeByIdList(roomDataIdList, mode, jrResult, true);
+		if (!jrResult.isError()) {
+			const modeLabel = jrhText.capitalizeFirstLetter(appconst.DefStateModeLabels[mode]);
+			jrResult.pushSuccess(modeLabel + " " + RoomDataModel.getNiceNamePluralized(roomDataIdList.length) + " attached to " + this.getNiceName() + " #" + id + ".");
+		}
+	}
+
+
+
+	static async getAssociatedRoomDatasByRoomId(roomid, jrResult) {
+		// get a list (array) of all room ids that are attached to this app
+
+		const RoomDataModel = jrequire("models/roomdata");
+		var roomDataObjs = await RoomDataModel.findAllExec({ roomid }, "_id");
+
+		// convert array of objects with _id fields to simple id array
+		var roomDataIds = jrhMongo.convertArrayOfObjectIdsToIdArray(roomDataObjs);
+
+		return roomDataIds;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
 
 
 

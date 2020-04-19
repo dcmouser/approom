@@ -97,11 +97,14 @@ async function routerPostMakeappsrooms(req, res, next) {
 		return;
 	}
 
+	// get logged in user (note we've already checked they are logged in with permission)
+	var user = await arserver.getLoggedInUser(req);
+
 	// do it using adminaid
 	const addCountApps = 5;
 	const addCountRooms = 3;
 	const addCountRoomDatas = 3;
-	var bretv = await adminAid.addTestAppsAndRooms(req, addCountApps, addCountRooms, addCountRoomDatas);
+	var bretv = await adminAid.addTestAppsAndRooms(req, user, addCountApps, addCountRooms, addCountRoomDatas);
 	//
 	if (bretv) {
 		// return them to admin testing page

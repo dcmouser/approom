@@ -765,9 +765,9 @@ If this request was not made by you, please ignore this email.
 
 		// properties
 		var email = this.val;
-		var username = jrhMisc.firstCoercedTrueValue(this.getExtraData("username"), extraValues.username);
-		var realName = jrhMisc.firstCoercedTrueValue(this.getExtraData("realName"), extraValues.realName);
-		var passwordHashed = this.getExtraData("passwordHashed");
+		var username = jrhMisc.firstCoercedTrueValue(this.getExtraDataField("username"), extraValues.username);
+		var realName = jrhMisc.firstCoercedTrueValue(this.getExtraDataField("realName"), extraValues.realName);
+		var passwordHashed = this.getExtraDataField("passwordHashed");
 
 		// first step, let's check if the email has alread been used by someone, if so then we can just redirect them to try to sign up again and cancel this verification
 		var existingUserWithEmail = await UserModel.findUserByUsernameEmail(email);

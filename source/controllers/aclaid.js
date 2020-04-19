@@ -116,8 +116,8 @@ class AclAid {
 
 	createAclEditViewGrantsForResource(resourceName) {
 		// permission groups
-		const permAll = [appconst.DefAclActionAdd, appconst.DefAclActionEdit, appconst.DefAclActionView, appconst.DefAclActionList, appconst.DefAclActionDelete, appconst.DefAclActionPermDelete];
-		const permReadOnly = [appconst.DefAclActionView, appconst.DefAclActionList];
+		const permAll = [appconst.DefAclActionAdd, appconst.DefAclActionEdit, appconst.DefAclActionView, appconst.DefAclActionViewData, appconst.DefAclActionList, appconst.DefAclActionDelete, appconst.DefAclActionPermDelete];
+		const permReadOnly = [appconst.DefAclActionView, appconst.DefAclActionViewData, appconst.DefAclActionList];
 		const permExtraAdminMods = [appconst.DefAclActionUnDelete, appconst.DefAclActionSeeVdeletes];
 
 		// moderator permissions

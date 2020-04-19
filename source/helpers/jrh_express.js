@@ -507,6 +507,22 @@ function sendResJsonJrResultTokenError(res, jrResult) {
 	};
 	res.status(status).send(data);
 }
+
+
+function sendResJsonAclErorr(res, permission, permissionObjType, permissionObjId) {
+	const status = 403;
+	var errorMessage = "you do not have permission to " + permission;
+	if (permissionObjType) {
+		errorMessage += " " + permissionObjType;
+	}
+	if (permissionObjId) {
+		errorMessage += " " + permissionObjId;
+	}
+	const data = {
+		error: errorMessage,
+	};
+	res.status(status).send(data);
+}
 //---------------------------------------------------------------------------
 
 
@@ -577,6 +593,7 @@ module.exports = {
 	sendResJsonError,
 	sendResJsonJrResult,
 	sendResJsonJrResultTokenError,
+	sendResJsonAclErorr,
 
 	parseReqGetJsonField,
 };

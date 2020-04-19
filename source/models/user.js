@@ -638,9 +638,9 @@ class UserModel extends ModelBaseMongoose {
 	static async createUniqueUserFromBridgedLogin(bridgedLoginObj, flagUpdateLoginDate) {
 		// this could be tricky because we may have collisions in our desired username, email, etc.
 		var userObj = {
-			username: jrhMisc.getNonFalseValueOrDefault(bridgedLoginObj.getExtraData("username"), undefined),
-			realName: jrhMisc.getNonFalseValueOrDefault(bridgedLoginObj.getExtraData("realName"), undefined),
-			email: jrhMisc.getNonFalseValueOrDefault(bridgedLoginObj.getExtraData("email"), undefined),
+			username: jrhMisc.getNonFalseValueOrDefault(bridgedLoginObj.getExtraDataField("username"), undefined),
+			realName: jrhMisc.getNonFalseValueOrDefault(bridgedLoginObj.getExtraDataField("realName"), undefined),
+			email: jrhMisc.getNonFalseValueOrDefault(bridgedLoginObj.getExtraDataField("email"), undefined),
 			passwordHashed: undefined,
 		};
 		// modify or tweak username if its not unique
@@ -839,7 +839,7 @@ class UserModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static getSaveFields(req, operationType) {
+	static getSaveFields(operationType) {
 		// operationType is commonly "crudAdd", "crudEdit"
 		// return an array of field names that the user can modify when saving an object
 		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
@@ -855,7 +855,7 @@ class UserModel extends ModelBaseMongoose {
 
 
 	// crud add/edit
-	static async validateAndSave(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj) {
+	static async validateAndSave(jrResult, options, flagSave, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 		// ATTN: TODO there is duplication with code in registrationaid.js currently, because we are trying to decide where best to do these things - ELIMINATE
@@ -864,7 +864,7 @@ class UserModel extends ModelBaseMongoose {
 		var flagCheckDisallowedUsername = true;
 		var flagTrustEmailChange = false;
 		var flagRrequiredEmail = false;
-		var flagUserIsSiteAdmin = await arserver.isLoggedInUserSiteAdmin(req);
+		var flagUserIsSiteAdmin = loggedInUser && (await loggedInUser.isSiteAdmin());
 		var flagIsNew = obj.getIsNew();
 
 		// super users can do some things others cannot
@@ -886,7 +886,10 @@ class UserModel extends ModelBaseMongoose {
 		await this.validateMergeAsync(jrResult, "apiCode", "", source, saveFields, preValidatedFields, obj, false, async (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
 
 		// base fields shared between all? (notes, etc.)
-		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj);
+		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, source, saveFields, preValidatedFields, obj);
+
+		// complain about fields in source that we aren't allowed to save
+		await this.validateComplainExtraFields(jrResult, options, source, saveFields, preValidatedFields, ignoreFields);
 
 		// can we trust them to bypass verification email
 		if (options.flagTrustEmailChange) {
@@ -919,7 +922,7 @@ class UserModel extends ModelBaseMongoose {
 				obj.email = emailAddressOld;
 				// send them a change of email verification
 				await obj.createAndSendVerificationEmailChange(emailAddressNew);
-				if (obj.getId() === arserver.getLoggedInLocalUserIdFromSession(req)) {
+				if (loggedInUser && obj.getId() === loggedInUser.getId()) {
 					jrResult.pushSuccess(`Your new E-mail address is pending.  Please check ${emailAddressNew} for a verification link.  Your new email address will only take effect after you confirm it.`);
 				} else {
 					jrResult.pushSuccess(`The E-mail address for user ${obj.username} will need to be verified before it is accepted.  The user should check ${emailAddressNew} for a verification link.`);

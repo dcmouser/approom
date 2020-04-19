@@ -19,6 +19,9 @@ const jrequire = require("../helpers/jrequire");
 // models
 const ModelBaseMongooseMinimal = jrequire("models/model_base_mongoose_minimal");
 
+// helpers
+const jrhMisc = require("../helpers/jrh_misc");
+
 
 
 
@@ -84,7 +87,7 @@ class LogModel extends ModelBaseMongooseMinimal {
 				type: String,
 			},
 			extraData: {
-				type: Map,
+				type: mongoose.Mixed,
 			},
 		};
 	}
@@ -117,7 +120,7 @@ class LogModel extends ModelBaseMongooseMinimal {
 				label: "Extra data",
 				valueFunction: this.makeModelValueFunctionExtraData(),
 				filterSize: 0,
-				readOnly: ["edit"],
+				// readOnly: ["edit"],
 			},
 		};
 	}

@@ -94,21 +94,53 @@ describe("client", function test() {
 	});
 
 
-	// Test roomdata request
-	it("Make simple roomdata query", async () => {
+	// Test room lookup
+	var room;
+	it("Invoke simple room lookup", async () => {
 		var query = {
-			val1: "value 1",
-			val2: [1, 2, 3],
-			val3: {
-				a: "thing a",
-				b: "thing b",
-			},
+			appShortcode: "A1",
+			roomShortcode: "R1A1",
+		};
+		var reply = await client.invoke("/api/room/lookup", query);
+		assertNoErrorInReply(reply, "Invoking room lookup");
+		room = reply.room;
+		jrdebug.cdebug("Reply from room lookup:");
+		jrdebug.cdebugObj(reply);
+	});
+
+	// Test roomdata lookup
+	// get roomdata in the room
+	it("Invoke roomdata lookup", async () => {
+		assert(room, "Missing room from previous lookup");
+		var query = {
+			roomId: room._id,
 		};
 		var reply = await client.invoke("/api/roomdata/list", query);
-		assertNoErrorInReply(reply, "Querying for roomdata.");
-		console.log("Reply from roomdata query:");
-		console.log(reply);
+		assertNoErrorInReply(reply, "Invoking room lookup");
+		jrdebug.cdebug("Reply from roomdata lookup:");
+		jrdebug.cdebugObj(reply);
 	});
+
+	// add a roomdata
+	it("Invoke roomdata add", async () => {
+		assert(room, "Missing room from previous lookup");
+		var query = {
+			roomid: room._id,
+			label: "mocha test item",
+			extraData: {
+				e1: true,
+				e2: "some text",
+				e3: [1, 2, 3],
+			},
+		};
+		var reply = await client.invoke("/api/roomdata/upload", query);
+		assertNoErrorInReply(reply, "Invoking room add");
+		jrdebug.cdebug("Reply from roomdata add:");
+		jrdebug.cdebugObj(reply);
+	});
+
+
+
 
 });
 //---------------------------------------------------------------------------

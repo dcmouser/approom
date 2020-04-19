@@ -119,7 +119,7 @@ class ModelBaseMongoose {
 				type: Number,
 			},
 			extraData: {
-				type: Map,
+				type: mongoose.Mixed,
 			},
 			notes: {
 				type: String,
@@ -168,7 +168,7 @@ class ModelBaseMongoose {
 				label: "Extra data",
 				valueFunction: this.makeModelValueFunctionExtraData(),
 				filterSize: 0,
-				readOnly: ["edit"],
+				// readOnly: ["edit"],
 			},
 			notes: {
 				label: "Notes",
@@ -290,8 +290,43 @@ class ModelBaseMongoose {
 
 
 
+	//---------------------------------------------------------------------------
+  /*
+	// convert string of extraData to json object (use cache if available)
+	getExtraDataAsJson() {
+		if (!this.extraData) {
+			return {};
+		}
+		if (this.extraDataAsJson === undefined) {
+			try {
+				this.extraDataAsJson = JSON.parse(this.extraData);
+			} catch (e) {
+				this.extraDataAsJson = {};
+			}
+		}
+		// cached
+		return this.extraDataAsJson;
+	}
 
 
+	// set string version of extra data from an object
+	setExtraDataFromObj(obj) {
+		// cache it
+		this.extraDataAsJson = obj;
+		this.extraData = jrhMisc.stringifyJson(obj);
+		// return string form
+		return this.extraData;
+	}
+  */
+
+
+	getExtraDataField(key, defaultValue) {
+		if (this.extraData === undefined || this.extraData[key] === undefined) {
+			return defaultValue;
+		}
+		return this.extraData[key];
+	}
+	//---------------------------------------------------------------------------
 
 
 
@@ -408,7 +443,7 @@ class ModelBaseMongoose {
 		try {
 			retv = await this.save();
 		} catch (err) {
-			jrResult.pushError("Failed to save " + this.getmodelClass().getNiceName() + ". " + err.toString());
+			jrResult.pushError("Failed to save " + this.getModelClass().getNiceName() + ". " + err.toString());
 			return null;
 		}
 		// success
@@ -427,18 +462,18 @@ class ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// subclasses implement this
-	static async validateAndSave(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj) {
+	static async validateAndSave(jrResult, options, flagSave, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, obj) {
 		jrResult.pushError("Internal error: No subclassed proecure to handle validateAndSave() for " + this.getCollectionName() + " model");
 		return null;
 	}
 
-	static async validateAndSaveNew(jrResult, options, flagSave, req, source, saveFields, preValidatedFields) {
+	static async validateAndSaveNew(jrResult, options, flagSave, loggedInUser, source, saveFields, preValidatedFields, ignoreFields) {
 		var newObj = this.createModel({});
-		await this.validateAndSave(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, newObj);
+		await this.validateAndSave(jrResult, options, flagSave, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, newObj);
 		return newObj;
 	}
 
-	static getSaveFields(req, operationType) {
+	static getSaveFields(operationType) {
 		// operationType is commonly "crudAdd", "crudEdit"
 		// return an array of field names that the user can modify when saving an object
 		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
@@ -528,9 +563,63 @@ class ModelBaseMongoose {
 
 		// success, set it
 		obj[fieldNameTarget] = validatedVal;
+		// tell object we have set it
+		obj.notifyValueModified(fieldNameTarget, validatedVal);
 		return validatedVal;
 	}
 	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	notifyValueModified(key, val) {
+		// ATTN: 4/18/20 -- despite documentation, this doesnt ACTUALLY seem to be needed even for mixed schematype..
+		if (false) {
+			// some mongoose models need this to be called, like those with Mixed schema, like extraData
+			// doesn't seem to be any harm in calling for all vars
+			// this.markModified(key);
+		}
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+	//---------------------------------------------------------------------------
+	/**
+	 * Complain about fields we found that we are refusing to save
+	 *
+	 * @static
+	 * @param {*} jrResult
+	 * @param {*} options
+	 * @param {*} source
+	 * @param {*} saveFields
+	 * @param {*} preValidatedFields
+	 * @memberof ModelBaseMongoose
+	 */
+	static async validateComplainExtraFields(jrResult, options, source, saveFields, preValidatedFields, ignoreFields) {
+		// walk the properties in source, and complain if not found in saveFields, preValidatedFields, and ignoreFields
+		for (var prop in source) {
+			if (Object.prototype.hasOwnProperty.call(source, prop)) {
+				if ((saveFields && saveFields.includes(prop)) || (preValidatedFields && preValidatedFields.includes(prop)) || (ignoreFields && ignoreFields.includes(prop))) {
+					// good
+					continue;
+				} else {
+					// not found, first check if its a _checkbox version of an allowed field
+					if (prop.endsWith("_checkbox")) {
+						var preprop = prop.substr(0, prop.length - 9);
+						if ((saveFields && saveFields.includes(preprop)) || (preValidatedFields && preValidatedFields.includes(preprop)) || (ignoreFields && ignoreFields.includes(preprop))) {
+							// good
+							continue;
+						}
+					}
+					// error
+					jrResult.pushFieldError(prop, "Not allowed to save this field (" + prop + ").");
+				}
+			}
+		}
+	}
+	//---------------------------------------------------------------------------
+
 
 
 
@@ -765,7 +854,7 @@ class ModelBaseMongoose {
 	}
 
 
-
+	/*
 	getExtraData(key, defaultVal) {
 		var val = this.extraData.get(key);
 		if (val === undefined) {
@@ -777,6 +866,8 @@ class ModelBaseMongoose {
 	setExtraData(key, val) {
 		this.extraData.set(key, val);
 	}
+	*/
+
 
 	getIsNew() {
 		// return TRUE if it is new and not yet saved
@@ -1288,10 +1379,12 @@ class ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static async validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj) {
+	static async validateMergeAsyncBaseFields(jrResult, options, flagSave, source, saveFields, preValidatedFields, obj) {
 		// base fields shared among most models
 		await this.validateMergeAsync(jrResult, "disabled", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => this.validateModelFielDisbled(jrr, keyname, inVal, flagRequired));
 		await this.validateMergeAsync(jrResult, "notes", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+		// extraData json
+		await this.validateMergeAsync(jrResult, "extraData", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateJson(jrr, keyname, inVal, flagRequired));
 	}
 	//---------------------------------------------------------------------------
 
@@ -1341,10 +1434,22 @@ class ModelBaseMongoose {
 	static makeModelValueFunctionExtraData() {
 		// a value function usable by model definitions
 		return async (viewType, fieldName, req, obj, helperData) => {
+			var str;
 			if (obj !== undefined && obj.extraData) {
-				return JSON.stringify(obj.extraData, null, " ");
+				if (typeof obj.extraData === "string") {
+					// already a string -- this is used when form error being reshown..
+					str = obj.extraData;
+				} else {
+					str = JSON.stringify(obj.extraData, null, " ");
+				}
+			} else {
+				str = "";
 			}
-			return "";
+			// let them edit the json string
+			if (viewType === "edit") {
+				str = `<textarea name="${fieldName}" rows="4" cols="80">${str}</textarea>`;
+			}
+			return str;
 		};
 	}
 

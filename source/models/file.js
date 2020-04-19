@@ -134,13 +134,13 @@ class FileModel extends RoomdataModel {
 
 
 	//---------------------------------------------------------------------------
-	static getSaveFields(req, operationType) {
+	static getSaveFields(operationType) {
 		// operationType is commonly "crudAdd", "crudEdit"
 		// return an array of field names that the user can modify when saving an object
 		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
 		// subclasses implement; by default we return empty array
 		// NOTE: this list can be generated dynamically based on logged in user
-		var reta = super.getSaveFields(req, operationType);
+		var reta = super.getSaveFields(operationType);
 
 		if (operationType === "crudAdd" || operationType === "crudEdit") {
 			reta = jrhMisc.mergeArraysKeepDupes(reta, ["path", "label", "sizeInBytes"]);
@@ -153,14 +153,14 @@ class FileModel extends RoomdataModel {
 
 
 	// crud add/edit
-	static async validateAndSave(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj) {
+	static async validateAndSave(jrResult, options, flagSave, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 
 		// first base class work (but make sure to tell it NOT to save)
 		var objdoc;
 
-		await super.validateAndSave(jrResult, options, false, req, source, saveFields, preValidatedFields, obj);
+		await super.validateAndSave(jrResult, options, false, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, obj);
 
 		// now our specific derived class fields
 		if (!jrResult.isError()) {
@@ -168,6 +168,9 @@ class FileModel extends RoomdataModel {
 			await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
 			await this.validateMergeAsync(jrResult, "sizeInBytes", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateInteger(jrr, keyname, inVal, flagRequired));
 		}
+
+		// complain about fields in source that we aren't allowed to save
+		await this.validateComplainExtraFields(jrResult, options, source, saveFields, preValidatedFields, ignoreFields);
 
 		// any validation errors?
 		if (jrResult.isError()) {

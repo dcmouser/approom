@@ -180,6 +180,8 @@ class JrResult {
 	 * @returns this
 	 */
 	setFieldError(key, value) {
+		// ATTN: note that these alone aren't shown in error to string
+		// for that you need to call pushFieldError
 		if (this.errorFields === undefined) {
 			this.errorFields = {};
 		}

@@ -61,9 +61,9 @@ class RegistrationAid {
 		var login = await arserver.getLoggedInLogin(req);
 		if (login) {
 			// bridged login, get their requested (or default) username
-			email = login.getExtraData("email");
-			realName = login.getExtraData("realName");
-			username = login.getExtraData("username", realName);
+			email = login.getExtraDataField("email");
+			realName = login.getExtraDataField("realName");
+			username = login.getExtraDataField("username", realName);
 			if (username) {
 				username = await UserModel.fixImportedUsername(username);
 			}
@@ -79,9 +79,9 @@ class RegistrationAid {
 				email = verification.val;
 				jrResult.pushSuccess("With your email address verified, you may now complete your registration.");
 			}
-			realName = verification.getExtraData("realName", realName);
-			username = verification.getExtraData("username", username);
-			email = verification.getExtraData("email", email);
+			realName = verification.getExtraDataField("realName", realName);
+			username = verification.getExtraDataField("username", username);
+			email = verification.getExtraDataField("email", email);
 		} else {
 			// not relevant for us
 			verification = null;
@@ -189,13 +189,13 @@ class RegistrationAid {
 				}
 			}
 			if (!username) {
-				username = verification.getExtraData("username");
+				username = verification.getExtraDataField("username");
 			}
 			if (!password) {
-				passwordHashed = verification.getExtraData("passwordHashed");
+				passwordHashed = verification.getExtraDataField("passwordHashed");
 			}
 			if (!realName) {
-				realName = verification.getExtraData("realName");
+				realName = verification.getExtraDataField("realName");
 			}
 		}
 
@@ -322,6 +322,9 @@ class RegistrationAid {
 	async createFullNewUserAccountForLoggedInUser(jrResult, req, verification, userObj) {
 		var retvResult;
 
+		// get logged in user
+		var loggedInUser = await arserver.getLoggedInUser(req);
+
 		// log them in automatically after we create their account?
 		var flagLogInUserAfterAccountCreate = true;
 
@@ -329,11 +332,14 @@ class RegistrationAid {
 		// ATTN: this function is typically called by caller who has already validated username, email, etc, so we COULD list these all (or *) in the preValidated list
 		// but for safety we ask ValidateAndSaveNew to revalidate everything EXCEPT passwordHash which cannot be re-validated since the plaintext may be gone to the wind
 		var saveFields = ["username", "email", "realName", "passwordHashed"];
+		// form fields that we dont complain about finding even though they arent for the form object
+		var ignoreFields = [];
+
 		// trust the email since we just verified it
 		var options = {
 			flagTrustEmailChange: true,
 		};
-		var user = await UserModel.validateAndSaveNew(jrResult, options, true, req, userObj, saveFields, ["passwordHashed"]);
+		var user = await UserModel.validateAndSaveNew(jrResult, options, true, loggedInUser, userObj, saveFields, ["passwordHashed"], ignoreFields);
 
 		// success?
 		if (!jrResult.isError()) {

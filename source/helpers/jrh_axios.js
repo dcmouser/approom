@@ -54,7 +54,7 @@ async function postCatchError(url, postData) {
 	} catch (e) {
 		response = e.response;
 		if (!response.data.error) {
-			response.data.error = "Error exception in request; status " + e.status;
+			response.data.error = "Error exception in request; status " + e.response.status;
 		}
 	}
 	return response;
@@ -76,7 +76,7 @@ async function getCatchError(url) {
 	} catch (e) {
 		response = e.response;
 		if (!response.data.error) {
-			response.data.error = "Error exception in request; status " + e.status;
+			response.data.error = "Error exception in request; status " + e.response.status;
 		}
 	}
 	return response;

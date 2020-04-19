@@ -611,6 +611,41 @@ function objectHasProperty(obj, prop) {
 //---------------------------------------------------------------------------
 
 
+//---------------------------------------------------------------------------
+function getNonNullValueFromObject(obj, key, jrResult, hintMessage) {
+	if (!obj || !obj[key]) {
+		jrResult.pushFieldError(key, "Missing value for " + hintMessage + " (" + key + ")");
+		return null;
+	}
+	return obj[key];
+}
+//---------------------------------------------------------------------------
+
+
+//---------------------------------------------------------------------------
+function stringifyJson(obj) {
+	var str;
+	if (obj === undefined || obj === null) {
+		str = obj;
+	}
+	try {
+		str = JSON.stringify(obj);
+	} catch (e) {
+		var eobj = {
+			jsonError: e.toString(),
+		};
+		str = JSON.stringify(eobj);
+	}
+	return str;
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
 
 
 
@@ -657,4 +692,8 @@ module.exports = {
 	ErrorToHashableMapObject,
 
 	objectHasProperty,
+
+	getNonNullValueFromObject,
+
+	stringifyJson,
 };

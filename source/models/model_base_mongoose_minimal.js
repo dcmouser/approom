@@ -89,7 +89,7 @@ class ModelBaseMongooseMinimal extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static async validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj) {
+	static async validateMergeAsyncBaseFields(jrResult, options, flagSave, source, saveFields, preValidatedFields, obj) {
 		// nothing to do for minimal
 	}
 	//---------------------------------------------------------------------------

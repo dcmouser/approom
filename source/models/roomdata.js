@@ -169,7 +169,7 @@ class RoomdataModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static getSaveFields(req, operationType) {
+	static getSaveFields(operationType) {
 		// operationType is commonly "crudAdd", "crudEdit"
 		// return an array of field names that the user can modify when saving an object
 		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
@@ -177,7 +177,9 @@ class RoomdataModel extends ModelBaseMongoose {
 		// NOTE: this list can be generated dynamically based on logged in user
 		var reta;
 		if (operationType === "crudAdd" || operationType === "crudEdit") {
-			reta = ["roomid", "label", "description", "disabled", "notes"];
+			reta = ["roomid", "label", "description", "disabled", "notes", "extraData"];
+		} else if (operationType === "add") {
+			reta = ["roomid", "label", "description", "disabled", "notes", "extraData"];
 		}
 		return reta;
 	}
@@ -186,25 +188,24 @@ class RoomdataModel extends ModelBaseMongoose {
 
 
 	// crud add/edit
-	static async validateAndSave(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj) {
+	static async validateAndSave(jrResult, options, flagSave, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 		var objdoc;
 
-		// get logged in user
-		var user = await arserver.getLoggedInUser(req);
-
 		// ATTN: not all of these file fields are currently validated correctly, because they should not be user-editable
 
 		// set fields from form and validate
-		await this.validateMergeAsync(jrResult, "roomid", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => this.validateModelFieldRoomId(jrr, keyname, inVal, user));
+		await this.validateMergeAsync(jrResult, "roomid", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => this.validateModelFieldRoomId(jrr, keyname, inVal, loggedInUser));
 		//
-		await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
-		await this.validateMergeAsync(jrResult, "description", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrResult, "description", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
 
 		// base fields shared between all? (notes, etc.)
-		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj);
+		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, source, saveFields, preValidatedFields, obj);
 
+		// complain about fields in source that we aren't allowed to save
+		await this.validateComplainExtraFields(jrResult, options, source, saveFields, preValidatedFields, ignoreFields);
 
 		// any validation errors?
 		if (jrResult.isError()) {

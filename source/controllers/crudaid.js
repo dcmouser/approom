@@ -312,6 +312,9 @@ class CrudAid {
 			return true;
 		}
 
+		// form fields that we dont complain about finding even though they arent for the form object
+		var ignoreFields = this.getIgnoreFields();
+
 		// process
 		var reqbody = req.body;
 
@@ -324,8 +327,8 @@ class CrudAid {
 
 		if (!jrResult.isError()) {
 			// now save add changes
-			var saveFields = modelClass.getSaveFields(req, "crudAdd");
-			var savedobj = await modelClass.validateAndSave(jrResult, {}, true, req, req.body, saveFields, null, obj);
+			var saveFields = modelClass.getSaveFields("crudAdd");
+			var savedobj = await modelClass.validateAndSave(jrResult, {}, true, user, req.body, saveFields, null, ignoreFields, obj);
 			if (!jrResult.isError()) {
 				// success! drop down with new blank form, or alternatively, we could redirect to a VIEW obj._id page
 				jrResult.pushSuccess(modelClass.getNiceName() + " added on " + jrhMisc.getNiceNowString() + ".");
@@ -499,6 +502,8 @@ class CrudAid {
 			return false;
 		}
 
+		// form fields that we dont complain about finding even though they arent for the form object
+		var ignoreFields = this.getIgnoreFields();
 
 		// process
 		var reqbody = req.body;
@@ -508,8 +513,8 @@ class CrudAid {
 
 		if (!jrResult.isError()) {
 			// now save edit changes
-			var saveFields = modelClass.getSaveFields(req, "crudEdit");
-			var savedobj = await modelClass.validateAndSave(jrResult, {}, true, req, req.body, saveFields, null, obj);
+			var saveFields = modelClass.getSaveFields("crudEdit");
+			var savedobj = await modelClass.validateAndSave(jrResult, {}, true, user, req.body, saveFields, null, ignoreFields, obj);
 
 			if (!jrResult.isError()) {
 				// success! drop down with new blank form, or alternatively, we could redirect to a VIEW obj._id page
@@ -828,8 +833,12 @@ class CrudAid {
 
 
 
-
-
+	//---------------------------------------------------------------------------
+	getIgnoreFields() {
+		// fields that we dont need to complain about and just ignore when they are found in an edit form submission
+		return ["_csrf", "_id"];
+	}
+	//---------------------------------------------------------------------------
 
 
 

@@ -136,6 +136,64 @@ function validateIntegerRange(jrResult, keyname, val, min, max, flagRequired) {
 //---------------------------------------------------------------------------
 
 
+//---------------------------------------------------------------------------
+function validateJsonString(jrResult, keyname, val, flagRequired) {
+	if (val === "" || val === null || val === undefined) {
+		if (!flagRequired) {
+			return "";
+		}
+		jrResult.pushFieldError(keyname, keyname + " cannot be left blank");
+		return undefined;
+	}
+	// test to see if we can conver tit
+	if (typeof val === "string") {
+		try {
+			var jsonVal = JSON.parse(val);
+			// success, just drop down and return the original string
+		} catch (e) {
+			jrResult.pushFieldError(keyname, keyname + " is not a valid json string");
+		}
+	} else {
+		// it's not a string, so make it a json string
+		try {
+			val = JSON.stringify(val);
+			// success, just drop down and return the original string
+		} catch (e) {
+			jrResult.pushFieldError(keyname, keyname + " is not a valid json strinifyable object");
+		}
+	}
+
+	// anything else is good for now
+	return val;
+}
+
+
+
+function validateJson(jrResult, keyname, val, flagRequired) {
+	if (!val) {
+		if (!flagRequired) {
+			return val;
+		}
+		jrResult.pushFieldError(keyname, keyname + " cannot be left blank");
+		return undefined;
+	}
+
+	// convert string to json
+	if (typeof val === "string") {
+		try {
+			val = JSON.parse(val);
+		} catch (e) {
+			jrResult.pushFieldError(keyname, keyname + " is not a valid json object");
+		}
+	}
+
+	// anything else is good for now
+	return val;
+}
+//---------------------------------------------------------------------------
+
+
+
 
 
 
@@ -145,4 +203,6 @@ module.exports = {
 	validateTrueFalse,
 	validateInteger,
 	validateIntegerRange,
+	validateJsonString,
+	validateJson,
 };

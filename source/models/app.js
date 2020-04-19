@@ -130,7 +130,7 @@ class AppModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static getSaveFields(req, operationType) {
+	static getSaveFields(operationType) {
 		// operationType is commonly "crudAdd", "crudEdit"
 		// return an array of field names that the user can modify when saving an object
 		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
@@ -138,14 +138,14 @@ class AppModel extends ModelBaseMongoose {
 		// NOTE: this list can be generated dynamically based on logged in user
 		var reta;
 		if (operationType === "crudAdd" || operationType === "crudEdit") {
-			reta = ["shortcode", "label", "description", "notes", "isPublic", "supportsFiles", "disabled"];
+			reta = ["shortcode", "label", "description", "notes", "extraData", "isPublic", "supportsFiles", "disabled"];
 		}
 		return reta;
 	}
 
 
 	// crud add/edit
-	static async validateAndSave(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj) {
+	static async validateAndSave(jrResult, options, flagSave, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 		var objdoc;
@@ -160,8 +160,10 @@ class AppModel extends ModelBaseMongoose {
 		await this.validateMergeAsync(jrResult, "supportsFiles", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateTrueFalse(jrResult, keyname, inVal, flagRequired));
 
 		// base fields shared between all? (notes, etc.)
-		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, req, source, saveFields, preValidatedFields, obj);
+		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, source, saveFields, preValidatedFields, obj);
 
+		// complain about fields in source that we aren't allowed to save
+		await this.validateComplainExtraFields(jrResult, options, source, saveFields, preValidatedFields, ignoreFields);
 
 		// any validation errors?
 		if (jrResult.isError()) {
