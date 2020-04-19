@@ -570,6 +570,7 @@ class ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 
 
+
 	//---------------------------------------------------------------------------
 	notifyValueModified(key, val) {
 		// ATTN: 4/18/20 -- despite documentation, this doesnt ACTUALLY seem to be needed even for mixed schematype..
@@ -1384,7 +1385,7 @@ class ModelBaseMongoose {
 		await this.validateMergeAsync(jrResult, "disabled", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => this.validateModelFielDisbled(jrr, keyname, inVal, flagRequired));
 		await this.validateMergeAsync(jrResult, "notes", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
 		// extraData json
-		await this.validateMergeAsync(jrResult, "extraData", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateJson(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrResult, "extraData", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateJsonObjOrStringToObj(jrr, keyname, inVal, flagRequired));
 	}
 	//---------------------------------------------------------------------------
 

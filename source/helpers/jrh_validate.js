@@ -136,30 +136,56 @@ function validateIntegerRange(jrResult, keyname, val, min, max, flagRequired) {
 //---------------------------------------------------------------------------
 
 
-//---------------------------------------------------------------------------
-function validateJsonString(jrResult, keyname, val, flagRequired) {
+/**
+ * Validates an object to yield proper json, or a json string, which is converted to a json object
+ *
+ * @param {*} jrResult
+ * @param {*} keyname
+ * @param {*} val
+ * @param {*} flagRequired
+ * @returns a json object or sets error in jrResult
+ */
+function validateJsonObjOrStringToObj(jrResult, keyname, val, flagRequired) {
+	var oval = val;
+
 	if (val === "" || val === null || val === undefined) {
 		if (!flagRequired) {
-			return "";
+			if (val === "") {
+				return undefined;
+			}
+			return undefined;
 		}
 		jrResult.pushFieldError(keyname, keyname + " cannot be left blank");
-		return undefined;
+		return oval;
 	}
-	// test to see if we can conver tit
+
+	// test to see if we can conver it
 	if (typeof val === "string") {
 		try {
-			var jsonVal = JSON.parse(val);
-			// success, just drop down and return the original string
+			val = val.trim();
+			if (val.length === 0 || val[0] !== "{") {
+				jrResult.pushFieldError(keyname, keyname + " is not a valid json object string (must start with { bracket).");
+				return oval;
+			}
+			val = JSON.parse(val);
+			// success, just drop down and return the converted string
 		} catch (e) {
-			jrResult.pushFieldError(keyname, keyname + " is not a valid json string");
+			jrResult.pushFieldError(keyname, keyname + " is not a valid json string: " + e.toString());
+			return oval;
 		}
 	} else {
-		// it's not a string, so make it a json string
+		// it's not a string, so make it a json string to see if its valid
 		try {
-			val = JSON.stringify(val);
+			var valAsString = JSON.stringify(val);
+			// check that its not simple value
+			if (valAsString.length === 0 || valAsString[0] !== "{") {
+				jrResult.pushFieldError(keyname, keyname + " is not a valid json object (must start with { bracket).");
+				return oval;
+			}
 			// success, just drop down and return the original string
 		} catch (e) {
-			jrResult.pushFieldError(keyname, keyname + " is not a valid json strinifyable object");
+			jrResult.pushFieldError(keyname, keyname + " is not a valid json strinifyable object: " + e.toString());
+			return oval;
 		}
 	}
 
@@ -168,7 +194,7 @@ function validateJsonString(jrResult, keyname, val, flagRequired) {
 }
 
 
-
+/*
 function validateJson(jrResult, keyname, val, flagRequired) {
 	if (!val) {
 		if (!flagRequired) {
@@ -190,6 +216,7 @@ function validateJson(jrResult, keyname, val, flagRequired) {
 	// anything else is good for now
 	return val;
 }
+*/
 //---------------------------------------------------------------------------
 
 
@@ -203,6 +230,6 @@ module.exports = {
 	validateTrueFalse,
 	validateInteger,
 	validateIntegerRange,
-	validateJsonString,
-	validateJson,
+	validateJsonObjOrStringToObj,
+	// validateJson,
 };
