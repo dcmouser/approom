@@ -136,8 +136,8 @@ class AppModel extends ModelBaseMongoose {
 		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
 		// subclasses implement; by default we return empty array
 		// NOTE: this list can be generated dynamically based on logged in user
-		var reta;
-		if (operationType === "crudAdd" || operationType === "crudEdit") {
+		var reta = [];
+		if (operationType === "crudAdd" || operationType === "crudEdit" || operationType === "add") {
 			reta = ["shortcode", "label", "description", "notes", "extraData", "isPublic", "supportsFiles", "disabled"];
 		}
 		return reta;

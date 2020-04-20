@@ -36,7 +36,7 @@ const jrequire = require("../helpers/jrequire");
 const jrdebug = require("../helpers/jrdebug");
 
 
-// constnats
+// constants
 const appconst = jrequire("appconst");
 
 
@@ -116,7 +116,7 @@ class AclAid {
 
 	createAclEditViewGrantsForResource(resourceName) {
 		// permission groups
-		const permAll = [appconst.DefAclActionAdd, appconst.DefAclActionEdit, appconst.DefAclActionView, appconst.DefAclActionViewData, appconst.DefAclActionList, appconst.DefAclActionDelete, appconst.DefAclActionPermDelete];
+		const permAll = [appconst.DefAclActionAdd, appconst.DefAclActionEdit, appconst.DefAclActionView, appconst.DefAclActionViewData, appconst.DefAclActionAddData, appconst.DefAclActionList, appconst.DefAclActionDelete, appconst.DefAclActionPermDelete];
 		const permReadOnly = [appconst.DefAclActionView, appconst.DefAclActionViewData, appconst.DefAclActionList];
 		const permExtraAdminMods = [appconst.DefAclActionUnDelete, appconst.DefAclActionSeeVdeletes];
 

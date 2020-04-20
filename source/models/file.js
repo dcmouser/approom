@@ -142,7 +142,7 @@ class FileModel extends RoomdataModel {
 		// NOTE: this list can be generated dynamically based on logged in user
 		var reta = super.getSaveFields(operationType);
 
-		if (operationType === "crudAdd" || operationType === "crudEdit") {
+		if (operationType === "crudAdd" || operationType === "crudEdit" || operationType === "add") {
 			reta = jrhMisc.mergeArraysKeepDupes(reta, ["path", "label", "sizeInBytes"]);
 		}
 

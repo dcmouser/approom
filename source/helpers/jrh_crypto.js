@@ -273,6 +273,25 @@ function genRandomStringHumanEasier(length) {
 	}
 	return retstr;
 }
+
+
+/**
+ * Generate a random string of characters from a character set
+ *
+ * @param {*} charset
+ * @param {*} length
+ * @returns the random string
+ */
+function genRandomStringFromCharSet(charset, length) {
+	var charlen = charset.length;
+	var retstr = "";
+	var charpos;
+	for (var i = 0; i < length; i++) {
+		charpos = Math.floor(Math.random() * charlen);
+		retstr += charset.charAt(charpos);
+	}
+	return retstr;
+}
 //---------------------------------------------------------------------------
 
 
@@ -313,6 +332,7 @@ module.exports = {
 
 	genRandomStringHumanEasy,
 	genRandomStringHumanEasier,
+	genRandomStringFromCharSet,
 
 	hashPlaintextStringInsecureButSearchable,
 };

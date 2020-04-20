@@ -33,7 +33,7 @@ const defaultOptions = {
 };
 
 // these are forced and override anything specified on commandline or in config files
-const overrideOptions = {
+var overrideOptions = {
 };
 
 // envListOptions is an array of strings to grab and merge from environment; use [""] for none, or set empty array for all
@@ -66,7 +66,18 @@ function setupDefaultModulePaths() {
 
 
 
-
+/**
+ * Set some override options for the program -- this can be useful to set global overrides, for example from the test running
+ *
+ * @param {*} options
+ */
+function setOverrideOptions(options) {
+	this.overrideOptions = {
+		...this.overrideOptions,
+		...options,
+	};
+}
+//---------------------------------------------------------------------------
 
 
 
@@ -80,5 +91,6 @@ module.exports = {
 	programName, programVersion, programDate, programAuthor, programDescription,
 	defaultOptions, overrideOptions, envListOptions,
 	setupDefaultModulePaths,
+	setOverrideOptions,
 };
 //---------------------------------------------------------------------------

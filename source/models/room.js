@@ -159,8 +159,8 @@ class RoomModel extends ModelBaseMongoose {
 		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
 		// subclasses implement; by default we return empty array
 		// NOTE: this list can be generated dynamically based on logged in user
-		var reta;
-		if (operationType === "crudAdd" || operationType === "crudEdit") {
+		var reta = [];
+		if (operationType === "crudAdd" || operationType === "crudEdit" || operationType === "add") {
 			reta = ["extraData", "appid", "shortcode", "label", "description", "password", "passwordHashed", "disabled", "notes"];
 		}
 		return reta;
@@ -178,9 +178,9 @@ class RoomModel extends ModelBaseMongoose {
 
 		// set fields from form and validate
 		await this.validateMergeAsync(jrResult, "appid", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => this.validateModelFieldAppId(jrr, keyname, inVal, loggedInUser));
-		await this.validateMergeAsync(jrResult, "shortcode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await this.validateShortcodeUnique(jrr, keyname, inVal, obj));
+		await this.validateMergeAsync(jrResult, "shortcode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await this.validateRoomShortcodeUnique(jrr, keyname, inVal, obj, source.appid));
 		await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
-		await this.validateMergeAsync(jrResult, "description", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrResult, "description", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
 		// note that password is not required
 		await this.validateMergeAsync(jrResult, "password", "passwordHashed", source, saveFields, preValidatedFields, obj, false, async (jrr, keyname, inVal, flagRequired) => await UserModel.validatePlaintextPasswordConvertToHash(jrr, inVal, flagRequired, true));
 
@@ -339,7 +339,21 @@ class RoomModel extends ModelBaseMongoose {
 
 
 
+	//---------------------------------------------------------------------------
+	static async validateRoomShortcodeUnique(jrResult, key, val, existingModel, appid) {
+		// generic validate of shortcode
+		if (val === "$RND") {
+			// make a random room shortcode!
+			val = await this.makeRandomRoomShortcode(appid);
+		}
+		return await this.validateShortcodeUnique(jrResult, key, val, existingModel);
+	}
 
+
+	static async makeRandomRoomShortcode(appid) {
+		return await this.makeRandomShortcode("shortcode");
+	}
+	//---------------------------------------------------------------------------
 
 
 

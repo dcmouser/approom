@@ -175,10 +175,8 @@ class RoomdataModel extends ModelBaseMongoose {
 		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
 		// subclasses implement; by default we return empty array
 		// NOTE: this list can be generated dynamically based on logged in user
-		var reta;
-		if (operationType === "crudAdd" || operationType === "crudEdit") {
-			reta = ["roomid", "label", "description", "disabled", "notes", "extraData"];
-		} else if (operationType === "add") {
+		var reta = [];
+		if (operationType === "crudAdd" || operationType === "crudEdit" || operationType === "add") {
 			reta = ["roomid", "label", "description", "disabled", "notes", "extraData"];
 		}
 		return reta;

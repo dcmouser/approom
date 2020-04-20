@@ -26,6 +26,7 @@ const jrhMisc = require("../helpers/jrh_misc");
 const jrhMongo = require("../helpers/jrh_mongo");
 const jrhText = require("../helpers/jrh_text");
 const jrhValidate = require("../helpers/jrh_validate");
+const jrhCrypto = require("../helpers/jrh_crypto");
 const JrResult = require("../helpers/jrresult");
 
 
@@ -291,35 +292,6 @@ class ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-  /*
-	// convert string of extraData to json object (use cache if available)
-	getExtraDataAsJson() {
-		if (!this.extraData) {
-			return {};
-		}
-		if (this.extraDataAsJson === undefined) {
-			try {
-				this.extraDataAsJson = JSON.parse(this.extraData);
-			} catch (e) {
-				this.extraDataAsJson = {};
-			}
-		}
-		// cached
-		return this.extraDataAsJson;
-	}
-
-
-	// set string version of extra data from an object
-	setExtraDataFromObj(obj) {
-		// cache it
-		this.extraDataAsJson = obj;
-		this.extraData = jrhMisc.stringifyJson(obj);
-		// return string form
-		return this.extraData;
-	}
-  */
-
-
 	getExtraDataField(key, defaultValue) {
 		if (this.extraData === undefined || this.extraData[key] === undefined) {
 			return defaultValue;
@@ -524,6 +496,7 @@ class ModelBaseMongoose {
 				// ATTN: note that this test does *NOT* require that the field be set in source, just that it already be set in obj if not
 				jrResult.pushError("Required value not provided for: " + fieldNameSource);
 			}
+			// ATTN: do not let validator have a chance to run??
 			return undefined;
 		}
 
@@ -719,11 +692,19 @@ class ModelBaseMongoose {
 
 		return val;
 	}
+	//---------------------------------------------------------------------------
 
+
+
+
+
+
+	//---------------------------------------------------------------------------
 	static validateShortcodeSyntax(jrResult, key, val) {
 		if (!val) {
 			if (jrResult) {
-				jrResult.pushFieldError(key, "Shortcode value for " + key + " cannot be blank.");
+				var sstr = (key === "shortcode") ? "shortcode" : "shortcode (" + key + ")";
+				jrResult.pushFieldError(key, sstr + " cannot be left blank");
 			}
 			return null;
 		}
@@ -735,7 +716,8 @@ class ModelBaseMongoose {
 		const regexPat = /^[A-Z0-9_\-.]*$/;
 		if (!regexPat.test(val)) {
 			if (jrResult) {
-				jrResult.pushFieldError(key, "Shortcode value for " + key + " cannot be blank, should be uppercase, and shouold contain only the characters A-Z 0-9 _-. (no spaces).");
+				var sstr2 = (key === "shortcode") ? "shortcode" : "shortcode (" + key + ")";
+				jrResult.pushFieldError(key, "Syntax error in " + sstr2 + " value; it should be uppercase, and shouold contain only the characters A-Z 0-9 _-. (no spaces).");
 			}
 			return null;
 		}
@@ -766,9 +748,7 @@ class ModelBaseMongoose {
 			};
 		}
 
-		var clashObj = await this.findOneExec(criteria);
-		if (clashObj) {
-			// error
+		if (await this.isShortcodeInUse(criteria)) {
 			jrResult.pushFieldError(key, "Duplicate " + key + " entry found for another " + this.getNiceName());
 			// doesnt matter what we return?
 			return null;
@@ -777,6 +757,49 @@ class ModelBaseMongoose {
 		return val;
 	}
 
+
+	static async isShortcodeInUse(criteria) {
+		var clashObj = await this.findOneExec(criteria);
+		if (clashObj) {
+			return true;
+		}
+		return false;
+	}
+
+
+	static async makeRandomShortcode(key) {
+		// try to make an unused random shortcode
+		const maxTrycount = 100;
+		const shortcodeLen = 9;
+		var shortcode;
+		var criteria = {};
+		var charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+		for (var trycount = 0; trycount < maxTrycount; trycount += 1) {
+			// random shortcode
+			shortcode = "RND" + jrhCrypto.genRandomStringFromCharSet(charset, shortcodeLen);
+			criteria[key] = shortcode;
+			// see if it's in use
+			if (!(await this.isShortcodeInUse(criteria))) {
+				// found one not in use
+				return shortcode;
+			}
+		}
+		// not found
+		return null;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
 	static validateModelFielDisbled(jrResult, key, val, flagRequired) {
 		// the disabled field for resource models must be a postitive integer (0 meaning not disabled, higher than 0 various flavors of being a disabled resource)
 		return jrhValidate.validateIntegerRange(jrResult, key, val, 0, 999999, flagRequired);
@@ -799,6 +822,8 @@ class ModelBaseMongoose {
 		}
 		if (!appIds || appIds.indexOf(val) === -1) {
 			jrResult.pushFieldError(key, "The specified App ID is inaccessible.");
+			console.log("ATTN:DEBUG APPIDS");
+			console.log(appIds);
 			return null;
 		}
 		// valid
@@ -820,7 +845,6 @@ class ModelBaseMongoose {
 		return val;
 	}
 	//---------------------------------------------------------------------------
-
 
 
 

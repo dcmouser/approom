@@ -32,7 +32,8 @@ const jrhMongo = require("../../helpers/jrh_mongo");
 // models
 const RoomModel = jrequire("models/room");
 
-
+// constants
+const appconst = jrequire("appconst");
 
 
 
@@ -54,7 +55,7 @@ function setupRouter(urlPath) {
 	// setup routes
 	router.all("/list", routerList);
 	router.all("/download", routerDownload);
-	router.all("/upload", routerUpload);
+	router.all("/add", routerAdd);
 
 	// return router
 	return router;
@@ -94,10 +95,16 @@ async function routerList(req, res, next) {
 		return;
 	}
 
+	// allow lookup by app shortcode instead of id
+	if (!query.roomId && query.roomShortcode) {
+		var queryRoom = await RoomModel.findOneByShortcode(query.roomShortcode);
+		query.roomId = !queryRoom ? null : queryRoom.getIdAsString();
+	}
+
 	// get roomdata items for room
 	var roomId = jrhMisc.getNonNullValueFromObject(query, "roomId", jrResult, "room id");
 	if (roomId && !jrhMongo.isValidMongooseObjectId(roomId)) {
-		jrResult.pushFieldError("roomId", "Bad syntax for rooomId");
+		jrResult.pushFieldError("roomId", "Bad syntax for rooomId: " + roomId);
 	}
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
@@ -105,7 +112,7 @@ async function routerList(req, res, next) {
 	}
 
 	// now let's ask if user is actually ALLOWED to look at the data in this room
-	const permission = "viewdata";
+	const permission = appconst.DefAclActionViewData;
 	const permissionObjType = RoomModel.getAclName();
 	const permissionObjId = roomId;
 	const hasPermission = await user.aclHasPermission(permission, permissionObjType, permissionObjId);
@@ -139,9 +146,7 @@ async function routerDownload(req, res, next) {
 }
 
 
-async function routerUpload(req, res, next) {
-	// ATTN: we would need to validate and check it first, but for now test we simply add it as is
-
+async function routerAdd(req, res, next) {
 	// consume access token
 	var jrResult = JrResult.makeNew();
 	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "access");
@@ -150,8 +155,7 @@ async function routerUpload(req, res, next) {
 		return;
 	}
 
-	// the api roomdata list function is for retrieving a list of (matching) roomdata items
-	// for a specific appid, and roomid, with optional filters (on data)
+	// get query
 	jrResult.clear();
 	var query = jrhExpress.parseReqGetJsonField(req, "query", jrResult);
 	if (jrResult.isError()) {
@@ -159,12 +163,17 @@ async function routerUpload(req, res, next) {
 		return;
 	}
 
+	// allow lookup by app shortcode instead of id
+	if (!query.roomId && query.roomShortcode) {
+		var queryRoom = await RoomModel.findOneByShortcode(query.roomShortcode);
+		query.roomId = !queryRoom ? null : queryRoom.getIdAsString();
+	}
 
 	// now let's ask if user is actually ALLOWED to look at the data in this room
-	var roomid = query.roomId;
-	const permission = "add";
+	var roomId = query.roomId;
+	const permission = appconst.DefAclActionAddData;
 	const permissionObjType = RoomModel.getAclName();
-	const permissionObjId = roomid;
+	const permissionObjId = roomId;
 	const hasPermission = await user.aclHasPermission(permission, permissionObjType, permissionObjId);
 	if (!hasPermission) {
 		jrhExpress.sendResJsonAclErorr(res, permission, permissionObjType, permissionObjId);
@@ -191,7 +200,7 @@ async function routerUpload(req, res, next) {
 
 	// success
 	var result = {
-		roomdata: roomdatadoc,
+		roomData: roomdatadoc,
 	};
 
 	// provide it

@@ -1,5 +1,5 @@
 /**
- * @module routes/api/roomdata
+ * @module routes/api/app
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 4/16/20
  * @description
@@ -53,7 +53,6 @@ function setupRouter(urlPath) {
 
 	// setup routes
 	router.all("/lookup", routerLookup);
-	router.all("/add", routerAdd);
 
 	// return router
 	return router;
@@ -94,8 +93,7 @@ async function routerLookup(req, res, next) {
 	}
 
 	// now we expect to find appid, and room shortcode; error if missing
-	var appShortcode = jrhMisc.getNonNullValueFromObject(query, "appShortcode", jrResult, "application shortcode hosting the room");
-	var roomShortcode = jrhMisc.getNonNullValueFromObject(query, "roomShortcode", jrResult, "room shortcode");
+	var appShortcode = jrhMisc.getNonNullValueFromObject(query, "appShortcode", jrResult, "application shortcode");
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
 		return;
@@ -108,18 +106,11 @@ async function routerLookup(req, res, next) {
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
 		return;
 	}
-	// look up the room
-	var room = await RoomModel.findOneByAppIdAndRoomShortcode(app.id, roomShortcode);
-	if (!room) {
-		jrResult.pushError("Could not find specified room with shortcode [" + roomShortcode + "] in specified app [" + appShortcode + "].");
-		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
-		return;
-	}
 
-	// now let's ask if user is actually ALLOWED to look at this room room
+	// now let's ask if user is actually ALLOWED to look at this app
 	const permission = appconst.DefAclActionView;
-	const permissionObjType = RoomModel.getAclName();
-	const permissionObjId = room.getId();
+	const permissionObjType = AppModel.getAclName();
+	const permissionObjId = app.getId();
 	const hasPermission = await user.aclHasPermission(permission, permissionObjType, permissionObjId);
 	if (!hasPermission) {
 		jrhExpress.sendResJsonAclErorr(res, permission, permissionObjType, permissionObjId);
@@ -128,79 +119,14 @@ async function routerLookup(req, res, next) {
 
 	// success
 	var result = {
-		room,
+		app,
 		// oringinalQuery: query,
 	};
-	jrhExpress.sendResJsonData(res, 200, "room", result);
+	jrhExpress.sendResJsonData(res, 200, "app", result);
 }
 //---------------------------------------------------------------------------
 
 
-
-
-
-
-//---------------------------------------------------------------------------
-async function routerAdd(req, res, next) {
-	// consume access token
-	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "access");
-	if (jrResult.isError()) {
-		jrhExpress.sendResJsonJrResultTokenError(res, jrResult);
-		return;
-	}
-
-	// get query
-	jrResult.clear();
-	var query = jrhExpress.parseReqGetJsonField(req, "query", jrResult);
-	if (jrResult.isError()) {
-		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
-		return;
-	}
-
-	// allow lookup by app shortcode instead of id
-	if (!query.appId && query.appShortcode) {
-		var queryApp = await AppModel.findOneByShortcode(query.appShortcode);
-		query.appId = !queryApp ? null : queryApp.getIdAsString();
-	}
-
-	// now let's ask if user is actually ALLOWED to add a room to this app
-	var appId = query.appId;
-	const permission = appconst.DefAclActionAddData;
-	const permissionObjType = AppModel.getAclName();
-	const permissionObjId = appId;
-	const hasPermission = await user.aclHasPermission(permission, permissionObjType, permissionObjId);
-	if (!hasPermission) {
-		jrhExpress.sendResJsonAclErorr(res, permission, permissionObjType, permissionObjId);
-		return;
-	}
-
-	// create the item
-	var room = RoomModel.createModel();
-	// force some values
-	room.creator = user.getId();
-
-	// validate and save the fields passed
-	var saveFields = RoomModel.getSaveFields("add");
-	var preValidatedFields = [];
-	// form fields that we dont complain about finding even though they arent for the form object
-	var ignoreFields = [];
-
-	var roomdoc = await RoomModel.validateAndSave(jrResult, {}, true, user, query, saveFields, preValidatedFields, ignoreFields, room);
-	if (jrResult.isError()) {
-		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
-		return;
-	}
-
-	// success
-	var result = {
-		room: roomdoc,
-	};
-
-	// provide it
-	jrhExpress.sendResJsonData(res, 200, "room", result);
-}
-//---------------------------------------------------------------------------
 
 
 

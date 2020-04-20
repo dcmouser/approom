@@ -118,7 +118,13 @@ async function calcDatabaseResourceUse() {
  */
 function isValidMongooseObjectId(str) {
 	if (typeof str !== "string") {
-		return false;
+		// try converting it to a string
+		try {
+			str = str.toString();
+			// ok so drop down and check it now
+		} catch (e) {
+			return false;
+		}
 	}
 	return str.match(/^[a-f\d]{24}$/i);
 }

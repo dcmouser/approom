@@ -10,6 +10,11 @@
 "use strict";
 
 
+//---------------------------------------------------------------------------
+// any option overrides?
+const configOverrides = {
+};
+//---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
 // testing modules
@@ -22,6 +27,9 @@ const assert = require("assert");
 //---------------------------------------------------------------------------
 // program globals (version, author, etc.)
 const arGlobals = require("../approomglobals");
+
+// override options
+arGlobals.setOverrideOptions(configOverrides);
 
 // initialize the service dependency requires helper
 arGlobals.setupDefaultModulePaths();

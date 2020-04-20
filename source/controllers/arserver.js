@@ -636,6 +636,7 @@ class AppRoomServer {
 
 		// api routes
 		this.setupRoute(expressApp, "/api", "api/api");
+		this.setupRoute(expressApp, "/api/app", "api/app");
 		this.setupRoute(expressApp, "/api/room", "api/room");
 		this.setupRoute(expressApp, "/api/roomdata", "api/roomdata");
 

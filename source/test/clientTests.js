@@ -12,6 +12,15 @@
 
 
 //---------------------------------------------------------------------------
+// any option overrides?
+const configOverrides = {
+	// DEBUG: true,
+};
+//---------------------------------------------------------------------------
+
+
+
+//---------------------------------------------------------------------------
 // testing modules
 const assert = require("assert");
 //---------------------------------------------------------------------------
@@ -22,6 +31,9 @@ const assert = require("assert");
 //---------------------------------------------------------------------------
 // program globals (version, author, etc.)
 const arGlobals = require("../approomglobals");
+
+// override options
+arGlobals.setOverrideOptions(configOverrides);
 
 // initialize the service dependency requires helper
 arGlobals.setupDefaultModulePaths();
@@ -93,8 +105,35 @@ describe("client", function test() {
 		await assertClientConnect(client, true);
 	});
 
+	// find an application id
+	var app;
+	it("Invoke simple app lookup", async () => {
+		var query = {
+			appShortcode: "A1",
+		};
+		var reply = await client.invoke("/api/app/lookup", query);
+		assertNoErrorInReply(reply, "Invoking app lookup");
+		app = reply.app;
+		jrdebug.cdebug("Reply from app lookup:");
+		jrdebug.cdebugObj(reply);
+	});
 
-	// Test room lookup
+	// create a new room
+	it("Invoke room add", async () => {
+		assert(app, "Missing app from previous lookup");
+		var query = {
+			appid: app._id,
+			shortcode: "$RND",
+			label: "mocha test room",
+		};
+		var reply = await client.invoke("/api/room/add", query);
+		assertNoErrorInReply(reply, "Invoking room add");
+		jrdebug.cdebug("Reply from room add:");
+		jrdebug.cdebugObj(reply);
+	});
+
+
+	// room lookup
 	var room;
 	it("Invoke simple room lookup", async () => {
 		var query = {
@@ -108,7 +147,6 @@ describe("client", function test() {
 		jrdebug.cdebugObj(reply);
 	});
 
-	// Test roomdata lookup
 	// get roomdata in the room
 	it("Invoke roomdata lookup", async () => {
 		assert(room, "Missing room from previous lookup");
@@ -117,8 +155,19 @@ describe("client", function test() {
 		};
 		var reply = await client.invoke("/api/roomdata/list", query);
 		assertNoErrorInReply(reply, "Invoking room lookup");
+		jrdebug.debug("Finished roomdata lookup, got " + reply.roomData.length + " items.");
 		jrdebug.cdebug("Reply from roomdata lookup:");
 		jrdebug.cdebugObj(reply);
+	});
+
+	// get roomdata in the room
+	it("Invoke roomdata lookup via shortcode directly", async () => {
+		assert(room, "Missing room from previous lookup");
+		var query = {
+			roomShortcode: "R1A1",
+		};
+		var reply = await client.invoke("/api/roomdata/list", query);
+		assertNoErrorInReply(reply, "Invoking room lookup via shortcode");
 	});
 
 	// add a roomdata
@@ -133,8 +182,8 @@ describe("client", function test() {
 				e3: [1, 2, 3],
 			},
 		};
-		var reply = await client.invoke("/api/roomdata/upload", query);
-		assertNoErrorInReply(reply, "Invoking room add");
+		var reply = await client.invoke("/api/roomdata/add", query);
+		assertNoErrorInReply(reply, "Invoking roomdata add");
 		jrdebug.cdebug("Reply from roomdata add:");
 		jrdebug.cdebugObj(reply);
 	});
