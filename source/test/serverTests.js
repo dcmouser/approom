@@ -83,7 +83,7 @@ describe("server", function test() {
 
 	after(async () => {
 		// disconnect server
-		arserver.shutDown();
+		await arserver.shutDown();
 	});
 
 
@@ -119,7 +119,7 @@ describe("user", function test() {
 
 	after(async () => {
 		// disconnect server
-		arserver.shutDown();
+		await arserver.shutDown();
 	});
 
 
@@ -160,7 +160,7 @@ describe("fetch", function test() {
 
 	after(async () => {
 		// disconnect server
-		arserver.shutDown();
+		await arserver.shutDown();
 	});
 
 
@@ -174,7 +174,7 @@ describe("fetch", function test() {
 		jrdebug.cdebug("Fetching from url: " + url);
 		responseData = await jrhAxios.getCatchError(url);
 		data = responseData.data;
-		assert((data && data.success === "About"), "Failed to fetch About info from http server.");
+		assert((data && data.success === "about"), "Failed to fetch About info from http server.");
 	});
 
 
@@ -187,7 +187,7 @@ describe("fetch", function test() {
 		jrdebug.cdebug("Fetching from url: " + url);
 		responseData = await jrhAxios.getCatchError(url);
 		data = responseData.data;
-		assert((data && data.success === "About"), "Failed to fetch About info from https server.");
+		assert((data && data.success === "about"), "Failed to fetch About info from https server.");
 	});
 
 });

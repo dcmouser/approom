@@ -126,7 +126,7 @@ async function routerPostReqrefresh(req, res, next) {
 	var secureToken = await makeSecureTokenRefresh(userPassport, user);
 
 	// log request
-	arserver.logr(req, "api.token", "made refresh token for " + user.getLogIdString());
+	arserver.logr(req, "api.token", "generated refresh token", user);
 
 	// provide it
 	jrhExpress.sendResJsonData(res, 200, "token generated", secureToken);
@@ -161,7 +161,7 @@ async function routerAllRefreshaccess(req, res, next) {
 	var secureToken = await makeSecureTokenAccessFromRefreshToken(userPassport, user, userPassport.token);
 
 	// log request
-	arserver.logr(req, "api.token", "refreshed access token for " + user.getLogIdString());
+	arserver.logr(req, "api.token", "refreshed access token", user);
 
 	// provide it
 	jrhExpress.sendResJsonData(res, 200, "token generated", secureToken);

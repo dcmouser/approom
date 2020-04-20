@@ -54,7 +54,7 @@ function setupRouter(urlPath) {
 
 	// setup routes
 	router.all("/list", routerList);
-	router.all("/download", routerDownload);
+	router.all("/get", routerGet);
 	router.all("/add", routerAdd);
 
 	// return router
@@ -142,7 +142,8 @@ async function routerList(req, res, next) {
 
 
 
-async function routerDownload(req, res, next) {
+async function routerGet(req, res, next) {
+	jrhExpress.sendResJsonError(res, 400, "not implemented yet");
 }
 
 

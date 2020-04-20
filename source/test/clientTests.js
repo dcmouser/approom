@@ -88,7 +88,7 @@ describe("client", function test() {
 
 	after(async () => {
 		// disconnect server
-		arserver.shutDown();
+		await arserver.shutDown();
 		// debug
 		if (jrdebug.getDebugEnabled()) {
 			client.debugToConsole();

@@ -7,6 +7,8 @@ It could be used for providing a syncronization feature for applications, where 
 
 It could also be used for multi-player games, where each game exists as a room, and room occupants broadcast and received information from the room.
 
+In the past I have used the DropBox Sync API for providing a multi-device synchronization option for my Android apps, but dropbox as discontinued their sync API, and it never had the right granularity of access to support multiple users synchronizing from different accounts.
+
 Early development, ignore this project for now.
 
 ## Links

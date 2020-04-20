@@ -214,8 +214,8 @@ async function routerPostShutdown(req, res, next) {
 	}
 
 	// tell server to shut down after some short delay to allow it to send response and flush session data, etc.
-	setTimeout(() => {
-		arserver.shutDown();
+	setTimeout(async () => {
+		await arserver.shutDown();
 	}, 250);
 }
 //---------------------------------------------------------------------------

@@ -1856,7 +1856,7 @@ class AppRoomServer {
 	}
 
 
-	shutDown() {
+	async shutDown() {
 		// close down the server
 
 		// do we need to shutdown
@@ -1866,6 +1866,9 @@ class AppRoomServer {
 		}
 
 		jrdebug.debug("Server shutting down..");
+
+		// now create a log entry about the server starting up
+		await this.logShutdown();
 
 		// clear flat
 		this.setNeedsShutdown(false);
@@ -1946,6 +1949,13 @@ class AppRoomServer {
 		}
 		await this.logm(appconst.DefLogTypeInfoServer, msg);
 	}
+
+
+	async logShutdown() {
+		// log the shutdown event
+		var msg = util.format("Shutting down server on %s.", jrhMisc.getNiceNowString());
+		await this.logm(appconst.DefLogTypeInfoServer, msg);
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -2001,13 +2011,22 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	async logr(req, type, message, extraData) {
+	async logr(req, type, message, user, extraData) {
 		// create log obj
 		var ip = (req.ip && req.ip.length > 7 && req.ip.substr(0, 7) === "::ffff:") ? req.ip.substr(7) : req.ip;
+		var userid;
+		if (user) {
+			userid = user.id;
+		} else {
+			userid = ((req.user ? req.user.id : undefined));
+		}
+
+		// make mergeData -- these are fields that have actual dedicated explicit log database table properies
 		const mergeData = {
-			userid: (req.user ? req.user.id : undefined),
+			userid,
 			ip,
 		};
+
 		// hand off to more generic function
 		await this.logm(type, message, extraData, mergeData, req);
 	}
