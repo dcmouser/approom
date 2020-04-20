@@ -132,6 +132,7 @@ function isValidMongooseObjectId(str) {
 
 
 
+//---------------------------------------------------------------------------
 /**
  * We are passed an array of objects, with _id being a field of each object.
  * We return an array of just the ids of each object

@@ -276,10 +276,10 @@ function genRandomStringHumanEasier(length) {
 
 
 /**
- * Generate a random string of characters from a character set
+ * Generate a random string of characters from a character set, of the length specified
  *
- * @param {*} charset
- * @param {*} length
+ * @param {string} charset
+ * @param {int} length
  * @returns the random string
  */
 function genRandomStringFromCharSet(charset, length) {

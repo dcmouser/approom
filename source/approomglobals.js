@@ -60,7 +60,7 @@ function setupDefaultModulePaths() {
 
 	// plugin test
 	// const jrequire = require("./helpers/jrequire");
-	// jrequire.registerPluginPath("plugin.generic", "testPlugin", require.resolve("./plugins/testplugin"));
+	// jrequire.registerPlugin("plugin.generic", "testPlugin", require.resolve("./plugins/testplugin"));
 }
 //---------------------------------------------------------------------------
 

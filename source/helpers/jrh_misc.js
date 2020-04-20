@@ -574,24 +574,17 @@ function objToString(obj, flagCompact) {
 function asyncNextTick(func) {
 	process.nextTick(func);
 }
-
-function asyncNextTickTest() {
-	// note this is NOT an async function, but can call one (asynchronously at next tick)
-	asyncNextTick(async () => {
-		await asyncTest("hello");
-	});
-}
-
-function asyncTest(dummyval) {
-	// this func returns a promise to await for
-	return dummyval;
-}
 //---------------------------------------------------------------------------
 
 
 
 
-//---------------------------------------------------------------------------
+/**
+ * For Error object instances, convert to nice simple object
+ *
+ * @param {Error} err
+ * @returns a standard object with name, message, stack features
+ */
 function ErrorToHashableMapObject(err) {
 	// mongo (and other cases) may have trouble getting properties of err objects (err instanceof Error), so we convert it to nice object
 	const obj = {
@@ -604,14 +597,31 @@ function ErrorToHashableMapObject(err) {
 //---------------------------------------------------------------------------
 
 
-//---------------------------------------------------------------------------
+/**
+ * Simple wrapper that returns true if pop is a property of obj
+ *
+ * @param {object} obj
+ * @param {string} prop
+ * @returns returns true if pop is a property of obj
+ */
 function objectHasProperty(obj, prop) {
+	if (!obj) {
+		return false;
+	}
 	return (prop in obj);
 }
 //---------------------------------------------------------------------------
 
 
-//---------------------------------------------------------------------------
+/**
+ * Returns the value of a property of an object, or pushes a JrResult error and returns null if not found
+ *
+ * @param {*} obj
+ * @param {string} key
+ * @param {*} jrResult
+ * @param {*} hintMessage
+ * @returns value of property or null if not found (and pushes JrResult error)
+ */
 function getNonNullValueFromObject(obj, key, jrResult, hintMessage) {
 	if (!obj || !obj[key]) {
 		jrResult.pushFieldError(key, "Missing value for " + hintMessage + " (" + key + ")");
@@ -622,23 +632,7 @@ function getNonNullValueFromObject(obj, key, jrResult, hintMessage) {
 //---------------------------------------------------------------------------
 
 
-//---------------------------------------------------------------------------
-function stringifyJson(obj) {
-	var str;
-	if (obj === undefined || obj === null) {
-		str = obj;
-	}
-	try {
-		str = JSON.stringify(obj);
-	} catch (e) {
-		var eobj = {
-			jsonError: e.toString(),
-		};
-		str = JSON.stringify(eobj);
-	}
-	return str;
-}
-//---------------------------------------------------------------------------
+
 
 
 
@@ -694,6 +688,4 @@ module.exports = {
 	objectHasProperty,
 
 	getNonNullValueFromObject,
-
-	stringifyJson,
 };

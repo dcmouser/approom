@@ -502,9 +502,8 @@ class AppRoomClient {
 		// url to hit
 		var url = this.getOptionServerUrlBase() + urlEndpoint;
 
-		// data to post
+		// data to post (we will add token later)
 		var postData = {
-			token: this.getAccessToken(),
 			query,
 		};
 
@@ -525,6 +524,9 @@ class AppRoomClient {
 				}
 				// drop down and send request
 			}
+
+			// set token (which may be newly gotten from our connect attempt above
+			postData.token = this.getAccessToken();
 
 			// post and get response
 			responseData = await jrhAxios.postCatchError(url, postData);

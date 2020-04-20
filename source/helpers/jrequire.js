@@ -91,11 +91,18 @@ function registerRequire(name, requireResult) {
 
 
 
-//---------------------------------------------------------------------------
-function registerPluginPath(pluginCategory, pluginName, pluginPath) {
+/**
+ * Register a new plugin
+ * This function could be called directly from code, but is normally called by the discoverPlugins() function that uses config file to add new plugins
+ *
+ * @param {string} pluginCategory - category like a tag, a simple string that might be checked when running plugins
+ * @param {string} pluginName - name of plugin for debuggin purposes
+ * @param {string} pluginPath - file path to plugin
+ */
+function registerPlugin(pluginCategory, pluginName, pluginPath) {
 	// register a new plugin
 
-	// console.log("in registerPluginPath with name = " + pluginName + " from category '" + pluginCategory + "' at path " + pluginPath);
+	// console.log("in registerPlugin with name = " + pluginName + " from category '" + pluginCategory + "' at path " + pluginPath);
 
 	// add it to our registerPath normal registry
 	const pluginNameRegistered = calcPluginRegisteredName(pluginName);
@@ -112,17 +119,31 @@ function registerPluginPath(pluginCategory, pluginName, pluginPath) {
 	};
 }
 
-
+/**
+ * Returns all plugins of the specified category
+ *
+ * @param {string} pluginCategory
+ * @returns an array of plugins in the specified category
+ */
 function getPluginsForCategory(pluginCategory) {
 	return plugins[pluginCategory];
 }
 
-
+/**
+ * Get list of all plugins
+ *
+ * @returns an array of all plugin objects
+ */
 function getAllPlugins() {
 	return plugins;
 }
 
-
+/**
+ * Just makes a safe name for the plugin require entry, by adding a "_plugin/" prefix to the plugin name
+ *
+ * @param {string} name
+ * @returns the regsitered require name of the plugin by adding a prefix to it
+ */
 function calcPluginRegisteredName(name) {
 	return "_plugin/" + name;
 }
@@ -225,7 +246,7 @@ function setDeferredLoading(val) {
 // in this way we can export just the one main function (jrequire), but the other functions can be invoked by doing jrequire.registerPath etc...
 jrequire.registerPath = registerPath;
 jrequire.registerRequire = registerRequire;
-jrequire.registerPluginPath = registerPluginPath;
+jrequire.registerPlugin = registerPlugin;
 jrequire.calcDebugInfo = calcDebugInfo;
 jrequire.setDeferredLoading = setDeferredLoading;
 jrequire.getPluginsForCategory = getPluginsForCategory;

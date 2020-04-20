@@ -136,6 +136,8 @@ function validateIntegerRange(jrResult, keyname, val, min, max, flagRequired) {
 //---------------------------------------------------------------------------
 
 
+
+//---------------------------------------------------------------------------
 /**
  * Validates an object to yield proper json, or a json string, which is converted to a json object
  *
@@ -192,31 +194,6 @@ function validateJsonObjOrStringToObj(jrResult, keyname, val, flagRequired) {
 	// anything else is good for now
 	return val;
 }
-
-
-/*
-function validateJson(jrResult, keyname, val, flagRequired) {
-	if (!val) {
-		if (!flagRequired) {
-			return val;
-		}
-		jrResult.pushFieldError(keyname, keyname + " cannot be left blank");
-		return undefined;
-	}
-
-	// convert string to json
-	if (typeof val === "string") {
-		try {
-			val = JSON.parse(val);
-		} catch (e) {
-			jrResult.pushFieldError(keyname, keyname + " is not a valid json object");
-		}
-	}
-
-	// anything else is good for now
-	return val;
-}
-*/
 //---------------------------------------------------------------------------
 
 
@@ -231,5 +208,4 @@ module.exports = {
 	validateInteger,
 	validateIntegerRange,
 	validateJsonObjOrStringToObj,
-	// validateJson,
 };

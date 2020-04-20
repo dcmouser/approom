@@ -76,7 +76,6 @@ arserver.setup();
 describe("client", function test() {
 	// we need to change timeout for this test
 	this.timeout(10000);
-
 	var client;
 
 	// connect to db at start, and tear down at end
@@ -99,11 +98,13 @@ describe("client", function test() {
 	});
 
 
-	// Test intial api token process
+
+	// Test intial api token get (note that if we don't do this here, the api will auto request it on our first invoke below
 	it("Client connect and get api keys", async () => {
 		// connect
 		await assertClientConnect(client, true);
 	});
+
 
 	// find an application id
 	var app;
@@ -160,7 +161,7 @@ describe("client", function test() {
 		jrdebug.cdebugObj(reply);
 	});
 
-	// get roomdata in the room
+	// get roomdata in the room via shortcode
 	it("Invoke roomdata lookup via shortcode directly", async () => {
 		assert(room, "Missing room from previous lookup");
 		var query = {
@@ -187,8 +188,6 @@ describe("client", function test() {
 		jrdebug.cdebug("Reply from roomdata add:");
 		jrdebug.cdebugObj(reply);
 	});
-
-
 
 
 });

@@ -295,7 +295,7 @@ function calcExpressRoutePathDataSplit(thing) {
 
 
 
-
+//---------------------------------------------------------------------------
 /**
  * Express helper function to look for property in request BODY or QUERY and return it, or defaultVal if not present
  *
@@ -464,7 +464,14 @@ function reqOriginalUrl(req) {
 
 
 
-//---------------------------------------------------------------------------
+/**
+ * Send a json reply to the express Response object
+ *
+ * @param {*} res - the express response object
+ * @param {int} status - status code to send
+ * @param {string} str - success string (send as value of success key)
+ * @param {*} obj - other data to send in reply
+ */
 function sendResJsonData(res, status, str, obj) {
 	var data;
 	if (str === null || str === undefined || str === "") {
@@ -481,6 +488,13 @@ function sendResJsonData(res, status, str, obj) {
 	res.status(status).send(data);
 }
 
+/**
+ * Send a json reply to the response, which is an error
+ *
+ * @param {*} res - the express response object
+ * @param {int} status - the http status code (error)
+ * @param {*} errorStr - the value for the error key
+ */
 function sendResJsonError(res, status, errorStr) {
 	const data = {
 		error: errorStr,
@@ -489,16 +503,29 @@ function sendResJsonError(res, status, errorStr) {
 }
 
 
+/**
+ * Send a JrResult as a reply, either as an error or success, depending on jrResult data
+ *
+ * @param {*} res - the express repsonse object
+ * @param {int} status - the http status code
+ * @param {*} jrResult - the jrResult object to send
+ */
 function sendResJsonJrResult(res, status, jrResult) {
 	// is it error?
 	if (jrResult.isError()) {
-		return sendResJsonError(res, status, jrResult.getErrorsAsString());
+		sendResJsonError(res, status, jrResult.getErrorsAsString());
 	}
 	// it's a success
-	return sendResJsonData(res, status, jrResult.getSuccessAsString(), undefined);
+	sendResJsonData(res, status, jrResult.getSuccessAsString(), undefined);
 }
 
 
+/**
+ * Send a json result that indicates an api token error, with status 403
+ *
+ * @param {*} res
+ * @param {*} jrResult - the details of the error
+ */
 function sendResJsonJrResultTokenError(res, jrResult) {
 	const status = 403;
 	const data = {
@@ -509,14 +536,22 @@ function sendResJsonJrResultTokenError(res, jrResult) {
 }
 
 
+/**
+ * Send a json result that indicates an ACL error, with status 403
+ *
+ * @param {*} res
+ * @param {string} permission - permission that the user is denied
+ * @param {string} permissionObjType - type of permission to complain about
+ * @param {string} permissionObjId - actual object id to complain about
+ */
 function sendResJsonAclErorr(res, permission, permissionObjType, permissionObjId) {
 	const status = 403;
 	var errorMessage = "you do not have permission to " + permission;
 	if (permissionObjType) {
-		errorMessage += " " + permissionObjType;
+		errorMessage += " on " + permissionObjType;
 	}
 	if (permissionObjId) {
-		errorMessage += " " + permissionObjId;
+		errorMessage += " #" + permissionObjId;
 	}
 	const data = {
 		error: errorMessage,

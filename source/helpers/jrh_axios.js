@@ -4,7 +4,7 @@
  * @copyright 4/15/20
 
  * @description
- * Collection of helper functions for use with the nodejs axios module
+ * Collection of helper functions for use with the nodejs axios module which does web posts/gets
 */
 
 "use strict";
@@ -21,7 +21,11 @@ const jrhMisc = require("./jrh_misc");
 
 
 
-//---------------------------------------------------------------------------
+/**
+ * Internal function we use when performing axios requests.  Currently we use this to bypass https errors on bad certificates
+ *
+ * @returns an object which options for Axios get/post
+ */
 function calcAxiosOptions() {
 	// ignore cert expired
 	// see https://github.com/axios/axios/issues/535
@@ -43,8 +47,8 @@ function calcAxiosOptions() {
  * Post to the url and get the response.
  * Importantly, while axios throws errors when it gets a 403, 401, etc., we do not -- instead we catch the error and embed it in the {data.error} field of the response
  *
- * @param {*} url - url to post to
- * @param {*} postData - data to post
+ * @param {string} url - url to post to
+ * @param {object} postData - data to post
  * @returns the response object
  */
 async function postCatchError(url, postData) {
@@ -64,9 +68,9 @@ async function postCatchError(url, postData) {
 
 //---------------------------------------------------------------------------
 /**
- * Just wrap the axios get to catch errors and embed in response data
+ * Perform a get and just wrap the axios get to catch errors and embed error in response data
  *
- * @param {*} url
+ * @param {string} url
  * @returns response
  */
 async function getCatchError(url) {

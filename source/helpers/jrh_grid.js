@@ -691,7 +691,14 @@ function calcHeaderKeysNicely(gridSchema) {
 
 
 
-//---------------------------------------------------------------------------
+/**
+ *  Add some hidden optinon to the grid form
+ *
+ * @param {*} req
+ * @param {*} listHelperData
+ * @param {*} queryUrlData
+ * @returns html to add to the input form
+ */
 function jrGridListShowHiddenOptions(req, listHelperData, queryUrlData) {
 	// show a drop down with hidden options
 	// what we show may depend on user acl permissions

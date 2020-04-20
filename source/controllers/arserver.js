@@ -332,7 +332,7 @@ class AppRoomServer {
 		Object.keys(pluginConfig).forEach((name) => {
 			pluginObj = pluginConfig[name];
 			if (pluginObj.enabled !== false) {
-				jrequire.registerPluginPath(pluginObj.category, name, pluginObj.path);
+				jrequire.registerPlugin(pluginObj.category, name, pluginObj.path);
 			}
 		});
 	}
