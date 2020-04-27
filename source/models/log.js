@@ -68,59 +68,53 @@ class LogModel extends ModelBaseMongooseMinimal {
 
 
 	//---------------------------------------------------------------------------
-	static getSchemaDefinition() {
-		return {
-			...(this.getBaseSchemaDefinition()),
-			creationDate: {
-				type: Date,
-			},
-			type: {
-				type: String,
-			},
-			message: {
-				type: String,
-			},
-			userid: {
-				type: mongoose.Schema.ObjectId,
-			},
-			ip: {
-				type: String,
-			},
-			extraData: {
-				type: mongoose.Mixed,
-			},
-		};
-	}
-
-	static getSchemaDefinitionExtra() {
+	static calcSchemaDefinition() {
 		const UserModel = jrequire("models/user");
 		return {
-			...(this.getBaseSchemaDefinitionExtra()),
+			...(this.getBaseSchemaDefinition()),
+			//
 			creationDate: {
 				label: "Date created",
 				readOnly: ["edit"],
 				format: "date",
+				mongoose: {
+					type: Date,
+				},
 			},
 			type: {
 				label: "Type",
+				mongoose: {
+					type: String,
+				},
 			},
 			message: {
 				label: "Message",
+				mongoose: {
+					type: String,
+				},
 			},
 			userid: {
 				label: "User",
 				readOnly: ["edit"],
 				valueFunction: this.makeModelValueFunctionObjectId(UserModel),
+				mongoose: {
+					type: mongoose.Schema.ObjectId,
+				},
 			},
 			ip: {
 				label: "IP",
 				readOnly: ["edit"],
+				mongoose: {
+					type: String,
+				},
 			},
 			extraData: {
 				label: "Extra data",
 				valueFunction: this.makeModelValueFunctionExtraData(),
 				filterSize: 0,
-				// readOnly: ["edit"],
+				mongoose: {
+					type: mongoose.Mixed,
+				},
 			},
 		};
 	}

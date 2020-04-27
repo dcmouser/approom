@@ -66,38 +66,34 @@ class FileModel extends RoomdataModel {
 
 
 	//---------------------------------------------------------------------------
-	static getSchemaDefinition() {
+	static calcSchemaDefinition() {
 		return {
 			...(this.getBaseSchemaDefinition()),
+			//
 			roomid: {
-				type: mongoose.Schema.ObjectId,
-				required: true,
+				mongoose: {
+					type: mongoose.Schema.ObjectId,
+					required: true,
+				},
 			},
-			path: {
-				type: String,
-				required: true,
-			},
-			label: {
-				type: String,
-			},
-			sizeInBytes: {
-				type: Number,
-			},
-		};
-	}
-
-	static getSchemaDefinitionExtra() {
-		return {
-			// ...(this.getBaseSchemaDefinitionExtra()),
-			...super.getSchemaDefinitionExtra(),
 			path: {
 				label: "Path",
+				mongoose: {
+					type: String,
+					required: true,
+				},
 			},
 			label: {
 				label: "Label",
+				mongoose: {
+					type: String,
+				},
 			},
 			sizeInBytes: {
 				label: "Size in bytes",
+				mongoose: {
+					type: Number,
+				},
 			},
 		};
 	}

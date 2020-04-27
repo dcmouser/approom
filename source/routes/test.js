@@ -25,7 +25,8 @@ const jrdebug = require("../helpers/jrdebug");
 const adminAid = jrequire("adminaid");
 const arserver = jrequire("arserver");
 
-
+// constants
+const appconst = jrequire("appconst");
 
 
 
@@ -67,7 +68,7 @@ function setupRouter(urlPath) {
 
 
 async function routerGetIndex(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
 		// all done
 		return;
 	}
@@ -82,12 +83,12 @@ async function routerGetIndex(req, res, next) {
 
 //---------------------------------------------------------------------------
 async function routerGetMakeappsrooms(req, res, next) {
-	await arserver.confirmUrlPost(req, res, "admin", "Generate some test Apps and Rooms", "This operation will bulk create a bunch of apps and rooms.  Note it will fail if run twice, due to clashing shortcodes.");
+	await arserver.confirmUrlPost(req, res, appconst.DefAclActionAdminister, "Generate some test Apps and Rooms", "This operation will bulk create a bunch of apps and rooms.  Note it will fail if run twice, due to clashing shortcodes.");
 }
 
 
 async function routerPostMakeappsrooms(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
 		// all done
 		return;
 	}
@@ -121,12 +122,12 @@ async function routerPostMakeappsrooms(req, res, next) {
 
 //---------------------------------------------------------------------------
 async function routerGetTestEmergencyAlerts(req, res, next) {
-	await arserver.confirmUrlPost(req, res, "admin", "Test emergency alert functionality", "This function will send out some emergency alerts and test that rate limiting works for them.");
+	await arserver.confirmUrlPost(req, res, appconst.DefAclActionAdminister, "Test emergency alert functionality", "This function will send out some emergency alerts and test that rate limiting works for them.");
 }
 
 
 async function routerPostTestEmergencyAlerts(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
 		// all done
 		return;
 	}
@@ -163,12 +164,12 @@ async function routerPostTestEmergencyAlerts(req, res, next) {
 
 //---------------------------------------------------------------------------
 async function routerGetTriggerCrash(req, res, next) {
-	await arserver.confirmUrlPost(req, res, "admin", "Test fatal uncaught nodejs crash/exception", "This function will deliberately throw an uncaught nodejs exception to test how the system deals with it; it will likely exit nodejs, but hopefully log+email an error message and trace.");
+	await arserver.confirmUrlPost(req, res, appconst.DefAclActionAdminister, "Test fatal uncaught nodejs crash/exception", "This function will deliberately throw an uncaught nodejs exception to test how the system deals with it; it will likely exit nodejs, but hopefully log+email an error message and trace.");
 }
 
 async function routerPostTriggerCrash(req, res, next) {
 	// trigger a crash to check handling
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
 		// all done
 		return;
 	}
@@ -186,12 +187,12 @@ async function routerPostTriggerCrash(req, res, next) {
 
 //---------------------------------------------------------------------------
 async function routerGetShutdown(req, res, next) {
-	await arserver.confirmUrlPost(req, res, "admin", "Shutdown application server", "This will shut down the application server and do a clean exit.");
+	await arserver.confirmUrlPost(req, res, appconst.DefAclActionAdminister, "Shutdown application server", "This will shut down the application server and do a clean exit.");
 }
 
 async function routerPostShutdown(req, res, next) {
 	// trigger a crash to check handling
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
 		// all done
 		return;
 	}

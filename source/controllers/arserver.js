@@ -110,6 +110,8 @@ class AppRoomServer {
 		//
 		this.needsShutdown = false;
 		//
+		this.models = {};
+		//
 		this.procesData = {};
 	}
 	//---------------------------------------------------------------------------
@@ -117,33 +119,6 @@ class AppRoomServer {
 
 
 
-	//---------------------------------------------------------------------------
-	// used for database construction/init
-
-	getModelClassList() {
-		// get array of all required model modules
-		const modelClassList = [
-			// core models
-			jrequire("models/connection"),
-			jrequire("models/option"),
-			jrequire("models/user"),
-			jrequire("models/verification"),
-			jrequire("models/log"),
-			jrequire("models/login"),
-			jrequire("models/session"),
-			jrequire("models/subscription"),
-			jrequire("models/modqueue"),
-
-			// specific models
-			jrequire("models/file"),
-			jrequire("models/room"),
-			jrequire("models/app"),
-			jrequire("models/roomdata"),
-		];
-
-		return modelClassList;
-	}
-	//---------------------------------------------------------------------------
 
 
 
@@ -169,6 +144,10 @@ class AppRoomServer {
 
 	setNeedsShutdown(val) {
 		this.needsShutdown = val;
+	}
+
+	getModels() {
+		return this.models;
 	}
 	//---------------------------------------------------------------------------
 
@@ -229,6 +208,11 @@ class AppRoomServer {
 
 
 
+	//---------------------------------------------------------------------------
+	getModelClassAclName(modelClassName) {
+		return this.models[modelClassName].getAclName();
+	}
+	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
@@ -355,6 +339,12 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 
 
+	//---------------------------------------------------------------------------
+	registerModel(modelRequireClassName, modelClass) {
+		this[modelRequireClassName] = modelClass;
+		this.models[modelRequireClassName] = modelClass;
+	}
+	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
@@ -366,19 +356,21 @@ class AppRoomServer {
 		this.sendAid = jrequire("sendaid");
 
 		// model requires
-		this.AppModel = jrequire("models/app");
-		this.ConnectionModel = jrequire("models/connection");
-		this.FileModel = jrequire("models/file");
-		this.LogModel = jrequire("models/log");
-		this.LoginModel = jrequire("models/login");
-		this.OptionModel = jrequire("models/option");
-		this.RoomModel = jrequire("models/room");
-		this.RoomdataModel = jrequire("models/roomdata");
-		this.SessionModel = jrequire("models/session");
-		this.UserModel = jrequire("models/user");
-		this.VerificationModel = jrequire("models/verification");
-		this.SubscriptionModel = jrequire("models/subscription");
-		this.ModQueueModel = jrequire("models/modqueue");
+		this.registerModel("AppModel", jrequire("models/app"));
+		this.registerModel("ConnectionModel", jrequire("models/connection"));
+		this.registerModel("FileModel", jrequire("models/file"));
+		this.registerModel("LogModel", jrequire("models/log"));
+		this.registerModel("LoginModel", jrequire("models/login"));
+		this.registerModel("OptionModel", jrequire("models/option"));
+		this.registerModel("RoomModel", jrequire("models/room"));
+		this.registerModel("RoomdataModel", jrequire("models/roomdata"));
+		this.registerModel("SessionModel", jrequire("models/session"));
+		this.registerModel("UserModel", jrequire("models/user"));
+		this.registerModel("VerificationModel", jrequire("models/verification"));
+		this.registerModel("SubscriptionModel", jrequire("models/subscription"));
+		this.registerModel("ModQueueModel", jrequire("models/modqueue"));
+
+		this.registerModel("ModQueueModel", jrequire("models/modqueue"));
 	}
 	//---------------------------------------------------------------------------
 
@@ -1822,10 +1814,9 @@ class AppRoomServer {
 			jrdebug.cdebug("Connecting to mongoose-mongodb: " + mongoUrl);
 			await mongoose.connect(mongoUrl, mongooseOptions);
 
-			// now setup each of the model schemas
-			const modelClassList = this.getModelClassList();
-			await jrhMisc.asyncAwaitForEachFunctionCall(modelClassList, async (modelClass) => {
-				await this.setupModelSchema(mongoose, modelClass);
+			// set up schemas for all models
+			await jrhMisc.asyncAwaitForEachObjectKeyFunctionCall(this.models, async (key, val) => {
+				await this.setupModelSchema(mongoose, val);
 			});
 
 			// set some options for mongoose/mongodb
@@ -2244,7 +2235,7 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	async aclRequireLoggedInSitePermission(permission, req, res, goalRelUrl) {
-		return await this.aclRequireLoggedInPermission(permission, "site", null, req, res, goalRelUrl);
+		return await this.aclRequireLoggedInPermission(permission, appconst.DefAclObjectTypeSite, null, req, res, goalRelUrl);
 	}
 
 	async aclRequireLoggedInPermission(permission, permissionObjType, permissionObjId, req, res, goalRelUrl) {

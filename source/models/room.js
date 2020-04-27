@@ -74,74 +74,56 @@ class RoomModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static getSchemaDefinition() {
-		return {
-			...(this.getBaseSchemaDefinition()),
-			appid: {
-				type: mongoose.Schema.ObjectId,
-				required: true,
-			},
-			shortcode: {
-				type: String,
-				unique: true,
-				required: true,
-			},
-			label: {
-				type: String,
-			},
-			description: {
-				type: String,
-			},
-			passwordHashed: {
-				type: String,
-			},
-		};
-	}
-
-	static getSchemaDefinitionExtra() {
+	static calcSchemaDefinition() {
 		const AppModel = jrequire("models/app");
 		return {
-			...(this.getBaseSchemaDefinitionExtra()),
+			...(this.getBaseSchemaDefinition()),
+			//
 			appid: {
 				label: "App Id",
-				valueFunction: (viewType, fieldName, req, obj, helperData) => {
-					var viewUrl, appLabel, rethtml, appid;
-					if (viewType === "view" && obj !== undefined) {
-						viewUrl = AppModel.getCrudUrlBase("view", obj.appid);
-						appLabel = helperData.appLabel;
-						rethtml = `${appLabel} (<a href="${viewUrl}">#${obj.appid}</a>)`;
-						return rethtml;
-					}
-					if (viewType === "edit") {
-						appid = obj ? obj.appid : null;
-						rethtml = jrhText.jrHtmlFormOptionListSelect("appid", helperData.applist, appid, true);
-						return rethtml;
-					}
-					if (viewType === "list" && obj !== undefined) {
-						viewUrl = AppModel.getCrudUrlBase("view", obj.appid);
-						rethtml = `<a href="${viewUrl}">${obj.appid}</a>`;
-						return rethtml;
-					}
-					return undefined;
-				},
+				valueFunction: this.makeModelValueFunctionCrudObjectIdFromList(AppModel, "appid", "appLabel", "applist"),
 				// alternative generic way to have crud pages link to this val
 				// crudLink: AppModel.getCrudUrlBase(),
+				mongoose: {
+					type: mongoose.Schema.ObjectId,
+					required: true,
+				},
 			},
 			shortcode: {
 				label: "Shortcode",
+				mongoose: {
+					type: String,
+					unique: true,
+					required: true,
+				},
 			},
 			label: {
 				label: "Label",
+				mongoose: {
+					type: String,
+				},
 			},
 			description: {
 				label: "Description",
 				format: "textarea",
+				mongoose: {
+					type: String,
+				},
 			},
 			passwordHashed: {
 				label: "Password",
 				format: "password",
 				valueFunction: this.makeModelValueFunctionPasswordAdminEyesOnly(false),
 				filterSize: 0,
+				mongoose: {
+					type: String,
+				},
+			},
+			roles: {
+				label: "Roles",
+				readOnly: ["edit"],
+				filterSize: 0,
+				valueFunction: this.makeModelValueFunctionRoleOnObjectList(RoomModel),
 			},
 		};
 	}
@@ -161,7 +143,7 @@ class RoomModel extends ModelBaseMongoose {
 		// NOTE: this list can be generated dynamically based on logged in user
 		var reta = [];
 		if (operationType === "crudAdd" || operationType === "crudEdit" || operationType === "add") {
-			reta = ["extraData", "appid", "shortcode", "label", "description", "password", "passwordHashed", "disabled", "notes"];
+			reta = ["appid", "shortcode", "label", "description", "password", "passwordHashed", "disabled", "notes", "extraData"];
 		}
 		return reta;
 	}

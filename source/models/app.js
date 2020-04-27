@@ -73,49 +73,50 @@ class AppModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static getSchemaDefinition() {
+	static calcSchemaDefinition() {
 		return {
 			...(this.getBaseSchemaDefinition()),
-			shortcode: {
-				type: String,
-				unique: true,
-				required: true,
-			},
-			label: {
-				type: String,
-			},
-			description: {
-				type: String,
-			},
-			isPublic: {
-				type: Boolean,
-			},
-			supportsFiles: {
-				type: Boolean,
-			},
-		};
-	}
-
-	static getSchemaDefinitionExtra() {
-		return {
-			...(this.getBaseSchemaDefinitionExtra()),
+			//
 			shortcode: {
 				label: "Shortcode",
+				mongoose: {
+					type: String,
+					unique: true,
+					required: true,
+				},
 			},
 			label: {
 				label: "Label",
+				mongoose: {
+					type: String,
+				},
 			},
 			description: {
 				label: "Description",
 				format: "textarea",
+				mongoose: {
+					type: String,
+				},
 			},
 			isPublic: {
 				label: "Is public?",
 				format: "checkbox",
+				mongoose: {
+					type: Boolean,
+				},
 			},
 			supportsFiles: {
 				label: "Supports user files?",
 				format: "checkbox",
+				mongoose: {
+					type: Boolean,
+				},
+			},
+			roles: {
+				label: "Roles",
+				readOnly: ["edit"],
+				filterSize: 0,
+				valueFunction: this.makeModelValueFunctionRoleOnObjectList(AppModel),
 			},
 		};
 	}
@@ -138,7 +139,7 @@ class AppModel extends ModelBaseMongoose {
 		// NOTE: this list can be generated dynamically based on logged in user
 		var reta = [];
 		if (operationType === "crudAdd" || operationType === "crudEdit" || operationType === "add") {
-			reta = ["shortcode", "label", "description", "notes", "extraData", "isPublic", "supportsFiles", "disabled"];
+			reta = ["shortcode", "label", "description", "notes", "isPublic", "supportsFiles", "disabled", "extraData"];
 		}
 		return reta;
 	}

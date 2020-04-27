@@ -174,8 +174,8 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 		`;
 
 	// data content
-	var schemaExtra = listHelperData.schemaExtra;
-	var headerKeys = calcHeaderKeysNicely(schemaExtra);
+	var gridSchema = listHelperData.gridSchema;
+	var headerKeys = calcHeaderKeysNicely(gridSchema);
 	const gridItems = listHelperData.gridItems;
 
 	//
@@ -187,10 +187,10 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 	var extraInfo = {};
 	headerKeys.forEach((key) => {
 		extraInfo[key] = {
-			valformat: listHelperData.modelClass.getSchemaExtraFieldVal(key, "format"),
-			valfunc: listHelperData.modelClass.getSchemaExtraFieldVal(key, "valueFunction"),
-			crudlink: listHelperData.modelClass.getSchemaExtraFieldVal(key, "crudlink"),
-			valchoices: listHelperData.modelClass.getSchemaExtraFieldVal(key, "choices"),
+			valformat: listHelperData.modelClass.getSchemaFieldVal(key, "format"),
+			valfunc: listHelperData.modelClass.getSchemaFieldVal(key, "valueFunction"),
+			crudlink: listHelperData.modelClass.getSchemaFieldVal(key, "crudlink"),
+			valchoices: listHelperData.modelClass.getSchemaFieldVal(key, "choices"),
 		};
 	});
 
@@ -525,8 +525,8 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 		`;
 
 	// data content
-	var schemaExtra = listHelperData.schemaExtra;
-	var headerKeys = calcHeaderKeysNicely(schemaExtra);
+	var gridSchema = listHelperData.gridSchema;
+	var headerKeys = calcHeaderKeysNicely(gridSchema);
 	var filterOptions = listHelperData.filterOptions;
 	var protectedFields = filterOptions.protectedFields;
 	var hiddenFields = filterOptions.hiddenFields;
@@ -575,7 +575,7 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 			//
 			// use label?
 			if (flagUseLabel) {
-				keyLabel = listHelperData.modelClass.getSchemaExtraFieldVal(key, "label", key);
+				keyLabel = listHelperData.modelClass.getSchemaFieldVal(key, "label", key);
 			} else {
 				if (key === "_id") {
 					// fixup for id
@@ -624,7 +624,7 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 				val = jrhMisc.makeSafeForFormInput(val);
 			}
 			var onkeydown = "jrGridGenericOnEnterRefresh(event, '" + queryUrlData.tableId + "', this, true)";
-			var size = listHelperData.modelClass.getSchemaExtraFieldVal(key, "filterSize", defaultFilterInputSize);
+			var size = listHelperData.modelClass.getSchemaFieldVal(key, "filterSize", defaultFilterInputSize);
 			if (!size) {
 				rethtml += `
 						<th scope="col"> &nbsp; </th>

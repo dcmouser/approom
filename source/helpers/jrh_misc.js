@@ -79,6 +79,22 @@ async function asyncAwaitForEachFunctionCall(array, func) {
 		await func(array[index], index, array);
 	}
 }
+
+
+
+/**
+ * Take an iteratble (array) of objects and a function to call on each, and do an await function on each.
+ * @example asyncAwaitForEachFunctionCall({key: val}}, (key, val) => {console.log(val)})
+ * @see <a href="https://gist.github.com/Atinux/fd2bcce63e44a7d3addddc166ce93fb2">foreach async</a>
+ *
+ * @param {array} array
+ * @param {function} func
+ */
+async function asyncAwaitForEachObjectKeyFunctionCall(obj, func) {
+	for (var key in obj) {
+		await func(key, obj[key]);
+	}
+}
 //---------------------------------------------------------------------------
 
 
@@ -650,6 +666,7 @@ module.exports = {
 	isInAnyArray,
 
 	asyncAwaitForEachFunctionCall,
+	asyncAwaitForEachObjectKeyFunctionCall,
 
 	getNonFalseValueOrDefault,
 	getNonNullValueOrDefault,

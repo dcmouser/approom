@@ -69,39 +69,34 @@ class LoginModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static getSchemaDefinition() {
+	static calcSchemaDefinition() {
 		return {
 			...(this.getBaseSchemaDefinition()),
-			provider: {
-				type: String,
-			},
-			providerUserId: {
-				type: String,
-			},
-			userId: {
-				type: mongoose.Schema.ObjectId,
-			},
-			loginDate: {
-				type: Date,
-			},
-		};
-	}
-
-	static getSchemaDefinitionExtra() {
-		return {
-			...(this.getBaseSchemaDefinitionExtra()),
+			//
 			provider: {
 				label: "3rd party provider",
+				mongoose: {
+					type: String,
+				},
 			},
 			providerUserId: {
 				label: "User id on provider network",
+				mongoose: {
+					type: String,
+				},
 			},
 			userId: {
 				label: "Local user id",
 				crudLink: UserModel.getCrudUrlBase(),
+				mongoose: {
+					type: mongoose.Schema.ObjectId,
+				},
 			},
 			loginDate: {
 				label: "Date of last login",
+				mongoose: {
+					type: Date,
+				},
 			},
 		};
 	}

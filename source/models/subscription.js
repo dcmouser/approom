@@ -63,35 +63,30 @@ class SubscriptionModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static getSchemaDefinition() {
+	static calcSchemaDefinition() {
 		return {
 			...(this.getBaseSchemaDefinition()),
-			userId: {
-				type: mongoose.Schema.ObjectId,
-				required: true,
-			},
-			key: {
-				type: String,
-			},
-			val: {
-				type: String,
-			},
-		};
-	}
-
-	static getSchemaDefinitionExtra() {
-		return {
-			...(this.getBaseSchemaDefinitionExtra()),
+			//
 			userId: {
 				label: "User",
 				readOnly: ["edit"],
 				valueFunction: this.makeModelValueFunctionObjectId(UserModel),
+				mongoose: {
+					type: mongoose.Schema.ObjectId,
+					required: true,
+				},
 			},
 			key: {
 				label: "Key",
+				mongoose: {
+					type: String,
+				},
 			},
 			val: {
 				label: "Value",
+				mongoose: {
+					type: String,
+				},
 			},
 		};
 	}

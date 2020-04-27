@@ -514,6 +514,7 @@ function sendResJsonJrResult(res, status, jrResult) {
 	// is it error?
 	if (jrResult.isError()) {
 		sendResJsonError(res, status, jrResult.getErrorsAsString());
+		return;
 	}
 	// it's a success
 	sendResJsonData(res, status, jrResult.getSuccessAsString(), undefined);

@@ -52,19 +52,12 @@ class ModelBaseMongooseMinimal extends ModelBaseMongoose {
 		// used by log and other minimal models?
 		return {
 			_id: {
-				type: mongoose.Schema.ObjectId,
-				auto: true,
-			},
-
-		};
-	}
-
-	static getBaseSchemaDefinitionExtra() {
-		// extra info for schema field to aid display in our code
-		return {
-			_id: {
 				label: "Id",
 				readOnly: ["edit"],
+				mongoose: {
+					type: mongoose.Schema.ObjectId,
+					auto: true,
+				},
 			},
 
 		};

@@ -114,56 +114,37 @@ class UserModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static getSchemaDefinition() {
+	static calcSchemaDefinition() {
 		return {
-			...(this.getBaseSchemaDefinition()),
-			username: {
-				type: String,
-				unique: true,
-				required: true,
-			},
-			realName: {
-				type: String,
-			},
-			email: {
-				type: String,
-			},
-			passwordHashed: {
-				type: String,
-			},
-			loginDate: {
-				type: Date,
-			},
-			apiCode: {
-				type: String,
-			},
-			roles: {
-				type: Array,
-			},
-			// additional fields we may add dynamically for in-memory use, but not saved to db
-			// loginId : { type: ObjectId },
-		};
-	}
-
-
-	static getSchemaDefinitionExtra() {
-		return {
-			// we start with id, its contents will be overwritten by the getBaseSchemaDefinitionExtra call below, but this will enforce order at top
+			// we start with id, its contents will be overwritten by the getBaseSchemaDefinition call below, but this allows ut to put avatar below it but at the top, even though other inherited baseSchema fields come earlier
 			_id: {},
 			avatar: {
 				label: "Avatar",
 				valueFunction: async (viewType, fieldName, req, obj, helperData) => { return arserver.calcAvatarHtmlImgForUser(obj); },
 				filterSize: 0,
 			},
-			...(this.getBaseSchemaDefinitionExtra()),
+			//
+			...(this.getBaseSchemaDefinition()),
+			//
 			username: {
 				label: "Username",
+				mongoose: {
+					type: String,
+					unique: true,
+					required: true,
+				},
 			},
 			realName: {
 				label: "Real name",
+				mongoose: {
+					type: String,
+				},
 			},
 			email: {
 				label: "Email",
+				mongoose: {
+					type: String,
+				},
 			},
 			emailBypassVerify: {
 				label: "Bypass change verification email?",
@@ -181,22 +162,36 @@ class UserModel extends ModelBaseMongoose {
 				format: "password",
 				valueFunction: this.makeModelValueFunctionPasswordAdminEyesOnly(false),
 				filterSize: 0,
+				mongoose: {
+					type: String,
+				},
 			},
 			loginDate: {
 				label: "Date of last login",
 				hide: ["edit"],
+				mongoose: {
+					type: Date,
+				},
 			},
 			apiCode: {
 				label: "Api Code",
+				mongoose: {
+					type: String,
+				},
 			},
 			roles: {
 				label: "Roles",
 				readOnly: ["edit"],
-				valueFunction: async (viewType, fieldName, req, obj, helperData) => { if (obj !== undefined) return this.stringifyRoles(obj.roles); return ""; },
+				valueFunction: async (viewType, fieldName, req, obj, helperData) => { if (obj !== undefined) return this.stringifyUserRoles(obj.roles); return ""; },
+				filterSize: 0,
+				mongoose: {
+					type: Array,
+				},
 			},
+			// additional fields we may add dynamically for in-memory use, but not saved to db
+			// loginId : { type: ObjectId },
 		};
 	}
-
 
 	static safeDisplayPasswordInfoFromPasswordHashed(passwordHashed) {
 		// regex way
@@ -847,7 +842,7 @@ class UserModel extends ModelBaseMongoose {
 		// NOTE: this list can be generated dynamically based on logged in user
 		var reta = [];
 		if (operationType === "crudAdd" || operationType === "crudEdit" || operationType === "add") {
-			reta = ["username", "realName", "email", "password", "passwordHashed", "apiCode", "disabled", "notes"];
+			reta = ["username", "realName", "email", "password", "passwordHashed", "apiCode", "disabled", "notes", "extraData"];
 		}
 		return reta;
 	}
@@ -992,7 +987,7 @@ class UserModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	// ACL stuff
 
-	getRolesOnObject(objectType, objectId, flagAddNoneRole) {
+	getThisUsersRolesOnObject(objectType, objectId, flagAddNoneRole) {
 		// get any roles the user is assigned to this ojbectId
 		// if objectId is null then get roles unrelated to object
 		// this will also return roles that match this objectType but have no objectId (meaning they are global)
@@ -1008,15 +1003,18 @@ class UserModel extends ModelBaseMongoose {
 
 		// simple walk of roles array
 		var matchesRole;
+		var robjectType, robjectId;
 		for (var key in this.roles) {
 			matchesRole = false;
 			// check if this role is relevant
-			if ((this.roles[key].t === objectType && (this.roles[key].i == null || this.roles[key].i === objectId))) {
-				// user has this permission on this object, or has this permission on ALL objects of this type (indicated by this.roles[key].i == null)
+			robjectType = this.roles[key].t;
+			robjectId = this.roles[key].i;
+			if ((robjectType === objectType && (robjectId === appconst.DefAclObjectIdAll || robjectId === objectId))) {
+				// user has this permission on this object, or has this permission on ALL objects of this type (indicated by this.roles[key].i === appconst.DefAclObjectIdAll)
 				matchesRole = true;
 			} else {
 				// do we want roles not specifically related to this object type (for example if they are site admin)
-				if ((this.roles[key].t === "site" || this.roles[key].t === null) && (this.roles[key].i == null)) {
+				if ((robjectType === appconst.DefAclObjectTypeSite || robjectType === null) && (robjectId === appconst.DefAclObjectIdAll || robjectId === null)) {
 					// here we have matched a global site role, or a role without a type, and there is no object id associated with it
 					matchesRole = true;
 				}
@@ -1030,7 +1028,7 @@ class UserModel extends ModelBaseMongoose {
 
 		if (flagAddNoneRole) {
 			// add 'none' role, to help when looking for permissions related when we have no role on this object
-			rolesFound.push("none");
+			rolesFound.push(appconst.DefAclRoleNone);
 		}
 
 		return rolesFound;
@@ -1114,6 +1112,26 @@ class UserModel extends ModelBaseMongoose {
 		this.roles = [];
 		return foundCount;
 	}
+
+
+	makeRoleAclChange(operation, role, object, jrResult) {
+		// make a role change; the permissions have already been checked to make sure this is legal
+		if (operation === "add") {
+			if (!object) {
+				this.addRole(role);
+			} else {
+				this.addRole(role, object.getAclName(), object.getId());
+			}
+		} else if (operation === "delete") {
+			if (!object) {
+				this.removeRole(role);
+			} else {
+				this.removeRole(role, object.getAclName(), object.getId());
+			}
+		} else {
+			jrResult.pushFieldError("operation", "makeRoleAclChange operation must be from 'add' or 'delete'");
+		}
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -1135,7 +1153,7 @@ class UserModel extends ModelBaseMongoose {
 
 		// get roles held on the object in question (optional)
 		const flagAddNoneRole = true;
-		const objectRoles = this.getRolesOnObject(objectType, objectId, flagAddNoneRole);
+		const objectRoles = this.getThisUsersRolesOnObject(objectType, objectId, flagAddNoneRole);
 
 		// jrdebug.debugObj(objectRoles, "ObjectRoles for user on object type " + objectType);
 
@@ -1154,7 +1172,7 @@ class UserModel extends ModelBaseMongoose {
 	 * @returns true if they have permission
 	 */
 	async aclHasPermissionOnAll(permission, objectType, objectIdList) {
-		if (!this.aclHasPermission(permission, objectType)) {
+		if (!this.aclHasPermission(permission, objectType, appconst.DefAclObjectIdAll)) {
 			// they don't have blanket permission, so we have to check each one
 			for (let i = 0; i < objectIdList.length; ++i) {
 				if (!this.aclHasPermission(permission, objectType, objectIdList[i])) {
@@ -1186,11 +1204,11 @@ class UserModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	async isSiteAdmin() {
 		// just check if user has permission to admin the site
-		return await this.aclHasPermission("admin", "site");
+		return await this.aclHasPermission(appconst.DefAclActionAdminister, "site");
 	}
 
 
-	static stringifyRoles(roles) {
+	static stringifyUserRoles(roles) {
 		// nice stringify of user roles
 		if (!roles) {
 			return "none";
@@ -1199,18 +1217,23 @@ class UserModel extends ModelBaseMongoose {
 			return "none";
 		}
 
+		var objectType, objectId;
 		var rolestring = "";
 		for (var key in roles) {
 			if (rolestring !== "") {
 				rolestring += " | ";
 			}
 			rolestring += roles[key].r;
-			if (roles[key].t != null) {
-				if (roles[key].i != null) {
-					const objectLink = arserver.makeAlinkHtmlToAclModel(roles[key].t, roles[key].i);
-					rolestring += " (" + objectLink + ")";
+			objectType = roles[key].t;
+			if (objectType != null) {
+				objectId = roles[key].i;
+				if (objectId === appconst.DefAclObjectIdAll) {
+					rolestring += " (All " + objectType + "s)";
+				} else if (objectId === null) {
+					rolestring += " (" + objectType + ")";
 				} else {
-					rolestring += " (" + roles[key].t + ")";
+					const objectLink = arserver.makeAlinkHtmlToAclModel(objectType, objectId);
+					rolestring += " (" + objectLink + ")";
 				}
 			}
 		}
@@ -1271,6 +1294,88 @@ class UserModel extends ModelBaseMongoose {
 		return false;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// see https://docs.mongodb.com/manual/tutorial/query-arrays/
+	// see https://docs.mongodb.com/manual/tutorial/query-array-of-documents/
+	// see https://stackoverflow.com/questions/50602874/elemmatch-and-in-query-for-array-of-documents
+	static async getRolesForAllUsersOnObject(objectModelClass, objectId, flagIncludeNullObjectIds) {
+		var objectModelAclName = objectModelClass.getAclName();
+		// the condition we search for -- all users who have a role that matches the type and object id
+
+		// explicitly match
+		var cond;
+		if (!flagIncludeNullObjectIds || objectId == null) {
+			cond = {
+				roles: {
+					$elemMatch: {
+						t: objectModelAclName,
+						i: objectId,
+					},
+				},
+			};
+		} else {
+			// match if objectid matches OR if role says to match on ALL objectid
+			cond = {
+				$or: [
+					{
+						roles: {
+							$elemMatch: {
+								t: objectModelAclName,
+								i: objectId,
+							},
+						},
+					},
+					{
+						roles: {
+							$elemMatch: {
+								t: objectModelAclName,
+								i: null,
+							},
+						},
+					},
+				],
+			};
+		}
+
+		// get the users with the matching roles
+		var fullRoles = [];
+		var users = await this.findAllExec(cond);
+		var usercount = users.length;
+		if (usercount === 0) {
+			return fullRoles;
+		}
+
+		// build array of roles, which are just the normal role arrays BUT with user added
+		var user;
+		for (var index = 0; index < usercount; ++index) {
+			user = users[index];
+			if (user.roles) {
+				user.roles.forEach((role) => {
+					if (role.t === objectModelAclName && (role.i === objectId || role.i === appconst.DefAclObjectIdAll)) {
+						// ok we want to add this role to our list
+						fullRoles.push({
+							uid: user.getIdAsString(),
+							uname: user.getUsername(),
+							...role,
+						});
+					}
+				});
+			}
+		}
+
+		// console.log("Results from search for all condition.");
+		// console.log(cond);
+		// console.log(fullRoles);
+		return fullRoles;
+	}
+	//---------------------------------------------------------------------------
+
 
 
 

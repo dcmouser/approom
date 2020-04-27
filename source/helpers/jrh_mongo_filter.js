@@ -172,7 +172,14 @@ function buildMongooseQueryFromReq(filterOptions, schema, req, jrResult) {
 function convertReqQueryStringToAMongooseFindFilter(fkey, fieldSchema, querystr, jrResult) {
 	// user types a filter for a field (db column) as a string;
 	// here we convert it into something suitable for a mongoose find query obj
-	const schemaType = fieldSchema.type;
+	var schemaType;
+	if (fieldSchema.mongoose) {
+		schemaType = fieldSchema.mongoose.type;
+	} else {
+		// no mongoose structure for this field, which means normally that we can't filter on it
+		schemaType = "__nondb";
+	}
+
 	let key, retQuery;
 
 	if (schemaType === Number) {
@@ -205,8 +212,17 @@ function convertReqQueryStringToAMongooseFindFilter(fkey, fieldSchema, querystr,
 	} else if (schemaType === Boolean) {
 		// boolean
 		retQuery = convertReqQueryStringToAMongooseFindFilterBoolean(fkey, schemaType, querystr, jrResult);
+	} else if (schemaType === "__nondb") {
+		// non database field
+		jrResult.pushError("Search filter error: Cannot filter on non-database key: " + fkey);
 	} else {
-		jrResult.pushError("Search filter error: Unknown schema field type: " + schemaType.toString());
+		if (!schemaType) {
+			jrResult.pushError("Search filter error: Unknown schemaType field key: " + fkey);
+		} else if (schemaType.toString) {
+			jrResult.pushError("Search filter error: Unknown schema field key " + fkey + " of type: " + schemaType.toString());
+		} else {
+			jrResult.pushError("Search filter error: Unknown schema field key: " + fkey);
+		}
 	}
 
 	return retQuery;

@@ -116,66 +116,61 @@ class VerificationModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static getSchemaDefinition() {
+	static calcSchemaDefinition() {
 		return {
 			...(this.getBaseSchemaDefinition()),
-			uniqueCodeHashed: {
-				type: String,
-				unique: true,
-				required: true,
-			},
-			type: {
-				type: String,
-			},
-			key: {
-				type: String,
-			},
-			val: {
-				type: String,
-			},
-			userId: {
-				type: mongoose.Schema.ObjectId,
-			},
-			loginId: {
-				type: mongoose.Schema.ObjectId,
-			},
-			usedDate: {
-				type: Date,
-			},
-			expirationDate: {
-				type: Date,
-			},
-		};
-	}
-
-	static getSchemaDefinitionExtra() {
-		return {
-			...(this.getBaseSchemaDefinitionExtra()),
+			//
 			uniqueCodeHashed: {
 				label: "Unique code (hashed)",
+				mongoose: {
+					type: String,
+					unique: true,
+					required: true,
+				},
 			},
 			type: {
 				label: "Type",
+				mongoose: {
+					type: String,
+				},
 			},
 			key: {
 				label: "Key",
+				mongoose: {
+					type: String,
+				},
 			},
 			val: {
 				label: "Val",
+				mongoose: {
+					type: String,
+				},
 			},
 			userId: {
 				label: "User Id",
 				crudLink: UserModel.getCrudUrlBase(),
+				mongoose: {
+					type: mongoose.Schema.ObjectId,
+				},
 			},
 			loginId: {
 				label: "Login Id",
 				crudLink: LoginModel.getCrudUrlBase(),
+				mongoose: {
+					type: mongoose.Schema.ObjectId,
+				},
 			},
 			usedDate: {
 				label: "Date used",
+				mongoose: {
+					type: Date,
+				},
 			},
 			expirationDate: {
 				label: "Date expired",
+				mongoose: {
+					type: Date,
+				},
 			},
 		};
 	}

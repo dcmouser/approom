@@ -71,58 +71,33 @@ class RoomdataModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static getSchemaDefinition() {
+	static calcSchemaDefinition() {
+		const RoomModel = jrequire("models/room");
 		return {
 			...(this.getBaseSchemaDefinition()),
-			roomid: {
-				type: mongoose.Schema.ObjectId,
-				required: true,
-			},
-			label: {
-				type: String,
-			},
-			description: {
-				type: String,
-			},
-		};
-	}
-
-	static getSchemaDefinitionExtra() {
-		const RoomModel = jrequire("models/room");
-
-		return {
-			...(this.getBaseSchemaDefinitionExtra()),
+			//
 			roomid: {
 				label: "Room Id",
-				valueFunction: (viewType, fieldName, req, obj, helperData) => {
-					var viewUrl, roomLabel, rethtml, roomid;
-					if (viewType === "view" && obj !== undefined) {
-						viewUrl = RoomModel.getCrudUrlBase("view", obj.roomid);
-						roomLabel = helperData.roomLabel;
-						rethtml = `${roomLabel} (<a href="${viewUrl}">#${obj.roomid}</a>)`;
-						return rethtml;
-					}
-					if (viewType === "edit") {
-						roomid = obj ? obj.roomid : null;
-						rethtml = jrhText.jrHtmlFormOptionListSelect("roomid", helperData.roomlist, roomid, true);
-						return rethtml;
-					}
-					if (viewType === "list" && obj !== undefined) {
-						viewUrl = RoomModel.getCrudUrlBase("view", obj.roomid);
-						rethtml = `<a href="${viewUrl}">${obj.roomid}</a>`;
-						return rethtml;
-					}
-					return undefined;
-				},
+				valueFunction: this.makeModelValueFunctionCrudObjectIdFromList(RoomModel, "roomid", "roomLabel", "roomlist"),
 				// alternative generic way to have crud pages link to this val
 				// crudLink: AppModel.getCrudUrlBase(),
+				mongoose: {
+					type: mongoose.Schema.ObjectId,
+					required: true,
+				},
 			},
 			label: {
 				label: "Label",
+				mongoose: {
+					type: String,
+				},
 			},
 			description: {
 				label: "Description",
 				format: "textarea",
+				mongoose: {
+					type: String,
+				},
 			},
 		};
 	}

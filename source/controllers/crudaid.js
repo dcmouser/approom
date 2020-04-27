@@ -192,8 +192,8 @@ class CrudAid {
 		var { viewFile, isGeneric } = viewFileSet;
 
 		// hidden fields for list view
-		var hiddenFiledsExtraSchema = await modelClass.getSchemaExtraKeysMatchingViewType("list", req);
-		hiddenFields = jrhMisc.mergeArraysDedupe(hiddenFields, hiddenFiledsExtraSchema);
+		var hiddenFiledsSchema = await modelClass.getSchemaKeysMatchingViewType("list", req);
+		hiddenFields = jrhMisc.mergeArraysDedupe(hiddenFields, hiddenFiledsSchema);
 
 		// make helper data
 		const helperData = await modelClass.calcCrudListHelperData(req, res, user, baseCrudUrl, protectedFields, hiddenFields, jrResult);
@@ -340,6 +340,7 @@ class CrudAid {
 				// now we need to add user as owner and update user in db
 				// add owner role
 				user.addRole(appconst.DefAclRoleOwner, modelClass.getAclName(), savedobj.getIdAsString());
+				user.addRole(appconst.DefAclRoleCreator, modelClass.getAclName(), savedobj.getIdAsString());
 				// save user
 				if (true) {
 					await user.dbSave(jrResult);
@@ -905,8 +906,8 @@ class CrudAid {
 		`;
 
 		// schema for obj
-		var modelSchemaExtra = modelClass.getSchemaDefinitionExtra();
-		var schemaKeys = Object.keys(modelSchemaExtra);
+		var modelSchema = modelClass.getSchemaDefinition();
+		var schemaKeys = Object.keys(modelSchema);
 		var schemaType;
 		var val, valHtml, label, valfunc, hideList, readOnlyList, choices;
 		var visfunc, isVisible, isReadOnly;
@@ -918,17 +919,17 @@ class CrudAid {
 			schemaType = modelClass.getBaseSchemaType(fieldName);
 
 			// hidden?
-			hideList = modelClass.getSchemaExtraFieldVal(fieldName, "hide", undefined);
+			hideList = modelClass.getSchemaFieldVal(fieldName, "hide", undefined);
 			if (jrhMisc.isInAnyArray("edit", hideList)) {
 				return;
 			}
 
 			// read only?
-			readOnlyList = modelClass.getSchemaExtraFieldVal(fieldName, "readOnly", undefined);
+			readOnlyList = modelClass.getSchemaFieldVal(fieldName, "readOnly", undefined);
 			isReadOnly = jrhMisc.isInAnyArray("edit", readOnlyList);
 
 			// label
-			label = modelClass.getSchemaExtraFieldVal(fieldName, "label", fieldName);
+			label = modelClass.getSchemaFieldVal(fieldName, "label", fieldName);
 			// error
 			if (jrResult && jrResult.errorFields && jrResult.errorFields[fieldName]) {
 				err = jrResult.errorFields[fieldName];
@@ -938,15 +939,15 @@ class CrudAid {
 
 			// now value
 			valHtml = undefined;
-			valfunc = modelClass.getSchemaExtraFieldVal(fieldName, "valueFunction");
+			valfunc = modelClass.getSchemaFieldVal(fieldName, "valueFunction");
 			if (valfunc) {
 				// ok we have a custom function to call to get html to show for value
 				valHtml = await valfunc("edit", fieldName, req, obj, helperData);
 			}
-			var format = modelClass.getSchemaExtraFieldVal(fieldName, "format", undefined);
+			var format = modelClass.getSchemaFieldVal(fieldName, "format", undefined);
 
 			// dynamic visibility function
-			visfunc = modelClass.getSchemaExtraFieldVal(fieldName, "visibleFunction");
+			visfunc = modelClass.getSchemaFieldVal(fieldName, "visibleFunction");
 			if (obj && visfunc) {
 				// ok we have a custom function to call
 				isVisible = await visfunc("edit", req, obj, helperData);
@@ -959,15 +960,15 @@ class CrudAid {
 			if (valHtml === undefined) {
 				if (!obj || obj[fieldName] === null || obj[fieldName] === undefined) {
 					// default value
-					val = modelClass.getSchemaExtraFieldVal(fieldName, "defaultValue", "");
+					val = modelClass.getSchemaFieldVal(fieldName, "defaultValue", "");
 				} else {
 					val = obj[fieldName];
 				}
 
 				// is it multiple choice type?
-				choices = modelClass.getSchemaExtraFieldVal(fieldName, "choicesEdit", null);
+				choices = modelClass.getSchemaFieldVal(fieldName, "choicesEdit", null);
 				if (!choices) {
-					choices = modelClass.getSchemaExtraFieldVal(fieldName, "choices", null);
+					choices = modelClass.getSchemaFieldVal(fieldName, "choices", null);
 				}
 
 				if (isReadOnly) {
@@ -1036,9 +1037,9 @@ class CrudAid {
 		`;
 
 		// schema for obj
-		var modelSchemaExtra = modelClass.getSchemaDefinitionExtra();
+		var modelSchema = modelClass.getSchemaDefinition();
 		var schemaType;
-		var schemaKeys = Object.keys(modelSchemaExtra);
+		var schemaKeys = Object.keys(modelSchema);
 		var val, valHtml, label, valfunc, hideList, choices;
 		var visfunc, isVisible;
 		var crudLink;
@@ -1049,25 +1050,25 @@ class CrudAid {
 			schemaType = modelClass.getBaseSchemaType(fieldName);
 
 			// hidden?
-			hideList = modelClass.getSchemaExtraFieldVal(fieldName, "hide", undefined);
+			hideList = modelClass.getSchemaFieldVal(fieldName, "hide", undefined);
 			if (jrhMisc.isInAnyArray("view", hideList)) {
 				return;
 			}
 
 			// label
-			label = modelClass.getSchemaExtraFieldVal(fieldName, "label", fieldName);
+			label = modelClass.getSchemaFieldVal(fieldName, "label", fieldName);
 
 			// now value
 			valHtml = undefined;
-			valfunc = modelClass.getSchemaExtraFieldVal(fieldName, "valueFunction");
+			valfunc = modelClass.getSchemaFieldVal(fieldName, "valueFunction");
 			if (valfunc) {
 				// ok we have a custom function to call to get html to show for value
 				valHtml = await valfunc("view", fieldName, req, obj, helperData);
 			}
-			var format = modelClass.getSchemaExtraFieldVal(fieldName, "format", undefined);
+			var format = modelClass.getSchemaFieldVal(fieldName, "format", undefined);
 
 			// dynamic visibility function
-			visfunc = modelClass.getSchemaExtraFieldVal(fieldName, "visibleFunction");
+			visfunc = modelClass.getSchemaFieldVal(fieldName, "visibleFunction");
 			if (visfunc) {
 				// ok we have a custom function to call to get html to show for value
 				isVisible = await visfunc("view", req, obj, helperData);
@@ -1089,14 +1090,14 @@ class CrudAid {
 				}
 				//
 				// is it a crud link?
-				crudLink = modelClass.getSchemaExtraFieldVal(fieldName, "crudLink");
+				crudLink = modelClass.getSchemaFieldVal(fieldName, "crudLink");
 				if (crudLink) {
 					// is it crud link?
 					valHtml = `<a href="${crudLink}/view/${val}">${val}</a>`;
 				}
 				if (valHtml === undefined) {
 					// is it multiple choice type?
-					choices = modelClass.getSchemaExtraFieldVal(fieldName, "choices", null);
+					choices = modelClass.getSchemaFieldVal(fieldName, "choices", null);
 					if (choices) {
 						valHtml = this.buildChoiceHtmlForView(choices, val);
 					} else if (format === "checkbox") {

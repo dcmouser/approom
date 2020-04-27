@@ -58,34 +58,47 @@ exports.DefLogTypeDebug = "debug";
 // acl constants
 
 // roles
-exports.DefAclRoleOwner = "owner";
+exports.DefAclRoleSiteAdmin = "siteAdmin";
+exports.DefAclRoleGlobalMod = "globalMod";
 exports.DefAclRoleModerator = "moderator";
+exports.DefAclRoleOwner = "owner";
+exports.DefAclRoleMember = "member";
+exports.DefAclRoleCreator = "creator"; // may not have any implications for acl but useful
 exports.DefAclRoleFriend = "friend";
-exports.DefAclRoleNone = "none";
-exports.DefAclRoleGlobalMod = "globalmod";
-exports.DefAclRoleSiteAdmin = "siteadmin";
 exports.DefAclRoleVisitor = "visitor";
+exports.DefAclRoleNone = "none";
 
 // object types (usually model classes)
 exports.DefAclObjectTypeSite = "site";
+exports.DefAclObjectTypeApp = "app";
+exports.DefAclObjectTypeRoom = "room";
+
+// special objectId meaning all objectid
+exports.DefAclObjectIdAll = "ALL";
 
 // actions
-exports.DefAclActionAdmin = "admin";
+exports.DefAclActionAdminister = "administer";
 //
 exports.DefAclActionAdd = "add";
 exports.DefAclActionEdit = "edit";
 exports.DefAclActionList = "list";
 exports.DefAclActionView = "view";
-exports.DefAclActionViewData = "viewdata";
+exports.DefAclActionViewData = "viewData";
 exports.DefAclActionAddData = "addData";
 exports.DefAclActionDelete = "delete";
-exports.DefAclActionPermDelete = "permdelete";
-exports.DefAclActionUnDelete = "undelete";
+exports.DefAclActionPermDelete = "permDelete";
+exports.DefAclActionUnDelete = "unDelete";
 exports.DefAclActionStats = "stats";
 //
-exports.DefAclActionSeeVdeletes = "seevdel";
+exports.DefAclActionSeeVdeletes = "seeVDel";
 //
 exports.DefAclActionAnalytics = "analytics";
+//
+exports.DefAclActionAddOwner = "addOwner";
+exports.DefAclActionDeleteOwner = "deleteOwner";
+exports.DefAclActionAddModerator = "addModerator";
+exports.DefAclActionDeleteModerator = "deleteModerator";
+
 //---------------------------------------------------------------------------
 
 

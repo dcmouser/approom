@@ -60,26 +60,21 @@ class ModQueueModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static getSchemaDefinition() {
+	static calcSchemaDefinition() {
 		return {
 			...(this.getBaseSchemaDefinition()),
-			key: {
-				type: String,
-			},
-			val: {
-				type: String,
-			},
-		};
-	}
-
-	static getSchemaDefinitionExtra() {
-		return {
-			...(this.getBaseSchemaDefinitionExtra()),
+			//
 			key: {
 				label: "Key",
+				mongoose: {
+					type: String,
+				},
 			},
 			val: {
 				label: "Value",
+				mongoose: {
+					type: String,
+				},
 			},
 		};
 	}

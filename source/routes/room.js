@@ -18,10 +18,12 @@ const JrResult = require("../helpers/jrresult");
 // requirement service locator
 const jrequire = require("../helpers/jrequire");
 
+// controllers
+const arserver = jrequire("arserver");
+const aclAid = jrequire("aclaid");
 
-
-
-
+// models
+const RoomModel = jrequire("models/room");
 
 
 
@@ -37,6 +39,9 @@ function setupRouter(urlPath) {
 
 	// setup route
 	router.get("/", routerGetIndex);
+
+	router.get("/invite", routerGetInvite);
+	router.post("/invite", routerPostInvite);
 
 	// return router
 	return router;
@@ -55,6 +60,80 @@ async function routerGetIndex(req, res, next) {
 	});
 }
 //---------------------------------------------------------------------------
+
+
+
+
+
+
+
+//---------------------------------------------------------------------------
+async function routerGetInvite(req, res, next) {
+	// require them to be logged in, or creates a redirect
+	var user = await arserver.getLoggedInUser(req);
+	if (!arserver.requireUserIsLoggedIn(req, res, user)) {
+		// all done
+		return;
+	}
+
+	// present form
+	presentFormInvite(req, res, null);
+}
+
+
+
+async function routerPostInvite(req, res, next) {
+	// require them to be logged in, or creates a redirect
+	var user = await arserver.getLoggedInUser(req);
+	if (!arserver.requireUserIsLoggedIn(req, res, user)) {
+		// all done
+		return;
+	}
+
+	// check required csrf token
+	if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
+		// csrf error, next will have been called with it
+		return;
+	}
+
+	// variables from form
+	var roleChange = {
+		operation: "add",
+		role: req.body.role,
+		object: {
+			type: RoomModel.getAclName(),
+			id: req.body.roomId,
+		},
+		petitioner: {
+			user,
+		},
+		recipient: {
+			usernameEmail: req.body.usernameEmail,
+			userId: req.body.userId,
+		},
+	};
+
+	// run the acl change
+	var jrResult = await aclAid.performRoleChange(roleChange);
+
+	// error in form, re-present the form
+	presentFormInvite(req, res, jrResult);
+}
+//---------------------------------------------------------------------------
+
+
+
+//---------------------------------------------------------------------------
+function presentFormInvite(req, res, jrResult) {
+	res.render("room/inviteform", {
+		jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
+		title: "Invite to Room",
+		csrfToken: arserver.makeCsrf(req, res),
+		reqBody: req.body,
+	});
+}
+//---------------------------------------------------------------------------
+
 
 
 

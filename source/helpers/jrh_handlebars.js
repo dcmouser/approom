@@ -42,6 +42,9 @@ function setupJrHandlebarHelpers() {
 
 	// simple object debug display helper
 	hbs.registerHelper("jrHtmlDebugObj", (obj) => new hbs.SafeString(jrhText.jrHtmlStrigifyObject(obj)));
+
+	// simple helper to select the submitted option in an html form
+	hbs.registerHelper("jrHtmlSelectOption", (selected, options) => { return jrHbsSelectOption(selected, options); });
 }
 //---------------------------------------------------------------------------
 
@@ -49,6 +52,41 @@ function setupJrHandlebarHelpers() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+//---------------------------------------------------------------------------
+// simple helper to select the submitted option in an html form
+// see https://stackoverflow.com/questions/13046401/how-to-set-selected-select-option-in-handlebars-template
+/* e.g.:
+      <select id="role" name="role">
+         {{#jrHtmlSelectOption reqBody.role}}
+           <option value="member">Member</option>
+           <option value="moderator">Moderator</option>
+           <option value="owner">Owner</option>
+         {{/jrHtmlSelectOption}}
+	</select>
+*/
+function jrHbsSelectOption(selected, options) {
+	return options.fn(this).replace(new RegExp(" value=\"" + selected + "\""), "$& selected=\"selected\"");
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+//---------------------------------------------------------------------------
 /**
  * Walk a directory for all files with extensions hbs and register them as partials for handlebars.
  * This helper function makes it easy for us to quickly register a directory of partials (includable files) for use in our handlebar view templates

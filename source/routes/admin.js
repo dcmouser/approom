@@ -24,7 +24,8 @@ const jrdebug = require("../helpers/jrdebug");
 const adminAid = jrequire("adminaid");
 const arserver = jrequire("arserver");
 
-
+// constants
+const appconst = jrequire("appconst");
 
 
 
@@ -65,7 +66,7 @@ function setupRouter(urlPath) {
 
 
 async function routerGetIndex(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission("admin", req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
 		// all done
 		return;
 	}

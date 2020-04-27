@@ -78,27 +78,23 @@ class SessionModel extends ModelBaseMongooseMinimal {
 
 
 	//---------------------------------------------------------------------------
-	static getSchemaDefinition() {
+	static calcSchemaDefinition() {
 		return {
 			...(this.getBaseSchemaDefinition()),
-			expires: {
-				type: Date,
-			},
-			session: {
-				type: String,
-				readOnly: ["edit"],
-			},
-		};
-	}
-
-	static getSchemaDefinitionExtra() {
-		return {
-			...(this.getBaseSchemaDefinitionExtra()),
+			//
 			expires: {
 				label: "Date expires",
+				mongoose: {
+					type: Date,
+				},
 			},
 			session: {
 				label: "Session data",
+				readOnly: ["edit"],
+				mongoose: {
+					type: String,
+
+				},
 			},
 		};
 	}

@@ -63,20 +63,15 @@ class ConnectionModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static getSchemaDefinition() {
+	static calcSchemaDefinition() {
 		return {
 			...(this.getBaseSchemaDefinition()),
-			ip: {
-				type: String,
-			},
-		};
-	}
-
-	static getSchemaDefinitionExtra() {
-		return {
-			...(this.getBaseSchemaDefinitionExtra()),
+			//
 			ip: {
 				label: "IP",
+				mongoose: {
+					type: String,
+				},
 			},
 		};
 	}

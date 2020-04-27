@@ -47,7 +47,7 @@ class ModelBaseMongoose {
 	// this.crudBaseUrl
 	// this.schema
 	// this.modelSchema
-	// this.modelPropertyList
+	// this.modelObjPropertyList
 
 	//---------------------------------------------------------------------------
 	// subclasses implement these
@@ -99,63 +99,48 @@ class ModelBaseMongoose {
 	static getBaseSchemaDefinition() {
 		// some base schema properties for ALL models
 		// this helps us keep track of some basic stuff for everything
-		return {
-			_id: {
-				type: mongoose.Schema.ObjectId,
-				auto: true,
-			},
-			version: {
-				type: Number,
-			},
-			creator: {
-				type: mongoose.Schema.ObjectId,
-			},
-			creationDate: {
-				type: Date,
-			},
-			modificationDate: {
-				type: Date,
-			},
-			disabled: {
-				type: Number,
-			},
-			extraData: {
-				type: mongoose.Mixed,
-			},
-			notes: {
-				type: String,
-			},
-		};
-	}
-
-	static getBaseSchemaDefinitionExtra() {
 		const UserModel = jrequire("models/user");
-		// extra info for schema field to aid display in our code
 		return {
 			_id: {
 				label: "Id",
 				readOnly: ["edit"],
 				filterSize: 25,
+				mongoose: {
+					type: mongoose.Schema.ObjectId,
+					auto: true,
+				},
 			},
 			version: {
 				label: "Ver.",
 				readOnly: ["edit"],
 				filterSize: 5,
+				mongoose: {
+					type: Number,
+				},
 			},
 			creator: {
 				label: "Creator",
 				hide: ["edit"],
 				valueFunction: this.makeModelValueFunctionObjectId(UserModel),
+				mongoose: {
+					type: mongoose.Schema.ObjectId,
+				},
 			},
 			creationDate: {
 				label: "Date created",
 				hide: ["edit"],
 				format: "date",
+				mongoose: {
+					type: Date,
+				},
 			},
 			modificationDate: {
 				label: "Date modified",
 				readOnly: ["edit"],
 				format: "date",
+				mongoose: {
+					type: Date,
+				},
 			},
 			disabled: {
 				label: "Disabled?",
@@ -164,15 +149,24 @@ class ModelBaseMongoose {
 				choicesEdit: appconst.DefStateModeLabelsEdit,
 				filterSize: 8,
 				defaultValue: appconst.DefMdbEnable,
+				mongoose: {
+					type: Number,
+				},
 			},
 			extraData: {
 				label: "Extra data",
 				valueFunction: this.makeModelValueFunctionExtraData(),
 				filterSize: 0,
 				// readOnly: ["edit"],
+				mongoose: {
+					type: mongoose.Mixed,
+				},
 			},
 			notes: {
 				label: "Notes",
+				mongoose: {
+					type: String,
+				},
 			},
 		};
 	}
@@ -205,10 +199,48 @@ class ModelBaseMongoose {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	//---------------------------------------------------------------------------
+	static extractMongooseDbSchemaDefintion() {
+		// get the full schema definition
+		var schemaDefinition = this.getSchemaDefinition();
+		// now build a new object with only the key mongoose values
+		var mongooseDbSchemaDefinition = {};
+		for (var key in schemaDefinition) {
+			if (schemaDefinition[key].mongoose) {
+				mongooseDbSchemaDefinition[key] = schemaDefinition[key].mongoose;
+			}
+		}
+		// return it
+		return mongooseDbSchemaDefinition;
+	}
+
+
 	// User model mongoose db schema
-	static buildSchema(mongooser) {
-		this.schema = new mongooser.Schema(this.getSchemaDefinition(), {
+	static buildMongooseDbSchema(mongooser) {
+		var mongooseDbSchemaDefinition = this.extractMongooseDbSchemaDefintion();
+		this.schema = new mongooser.Schema(mongooseDbSchemaDefinition, {
 			collection: this.getCollectionName(),
 		});
 		return this.schema;
@@ -216,8 +248,18 @@ class ModelBaseMongoose {
 
 
 	// subbclasses implement this
-	static getSchemaDefinition() {
+	static calcSchemaDefinition() {
 		return {};
+	}
+
+
+	static getSchemaDefinition() {
+		// this is the one that should be called
+		// returns cached value
+		if (!this.cachedSchemaDefinition) {
+			this.cachedSchemaDefinition = this.calcSchemaDefinition();
+		}
+		return this.cachedSchemaDefinition;
 	}
 	//---------------------------------------------------------------------------
 
@@ -233,27 +275,27 @@ class ModelBaseMongoose {
 
 
 	// ATTN: TODO -- cache the schema definition and extras
-	static getSchemaExtraFieldVal(fieldName, key, defaultVal) {
-		var modelSchemaExtra = this.getSchemaDefinitionExtra();
-		if (modelSchemaExtra[fieldName] && modelSchemaExtra[fieldName][key] !== undefined) {
-			return modelSchemaExtra[fieldName][key];
+	static getSchemaFieldVal(fieldName, key, defaultVal) {
+		var modelSchemaDefinition = this.getSchemaDefinition();
+		if (modelSchemaDefinition[fieldName] && modelSchemaDefinition[fieldName][key] !== undefined) {
+			return modelSchemaDefinition[fieldName][key];
 		}
 		return defaultVal;
 	}
 
-	static async getSchemaExtraKeysMatchingViewType(viewType, req) {
+	static async getSchemaKeysMatchingViewType(viewType, req) {
 		var retKeys = [];
-		var modelSchemaExtra = this.getSchemaDefinitionExtra();
-		var keys = Object.keys(modelSchemaExtra);
+		var modelSchemaDefinition = this.getSchemaDefinition();
+		var keys = Object.keys(modelSchemaDefinition);
 		var keyHideArray;
 		var visfunc, isVisible;
 
 		await jrhMisc.asyncAwaitForEachFunctionCall(keys, async (key) => {
-			keyHideArray = modelSchemaExtra[key].hide;
+			keyHideArray = modelSchemaDefinition[key].hide;
 			if (jrhMisc.isInAnyArray(viewType, keyHideArray)) {
 				retKeys.push(key);
 			} else {
-				visfunc = modelSchemaExtra[key].visibleFunction;
+				visfunc = modelSchemaDefinition[key].visibleFunction;
 				if (visfunc) {
 					isVisible = await visfunc(viewType, key, req, null, null);
 					if (!isVisible) {
@@ -266,6 +308,31 @@ class ModelBaseMongoose {
 		return retKeys;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -326,8 +393,8 @@ class ModelBaseMongoose {
 	// ATTN: TODO - this is messy and confusing, fix it
 	getModelObjPropertyList() {
 		// cached value
-		if (this.getModelClass().modelPropertyList) {
-			return this.getModelClass().modelPropertyList;
+		if (this.getModelClass().modelObjPropertyList) {
+			return this.getModelClass().modelObjPropertyList;
 		}
 		var propkeys = Object.keys(this.getModelClass().getSchemaDefinition());
 		return propkeys;
@@ -349,10 +416,10 @@ class ModelBaseMongoose {
 		// jrdebug.debug("Setting up model schema for " + this.getCollectionName());
 
 		// compile the model scheme
-		this.modelSchema = this.buildSchema(mongooser);
+		this.modelSchema = this.buildMongooseDbSchema(mongooser);
 
 		// this is an attempt to cache this information but it doesn't seem to work
-		this.modelPropertyList = Object.keys(this.getSchemaDefinition());
+		this.modelObjPropertyList = Object.keys(this.getSchemaDefinition());
 
 		// 5/8/19 trying to tie our model class to the mongoose model
 		// see https://mongoosejs.com/docs/advanced_schemas.html
@@ -996,7 +1063,6 @@ class ModelBaseMongoose {
 
 
 	static async findAllAndSelect(...args) {
-		// actually call mongooseModel findOneAndUpdateExec
 		var retv = await this.mongooseModel.find().select(...args);
 		return retv;
 	}
@@ -1129,24 +1195,6 @@ class ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static modelPropertyCopy(sourceObj, flagIncludeId) {
-		// copy the properties in schema
-		var obj = {};
-		var keylist = this.getModelPropertyList();
-
-		keylist.forEach((key) => {
-			if (key in sourceObj) {
-				obj[key] = sourceObj[key];
-			}
-		});
-
-		if (flagIncludeId) {
-			obj._id = sourceObj._id;
-		}
-
-		return obj;
-	}
-
 	modelObjPropertyCopy(flagIncludeId) {
 		// copy the properties in schema
 		var obj = {};
@@ -1245,7 +1293,6 @@ class ModelBaseMongoose {
 
 		// schema for obj
 		var gridSchema = this.getSchemaDefinition();
-		var schemaExtra = this.getSchemaDefinitionExtra();
 
 		// force add the invisible id field to schema for display
 		// we shouldn't have to do this anymore, we found out had to add it to the model schema
@@ -1300,7 +1347,6 @@ class ModelBaseMongoose {
 		return {
 			modelClass: this,
 			gridSchema,
-			schemaExtra,
 			gridHeaders,
 			query,
 			queryOptions,
@@ -1422,6 +1468,14 @@ class ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	// value function helpers
 
+	/**
+	 * Helper function that makes a value function where only admin can see
+	 *
+	 * @static
+	 * @param {*} flagRequired
+	 * @returns async value function
+	 * @memberof ModelBaseMongoose
+	 */
 	static makeModelValueFunctionPasswordAdminEyesOnly(flagRequired) {
 		// a value function usable by model definitions
 		return async (viewType, fieldName, req, obj, helperData) => {
@@ -1456,6 +1510,13 @@ class ModelBaseMongoose {
 	}
 
 
+	/**
+	 * Helper function to make a value function for the extraData field
+	 *
+	 * @static
+	 * @returns async value function
+	 * @memberof ModelBaseMongoose
+	 */
 	static makeModelValueFunctionExtraData() {
 		// a value function usable by model definitions
 		return async (viewType, fieldName, req, obj, helperData) => {
@@ -1479,6 +1540,18 @@ class ModelBaseMongoose {
 	}
 
 
+
+	/**
+	 * Helper function to make a value function for an object's id crud field
+	 *
+	 * @static
+	 * @param {*} modelClass
+	 * @param {*} fieldId
+	 * @param {*} fieldLabel
+	 * @param {*} fieldList
+	 * @returns an async value function
+	 * @memberof ModelBaseMongoose
+	 */
 	static makeModelValueFunctionObjectId(modelClass) {
 		return async (viewType, fieldName, req, obj, helperData) => {
 			if (obj !== undefined) {
@@ -1492,7 +1565,76 @@ class ModelBaseMongoose {
 			return "";
 		};
 	}
+
+
+	/**
+	 * Helper function to make a value function for an object's id crud field, where there are a list of choices from helperdata
+	 *
+	 * @static
+	 * @param {*} modelClass
+	 * @param {*} fieldId
+	 * @param {*} fieldLabel
+	 * @param {*} fieldList
+	 * @returns an async value function
+	 * @memberof ModelBaseMongoose
+	 */
+	static makeModelValueFunctionCrudObjectIdFromList(modelClass, fieldId, fieldLabel, fieldList) {
+		return async (viewType, fieldName, req, obj, helperData) => {
+			var viewUrl, oLabel, rethtml, oid;
+			if (viewType === "view" && obj !== undefined) {
+				viewUrl = modelClass.getCrudUrlBase("view", obj[fieldId]);
+				oLabel = helperData[fieldLabel];
+				rethtml = `${oLabel} (<a href="${viewUrl}">#${obj[fieldId]}</a>)`;
+				return rethtml;
+			}
+			if (viewType === "edit") {
+				oid = obj ? obj[fieldId] : null;
+				rethtml = jrhText.jrHtmlFormOptionListSelect(fieldId, helperData[fieldList], oid, true);
+				return rethtml;
+			}
+			if (viewType === "list" && obj !== undefined) {
+				viewUrl = modelClass.getCrudUrlBase("view", obj[fieldId]);
+				rethtml = `<a href="${viewUrl}">${obj[fieldId]}</a>`;
+				return rethtml;
+			}
+			return undefined;
+		};
+	}
 	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	/**
+	 * Return a value function for showing the roles held by all users on a specific object
+	 *
+	 * @static
+	 * @param {*} modelClass
+	 * @returns async value function
+	 * @memberof ModelBaseMongoose
+	 */
+	static makeModelValueFunctionRoleOnObjectList(modelClass) {
+		//
+		return async (viewType, fieldName, req, obj, helperData) => {
+			if (viewType === "list") {
+				// too heavy to retrieve in this mode
+				return "...";
+			}
+			if (obj !== undefined && obj.getAllUsersRolesOnThisObject) {
+				const aclAid = jrequire("aclaid");
+				const flagIncludeNullObjectIds = true;
+				var roles = await obj.getAllUsersRolesOnThisObject(flagIncludeNullObjectIds);
+				var rethtml = aclAid.buildHtmlOfFullRoleArray(roles);
+				return rethtml;
+			}
+			return "";
+		};
+
+	}
+	//---------------------------------------------------------------------------
+
+
+
 
 
 
@@ -1631,6 +1773,19 @@ class ModelBaseMongoose {
 		// by default, nothing to do; subclasses can replace this
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+	//---------------------------------------------------------------------------
+	async getAllUsersRolesOnThisObject(flagIncludeNullObjectIds) {
+		// get all roles held by all users on this object
+		const UserModel = jrequire("models/user");
+		var allUserRoles = await UserModel.getRolesForAllUsersOnObject(this.getModelClass(), this.getIdAsString(), flagIncludeNullObjectIds);
+		return allUserRoles;
+	}
+	//---------------------------------------------------------------------------
+
 
 
 

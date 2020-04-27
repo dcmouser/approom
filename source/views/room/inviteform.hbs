@@ -1,0 +1,34 @@
+<h1>Invite User to Room</h1>
+
+    <form action="" method="post">
+      <div>
+        <label>Username (or email address):</label>
+        <input type="text" name="usernameEmail" value="{{reqBody.usernameEmail}}"/>
+      </div>
+      <div>
+        <label>OR id:</label>
+        <input type="text" name="userId" value="{{reqBody.userId}}"/>
+      </div>
+      <div>
+        <label>Room Id:</label>
+        <input type="text" name="roomId"  value="{{reqBody.roomId}}"/>
+      </div>
+
+      <div>
+        <label>Role to Grant:</label>
+        <select id="role" name="role">
+          {{#jrHtmlSelectOption reqBody.role}}
+          <option value="member">Member</option>
+          <option value="moderator">Moderator</option>
+          <option value="owner">Owner</option>
+          {{/jrHtmlSelectOption}}
+        </select>
+      </div>
+
+      <div>
+        <input type="submit" value="Submit" />
+      </div>
+
+    <input type="hidden" name="_csrf" value="{{csrfToken}}">
+    </form>
+
