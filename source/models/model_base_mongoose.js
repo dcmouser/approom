@@ -191,6 +191,18 @@ class ModelBaseMongoose {
 	static getDefaultDeleteDisableModeIsVirtual() {
 		return (this.getDefaultDeleteDisableMode() === appconst.DefMdbVirtDelete);
 	}
+
+	/**
+	 * Should some user ACL own each instance?
+	 * Subclasses can override this (rooms, apps) to say that there should be someone who OWNS this resource
+	 *
+	 * @static
+	 * @returns true or false
+	 * @memberof ModelBaseMongoose
+	 */
+	static getShouldBeOwned() {
+		return false;
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -496,22 +508,68 @@ class ModelBaseMongoose {
 
 
 
+	/**
+	 * A wrapper around doValidateAndSave that can set ownership of the object when appropriate
+	 *
+	 * @static
+	 * @param {*} jrResult
+	 * @param {*} options
+	 * @param {*} flagSave
+	 * @param {*} user
+	 * @param {*} source
+	 * @param {*} saveFields
+	 * @param {*} preValidatedFields
+	 * @param {*} ignoreFields
+	 * @param {*} obj
+	 * @param {*} flagUpdateUserRolesForNewObject
+	 * @memberof ModelBaseMongoose
+	 */
+	static async validateSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj, flagUpdateUserRolesForNewObject) {
+		// is this a new object?
+		var flagIsNew = obj.isNew;
+		// call validate and save
+		await this.doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj);
+		// success?
+		if (flagUpdateUserRolesForNewObject && flagIsNew && !jrResult.isError() && user) {
+			// successful save and it was a new object, and caller wants us to set roles of owner
+			await user.addOwnerCreatorRolesForNewObject(obj, true, jrResult);
+			if (jrResult.isError()) {
+				// error setting roles, which means we would like to DESTROY the object and reset it..
+				// ATTN: unfinished
+				var emsg = "ATTN: Failed to set ownership roles on " + obj.getLogIdString();
+				arserver.logr(null, "error.imp", emsg);
+				jrdebug.debug(emsg);
+			}
+		}
+	}
+
+
+	static async validateAndSaveNewWrapper(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, flagUpdateUserRolesForNewObject) {
+		var newObj = this.createModel({});
+		await this.validateSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, newObj, flagUpdateUserRolesForNewObject);
+		return newObj;
+	}
+	//---------------------------------------------------------------------------
+
 
 
 
 	//---------------------------------------------------------------------------
 	// subclasses implement this
-	static async validateAndSave(jrResult, options, flagSave, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, obj) {
-		jrResult.pushError("Internal error: No subclassed proecure to handle validateAndSave() for " + this.getCollectionName() + " model");
+	static async doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
+		jrResult.pushError("Internal error: No subclassed proecure to handle doValidateAndSave() for " + this.getCollectionName() + " model");
 		return null;
 	}
 
-	static async validateAndSaveNew(jrResult, options, flagSave, loggedInUser, source, saveFields, preValidatedFields, ignoreFields) {
+	static async validateAndSaveNew(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields) {
 		var newObj = this.createModel({});
-		await this.validateAndSave(jrResult, options, flagSave, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, newObj);
+		await this.doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, newObj);
 		return newObj;
 	}
+	//---------------------------------------------------------------------------
 
+
+	//---------------------------------------------------------------------------
 	static getSaveFields(operationType) {
 		// operationType is commonly "crudAdd", "crudEdit"
 		// return an array of field names that the user can modify when saving an object
@@ -520,6 +578,7 @@ class ModelBaseMongoose {
 		// NOTE: this list can be generated dynamically based on logged in user
 		return [];
 	}
+
 
 	// ATTN: this function typically does not have to run async so its cpu inefficient to make it async but rather than have 2 copies of this function to maintain, we use just async one
 	// ATTN: TODO in future make a version of this that is sync; or find some better way to handle it
@@ -923,7 +982,7 @@ class ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// accessors
-	getId() {
+	getIdAsM() {
 		return this._id;
 	}
 
@@ -1693,7 +1752,7 @@ class ModelBaseMongoose {
 	 */
 	async doChangeMode(mode, jrResult) {
 		// just hand off to static class version
-		await this.getModelClass().doChangeModeById(this.getId(), mode, jrResult);
+		await this.getModelClass().doChangeModeById(this.getIdAsM(), mode, jrResult);
 	}
 
 
@@ -1782,6 +1841,7 @@ class ModelBaseMongoose {
 		// get all roles held by all users on this object
 		const UserModel = jrequire("models/user");
 		var allUserRoles = await UserModel.getRolesForAllUsersOnObject(this.getModelClass(), this.getIdAsString(), flagIncludeNullObjectIds);
+		jrdebug.cdebugObj(allUserRoles, "User roles on object");
 		return allUserRoles;
 	}
 	//---------------------------------------------------------------------------

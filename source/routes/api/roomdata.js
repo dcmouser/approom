@@ -185,7 +185,7 @@ async function routerAdd(req, res, next) {
 	const RoomDataModel = jrequire("models/roomdata");
 	var roomdata = RoomDataModel.createModel();
 	// force some values
-	roomdata.creator = user.getId();
+	roomdata.creator = user.getIdAsM();
 
 	// validate and save the fields passed
 	var saveFields = RoomDataModel.getSaveFields("add");
@@ -193,7 +193,7 @@ async function routerAdd(req, res, next) {
 	// form fields that we dont complain about finding even though they arent for the form object
 	var ignoreFields = [];
 
-	var roomdatadoc = await RoomDataModel.validateAndSave(jrResult, {}, true, user, query, saveFields, preValidatedFields, ignoreFields, roomdata);
+	var roomdatadoc = await RoomDataModel.validateSave(jrResult, {}, true, user, query, saveFields, preValidatedFields, ignoreFields, roomdata, RoomModel.getShouldBeOwned());
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
 		return;

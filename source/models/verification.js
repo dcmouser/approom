@@ -186,7 +186,7 @@ class VerificationModel extends ModelBaseMongoose {
 		return this.type;
 	}
 
-	getUserId() {
+	getUserIdAsM() {
 		return this.userId;
 	}
 
@@ -523,7 +523,7 @@ If this request was not made by you, please ignore this email.
 		}
 
 		// get the user
-		var userId = verification.getUserId();
+		var userId = verification.getUserIdAsM();
 		var user;
 		if (userId) {
 			user = await UserModel.findUserByIdAndUpdateLoginDate(userId);

@@ -61,19 +61,16 @@ function setupRouter(urlPath) {
 
 
 async function routerGetCode(req, res, next) {
-	await handleVerifyCode(req.params.code, req, res, next);
+	await handleVerifyCode(req.params.code, null, req, res, next);
 }
 
 
 async function routerPostCode(req, res, next) {
 	// check required csrf token
-	if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
-		// csrf error, next will have been called with it
-		return;
-	}
+	var jrResult = arserver.testCsrfReturnJrResult(req, res);
 
 	var code = req.body.code;
-	await handleVerifyCode(code, req, res, next);
+	await handleVerifyCode(code, jrResult, req, res, next);
 }
 
 
@@ -94,27 +91,19 @@ async function routerGetIndex(req, res, next) {
 
 
 // this is an agnostic function that might handle all kinds of verifications (change of email, new account email, mobile text, onetime login code, multi-factor login, etc.)
-async function handleVerifyCode(code, req, res, next) {
-	var jrResult;
+async function handleVerifyCode(code, jrResult, req, res, next) {
 	var successRedirectTo;
 
 	// so we can check if verifying this code logs someone in
 	var previouslyLoggedInUserId = arserver.getLoggedInLocalUserIdFromSession(req);
 
-	if (!code) {
+	if (jrResult && jrResult.isError()) {
+		// just drop down, it's an error from the start (caller errore
+	} else if (!code) {
 		jrResult = JrResult.makeError("Please specify the code to verify.");
 	} else {
 		({ jrResult, successRedirectTo } = await VerificationModel.verifiyCode(code, {}, req, res));
 	}
-
-	/*
-	// ATTN: 11/14/19 don't think we use this anymore
-	// if caller handled everything
-	if (jrResult.getDoneRendering()) {
-		// all done by caller
-		return;
-	}
-	*/
 
 	if (jrResult.isError()) {
 		// on error, show verify form
@@ -125,6 +114,7 @@ async function handleVerifyCode(code, req, res, next) {
 		});
 		return;
 	}
+
 
 	// success -- redirect and show flash message about success
 	jrResult.addToSession(req);

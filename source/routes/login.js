@@ -97,15 +97,16 @@ async function routerPostIndex(req, res, next) {
 	// we use a custom errorCallback so that we can re-render the login form on error
 
 	// check required csrf token
-	if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
-		// csrf error, next will have been called with it
-		return;
+	var jrResult = arserver.testCsrfReturnJrResult(req, res);
+
+	if (!jrResult.isError()) {
+		// no error yet
+		// handle local authentication; this is a wrapper around passport.authenticate("local" which handles a bunch of session and redirect stuff
+		// the true,false at end says to auto handle the login success case (redirect generically), but not auto handle the error case (so that we can re-present it)
+		await arserver.asyncRoutePassportAuthenticate("local", "using your password", req, res, next, jrResult, true, false);
 	}
 
-	// handle local authentication; this is a wrapper around passport.authenticate("local" which handles a bunch of session and redirect stuff
-	var jrResult = JrResult.makeNew();
-	// the true,false at end says to auto handle the login success case (redirect generically), but not auto handle the error case (so that we can re-present it)
-	await arserver.asyncRoutePassportAuthenticate("local", "using your password", req, res, next, jrResult, true, false);
+
 	if (jrResult.isError()) {
 		// re-present the login form
 		res.render("account/login", {
@@ -140,35 +141,33 @@ async function routerGetEmail(req, res, next) {
 // process one-time login via email form
 async function routerPostEmail(req, res, next) {
 	var message;
-	var jrResult;
 
 	// check required csrf token
-	if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
-		// csrf error, next will have been called with it
-		return;
-	}
+	var jrResult = arserver.testCsrfReturnJrResult(req, res);
 
-	// get email address provides
-	var usernameEmail = req.body.usernameEmail;
+	if (!jrResult.isError()) {
+		// get email address provides
+		var usernameEmail = req.body.usernameEmail;
 
-	// lookup the user with this email address
-	var user = await UserModel.findUserByUsernameEmail(usernameEmail);
-	if (!user) {
-		// set error and drop down to re-display email login form with error
-		jrResult = UserModel.makeJrResultErrorNoUserFromField("usernameEmail", usernameEmail);
-	} else {
-		var userId = user.getId();
-		var userEmail = user.email;
-		var flagRevealEmail = (userEmail === usernameEmail);
-		jrResult = await VerificationModel.createVerificationOneTimeLoginTokenEmail(userEmail, userId, flagRevealEmail, null);
-		if (!jrResult.isError()) {
-			// success; redirect them to homepage and tell them to check their email for a login token (see the verify route for when they click the link to login)
-			jrResult.pushSuccess("Check your mail for your link to login.");
-			jrResult.addToSession(req);
-			res.redirect("/verify");
-			return;
+		// lookup the user with this email address
+		var user = await UserModel.findUserByUsernameEmail(usernameEmail);
+		if (!user) {
+			// set error and drop down to re-display email login form with error
+			jrResult = UserModel.makeJrResultErrorNoUserFromField("usernameEmail", usernameEmail);
+		} else {
+			var userId = user.getIdAsM();
+			var userEmail = user.email;
+			var flagRevealEmail = (userEmail === usernameEmail);
+			jrResult = await VerificationModel.createVerificationOneTimeLoginTokenEmail(userEmail, userId, flagRevealEmail, null);
+			if (!jrResult.isError()) {
+				// success; redirect them to homepage and tell them to check their email for a login token (see the verify route for when they click the link to login)
+				jrResult.pushSuccess("Check your mail for your link to login.");
+				jrResult.addToSession(req);
+				res.redirect("/verify");
+				return;
+			}
+			// internal error, just drop down
 		}
-		// internal error, just drop down
 	}
 
 	// show the email login form

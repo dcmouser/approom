@@ -149,14 +149,15 @@ class FileModel extends RoomdataModel {
 
 
 	// crud add/edit
-	static async validateAndSave(jrResult, options, flagSave, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, obj) {
+	static async doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 
 		// first base class work (but make sure to tell it NOT to save)
 		var objdoc;
 
-		await super.validateAndSave(jrResult, options, false, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, obj);
+		// ATTN: why do our other model classes not do this...
+		// await super.doValidateAndSave(jrResult, options, false, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, obj);
 
 		// now our specific derived class fields
 		if (!jrResult.isError()) {

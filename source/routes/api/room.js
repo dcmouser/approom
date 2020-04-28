@@ -119,7 +119,7 @@ async function routerLookup(req, res, next) {
 	// now let's ask if user is actually ALLOWED to look at this room room
 	const permission = appconst.DefAclActionView;
 	const permissionObjType = RoomModel.getAclName();
-	const permissionObjId = room.getId();
+	const permissionObjId = room.getIdAsM();
 	const hasPermission = await user.aclHasPermission(permission, permissionObjType, permissionObjId);
 	if (!hasPermission) {
 		jrhExpress.sendResJsonAclErorr(res, permission, permissionObjType, permissionObjId);
@@ -178,7 +178,7 @@ async function routerAdd(req, res, next) {
 	// create the item
 	var room = RoomModel.createModel();
 	// force some values
-	room.creator = user.getId();
+	room.creator = user.getIdAsM();
 
 	// validate and save the fields passed
 	var saveFields = RoomModel.getSaveFields("add");
@@ -186,11 +186,13 @@ async function routerAdd(req, res, next) {
 	// form fields that we dont complain about finding even though they arent for the form object
 	var ignoreFields = [];
 
-	var roomdoc = await RoomModel.validateAndSave(jrResult, {}, true, user, query, saveFields, preValidatedFields, ignoreFields, room);
+	var roomdoc = await RoomModel.validateSave(jrResult, {}, true, user, query, saveFields, preValidatedFields, ignoreFields, room, RoomModel.getShouldBeOwned());
+
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
 		return;
 	}
+
 
 	// success
 	var result = {

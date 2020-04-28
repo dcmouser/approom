@@ -70,6 +70,11 @@ class RoomModel extends ModelBaseMongoose {
 	static getLoggingString() {
 		return "Room";
 	}
+
+	// should some user ACL own each instance?
+	static getShouldBeOwned() {
+		return true;
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -152,14 +157,14 @@ class RoomModel extends ModelBaseMongoose {
 
 
 	// crud add/edit
-	static async validateAndSave(jrResult, options, flagSave, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, obj) {
+	static async doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 		var objdoc;
 		const UserModel = jrequire("models/user");
 
 		// set fields from form and validate
-		await this.validateMergeAsync(jrResult, "appid", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => this.validateModelFieldAppId(jrr, keyname, inVal, loggedInUser));
+		await this.validateMergeAsync(jrResult, "appid", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => this.validateModelFieldAppId(jrr, keyname, inVal, user));
 		await this.validateMergeAsync(jrResult, "shortcode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await this.validateRoomShortcodeUnique(jrr, keyname, inVal, obj, source.appid));
 		await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
 		await this.validateMergeAsync(jrResult, "description", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));

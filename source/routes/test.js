@@ -92,11 +92,15 @@ async function routerPostMakeappsrooms(req, res, next) {
 		// all done
 		return;
 	}
+
 	// check required csrf token
-	if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
-		// csrf error will be handled by exception; we just need to return
+	var jrResult = arserver.testCsrfReturnJrResult(req, res);
+	if (jrResult.isError()) {
+		jrResult.addToSession(req);
+		res.redirect("/test/makeappsrooms");
 		return;
 	}
+
 
 	// get logged in user (note we've already checked they are logged in with permission)
 	var user = await arserver.getLoggedInUser(req);
@@ -132,8 +136,10 @@ async function routerPostTestEmergencyAlerts(req, res, next) {
 		return;
 	}
 	// check required csrf token
-	if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
-		// csrf error, next will have been called with it
+	var jrResult = arserver.testCsrfReturnJrResult(req, res);
+	if (jrResult.isError()) {
+		jrResult.addToSession(req);
+		res.redirect("/test/emergencyalert");
 		return;
 	}
 
@@ -150,7 +156,7 @@ async function routerPostTestEmergencyAlerts(req, res, next) {
 	}
 
 	// push session
-	var jrResult = JrResult.makeSuccess(util.format("Testing sent a total of %d messages while triggering %d emergency alerts.", numSent, numToSend));
+	jrResult = JrResult.makeSuccess(util.format("Testing sent a total of %d messages while triggering %d emergency alerts.", numSent, numToSend));
 	jrResult.addToSession(req, false);
 
 	// return them to page
@@ -173,9 +179,12 @@ async function routerPostTriggerCrash(req, res, next) {
 		// all done
 		return;
 	}
+
 	// check required csrf token
-	if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
-		// csrf error, next will have been called with it
+	var jrResult = arserver.testCsrfReturnJrResult(req, res);
+	if (jrResult.isError()) {
+		jrResult.addToSession(req);
+		res.redirect("/test/trigger_crash");
 		return;
 	}
 
@@ -196,9 +205,12 @@ async function routerPostShutdown(req, res, next) {
 		// all done
 		return;
 	}
+
 	// check required csrf token
-	if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
-		// csrf error, next will have been called with it
+	var jrResult = arserver.testCsrfReturnJrResult(req, res);
+	if (jrResult.isError()) {
+		jrResult.addToSession(req);
+		res.redirect("/test/shutdown");
 		return;
 	}
 

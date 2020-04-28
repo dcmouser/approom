@@ -94,11 +94,12 @@ exports.DefAclActionSeeVdeletes = "seeVDel";
 //
 exports.DefAclActionAnalytics = "analytics";
 //
-exports.DefAclActionAddOwner = "addOwner";
-exports.DefAclActionDeleteOwner = "deleteOwner";
-exports.DefAclActionAddModerator = "addModerator";
-exports.DefAclActionDeleteModerator = "deleteModerator";
-
+exports.DefAclActionAddOwner = "add.owner";
+exports.DefAclActionRemoveOwner = "delete.owner";
+exports.DefAclActionAddModerator = "add.moderator";
+exports.DefAclActionRemoveModerator = "delete.moderator";
+exports.DefAclActionAddMember = "add.member";
+exports.DefAclActionRemoveMember = "delete.member";
 //---------------------------------------------------------------------------
 
 

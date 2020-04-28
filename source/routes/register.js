@@ -96,14 +96,15 @@ async function routerPostIndex(req, res, next) {
 		return;
 	}
 
-	// check required csrf token
-	if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
-		// csrf error, next will have been called with it
-		return;
+	// test csrf token
+	var jrResult = arserver.testCsrfReturnJrResult(req, res);
+	var successRedirectTo;
+
+	if (!jrResult.isError()) {
+		// ok hand off processing of the registration form
+		successRedirectTo = await registrationAid.processAccountAllInOneForm(req, jrResult);
 	}
 
-	// ok hand off processing of the registration form
-	var { jrResult, successRedirectTo } = await registrationAid.processAccountAllInOneForm(req);
 
 	// any errors, re-render form with errors
 	if (jrResult.isError()) {

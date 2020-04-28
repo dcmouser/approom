@@ -141,8 +141,7 @@ class RegistrationAid {
 
 	//---------------------------------------------------------------------------
 	// New all in one registration/account form helper
-	async processAccountAllInOneForm(req) {
-		var jrResult = JrResult.makeNew();
+	async processAccountAllInOneForm(req, jrResult) {
 		var successRedirectTo;
 
 		// get any verification code associated with this registration, to prove they own the email
@@ -224,7 +223,7 @@ class RegistrationAid {
 
 		if (jrResult.isError()) {
 			// error case, we can return now
-			return { jrResult, successRedirectTo };
+			return successRedirectTo;
 		}
 		//---------------------------------------------------------------------------
 
@@ -281,7 +280,7 @@ class RegistrationAid {
 		//---------------------------------------------------------------------------
 
 		// return tuple with result and suggested succes redirect
-		return { jrResult, successRedirectTo };
+		return successRedirectTo;
 	}
 	//---------------------------------------------------------------------------
 

@@ -108,7 +108,7 @@ class LoginModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// accessors
-	getUserId() {
+	getUserIdAsM() {
 		return this.userId;
 	}
 
@@ -222,7 +222,7 @@ class LoginModel extends ModelBaseMongoose {
 			}
 		}
 
-		var userId = user.getId();
+		var userId = user.getIdAsM();
 
 		// create Login if it's not been created yet; saving userId with it
 		if (!login) {
@@ -240,7 +240,7 @@ class LoginModel extends ModelBaseMongoose {
 			eventNewlyLinked = true;
 		} else {
 			// login already existed -- but did it have the right userId already?
-			if (userId && !jrhMongo.mongoIdEqual(login.getUserId(), userId)) {
+			if (userId && !jrhMongo.mongoIdEqual(login.getUserIdAsM(), userId)) {
 				// ok we need to update login data to point to the new user
 				// ATTN: We expect this case to happen when login.userId is empty;
 				// but is it possible for us to get here with login.userId with a real user?
@@ -260,7 +260,7 @@ class LoginModel extends ModelBaseMongoose {
 		// NEW - ADD login id to user id -- this (may not) be saved to database,
 		//  since that's not important, but WILL be carried around with session data after a user does a bridged login
 		// this is most important if in this function we decide we do want to actually create a full user object here
-		user.loginId = login.getId();
+		user.loginId = login.getIdAsM();
 
 		// now return the associated user we found (or created above)
 		return {
@@ -297,13 +297,13 @@ class LoginModel extends ModelBaseMongoose {
 		}
 
 		// should we connect (note that userId comparison is not !== because im not sure if .userId is a string natively)
-		if (login.userId && login.getUserId() !== user.getId() && !flagConnectEvenIfLoginHasUser) {
+		if (login.userId && login.getUserIdAsM() !== user.getIdAsM() && !flagConnectEvenIfLoginHasUser) {
 			// mismatch, dont connect them
 			return null;
 		}
 
 		// connect them!
-		login.userId = user.getId();
+		login.userId = user.getIdAsM();
 		await login.dbSave();
 		var jrResult = JrResult.makeSuccess("Connected your " + login.provider + " login with this user account.");
 		return jrResult;

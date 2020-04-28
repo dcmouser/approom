@@ -2004,12 +2004,18 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	async logr(req, type, message, user, extraData) {
 		// create log obj
-		var ip = (req.ip && req.ip.length > 7 && req.ip.substr(0, 7) === "::ffff:") ? req.ip.substr(7) : req.ip;
-		var userid;
+		var userid, ip;
+
+		if (req === null) {
+			ip = undefined;
+		} else {
+			ip = (req.ip && req.ip.length > 7 && req.ip.substr(0, 7) === "::ffff:") ? req.ip.substr(7) : req.ip;
+		}
+
 		if (user) {
 			userid = user.id;
 		} else {
-			userid = ((req.user ? req.user.id : undefined));
+			userid = ((req && req.user ? req.user.id : undefined));
 		}
 
 		// make mergeData -- these are fields that have actual dedicated explicit log database table properies
@@ -2427,10 +2433,12 @@ class AppRoomServer {
 			return err;
 		});
 	}
+	//---------------------------------------------------------------------------
 
 
-	// ATTN: Im not sure this function works the way we expect
-	// ATTN: TODO - test
+
+	//---------------------------------------------------------------------------
+	// Throws error which will be shown to the user by the next() chain; so caller just should return and do nothing
 	testCsrfThrowError(req, res, next) {
 		// let csrf throw the error to next, ONLY if there is an error, otherwise just return and dont call next
 		return this.csrfInstance(req, res, (err) => {
@@ -2447,6 +2455,47 @@ class AppRoomServer {
 	}
 
 
+	/**
+	 * Test the csrf; on error return jrResult that is an error
+	 * This is more useful for re-presenting a form.
+	 * ATTN: We had some real problems with this new function returning undefined on successful csrf when I tried to simply return jrResult from inside the callback.. I'm still not sure I understand why; it may be that on non-error it was async executed
+	 * ATTN TODO: make sure this always works as expected
+	 *
+	 * @param {*} req
+	 * @param {*} res
+	 * @returns success jrResult if no error in csrf; otherwise a jrResult that is an error
+	 * @memberof AppRoomServer
+	 */
+	testCsrfReturnJrResult(req, res) {
+		// let csrf throw the error to next, ONLY if there is an error, otherwise just return and dont call next
+		var jrResult = JrResult.makeNew();
+
+		// TEST of csrf
+		if (false && Math.random() > 0.6) {
+			jrResult.pushError("Testing failed csrf.");
+			return jrResult;
+		}
+
+		var retv = this.csrfInstance(req, res, (err) => {
+			if (err) {
+				jrResult.pushError(err.toString());
+			} else {
+				// forget it so it can't be used twice?
+				if (true) {
+					this.forgetCsrfToken(req);
+				}
+				// ATTN: we used to return JrResult.makeNew() here but it was being received as an undefined for some reason
+			}
+		});
+
+		return jrResult;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+	//---------------------------------------------------------------------------
 	getCsrf() {
 		return this.csrfInstance;
 	}

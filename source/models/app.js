@@ -69,6 +69,11 @@ class AppModel extends ModelBaseMongoose {
 	static getLoggingString() {
 		return "App";
 	}
+
+	// should some user ACL own each instance?
+	static getShouldBeOwned() {
+		return true;
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -146,7 +151,7 @@ class AppModel extends ModelBaseMongoose {
 
 
 	// crud add/edit
-	static async validateAndSave(jrResult, options, flagSave, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, obj) {
+	static async doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 		var objdoc;

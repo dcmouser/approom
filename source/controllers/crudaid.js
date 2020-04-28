@@ -226,6 +226,22 @@ class CrudAid {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	//---------------------------------------------------------------------------
 	async handleAddGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
@@ -298,56 +314,46 @@ class CrudAid {
 
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
+		var obj;
 
-		var jrResult = JrResult.makeNew();
 		var formTypeStr = "add";
 		var flagRepresentAfterSuccess = false;
+		var reqbody = req.body;
 
-		// check required csrf token
-		if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
-			return true;
-		}
 		// acl test
 		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appconst.DefAclActionAdd)) {
 			return true;
 		}
 
-		// form fields that we dont complain about finding even though they arent for the form object
-		var ignoreFields = this.getIgnoreFields();
 
-		// process
-		var reqbody = req.body;
-
+		var jrResult = JrResult.makeNew();
 		// load existing object by id if provided, throw errors if id missing (or provided to add formtype)
 		// in the ADD case, this should just return a new blank object or complain if user specified an id
-		var obj = await modelClass.validateAddEditFormIdMakeObj(jrResult, req, res, formTypeStr);
-
+		obj = await modelClass.validateAddEditFormIdMakeObj(jrResult, req, res, formTypeStr);
 		// add creator
 		obj.creator = user.getIdAsString();
 
+
+		if (!jrResult.isError()) {
+			// check required csrf token
+			jrResult = arserver.testCsrfReturnJrResult(req, res);
+		}
+
 		if (!jrResult.isError()) {
 			// now save add changes
+			// form fields that we dont complain about finding even though they arent for the form object
+			var ignoreFields = this.getIgnoreFields();
+
+			// process
+
 			var saveFields = modelClass.getSaveFields("crudAdd");
-			var savedobj = await modelClass.validateAndSave(jrResult, {}, true, user, req.body, saveFields, null, ignoreFields, obj);
+			var savedobj = await modelClass.validateSave(jrResult, {}, true, user, req.body, saveFields, null, ignoreFields, obj, modelClass.getShouldBeOwned());
 			if (!jrResult.isError()) {
 				// success! drop down with new blank form, or alternatively, we could redirect to a VIEW obj._id page
 				jrResult.pushSuccess(modelClass.getNiceName() + " added on " + jrhMisc.getNiceNowString() + ".");
 
 				// log the action
 				arserver.logr(req, "crud.create", "created " + savedobj.getLogIdString());
-
-
-				// now we need to add user as owner and update user in db
-				// add owner role
-				user.addRole(appconst.DefAclRoleOwner, modelClass.getAclName(), savedobj.getIdAsString());
-				user.addRole(appconst.DefAclRoleCreator, modelClass.getAclName(), savedobj.getIdAsString());
-				// save user
-				if (true) {
-					await user.dbSave(jrResult);
-				} else {
-					// test save failure
-					jrResult.pushError("fake usersaveerror test message see crudAid.handleAddPost()");
-				}
 
 				if (jrResult.isError()) {
 					// we had an error saving user; this is serious because it leaves an orphaned object
@@ -420,8 +426,11 @@ class CrudAid {
 
 		return true;
 	}
+	//---------------------------------------------------------------------------
 
 
+
+	//---------------------------------------------------------------------------
 	async handleEditGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
@@ -488,34 +497,34 @@ class CrudAid {
 
 		// ATTN: in post of edit, we ignore the id passed in param and get it from post body
 		var formTypeStr = "edit";
-		var jrResult = JrResult.makeNew();
 		var flagRepresentAfterSuccess = false;
+		var reqbody = req.body;
+		var obj;
 
 		// get id from post, ignore url param
 		var id = req.body._id;
+		var ignoreFields = this.getIgnoreFields();
 
-		// check required csrf token
-		if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
-			return false;
-		}
 		// acl test
 		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appconst.DefAclActionEdit, id)) {
 			return false;
 		}
-
 		// form fields that we dont complain about finding even though they arent for the form object
-		var ignoreFields = this.getIgnoreFields();
-
-		// process
-		var reqbody = req.body;
 
 		// load existing object by id if provided, throw errors if id missing (or provided to add formtype)
-		var obj = await modelClass.validateAddEditFormIdMakeObj(jrResult, req, res, formTypeStr);
+		var jrResult = JrResult.makeNew();
+		obj = await modelClass.validateAddEditFormIdMakeObj(jrResult, req, res, formTypeStr);
+
+		if (!jrResult.isError()) {
+			// check required csrf token
+			jrResult = arserver.testCsrfReturnJrResult(req, res);
+		}
+
 
 		if (!jrResult.isError()) {
 			// now save edit changes
 			var saveFields = modelClass.getSaveFields("crudEdit");
-			var savedobj = await modelClass.validateAndSave(jrResult, {}, true, user, req.body, saveFields, null, ignoreFields, obj);
+			var savedobj = await modelClass.validateSave(jrResult, {}, true, user, req.body, saveFields, null, ignoreFields, obj, modelClass.getShouldBeOwned());
 
 			if (!jrResult.isError()) {
 				// success! drop down with new blank form, or alternatively, we could redirect to a VIEW obj._id page
@@ -578,8 +587,17 @@ class CrudAid {
 
 		return true;
 	}
+	//---------------------------------------------------------------------------
 
 
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
 	async handleViewGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
@@ -673,44 +691,44 @@ class CrudAid {
 
 
 	async handleChangeModePost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode) {
-		var jrResult = JrResult.makeNew();
 
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
 
 		// get id from post, ignore url param
 		var id = req.body._id;
-
-		// check required csrf token
-		if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
-			return true;
-		}
+		var obj;
+		var newmode;
 
 		// which acl permission to check for
 		const aclAction = this.getAclActionForChangeReqMode(reqmode);
-
 		// get object AND perform ACL test
-		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, aclAction);
+		var jrResult = JrResult.makeNew();
+		obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, aclAction);
 		if (jrResult.isError()) {
 			return true;
 		}
 
-		// process delete
+		// check required csrf token
+		jrResult = arserver.testCsrfReturnJrResult(req, res);
+		if (!jrResult.isError()) {
+			// process delete
 
-		// what kind of delete do we want, virtual or real?
-		var newmode;
-		if (reqmode === "delete") {
-			newmode = modelClass.getDefaultDeleteDisableMode();
-		} else if (reqmode === "permdelete") {
-			newmode = appconst.DefMdbRealDelete;
-		} else if (reqmode === "undelete") {
-			newmode = appconst.DefMdbEnable;
-		} else {
-			throw new Error("Unknown reqmode in handleChangeModePost: " + reqmode);
+			// what kind of delete do we want, virtual or real?
+
+			if (reqmode === "delete") {
+				newmode = modelClass.getDefaultDeleteDisableMode();
+			} else if (reqmode === "permdelete") {
+				newmode = appconst.DefMdbRealDelete;
+			} else if (reqmode === "undelete") {
+				newmode = appconst.DefMdbEnable;
+			} else {
+				throw new Error("Unknown reqmode in handleChangeModePost: " + reqmode);
+			}
+
+			// do the actual mode change (delete / virtual or real)
+			await obj.doChangeMode(newmode, jrResult);
 		}
-
-		// do the actual mode change (delete / virtual or real)
-		await obj.doChangeMode(newmode, jrResult);
 
 		// on success redirect to listview
 		if (!jrResult.isError()) {

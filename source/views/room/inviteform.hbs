@@ -2,16 +2,12 @@
 
     <form action="" method="post">
       <div>
-        <label>Username (or email address):</label>
-        <input type="text" name="usernameEmail" value="{{reqBody.usernameEmail}}"/>
-      </div>
-      <div>
-        <label>OR id:</label>
-        <input type="text" name="userId" value="{{reqBody.userId}}"/>
+        <label>Username (or email address, or #id):</label>
+        <input type="text" name="usernameEmailId" size="30" value="{{reqBody.usernameEmailId}}"/>
       </div>
       <div>
         <label>Room Id:</label>
-        <input type="text" name="roomId"  value="{{reqBody.roomId}}"/>
+        <input type="text" name="roomId" size="30" value="{{reqBody.roomId}}"/>
       </div>
 
       <div>

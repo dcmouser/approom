@@ -115,6 +115,8 @@ class AclAid {
 		// admin also inherits the permissions of globalModerator
 		this.roleAcl.extendRole(appconst.DefAclRoleSiteAdmin, appconst.DefAclRoleGlobalMod);
 
+		// owner inherits permissions of moderator
+		this.roleAcl.extendRole(appconst.DefAclRoleOwner, appconst.DefAclRoleModerator);
 
 		// TEST - we wanted to see if this showed up on App view when we listed users who had role on the object; but it does not
 		// this.roleAcl.grant(appconst.DefAclRoleSiteAdmin).execute(appconst.DefAclActionAnalytics).on(arserver.getModelClassAclName("RoomModel"));
@@ -132,7 +134,9 @@ class AclAid {
 		const permAll = [appconst.DefAclActionAdd, appconst.DefAclActionEdit, appconst.DefAclActionView, appconst.DefAclActionViewData, appconst.DefAclActionAddData, appconst.DefAclActionList, appconst.DefAclActionDelete, appconst.DefAclActionPermDelete];
 		const permReadOnly = [appconst.DefAclActionView, appconst.DefAclActionViewData, appconst.DefAclActionList];
 		const permExtraAdminMods = [appconst.DefAclActionUnDelete, appconst.DefAclActionSeeVdeletes];
-		const permManageUsers = [appconst.DefAclActionAddOwner, appconst.DefAclActionDeleteOwner, appconst.DefAclActionAddModerator, appconst.DefAclActionDeleteModerator];
+		const permManageOwners = [appconst.DefAclActionAddOwner, appconst.DefAclActionRemoveOwner];
+		const permManageModerators = [appconst.DefAclActionAddModerator, appconst.DefAclActionRemoveModerator];
+		const permManageMembers = [appconst.DefAclActionAddMember, appconst.DefAclActionRemoveMember];
 
 		// moderator permissions
 		this.roleAcl.grant(appconst.DefAclRoleGlobalMod).execute(permAll).on(resourceName);
@@ -145,8 +149,13 @@ class AclAid {
 		// now owner
 		this.roleAcl.grant(appconst.DefAclRoleOwner).execute(permAll).on(resourceName);
 
-		// an owner can add/delete other owners and moderators
-		this.roleAcl.grant(appconst.DefAclRoleOwner).execute(permManageUsers).on(resourceName);
+		// owner management
+		this.roleAcl.grant(appconst.DefAclRoleOwner).execute(permManageOwners).on(resourceName);
+		this.roleAcl.grant(appconst.DefAclRoleOwner).execute(permManageModerators).on(resourceName);
+		// inherited by default?
+		// this.roleAcl.grant(appconst.DefAclRoleOwner).execute(permManageMembers).on(resourceName);
+		// moderator management
+		this.roleAcl.grant(appconst.DefAclRoleModerator).execute(permManageMembers).on(resourceName);
 
 		// friend
 		this.roleAcl.grant(appconst.DefAclRoleFriend).execute(permReadOnly).on(resourceName);
@@ -226,14 +235,13 @@ class AclAid {
 		var rethtml = "<ul>\n";
 
 		roles.forEach((role) => {
-			userhtml = role.uname;
+			userhtml = role.uname + "(#" + role.uid + ")";
 			rolehtml = role.r;
 			if (role.i === appconst.DefAclObjectIdAll) {
 				objecthtml = "all " + role.t + "s";
 			} else {
 				objecthtml = role.t + " #" + role.i;
 			}
-			//
 			rethtml += "<li>" + userhtml + " has role [" + rolehtml + "] on [" + objecthtml + "]</li>";
 		});
 
@@ -261,10 +269,10 @@ class AclAid {
 	 * @memberof AclAid
 	// example roleChange object:
 	var roleChange = {
-		operation: "add", // can be "add" or "delete"
+		operation: "add", // can be "add" or "remove"
 		role: req.body.role,
 		object: {
-			type: RoomModel.getAclName(),
+			model: RoomModel,
 			id: req.body.roomId,
 		},
 		petitioner: {
@@ -280,7 +288,7 @@ class AclAid {
 		var jrResult = JrResult.makeNew();
 
 		// first step is lookup key roleChange fields, and throw any errors
-		var rcobj = this.roleChangeParse(roleChange, jrResult);
+		var rcobj = await this.roleChangeParse(roleChange, jrResult);
 		var petitioner = rcobj.petitioner;
 		var recipient = rcobj.recipient;
 
@@ -290,17 +298,19 @@ class AclAid {
 		if (!jrResult.isError()) {
 			// requiredAction will be something like "add.moderator"
 			var petitionerAclAction = rcobj.operation + "." + rcobj.role;
+			// jrdebug.debugObj(rcobj, "RCOBJ");
 			// now ask if petitioner has permission to perform petitionerAclAction on object
 			var hasPermission;
 			if (rcobj.object) {
-				hasPermission = await petitioner.aclHasPermission(petitionerAclAction, rcobj.object.getAclName(), rcobj.object.getId());
+				var rcobjModelClass = rcobj.object.getModelClass();
+				hasPermission = await petitioner.aclHasPermission(petitionerAclAction, rcobjModelClass.getAclName(), rcobj.object.getIdAsString());
 				if (!hasPermission) {
-					jrResult.pushError("petitioner (" + petitioner.getId() + ") does not have permission to grant " + petitionerAclAction + " to recipient " + recipient.getId() + " on " + rcobj.object.getAclName() + " #" + rcobj.object.getId());
+					jrResult.pushError("petitioner (" + petitioner.getIdAsString() + ") does not have permission to grant [" + petitionerAclAction + "] to recipient " + recipient.getIdAsString() + " on " + rcobjModelClass.getNiceName() + " #" + rcobj.object.getIdAsString());
 				}
 			} else {
 				hasPermission = await petitioner.aclHasPermission(petitionerAclAction);
 				if (!hasPermission) {
-					jrResult.pushError("petitioner (" + petitioner.getId() + ") does not have permission to grant " + petitionerAclAction + " to recipient " + recipient.getId());
+					jrResult.pushError("petitioner (" + petitioner.getIdAsString() + ") does not have permission to grant [" + petitionerAclAction + "] to recipient " + recipient.getIdAsString());
 				}
 			}
 		}
@@ -315,6 +325,7 @@ class AclAid {
 			await recipient.dbSave(jrResult);
 			// log what we just did?
 			// ATTN: TO DO log change
+			jrResult.pushSuccess("Role changed successfully.");
 		}
 
 
@@ -333,7 +344,7 @@ class AclAid {
 	 * @memberof AclAid
 	 * @returns object
 	 */
-	roleChangeParse(roleChange, jrResult) {
+	async roleChangeParse(roleChange, jrResult) {
 		var roleChangeParsed = {};
 
 		// first operation, which must be add or delete
@@ -344,13 +355,13 @@ class AclAid {
 		roleChangeParsed.role = this.roleChangeParseRole(roleChange.role, jrResult);
 
 		// now object, which can be blank
-		roleChangeParsed.object = this.flexibleParseObjectIdentity(roleChange.object, "object", jrResult);
+		roleChangeParsed.object = await this.flexibleParseObjectIdentity(roleChange.object, "object", jrResult);
 
 		// now petitioner
-		roleChangeParsed.petitioner = this.flexibleParseUser(roleChange.petitioner, "petitioner", jrResult);
+		roleChangeParsed.petitioner = await this.flexibleParseUser(roleChange.petitioner, "petitioner", jrResult);
 
 		// now recipient
-		roleChangeParsed.recipient = this.flexibleParseUser(roleChange.recipient, "recipient", jrResult);
+		roleChangeParsed.recipient = await this.flexibleParseUser(roleChange.recipient, "recipient", jrResult);
 
 		return roleChangeParsed;
 	}
@@ -358,8 +369,8 @@ class AclAid {
 
 
 	roleChangeParseOperation(operation, jrResult) {
-		if (operation !== "add" && operation !== "delete") {
-			jrResult.pushFieldError("operation", "Operation must be one of 'add' or 'delete'");
+		if (operation !== "add" && operation !== "remove") {
+			jrResult.pushFieldError("operation", "Operation must be one of 'add' or 'remove'");
 			return null;
 		}
 		return operation;
@@ -386,7 +397,7 @@ class AclAid {
 
 
 	//---------------------------------------------------------------------------
-	flexibleParseObjectIdentity(objDef, fieldLabel, jrResult) {
+	async flexibleParseObjectIdentity(objDef, fieldLabel, jrResult) {
 		if (!objDef) {
 			// no object specified -- this is allowed
 			return undefined;
@@ -395,13 +406,21 @@ class AclAid {
 			// specified as object
 			return objDef.object;
 		}
-		// parse it from type and id
+		// parse it from model and id
+		var modelClass = objDef.model;
+		var doc = await modelClass.findOneById(objDef.id);
+		if (doc) {
+			return doc;
+		}
 		// ATTN: unfinished
 		jrResult.pushFieldError(fieldLabel, "Not a valid object");
 		return null;
 	}
 
-	flexibleParseUser(objDef, fieldLabel, jrResult) {
+
+	async flexibleParseUser(objDef, fieldLabel, jrResult) {
+		const UserModel = jrequire("models/user");
+
 		if (!objDef) {
 			// no user specified -- this is an error
 			jrResult.pushFieldError(fieldLabel, "A valid " + fieldLabel + " user must be specified");
@@ -411,7 +430,14 @@ class AclAid {
 			// specified as object
 			return objDef.user;
 		}
-		// parse it from username / id
+		if (objDef.usernameEmailId) {
+			// parse it from username / id
+			var user = await UserModel.findUserByUsernameEmailOrId(objDef.usernameEmailId);
+			if (user) {
+				return user;
+			}
+		}
+
 		// ATTN: unfinished
 		jrResult.pushFieldError(fieldLabel, "Not a valid " + fieldLabel + " user");
 		return null;

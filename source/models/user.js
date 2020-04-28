@@ -25,6 +25,7 @@ const jrdebug = require("../helpers/jrdebug");
 const jrhCrypto = require("../helpers/jrh_crypto");
 const JrResult = require("../helpers/jrresult");
 const jrhValidate = require("../helpers/jrh_validate");
+const jrhMongo = require("../helpers/jrh_mongo");
 
 // controllers
 const arserver = jrequire("arserver");
@@ -398,6 +399,33 @@ class UserModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
+	static async findUserByUsernameEmailOrId(usernameEmailId) {
+		// find a user by their username and return the matching model
+		// return null if not found
+		// ATTN: Note that it is very important that our syntax forbids anyone having a username formatted like an email, or an email formatted like a username, otherwise
+		// we will have 2 users with different info.
+		if (!usernameEmailId) {
+			return null;
+		}
+
+		var user;
+
+		// if it starts with # its a user id
+		if (usernameEmailId.startsWith("#")) {
+			var uid = usernameEmailId.substring(1, usernameEmailId.length);
+			if (!jrhMongo.isValidMongooseObjectId(uid)) {
+				user = null;
+			} else {
+				user = await this.findOneById(uid);
+			}
+		} else {
+			user = await this.findUserByUsernameEmail(usernameEmailId);
+		}
+
+		return user;
+	}
+
+
 	static async findUserByUsernameEmail(usernameEmail) {
 		// find a user by their username and return the matching model
 		// return null if not found
@@ -850,7 +878,7 @@ class UserModel extends ModelBaseMongoose {
 
 
 	// crud add/edit
-	static async validateAndSave(jrResult, options, flagSave, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, obj) {
+	static async doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 		// ATTN: TODO there is duplication with code in registrationaid.js currently, because we are trying to decide where best to do these things - ELIMINATE
@@ -859,7 +887,7 @@ class UserModel extends ModelBaseMongoose {
 		var flagCheckDisallowedUsername = true;
 		var flagTrustEmailChange = false;
 		var flagRrequiredEmail = false;
-		var flagUserIsSiteAdmin = loggedInUser && (await loggedInUser.isSiteAdmin());
+		var flagUserIsSiteAdmin = user && (await user.isSiteAdmin());
 		var flagIsNew = obj.getIsNew();
 
 		// super users can do some things others cannot
@@ -917,7 +945,7 @@ class UserModel extends ModelBaseMongoose {
 				obj.email = emailAddressOld;
 				// send them a change of email verification
 				await obj.createAndSendVerificationEmailChange(emailAddressNew);
-				if (loggedInUser && obj.getId() === loggedInUser.getId()) {
+				if (user && obj.getIdAsM() === user.getIdAsM()) {
 					jrResult.pushSuccess(`Your new E-mail address is pending.  Please check ${emailAddressNew} for a verification link.  Your new email address will only take effect after you confirm it.`);
 				} else {
 					jrResult.pushSuccess(`The E-mail address for user ${obj.username} will need to be verified before it is accepted.  The user should check ${emailAddressNew} for a verification link.`);
@@ -954,7 +982,7 @@ class UserModel extends ModelBaseMongoose {
 	async createAndSendVerificationEmailChange(emailAddressNew) {
 		const VerificationModel = jrequire("models/verification");
 		var emailAddressOld = this.email;
-		var userId = this.getId();
+		var userId = this.getIdAsM();
 		return await VerificationModel.createAndSendVerificationEmailChange(emailAddressOld, emailAddressNew, userId);
 	}
 	//---------------------------------------------------------------------------
@@ -994,12 +1022,19 @@ class UserModel extends ModelBaseMongoose {
 		// this will also return roles that have no objectType or the "all" object type, i.e. global roles that MIGHT be relevant for this object
 		// e.g. a site admin will always return the role "admin->site" when check if it has permission on a specific object
 
+		if (objectId && typeof objectId !== "string") {
+			// mongo object ids are not strings
+			objectId = objectId.toString();
+		}
+
 		// make sure objectId is null if not passed
 		if (objectId === undefined) {
 			objectId = null;
 		}
 
 		var rolesFound = [];
+
+		jrdebug.cdebug("Asking for roles on objectType = " + objectType + " and objectid = " + objectId);
 
 		// simple walk of roles array
 		var matchesRole;
@@ -1009,20 +1044,26 @@ class UserModel extends ModelBaseMongoose {
 			// check if this role is relevant
 			robjectType = this.roles[key].t;
 			robjectId = this.roles[key].i;
+			jrdebug.cdebugObj(this.roles[key], "Examining roles " + key);
 			if ((robjectType === objectType && (robjectId === appconst.DefAclObjectIdAll || robjectId === objectId))) {
 				// user has this permission on this object, or has this permission on ALL objects of this type (indicated by this.roles[key].i === appconst.DefAclObjectIdAll)
 				matchesRole = true;
+				jrdebug.cdebug("Matches 1.");
 			} else {
 				// do we want roles not specifically related to this object type (for example if they are site admin)
 				if ((robjectType === appconst.DefAclObjectTypeSite || robjectType === null) && (robjectId === appconst.DefAclObjectIdAll || robjectId === null)) {
 					// here we have matched a global site role, or a role without a type, and there is no object id associated with it
 					matchesRole = true;
+					jrdebug.cdebug("Matches 2.");
 				}
 			}
 
 			if (matchesRole) {
 				// found a role on this object, OR found a role that doesnt refer to an object but with flagCheckNonObjectSpecificRoles set
+				jrdebug.cdebug("We got a match for role " + key);
 				rolesFound.push(this.roles[key].r);
+			} else {
+				jrdebug.cdebug("We did NOT get a match for role " + key);
 			}
 		}
 
@@ -1048,7 +1089,6 @@ class UserModel extends ModelBaseMongoose {
 
 	hasExplicitRole(role, objectType = null, objectId = null) {
 		// return true if user has an explicit role on (optional) objectId
-
 		// simple walk of roles array
 		for (var key in this.roles) {
 			if (this.roles[key].r === role && this.roles[key].t === objectType && this.roles[key].i === objectId) {
@@ -1056,7 +1096,6 @@ class UserModel extends ModelBaseMongoose {
 				return true;
 			}
 		}
-
 		// not found
 		return false;
 	}
@@ -1070,8 +1109,17 @@ class UserModel extends ModelBaseMongoose {
 			// already set
 			return;
 		}
+
 		// add it
-		this.roles.push({ r: role, t: objectType, i: objectId });
+		var roleObj = {
+			r: role,
+			t: objectType,
+			i: objectId,
+		};
+		this.roles.push(roleObj);
+
+		// log the acl change
+		this.logChangedAcl("addRole", roleObj);
 	}
 
 
@@ -1085,6 +1133,8 @@ class UserModel extends ModelBaseMongoose {
 				// found it
 				this.splice(key, 1);
 				++foundCount;
+				// log the acl change
+				this.logChangedAcl("removeRole", this.roles[key]);
 			}
 		}
 
@@ -1100,6 +1150,8 @@ class UserModel extends ModelBaseMongoose {
 				// found it
 				this.splice(key, 1);
 				++foundCount;
+				// log the acl change
+				this.logChangedAcl("removeRole", this.roles[key]);
 			}
 		}
 
@@ -1110,6 +1162,10 @@ class UserModel extends ModelBaseMongoose {
 		// remove all roles for the user
 		var foundCount = this.roles.length;
 		this.roles = [];
+
+		// log the acl change
+		this.logChangedAcl("removeAllRoles", null);
+
 		return foundCount;
 	}
 
@@ -1120,17 +1176,23 @@ class UserModel extends ModelBaseMongoose {
 			if (!object) {
 				this.addRole(role);
 			} else {
-				this.addRole(role, object.getAclName(), object.getId());
+				this.addRole(role, object.getModelClass().getAclName(), object.getIdAsString());
 			}
-		} else if (operation === "delete") {
+		} else if (operation === "remove") {
 			if (!object) {
 				this.removeRole(role);
 			} else {
-				this.removeRole(role, object.getAclName(), object.getId());
+				this.removeRole(role, object.getModelClass().getAclName(), object.getIdAsString());
 			}
 		} else {
-			jrResult.pushFieldError("operation", "makeRoleAclChange operation must be from 'add' or 'delete'");
+			jrResult.pushFieldError("operation", "makeRoleAclChange operation must be from 'add' or 'remove'");
 		}
+	}
+
+
+	logChangedAcl(label, roleObj) {
+		var roleStr = jrhMisc.objToString(roleObj, true);
+		arserver.logr(null, "acl." + label, this.getLogIdString() + " " + label + ": " + roleStr, this);
 	}
 	//---------------------------------------------------------------------------
 
@@ -1155,7 +1217,7 @@ class UserModel extends ModelBaseMongoose {
 		const flagAddNoneRole = true;
 		const objectRoles = this.getThisUsersRolesOnObject(objectType, objectId, flagAddNoneRole);
 
-		// jrdebug.debugObj(objectRoles, "ObjectRoles for user on object type " + objectType);
+		jrdebug.cdebugObj(objectRoles, "ObjectRoles for user on object type " + objectType);
 
 		// now ask if any of these rules imply the permission
 		return await aclAid.anyRolesImplyPermission(objectRoles, permission, objectType);
@@ -1359,11 +1421,12 @@ class UserModel extends ModelBaseMongoose {
 				user.roles.forEach((role) => {
 					if (role.t === objectModelAclName && (role.i === objectId || role.i === appconst.DefAclObjectIdAll)) {
 						// ok we want to add this role to our list
-						fullRoles.push({
+						var roleObj = {
 							uid: user.getIdAsString(),
 							uname: user.getUsername(),
 							...role,
-						});
+						};
+						fullRoles.push(roleObj);
 					}
 				});
 			}
@@ -1378,6 +1441,19 @@ class UserModel extends ModelBaseMongoose {
 
 
 
+
+
+	//---------------------------------------------------------------------------
+	async addOwnerCreatorRolesForNewObject(obj, flagSaveUser, jrResult) {
+		// add owner role
+		this.addRole(appconst.DefAclRoleOwner, obj.getModelClass().getAclName(), obj.getIdAsString());
+		this.addRole(appconst.DefAclRoleCreator, obj.getModelClass().getAclName(), obj.getIdAsString());
+		// save user
+		if (flagSaveUser) {
+			await this.dbSave(jrResult);
+		}
+	}
+	//---------------------------------------------------------------------------
 
 
 

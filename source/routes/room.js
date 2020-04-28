@@ -90,31 +90,29 @@ async function routerPostInvite(req, res, next) {
 		return;
 	}
 
-	// check required csrf token
-	if (arserver.testCsrfThrowError(req, res, next) instanceof Error) {
-		// csrf error, next will have been called with it
-		return;
+	// test csrf token
+	var jrResult = arserver.testCsrfReturnJrResult(req, res);
+
+	if (!jrResult.isError()) {
+		// variables from form
+		var roleChange = {
+			operation: "add",
+			role: req.body.role,
+			object: {
+				model: RoomModel,
+				id: req.body.roomId,
+			},
+			petitioner: {
+				user,
+			},
+			recipient: {
+				usernameEmailId: req.body.usernameEmailId,
+			},
+		};
+
+		// run the acl change
+		jrResult = await aclAid.performRoleChange(roleChange);
 	}
-
-	// variables from form
-	var roleChange = {
-		operation: "add",
-		role: req.body.role,
-		object: {
-			type: RoomModel.getAclName(),
-			id: req.body.roomId,
-		},
-		petitioner: {
-			user,
-		},
-		recipient: {
-			usernameEmail: req.body.usernameEmail,
-			userId: req.body.userId,
-		},
-	};
-
-	// run the acl change
-	var jrResult = await aclAid.performRoleChange(roleChange);
 
 	// error in form, re-present the form
 	presentFormInvite(req, res, jrResult);

@@ -110,7 +110,7 @@ async function routerLookup(req, res, next) {
 	// now let's ask if user is actually ALLOWED to look at this app
 	const permission = appconst.DefAclActionView;
 	const permissionObjType = AppModel.getAclName();
-	const permissionObjId = app.getId();
+	const permissionObjId = app.getIdAsString();
 	const hasPermission = await user.aclHasPermission(permission, permissionObjType, permissionObjId);
 	if (!hasPermission) {
 		jrhExpress.sendResJsonAclErorr(res, permission, permissionObjType, permissionObjId);
