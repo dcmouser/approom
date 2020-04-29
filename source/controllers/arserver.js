@@ -124,19 +124,44 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	// accessors
-	//
-	getBaseDir() {
+	// accessors, directory
+
+	getSourceDir() {
 		return path.resolve(__dirname, "..");
 	}
 
-	getBaseSubDir(relpath) {
-		return path.join(this.getBaseDir(), relpath);
+	getSourceSubDir(relpath) {
+		return path.join(this.getSourceDir(), relpath);
+	}
+
+	getInstallDir() {
+		return path.resolve(__dirname, "../..");
+	}
+
+	getInstallSubDir(relpath) {
+		return path.join(this.getInstallDir(), relpath);
 	}
 
 	getLogDir() {
-		return this.getBaseSubDir("logs");
+		// default is in the parent folder of source dir in /local/logs subdir
+		var dir = this.getConfigValDefault("logs:DIRECTORY", "./local/logs");
+		return jrhMisc.resolvePossiblyRelativeDirectory(dir, this.getInstallDir());
 	}
+
+	getNormalConfigDir() {
+		// default is in the parent folder of source dir in /config subdir
+		return this.getInstallSubDir("local/config");
+	}
+
+	getSourceConfigDir() {
+		// default is in the parent folder of source dir in /config subdir
+		return this.getSourceSubDir("config");
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	// accessors,  continued
 
 	getNeedsShutdown() {
 		return this.needsShutdown;
@@ -250,8 +275,10 @@ class AppRoomServer {
 		// setup debugger
 		jrdebug.setup(arGlobals.programName, true);
 
-		// setup loggers
-		this.setupLoggers();
+		// setup loggers -- can we wait until after config so that config can tell us log dir?
+		if (false) {
+			this.setupLoggers();
+		}
 
 		// show some info about app
 		jrdebug.debugf("%s v%s (%s) by %s", arGlobals.programName, arGlobals.programVersion, arGlobals.programDate, arGlobals.programAuthor);
@@ -267,7 +294,7 @@ class AppRoomServer {
 		jrconfig.setEnvList(arGlobals.envListOptions);
 
 		// Set base directory to look for config files -- caller can modify this, and discover them
-		jrconfig.setConfigDirAndDiscoverConfigFiles(this.getBaseDir());
+		jrconfig.setConfigDirs(this.getSourceConfigDir(), this.getNormalConfigDir());
 	}
 
 
@@ -288,6 +315,11 @@ class AppRoomServer {
 
 	async setupPostConfig() {
 		// setup done AFTER config is loaded
+
+		// setup loggers -- can we wait until after config so that config can tell us log dir?
+		if (true) {
+			this.setupLoggers();
+		}
 
 		// tell user if we are running in development mode
 		if (this.isDevelopmentMode()) {
@@ -451,7 +483,7 @@ class AppRoomServer {
 
 	setupExpressFavIcon(expressApp) {
 		// see https://github.com/expressjs/serve-favicon
-		const staticAbsoluteDir = this.getBaseSubDir("static");
+		const staticAbsoluteDir = this.getSourceSubDir("static");
 		const faviconObj = favicon(path.join(staticAbsoluteDir, "favicon.ico"));
 		expressApp.use(faviconObj);
 	}
@@ -459,7 +491,7 @@ class AppRoomServer {
 
 	setupExpressViews(expressApp) {
 		// view file engine setup
-		expressApp.set("views", this.getBaseSubDir("views"));
+		expressApp.set("views", this.getSourceSubDir("views"));
 
 		// handlebar template ending
 		expressApp.set("view engine", "hbs");
@@ -540,7 +572,7 @@ class AppRoomServer {
 	setupExpressStatics(expressApp) {
 		// static resources serving
 		// setup a virtual path that looks like it is at staticUrl and it is served from staticAbsoluteDir
-		const staticAbsoluteDir = this.getBaseSubDir("static");
+		const staticAbsoluteDir = this.getSourceSubDir("static");
 		const staticUrl = "/static";
 		expressApp.use(staticUrl, express.static(staticAbsoluteDir));
 		jrdebug.cdebugf("Serving static files from '%s' at '%s", staticAbsoluteDir, staticUrl);
@@ -1607,13 +1639,13 @@ class AppRoomServer {
 		jrhHandlebars.setupJrHandlebarHelpers();
 
 		// parse and make available partials from files
-		jrhHandlebars.loadPartialFiles(this.getBaseSubDir("views/partials"), "");
+		jrhHandlebars.loadPartialFiles(this.getSourceSubDir("views/partials"), "");
 	}
 
 	getViewPath() {
 		// return absolute path of view files
 		// this is used by crud aid class so it knows how to check for existence of certain view files
-		return this.getBaseSubDir("views");
+		return this.getSourceSubDir("views");
 	}
 
 	getViewExt() {

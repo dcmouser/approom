@@ -12,6 +12,7 @@
 
 // modules
 const util = require("util");
+const path = require("path");
 
 // 3rd party for durations
 const humanizeDuration = require("humanize-duration");
@@ -651,8 +652,16 @@ function getNonNullValueFromObject(obj, key, jrResult, hintMessage) {
 
 
 
-
-
+//---------------------------------------------------------------------------
+function resolvePossiblyRelativeDirectory(dirpath, basedir) {
+	if (dirpath.startsWith(".")) {
+		// relative to our base dir
+		return path.resolve(basedir, dirpath);
+	}
+	// absolute
+	return dirpath;
+}
+//---------------------------------------------------------------------------
 
 
 
@@ -705,4 +714,6 @@ module.exports = {
 	objectHasProperty,
 
 	getNonNullValueFromObject,
+
+	resolvePossiblyRelativeDirectory,
 };

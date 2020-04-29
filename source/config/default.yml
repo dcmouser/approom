@@ -48,3 +48,7 @@ token:
   EXPIRATIONSECS_ACCESS: 360
   EXPIRATIONSECS_REFRESH: 31536000
   ISSUER: your_company_or_domain
+logging:
+  # this directory can be absolute, or relative to the INSTALL (above source) directory by starting with ./
+  # DIRECTORY: "./local/logs"
+

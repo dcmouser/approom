@@ -66,6 +66,7 @@ function setupDefaultModulePaths() {
 
 
 
+//---------------------------------------------------------------------------
 /**
  * Set some override options for the program -- this can be useful to set global overrides, for example from the test running
  *

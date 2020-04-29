@@ -46,13 +46,16 @@ const jrlog = require("./jrlog");
 const envListDefault = ["NODE_ENV"];
 
 // default files we always look for -- note that earlier dominates later in this list
-const configFilesDefault = ["%SERVERPREFIX%_private", "%SERVERPREFIX%_public", "sitePrivate", "sitePublic", "defaultPrivate", "default"];
+const configFilesNormal = ["%SERVERPREFIX%_private", "%SERVERPREFIX%_public", "sitePrivate", "sitePublic", "defaultPrivate", "default"];
+const configFilesSource = ["defaultPrivate", "default"];
 //---------------------------------------------------------------------------
 
 
 //---------------------------------------------------------------------------
 // module variables
-var configDirPath;
+// var configDirPath;
+var sourceConfigDir, normalConfigDir;
+//
 var serverFilenamePrefix;
 var envList;
 var yargsObj;
@@ -101,13 +104,8 @@ function parse() {
 	// 3. environmental variables
 	nconf.env(envList);
 
-	// 4. now we would like to load in any config files found ON THE COMMANDLINE
-	// ATTN: one difficulty is we would ideally like to have the order of the files
-	//  specified on commandline matter wrt other options
-	//  as a practical close-enough, we might just take the list of config files,
-	//  and then load them into a separate hierarchy,
-	//  and always treat them as less priortity than cli args
-	nconfMergeCliConfigFiles();
+	// 4. discover configuration files and add to configFiles
+	this.discoverConfigFiles();
 
 	// 5. now merge in any explicit list of config files
 	configFiles.forEach((fileObj) => {
@@ -115,10 +113,6 @@ function parse() {
 			nconfMergeConfigFile(fileObj.path, false);
 		}
 	});
-
-	// 6*. DEFAULT config file, if it exists.
-	// ATTN: we no longer call this here, since user can easily call addConfigFile("default",false)
-	// nconfMergeConfigFile("default", false);
 
 	// 7. defaultOptions object passed into us
 	nconf.defaults(defaultOptions);
@@ -232,22 +226,52 @@ function findQueuedCommand(cmd, flagPop) {
  *
  * @param {string} val - base directory where config files are stored
  */
-function setConfigDirAndDiscoverConfigFiles(val) {
+function setConfigDirs(inSourceConfigDir, inNormalConfigDir) {
 	// configDirPath can be base path where there is a config subdir, or the full path to the configdir;
 	//  filenames specified via config option will be looked for in this dir
-	// fixups - auto add config subdir if caller passed in base dir
-	var configDirPathPlus = path.join(val, "config");
-	if (fs.existsSync(configDirPathPlus)) {
-		configDirPath = configDirPathPlus;
-	} else {
-		configDirPath = val;
-	}
+	sourceConfigDir = inSourceConfigDir;
+	normalConfigDir = inNormalConfigDir;
+}
 
+
+function discoverConfigFiles() {
 	// now that we have the config fir, we can se the default a default configfile to process before others
-	configFilesDefault.forEach((filepath) => {
-		addConfigFile(filepath, false);
+
+	// first commandline config files get precedence
+	addConfigFilesCli();
+
+	// earlier has priority over later, so we start with normalConfig dir
+	configFilesNormal.forEach((filepath) => {
+		addConfigFile(normalConfigDir, filepath, false);
+	});
+
+	// and now source config dir as our fallback
+	configFilesSource.forEach((filepath) => {
+		addConfigFile(sourceConfigDir, filepath, false);
 	});
 }
+
+
+
+/**
+ * Get a list of config files specified on the commandline via nconf, and load those in
+ * @private
+ */
+function addConfigFilesCli() {
+	// find any config files requested on the commandline
+	var configFileStr = nconf.get("config");
+	if (!configFileStr) {
+		// nothing to do
+		return;
+	}
+	// split list of config files by commas
+	var configFileStrs = configFileStr.split(",");
+	configFileStrs.forEach((filepath) => {
+		// try to load it (note last parameter true meaning trigger error if not found)
+		addConfigFile(normalConfigDir, filepath, true);
+	});
+}
+
 
 
 /**
@@ -316,9 +340,9 @@ function setYargs(val) {
  * @returns true if file found and loaded
  * @throws error if file is not found and flagErrorOnFileNotExist is true
  */
-function addConfigFile(filepath, flagErrorOnFileNotExist) {
+function addConfigFile(baseDir, filepath, flagErrorOnFileNotExist) {
 	// queue a config file to load
-	var filepathFixed = fixConfigFilePathName(filepath);
+	var filepathFixed = fixConfigFilePathName(baseDir, filepath);
 	if (!fs.existsSync(filepathFixed)) {
 		if (flagErrorOnFileNotExist) {
 			// it"s an error that we couldn"t find it
@@ -341,24 +365,7 @@ function addConfigFile(filepath, flagErrorOnFileNotExist) {
 
 
 
-/**
- * Get a list of config files specified on the commandline via nconf, and load those in
- * @private
- */
-function nconfMergeCliConfigFiles() {
-	// find any config files requested on the commandline
-	var configFileStr = nconf.get("config");
-	if (!configFileStr) {
-		// nothing to do
-		return;
-	}
-	// split list of config files by commas
-	var configFileStrs = configFileStr.split(",");
-	configFileStrs.forEach((configFilePath) => {
-		// try to load it
-		nconfMergeConfigFile(configFilePath, true);
-	});
-}
+
 
 
 /**
@@ -372,7 +379,8 @@ function nconfMergeCliConfigFiles() {
  */
 function nconfMergeConfigFile(filepath, flagErrorOnFileNotExist) {
 	// merge in a file of options
-	filepath = fixConfigFilePathName(filepath);
+
+	// filepath = fixConfigFilePathName(basedir, filepath);
 	if (!fs.existsSync(filepath)) {
 		if (flagErrorOnFileNotExist) {
 			throw (new Error("Config file does not exist: " + filepath));
@@ -428,7 +436,7 @@ function doNconfFile(rootTag, filepath) {
  * @param {string} filepath
  * @returns filepath with base directory and extension (yml) added
  */
-function fixConfigFilePathName(filepath) {
+function fixConfigFilePathName(baseDir, filepath) {
 	// fixup filepath specified to add extension and relative to our base path
 
 	// fixup special fields
@@ -441,7 +449,7 @@ function fixConfigFilePathName(filepath) {
 	}
 	// add path
 	if (!fs.existsSync(filepath)) {
-		filepath = path.join(configDirPath, filepath);
+		filepath = path.join(baseDir, filepath);
 	}
 	return filepath;
 }
@@ -602,7 +610,9 @@ module.exports = {
 	runQueuedCommands,
 	findQueuedCommand,
 
-	setConfigDirAndDiscoverConfigFiles,
+	setConfigDirs,
+	discoverConfigFiles,
+
 	setDefaultOptions,
 	setOverrideOptions,
 	setEnvList,

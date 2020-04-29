@@ -4,4 +4,6 @@
 *junk*
 *unused*
 *.log
+*secret*
+/local/logs
 logs/
