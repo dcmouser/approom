@@ -1,0 +1,4 @@
+This directory contains files that will be LOCAL to your installation, including:
+1. Config/ subdirectory where you would put configuration files for your server
+2. Logs/ subdirectory where log files will be written.
+3. Static/ subdirectory where created files might be placed.

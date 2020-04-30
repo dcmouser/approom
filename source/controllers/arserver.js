@@ -144,7 +144,7 @@ class AppRoomServer {
 
 	getLogDir() {
 		// default is in the parent folder of source dir in /local/logs subdir
-		var dir = this.getConfigValDefault("logs:DIRECTORY", "./local/logs");
+		var dir = this.getConfigValDefault("logging:DIRECTORY", "./local/logs");
 		return jrhMisc.resolvePossiblyRelativeDirectory(dir, this.getInstallDir());
 	}
 
@@ -200,7 +200,7 @@ class AppRoomServer {
 
 	getOptionProfileEnabled() { return this.getConfigVal("PROFILE", false); }
 
-	getOptionUseFullRegistrationForm() { return this.getConfigValDefault("options:SIGNUP_FULLREGISTRATIONFORM", false); }
+	getOptionUseFullRegistrationForm() { return this.getConfigValDefault("account:SIGNUP_FULLREGISTRATIONFORM", false); }
 
 	// see https://stackoverflow.com/questions/2683803/gravatar-is-there-a-default-image
 	/*
@@ -212,7 +212,7 @@ class AppRoomServer {
 		retro: awesome generated, 8-bit arcade-style pixelated faces
 		blank: a transparent PNG image (border added to HTML below for demonstration purposes)
 	*/
-	getOptionsGravatar() { return this.getConfigValDefault("options:GRAVATAR_OPTIONS", {}); }
+	getOptionsGravatar() { return this.getConfigValDefault("account:GRAVATAR_OPTIONS", {}); }
 
 	getEmergencyAlertContactsPrimary() { return this.getConfigValDefault("emergencyAlert:primary", []); }
 
@@ -238,6 +238,67 @@ class AppRoomServer {
 		return this.models[modelClassName].getAclName();
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	getAboutInfo() {
+		const data = {
+			name: arGlobals.programName,
+			version: arGlobals.programVersion,
+			date: arGlobals.programDate,
+			author: arGlobals.programAuthor,
+		};
+		return data;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+	//---------------------------------------------------------------------------
+	getBaseServerIpHttp() {
+		return this.getBaseServerUrl("http", this.serverHttp);
+	}
+
+	getBaseServerIpHttps() {
+		return this.getBaseServerUrl("https", this.serverHttps);
+	}
+
+
+	getBaseServerUrl(protocolStr, server) {
+		if (server == null) {
+			return null;
+		}
+		var serverIp = this.getServerIp();
+		var addr = server.address();
+		if (typeof addr === "string") {
+			serverIp += ":" + addr;
+		} else {
+			serverIp += ":" + addr.port;
+		}
+
+		var url = protocolStr + "://" + serverIp;
+		return url;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 	//---------------------------------------------------------------------------
@@ -3428,48 +3489,6 @@ class AppRoomServer {
 		return this.getLogDir() + "/" + arGlobals.programName + "_" + jrhMisc.getCompactNowString() + ".cpuprofile";
 	}
 	//---------------------------------------------------------------------------
-
-
-	//---------------------------------------------------------------------------
-	getAboutInfo() {
-		const data = {
-			name: arGlobals.programName,
-			version: arGlobals.programVersion,
-			date: arGlobals.programDate,
-			author: arGlobals.programAuthor,
-		};
-		return data;
-	}
-	//---------------------------------------------------------------------------
-
-
-
-
-	//---------------------------------------------------------------------------
-	getBaseServerIpHttp() {
-		return this.getBaseServerUrl("http", this.serverHttp);
-	}
-
-	getBaseServerIpHttps() {
-		return this.getBaseServerUrl("https", this.serverHttps);
-	}
-
-
-	getBaseServerUrl(protocolStr, server) {
-		if (server == null) {
-			return null;
-		}
-		var serverIp = this.getServerIp();
-		var addr = server.address();
-		if (typeof addr === "string") {
-			serverIp += ":" + addr;
-		} else {
-			serverIp += ":" + addr.port;
-		}
-
-		var url = protocolStr + "://" + serverIp;
-		return url;
-	}
 
 
 

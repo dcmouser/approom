@@ -50,10 +50,13 @@ class AppRoomClient {
 		this.pathAccessTokenRequest = "/api/refreshaccess";
 		this.pathTokenValidate = "/api/tokentest";
 	}
+	//---------------------------------------------------------------------------
 
 
 
+	//---------------------------------------------------------------------------
 	/**
+	 * Accessor, set the options object en masse
 	 * Options are:
 	 *  serverUrlBase - the base url for the server (with no path info)
 	 *  refreshToken - refresh token (generated previously or this session)
@@ -71,6 +74,7 @@ class AppRoomClient {
 
 
 	/**
+	 * Accessor short cut.
 	 * Set one option
  	 * @param string key
  	 * @param {*} val
@@ -79,20 +83,22 @@ class AppRoomClient {
 	setOption(key, val) {
 		this.options[key] = val;
 	}
-	//---------------------------------------------------------------------------
 
 
-
-	//---------------------------------------------------------------------------
+	/**
+	 * Accessor
+	 *
+	 * @returns the serverUrlBase option (see above)
+	 * @memberof AppRoomClient
+	 */
 	getOptionServerUrlBase() {
 		return this.options.serverUrlBase;
 	}
-	//---------------------------------------------------------------------------
 
 
-	//---------------------------------------------------------------------------
 	/**
-	 * Returns the status of the connection, an object with the following values:
+	 * Accessor
+	 * @returns the status of the connection, an object with the following values:
 	 *  lastError - string with the last error from the last call
 	 *  success - true if last api call was a success
 	 *  validApiAccess - true if we successfully gotten an api access key that works
@@ -103,39 +109,111 @@ class AppRoomClient {
 		return this.status;
 	}
 
+
+	/**
+	 * Accessor
+	 *
+	 * @returns true if last operation was successful
+	 * @memberof AppRoomClient
+	 */
 	getStatusSuccess() {
 		return this.status.success;
 	}
 
+
+	/**
+	 * Acessor
+	 * Sets the flag indicating whether last operation was a success
+	 * @param {*} val
+	 * @memberof AppRoomClient
+	 */
 	setStatusSuccess(val) {
 		this.status.success = val;
 	}
 
+	/**
+	 * Accessor
+	 * Sets flag tracking whether we are connected with valid api access
+	 * @param {*} val
+	 * @memberof AppRoomClient
+	 */
 	setValidApiAccess(val) {
 		this.status.validApiAccess = val;
 	}
 
+	/**
+	 * Accessor
+	 * Note that our functions do not require that this be checked before invoking, they will attempt to reconnect if needed.
+	 * Furthermore, even if one has exchanged api token that is valid, it may expire at any time.
+	 *
+	 * @returns true if we have a valid api access connection
+	 * @memberof AppRoomClient
+	 */
 	getValidApiAccess() {
 		return this.status.validApiAccess;
 	}
 
+
+	/**
+	 * Clear error state and last error
+	 * This is called internally within functions that can set errors, prior to running
+	 *
+	 * @memberof AppRoomClient
+	 */
+	clearErrors() {
+		this.success = true;
+		this.lastError = "";
+	}
+
+
+	/**
+	 * Accessor
+	 *
+	 * @returns true if the last operation encountered an error
+	 * @memberof AppRoomClient
+	 */
+	isError() {
+		return (this.success === true);
+	}
+
+	/**
+	 * Get last error
+	 *
+	 * @returns last error as string
+	 * @memberof AppRoomClient
+	 */
 	getLastError() {
 		return this.status.lastError;
 	}
 
+	/**
+	 * Accessor
+	 *
+	 * @returns a cached api access token
+	 * @memberof AppRoomClient
+	 */
 	getAccessToken() {
 		return this.cache.accessToken;
 	}
 
+	/**
+	 * Accessor
+	 * Set the cached api access token
+	 *
+	 * @param {*} val
+	 * @memberof AppRoomClient
+	 */
 	setAccessToken(val) {
 		this.cache.accessToken = val;
 	}
 	//---------------------------------------------------------------------------
 
 
+
+
 	//---------------------------------------------------------------------------
 	/**
-	 * This is the main async function that tried to connect to the server prior to being usable
+	 * This is the main async function that tries to connect to the server prior to being usable
 	 * Note that this function will attempt to us an existing long-living access token,
 	 * or if that expires, fall back on requesting a new access token if it has a stored refresh token
 	 * or failing that, it may prompt user to log in to get a new refresh token, etc.
@@ -207,7 +285,7 @@ class AppRoomClient {
 
 	//---------------------------------------------------------------------------
 	/**
-	 * Extra the data field from the response.
+	 * Extract the data field from the response.
 	 * Set this.status.success and data.error, which we check for in a variety of ways.  We expect all api calls should have a success = true in the reply, but we might also check for presence of a key-value pair
 	 *
 	 * @param {*} response - the object returned from a post/get
@@ -276,7 +354,6 @@ class AppRoomClient {
 		// extract data, check for error, set succsss status, last error, etc.
 		var data = await this.extractDataTriggerError(response, url, "validateAccessToken", "");
 	}
-
 
 
 
@@ -363,6 +440,8 @@ class AppRoomClient {
 
 
 	//---------------------------------------------------------------------------
+	// ATTN: unfinished functions
+
 	async joinRoom(appId, roomId) {
 
 	}
@@ -404,8 +483,12 @@ class AppRoomClient {
 
 
 
-
 	//---------------------------------------------------------------------------
+	/**
+	 * Just a debug helper function to display the state of the client to the console
+	 *
+	 * @memberof AppRoomClient
+	 */
 	debugToConsole() {
 		console.log("Debugging arclient object.");
 		console.log("Options:");
@@ -418,7 +501,18 @@ class AppRoomClient {
 	//---------------------------------------------------------------------------
 
 
+
+
 	//---------------------------------------------------------------------------
+	// the trigger functions are callbacks that make calls into callback functions set in options
+
+
+	/**
+	 * Signal an error to a registered callback function
+	 *
+	 * @param {*} errorMessage
+	 * @memberof AppRoomClient
+	 */
 	async triggerError(errorMessage) {
 		// call error callback function if one is registered
 		this.setStatusSuccess(false);
@@ -429,6 +523,14 @@ class AppRoomClient {
 	}
 
 
+	/**
+	 * This callback is triggered when we need to log into the system with user credentials
+	 * The returned object should be in the form: { usernameEmail: VALUE, password: VALUE }
+	 *
+	 * @param {*} hintMessage - a text string describing why the credentials are needed (typically expired refresh token or initial login)
+	 * @returns credentials object with two fields (usernameEmail, password)
+	 * @memberof AppRoomClient
+	 */
 	async triggerRequestCredentials(hintMessage) {
 		// call error callback function if one is registered
 		if (this.options.getCredentialsFunction) {
@@ -439,6 +541,14 @@ class AppRoomClient {
 		return {};
 	}
 
+
+	/**
+	 * Optional callback to display debug information useful for troubleshooting
+	 * A registered debugging message would normally just display info on console if in debug mode
+	 *
+	 * @param {string} debugMessage
+	 * @memberof AppRoomClient
+	 */
 	async triggerDebugMessage(debugMessage) {
 		if (this.options.debugFunction) {
 			await this.options.debugFunction(this, debugMessage);
@@ -446,6 +556,13 @@ class AppRoomClient {
 	}
 
 
+	/**
+	 * Optional callback to display debug information useful for troubleshooting
+	 * A registered debugging message would normally just display info on console if in debug mode
+	 * @param {string} debugMessage
+	 * @param {object} data
+	 * @memberof AppRoomClient
+	 */
 	async triggerDebugMessageWithData(debugMessage, data) {
 		if (this.options.debugFunction) {
 			if (data && data.toString) {
@@ -459,20 +576,16 @@ class AppRoomClient {
 
 
 
-	//---------------------------------------------------------------------------
-	clearErrors() {
-		this.success = true;
-		this.lastError = "";
-	}
-
-	isError() {
-		return (this.success === true);
-	}
-	//---------------------------------------------------------------------------
 
 
 
 	//---------------------------------------------------------------------------
+	/**
+	 * Any last minute shutdown stuff.
+	 * Currently just marks the client as not having api access, so it would have to re-get it
+	 *
+	 * @memberof AppRoomClient
+	 */
 	shutDown() {
 		// shutdown client
 		this.status.validApiAccess = false;
@@ -567,8 +680,12 @@ class AppRoomClient {
 
 
 
-
 //---------------------------------------------------------------------------
+/**
+ * The exported module function used to create a new client.
+ *
+ * @returns a new instance of the AppRoomClient object
+ */
 function makeNewAppRoomClient() {
 	return new AppRoomClient();
 }

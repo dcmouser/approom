@@ -526,9 +526,10 @@ class ModelBaseMongoose {
 	 */
 	static async validateSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj, flagUpdateUserRolesForNewObject) {
 		// is this a new object?
+		var savedObj;
 		var flagIsNew = obj.isNew;
 		// call validate and save
-		await this.doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj);
+		savedObj = await this.doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj);
 		// success?
 		if (flagUpdateUserRolesForNewObject && flagIsNew && !jrResult.isError() && user) {
 			// successful save and it was a new object, and caller wants us to set roles of owner
@@ -541,6 +542,7 @@ class ModelBaseMongoose {
 				jrdebug.debug(emsg);
 			}
 		}
+		return savedObj;
 	}
 
 
