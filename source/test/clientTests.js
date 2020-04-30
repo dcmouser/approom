@@ -5,9 +5,18 @@
 
  * @description
  * MOCHA test functions for approom application/framework - client
+ * Note that client testing requires a client login account username/password
+ * This is retrieved from options file (normally defaultPrivate.yml in /local/config)
+ * Values: "testing:CLIENT_USERNAMEEMAIL" and "testing:CLIENT_USERPASSWORD"
 */
 
 "use strict";
+
+
+
+
+
+
 
 
 
@@ -214,47 +223,43 @@ function createTestClient() {
 	// client options
 	const clientOptions = {
 		serverUrlBase: arserver.getBaseServerIpHttp(),
-		getCredentialsFunction: async (clientp, hintMessage) => { return await handleGetCredentialsFunction(clientp, hintMessage); },
-		errorFunction: async (clientp, errorMessage) => { return await handleErrorFunction(clientp, errorMessage); },
-		debugFunction: async (clientp, debugMessage) => { return await handleDebugFunction(clientp, debugMessage); },
+		getCredentialsFunction: async (clientp, hintMessage) => { return await handleGetCredentialsCallbackFunction(clientp, hintMessage); },
+		errorFunction: async (clientp, errorMessage) => { return await handleErrorCallbackFunction(clientp, errorMessage); },
+		debugFunction: async (clientp, debugMessage) => { return await handleDebugCallbackFunction(clientp, debugMessage); },
 	};
 	client.setOptions(clientOptions);
 	return client;
 }
 
 
-async function handleGetCredentialsFunction(clientp, hintMessage) {
+
+async function handleGetCredentialsCallbackFunction(clientp, hintMessage) {
 	jrdebug.cdebug("DEBUG - in client callback - handleGetCredentialsFunction: " + hintMessage);
 	var credentials = {
-		usernameEmail: "admin",
-		password: "test",
+		usernameEmail: arserver.getConfigVal("testing:CLIENT_USERNAMEEMAIL"),
+		password: arserver.getConfigVal("testing:CLIENT_USERPASSWORD"),
 	};
 	return credentials;
 }
 
-async function handleErrorFunction(clientp, errorMessage) {
+async function handleErrorCallbackFunction(clientp, errorMessage) {
 	jrdebug.cdebug("DEBUG - in client callback - handleErrorFunction: " + errorMessage);
 }
 
-async function handleDebugFunction(clientp, debugMessage) {
+async function handleDebugCallbackFunction(clientp, debugMessage) {
 	jrdebug.cdebug("DEBUG - in client callback  DBG: " + debugMessage);
 }
+//---------------------------------------------------------------------------
 
 
+
+//---------------------------------------------------------------------------
 async function assertClientConnect(client, flagReconnect) {
 	await client.connect(true);
 	if (!client.getValidApiAccess()) {
 		console.log("Client last error: " + client.getLastError());
 	}
 	assert(client.getValidApiAccess() === true, "Client failed to get valid api key.");
-}
-
-function assertJrResultSuccess(jrResult, hintMessage) {
-	if (jrResult.isError()) {
-		console.log("Error details:");
-		console.log(jrResult.getErrorsAsString());
-	}
-	assert(!jrResult.isError(), "Error returned in " + hintMessage);
 }
 
 function assertNoErrorInReply(reply, hintMessage) {

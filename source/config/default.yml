@@ -53,6 +53,9 @@ token:
   EXPIRATIONSECS_ACCESS: 360
   EXPIRATIONSECS_REFRESH: 31536000
   ISSUER: your_company_or_domain
+testing:
+  CLIENT_USERNAMEEMAIL: "TEST_CLIENT_USERNAME_NOT_SET_SEE_CONFIG_FILE"
+  CLIENT_USERPASSWORD: "TEST_CLIENT_PASSWORD_NOT_SET_SEE_CONFIG_FILE"
 logging:
   # this directory can be absolute, or relative to the INSTALL (above source) directory by starting with ./
   # DIRECTORY: "./local/logs"
