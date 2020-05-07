@@ -665,7 +665,14 @@ function resolvePossiblyRelativeDirectory(dirpath, basedir) {
 
 
 
-
+//---------------------------------------------------------------------------
+// see https://stackoverflow.com/questions/14249506/how-can-i-wait-in-node-js-javascript-l-need-to-pause-for-a-period-of-time
+function usleep(ms) {
+	return new Promise((resolve) => {
+		setTimeout(resolve, ms);
+	});
+}
+//---------------------------------------------------------------------------
 
 
 
@@ -716,4 +723,6 @@ module.exports = {
 	getNonNullValueFromObject,
 
 	resolvePossiblyRelativeDirectory,
+
+	usleep,
 };

@@ -192,6 +192,19 @@ class ModelBaseMongoose {
 		return (this.getDefaultDeleteDisableMode() === appconst.DefMdbVirtDelete);
 	}
 
+	static supportsVirtualDelete() {
+		return (this.getBaseSchemaDefinition().disabled !== undefined);
+	}
+
+	static getDefaultDeleteDisableModeAsAclAction() {
+		var deleteDisableMode = this.getDefaultDeleteDisableMode();
+		if (deleteDisableMode === appconst.DefMdbVirtDelete) {
+			return appconst.DefAclActionDelete;
+		}
+		return appconst.DefAclActionPermDelete;
+	}
+
+
 	/**
 	 * Should some user ACL own each instance?
 	 * Subclasses can override this (rooms, apps) to say that there should be someone who OWNS this resource
@@ -1685,7 +1698,7 @@ class ModelBaseMongoose {
 				const aclAid = jrequire("aclaid");
 				const flagIncludeNullObjectIds = true;
 				var roles = await obj.getAllUsersRolesOnThisObject(flagIncludeNullObjectIds);
-				var rethtml = aclAid.buildHtmlOfFullRoleArray(roles);
+				var rethtml = aclAid.buildHtmlOfFullUserRoleArray(roles);
 				return rethtml;
 			}
 			return "";

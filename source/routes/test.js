@@ -20,6 +20,8 @@ const jrequire = require("../helpers/jrequire");
 // helpers
 const JrResult = require("../helpers/jrresult");
 const jrdebug = require("../helpers/jrdebug");
+const jrhMisc = require("../helpers/jrh_misc");
+const jrhRateLimiter = require("../helpers/jrh_ratelimiter");
 
 // controllers
 const adminAid = jrequire("adminaid");
@@ -54,6 +56,9 @@ function setupRouter(urlPath) {
 
 	router.get("/shutdown", routerGetShutdown);
 	router.post("/shutdown", routerPostShutdown);
+
+	router.get("/ratelimit", routerGetRateLimit);
+	router.post("/ratelimit", routerPostRateLimit);
 
 	// return router
 	return router;
@@ -109,9 +114,10 @@ async function routerPostMakeappsrooms(req, res, next) {
 	const addCountApps = 5;
 	const addCountRooms = 3;
 	const addCountRoomDatas = 3;
-	var bretv = await adminAid.addTestAppsAndRooms(req, user, addCountApps, addCountRooms, addCountRoomDatas);
+	jrResult = await adminAid.addTestAppsAndRooms(user, addCountApps, addCountRooms, addCountRoomDatas);
+	jrResult.addToSession(req);
 	//
-	if (bretv) {
+	if (!jrResult.isError()) {
 		// return them to admin testing page
 		res.redirect("/test");
 	} else {
@@ -145,7 +151,7 @@ async function routerPostTestEmergencyAlerts(req, res, next) {
 
 	// send emergency alerts
 	var subject = "Test of emergency alert system";
-	var message = "This is a test of the emergency alert system.\nYou should receive a number of these messages and then a messaeg that rate limiting has kicked in for them.";
+	var message = "This is a test of the emergency alert system.\nThis will send out an email to a list of email address configured to receive emergency alerts.";
 	var extraData = {};
 	var flagAlsoSendToSecondaries = true;
 	var numToSend = 1;
@@ -156,7 +162,7 @@ async function routerPostTestEmergencyAlerts(req, res, next) {
 	}
 
 	// push session
-	jrResult = JrResult.makeSuccess(util.format("Testing sent a total of %d messages while triggering %d emergency alerts.", numSent, numToSend));
+	jrResult = JrResult.makeSuccess(util.format("Testing sent a total of %d email messages while triggering %d emergency alerts.", numSent, numToSend));
 	jrResult.addToSession(req, false);
 
 	// return them to page
@@ -232,6 +238,75 @@ async function routerPostShutdown(req, res, next) {
 	}, 250);
 }
 //---------------------------------------------------------------------------
+
+
+
+
+//---------------------------------------------------------------------------
+async function routerGetRateLimit(req, res, next) {
+	await arserver.confirmUrlPost(req, res, appconst.DefAclActionAdminister, "Test rate limiter", "This will generate a number of events which should trigger the test rate limiter to kick in.  An operation will loop many times, with some iterations being blocked by the rate limiter.");
+}
+
+async function routerPostRateLimit(req, res, next) {
+	// test rate limiter
+	if (!await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
+		// all done
+		return;
+	}
+	// check required csrf token
+	var jrResult = arserver.testCsrfReturnJrResult(req, res);
+	if (jrResult.isError()) {
+		jrResult.addToSession(req);
+		res.redirect("/test/ratelimit");
+		return;
+	}
+
+
+	const rateLimiter = arserver.getRateLimiterTest();
+	// ATTN: with rateLimiterKey == "" it means that we share a single rate limter for all emergencyAlerts
+	const rateLimiterKey = "";
+	//
+	jrResult.pushSuccess("rateLimiterTest info:" + jrhRateLimiter.getRateLimiterInfo(rateLimiter));
+
+	var message = "";
+	const numToTest = 36;
+	var sleepPerTest = 100;
+	for (var i = 0; i < numToTest; ++i) {
+		message = "Rate limiter test " + i.toString() + " at " + jrhMisc.getPreciseNowString();
+		jrResult.pushSuccess(message);
+		try {
+			// consume a point of action
+			await rateLimiter.consume(rateLimiterKey, 1);
+			message = "Ok.";
+			jrResult.pushSuccess(message);
+		} catch (rateLimiterRes) {
+			// rate limiter triggered; if this is not our FIRST trigger of rate limiter within this time period, then just silently return
+			// if it is the first trigger, send an alert about alerts being rate limited
+			if (rateLimiterRes.isFirstInDuration) {
+				message = "Rate limiter kicks in.\n";
+				jrResult.pushSuccess(message);
+			}
+			// drop down with warning about rate limiting
+			// send them a message saying emergency alerts are disabled for X amount of time
+			const blockTime = rateLimiterRes.msBeforeNext / 1000.0;
+			message = "Rate limiter blocking for " + blockTime.toString() + " seconds.";
+			jrResult.pushSuccess(message);
+		}
+		// sleep a bit
+		await jrhMisc.usleep(sleepPerTest);
+	}
+
+
+	// push session
+	jrResult.addToSession(req, false);
+
+	// return them to page
+	res.redirect("/test/ratelimit");
+}
+//---------------------------------------------------------------------------
+
+
+
 
 
 

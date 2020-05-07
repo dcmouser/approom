@@ -1044,26 +1044,26 @@ class UserModel extends ModelBaseMongoose {
 			// check if this role is relevant
 			robjectType = this.roles[key].t;
 			robjectId = this.roles[key].i;
-			jrdebug.cdebugObj(this.roles[key], "Examining roles " + key);
+			// jrdebug.cdebugObj(this.roles[key], "Examining roles " + key);
 			if ((robjectType === objectType && (robjectId === appconst.DefAclObjectIdAll || robjectId === objectId))) {
 				// user has this permission on this object, or has this permission on ALL objects of this type (indicated by this.roles[key].i === appconst.DefAclObjectIdAll)
 				matchesRole = true;
-				jrdebug.cdebug("Matches 1.");
+				// jrdebug.cdebug("Matches 1.");
 			} else {
 				// do we want roles not specifically related to this object type (for example if they are site admin)
 				if ((robjectType === appconst.DefAclObjectTypeSite || robjectType === null) && (robjectId === appconst.DefAclObjectIdAll || robjectId === null)) {
 					// here we have matched a global site role, or a role without a type, and there is no object id associated with it
 					matchesRole = true;
-					jrdebug.cdebug("Matches 2.");
+					// jrdebug.cdebug("Matches 2.");
 				}
 			}
 
 			if (matchesRole) {
 				// found a role on this object, OR found a role that doesnt refer to an object but with flagCheckNonObjectSpecificRoles set
-				jrdebug.cdebug("We got a match for role " + key);
+				// jrdebug.cdebug("We got a match for role " + key);
 				rolesFound.push(this.roles[key].r);
 			} else {
-				jrdebug.cdebug("We did NOT get a match for role " + key);
+				// jrdebug.cdebug("We did NOT get a match for role " + key);
 			}
 		}
 

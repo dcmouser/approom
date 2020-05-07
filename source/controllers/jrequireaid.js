@@ -61,7 +61,6 @@ function setupDefaultModulePaths() {
 
 	// some early controller dependencies
 	jrequire.registerPath("appconst", require.resolve("./appconst"));
-	jrequire.registerPath("ratelimiteraid", require.resolve("./ratelimiteraid"));
 	jrequire.registerPath("aclaid", require.resolve("./aclaid"));
 	jrequire.registerPath("arserver", require.resolve("./arserver"));
 

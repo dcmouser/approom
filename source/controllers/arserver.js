@@ -62,6 +62,7 @@ const jrconfig = require("../helpers/jrconfig");
 const JrResult = require("../helpers/jrresult");
 const jrhHandlebars = require("../helpers/jrh_handlebars");
 const jrhText = require("../helpers/jrh_text");
+const jrhRateLimiter = require("../helpers/jrh_ratelimiter");
 
 
 // approomserver globals
@@ -443,7 +444,6 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	setupLateRequires() {
 		// controllers
-		this.rateLimiterAid = jrequire("ratelimiteraid");
 		this.crudAid = jrequire("crudaid");
 		this.aclAid = jrequire("aclaid");
 		this.sendAid = jrequire("sendaid");
@@ -2002,21 +2002,35 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 
 
-	//---------------------------------------------------------------------------
+	/**
+	 * Set up and configure the rate limiters that we use
+ 	 *
+ 	 * ATTN: TODO: This should be modified to support configuration options for the parameters
+	 *
+	 * @memberof AppRoomServer
+	 */
 	async setupRateLimiters() {
-		await this.rateLimiterAid.setupRateLimiters();
+		//
+		jrhRateLimiter.setupRateLimiter(appconst.DefRateLimiterBasic, { points: 5, duration: 10, blockDuration: 10 });
+		jrhRateLimiter.setupRateLimiter(appconst.DefRateLimiterApi, { points: 5, duration: 30, blockDuration: 30 });
+		jrhRateLimiter.setupRateLimiter(appconst.DefRateLimiterEmergencyAlert, { points: 5, duration: 60, blockDuration: 30 });
+		jrhRateLimiter.setupRateLimiter(appconst.DefRateLimiterTest, { points: 5, duration: 2, blockDuration: 2 });
 	}
 
 	getRateLimiterBasic() {
-		return this.rateLimiterAid.getRateLimiterBasic();
+		return jrhRateLimiter.getRateLimiter(appconst.DefRateLimiterBasic);
 	}
 
 	getRateLimiterApi() {
-		return this.rateLimiterAid.getRateLimiterApi();
+		return jrhRateLimiter.getRateLimiter(appconst.DefRateLimiteApi);
 	}
 
 	getRateLimiterEmergencyAlert() {
-		return this.rateLimiterAid.getRateLimiterEmergencyAlert();
+		return jrhRateLimiter.getRateLimiter(appconst.DefRateEmergencyAlert);
+	}
+
+	getRateLimiterTest() {
+		return jrhRateLimiter.getRateLimiter(appconst.DefRateLimiterTest);
 	}
 	//---------------------------------------------------------------------------
 
@@ -2032,6 +2046,10 @@ class AppRoomServer {
 			msg += "  Development mode enabled.";
 		}
 		await this.logm(appconst.DefLogTypeInfoServer, msg);
+
+		if (this.getOptionDebugEnabled()) {
+			await this.logm(appconst.DefLogTypeDebug, "Starting up with debug mode enabled.");
+		}
 	}
 
 
@@ -3233,7 +3251,7 @@ class AppRoomServer {
 
 			if (err.escapeLoops) {
 				console.log("\n\n----------------------------------------------------------------------");
-				console.log("In uncaughtException forcing process exit, error:");
+				console.log("Encountered UncaughtException forcing process exit, error:");
 				console.log(err);
 				console.log("----------------------------------------------------------------------\n\n");
 
@@ -3243,6 +3261,11 @@ class AppRoomServer {
 				process.exit();
 				return;
 			}
+
+			console.log("Encountered UncaughtException, attempting to log...");
+
+			// add flag to it to prevent infinite loops
+			err.escapeLoops = true;
 
 			// handle the fatal error (by logging it presumably)
 			await this.handleFatalError(err);
@@ -3267,11 +3290,18 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	async handleUncaughtError(err) {
 
+		console.log("Encountered UncaughtError, attempting to log...");
+
 		const errString = "Uncaught error occurred on " + jrhMisc.getNiceNowString() + ":\n\n" + jrhMisc.objToString(err, false);
 
 		if (true) {
 			// log the critical error to file and database
-			await this.logm(appconst.DefLogTypeErrorCriticalException, errString);
+			try {
+				await this.logm(appconst.DefLogTypeErrorCriticalException, errString);
+			} catch (exceptionError) {
+				err.loggingException = exceptionError;
+				jrdebug.debugObj(err, "Exception while trying to log uncaught error");
+			}
 		}
 
 		if (true) {
@@ -3284,8 +3314,13 @@ class AppRoomServer {
 		// ATTN: test
 		if (true) {
 			// log the critical error to file and database
-			const errString = "Fatal/critical error occurred on " + jrhMisc.getNiceNowString() + ":\n\n" + jrhMisc.objToString(err, false);
-			await this.logm(appconst.DefLogTypeErrorCriticalException, errString);
+			try {
+				const errString = "Fatal/critical error occurred on " + jrhMisc.getNiceNowString() + ":\n\n" + jrhMisc.objToString(err, false);
+				await this.logm(appconst.DefLogTypeErrorCriticalException, errString);
+			} catch (exceptionError) {
+				err.loggingException = exceptionError;
+				jrdebug.debugObj(err, "Exception while trying to log fatal error");
+			}
 		}
 		process.exitCode = 2;
 	}
@@ -3420,10 +3455,10 @@ class AppRoomServer {
 	 * @memberof AppRoomServer
 	 */
 	setupGlobalHooks() {
-		process.on("exit", () => {
+		process.on("exit", async () => {
 			// try to shutdown, if not already done, on exit
 			// console.log("Exiting application.");
-			this.shutDown();
+			await this.shutDown();
 		});
 	}
 	//---------------------------------------------------------------------------

@@ -131,6 +131,7 @@ exports.DefStateModeLabelsEdit = {
 
 //---------------------------------------------------------------------------
 // showing disabled, etc
+// ATTN: TODO: document this better -- what is it used for and where?
 exports.DefShowStateModeLabels = {
 	onlyEnabled: "Only enabled",
 	enabledDisabled: "Enabled/Disabled",
@@ -138,4 +139,14 @@ exports.DefShowStateModeLabels = {
 	onlyDeleted: "Only deleted",
 	all: "All (enabled, disabled, deleted)",
 };
+//---------------------------------------------------------------------------
+
+
+
+//---------------------------------------------------------------------------
+// rate limiter stuff
+exports.DefRateLimiterBasic = "basic";
+exports.DefRateLimiterApi = "api";
+exports.DefRateLimiterEmergencyAlert = "emergencyAlert";
+exports.DefRateLimiterTest = "test";
 //---------------------------------------------------------------------------

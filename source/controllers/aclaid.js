@@ -68,23 +68,14 @@ class AclAid {
 	//---------------------------------------------------------------------------
 
 
-	//---------------------------------------------------------------------------
-	async createDefaultAclCrudGrantsForAllModelResources() {
-		// loop all models and call this.createAclEditViewGrantsForResource on them
-		const arserver = jrequire("arserver");
-		var aclObjName;
-
-		await jrhMisc.asyncAwaitForEachObjectKeyFunctionCall(arserver.getModels(), async (key, val) => {
-			aclObjName = val.getAclName();
-			if (aclObjName) {
-				await this.createDefaultAclCrudGrantsForResource(aclObjName);
-			}
-		});
-	}
-	//---------------------------------------------------------------------------
 
 
-	//---------------------------------------------------------------------------
+	/**
+	 * The main top level function that sets up acl permissions on objects
+	 *
+	 * @returns true on success
+	 * @memberof AclAid
+	 */
 	async setupAclPermissions() {
 		const arserver = jrequire("arserver");
 
@@ -121,7 +112,6 @@ class AclAid {
 		// TEST - we wanted to see if this showed up on App view when we listed users who had role on the object; but it does not
 		// this.roleAcl.grant(appconst.DefAclRoleSiteAdmin).execute(appconst.DefAclActionAnalytics).on(arserver.getModelClassAclName("RoomModel"));
 
-
 		// stats and analytics
 		this.roleAcl.grant(appconst.DefAclRoleGlobalMod).execute(appconst.DefAclActionAnalytics).on(appconst.DefAclObjectTypeSite);
 
@@ -129,6 +119,32 @@ class AclAid {
 	}
 
 
+
+	/**
+	 * Loops all the registered model classes and adds crud acl permissions for them
+	 *
+	 * @memberof AclAid
+	 */
+	async createDefaultAclCrudGrantsForAllModelResources() {
+		// loop all models and call this.createAclEditViewGrantsForResource on them
+		const arserver = jrequire("arserver");
+		var aclObjName;
+
+		await jrhMisc.asyncAwaitForEachObjectKeyFunctionCall(arserver.getModels(), async (key, val) => {
+			aclObjName = val.getAclName();
+			if (aclObjName) {
+				await this.createDefaultAclCrudGrantsForResource(aclObjName);
+			}
+		});
+	}
+
+
+	/**
+	 * Helper function called on each model class, to set up acl permissions for it
+	 *
+	 * @param {*} resourceName
+	 * @memberof AclAid
+	 */
 	createDefaultAclCrudGrantsForResource(resourceName) {
 		// permission groups
 		const permAll = [appconst.DefAclActionAdd, appconst.DefAclActionEdit, appconst.DefAclActionView, appconst.DefAclActionViewData, appconst.DefAclActionAddData, appconst.DefAclActionList, appconst.DefAclActionDelete, appconst.DefAclActionPermDelete];
@@ -152,8 +168,10 @@ class AclAid {
 		// owner management
 		this.roleAcl.grant(appconst.DefAclRoleOwner).execute(permManageOwners).on(resourceName);
 		this.roleAcl.grant(appconst.DefAclRoleOwner).execute(permManageModerators).on(resourceName);
+
 		// inherited by default?
 		// this.roleAcl.grant(appconst.DefAclRoleOwner).execute(permManageMembers).on(resourceName);
+
 		// moderator management
 		this.roleAcl.grant(appconst.DefAclRoleModerator).execute(permManageMembers).on(resourceName);
 
@@ -170,7 +188,15 @@ class AclAid {
 
 
 
-	//---------------------------------------------------------------------------
+	/**
+	 * Test whether any of the passed roles imply a permission to perform an action (on an optional target)
+	 *
+	 * @param {*} roles
+	 * @param {*} action
+	 * @param {*} target - null or a model class aclname
+	 * @returns true if action permission is implied by any of the roles
+	 * @memberof AclAid
+	 */
 	async anyRolesImplyPermission(roles, action, target) {
 		// return true if any of the specified roles (array) have permission
 		// jrdebug.cdebug("In anyRolesImplyPermission with action = " + action + ", target = " + target);
@@ -189,6 +215,16 @@ class AclAid {
 	}
 
 
+
+	/**
+	 * Check whether a single role implies a permission to perform an action (on an optional target)
+	 *
+	 * @param {*} role
+	 * @param {*} action
+	 * @param {*} target - null or a model class aclname
+	 * @returns true if action permission is implied by the role
+	 * @memberof AclAid
+	 */
 	async roleImpliesPermission(role, action, target) {
 		// return true if the role implies the action
 		jrdebug.cdebug("In roleImpliesPermission with action = " + action + ", target = " + target + ", role = " + role);
@@ -213,6 +249,12 @@ class AclAid {
 
 
 	//---------------------------------------------------------------------------
+	/**
+	 * Just returns a large object with all acl configuration structure for debugging
+	 *
+	 * @returns object
+	 * @memberof AclAid
+	 */
 	calcAclStructure() {
 		// return an object with all acl info for debugging
 		var aclStructure = {};
@@ -225,7 +267,14 @@ class AclAid {
 
 
 	//---------------------------------------------------------------------------
-	buildHtmlOfFullRoleArray(roles) {
+	/**
+	 * Takes an array of user roles (see definition below) and build a nice html list to display
+	 *
+	 * @param {array} roles - an array of object with fields .uname (username), .uid (userid), .r (role string), .t (target acl trype string)
+	 * @returns html string
+	 * @memberof AclAid
+	 */
+	buildHtmlOfFullUserRoleArray(roles) {
 		if (!roles) {
 			return "";
 		}
@@ -264,7 +313,7 @@ class AclAid {
 	/**
 	 * Perform an ACL role change and return jrResult
 	 * This function must check the permission of the petitioner to make sure they have the permission to perform this action
-	 * @param {object} roleChange
+	 * @param {object} roleChange -- see below for structure of roleChange object
 	 * @returns JrResult object
 	 * @memberof AclAid
 	// example roleChange object:
@@ -340,7 +389,7 @@ class AclAid {
 	/**
 	 * Parse the roleChange object and create a new one with objects, petitioner, recipient all resolved to objects
 	 *
-	 * @param {object} roleChange
+	 * @param {object} roleChange -- see performRoleChange() function above for description of roleChange object
 	 * @memberof AclAid
 	 * @returns object
 	 */
@@ -368,6 +417,14 @@ class AclAid {
 
 
 
+	/**
+	 * Validate the roleChange operation; pushing any error into jrResult
+	 *
+	 * @param {string} operation
+	 * @param {*} jrResult
+	 * @returns validated operation or null on error
+	 * @memberof AclAid
+	 */
 	roleChangeParseOperation(operation, jrResult) {
 		if (operation !== "add" && operation !== "remove") {
 			jrResult.pushFieldError("operation", "Operation must be one of 'add' or 'remove'");
@@ -376,6 +433,14 @@ class AclAid {
 		return operation;
 	}
 
+	/**
+	 * 	 * Validate the roleChange role; pushing any error into jrResult
+	 *
+	 * @param {string} role
+	 * @param {*} jrResult
+	 * @returns validated role or null on error
+	 * @memberof AclAid
+	 */
 	roleChangeParseRole(role, jrResult) {
 		// now role, which should be a non-empty string
 		if (!this.isValidRole(role)) {
@@ -385,8 +450,16 @@ class AclAid {
 		return role;
 	}
 
+	/**
+	 * 	Validate the roleChange role; pushing any error into jrResult
+	 *
+	 * @param {string} role
+	 * @returns true if its a valid role
+	 * @memberof AclAid
+	 */
 	isValidRole(role) {
 		// ATTN: for now we just check that it's a string
+		// ATTN: complain if its an unknown role; not so important since an unknown role will always just return false for permission lookup
 		if (typeof role !== "string") {
 			return false;
 		}
@@ -397,6 +470,15 @@ class AclAid {
 
 
 	//---------------------------------------------------------------------------
+	/**
+	 * Parse an sub-object in a roleChange object referring to a target object, which may be specified by id# string, or by passing a raw object; pushing any error into jrResult
+	 *
+	 * @param {object} objDef
+	 * @param {string} fieldLabel - for error text
+	 * @param {*} jrResult
+	 * @returns the model object or null if not specified or found
+	 * @memberof AclAid
+	 */
 	async flexibleParseObjectIdentity(objDef, fieldLabel, jrResult) {
 		if (!objDef) {
 			// no object specified -- this is allowed
@@ -413,11 +495,21 @@ class AclAid {
 			return doc;
 		}
 		// ATTN: unfinished
-		jrResult.pushFieldError(fieldLabel, "Not a valid object");
+		jrResult.pushFieldError(fieldLabel, "Not a valid object (" + fieldLabel + ")");
 		return null;
 	}
 
 
+	/**
+	 * Parse a user sub-object in a roleChange object referring to a user, which may be specified by id# string, or by email or username, or by passing a raw user model object; pushing any error into jrResult
+	 * Error if none found.
+	 *
+	 * @param {object} objDef
+	 * @param {string} fieldLabel - for error text
+	 * @param {*} jrResult
+	 * @returns user indicated
+	 * @memberof AclAid
+	 */
 	async flexibleParseUser(objDef, fieldLabel, jrResult) {
 		const UserModel = jrequire("models/user");
 

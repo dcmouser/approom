@@ -44,7 +44,18 @@ class AdminAid {
 
 
 	//---------------------------------------------------------------------------
-	async addTestAppsAndRooms(req, user, addCountApps, addCountRooms, addCountRoomDatas) {
+	/**
+	 * Testin helper; Just add a number of test applications, rooms for those applications, and roomdatas for those rooms
+	 *
+	 * @param {*} req - https request for pushign session result
+	 * @param {*} user
+	 * @param {*} addCountApps
+	 * @param {*} addCountRooms
+	 * @param {*} addCountRoomDatas
+	 * @returns jrResult
+	 * @memberof AdminAid
+	 */
+	async addTestAppsAndRooms(user, addCountApps, addCountRooms, addCountRoomDatas) {
 		// add some test apps and rooms
 		var successMessage;
 		var app, room, roomdata;
@@ -155,9 +166,8 @@ class AdminAid {
 		// success
 		// push message on session
 		var jrResult = JrResult.makeSuccess(successMessage);
-		jrResult.addToSession(req);
 		// return success
-		return true;
+		return jrResult;
 	}
 	//---------------------------------------------------------------------------
 

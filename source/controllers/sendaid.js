@@ -156,7 +156,7 @@ class SendAid {
 		if (this.flagDebugMode) {
 			// don't actually mail, instead just log it to console and file
 			jrdebug.debug("Config flag mailer:DEBUG set, so mail to [" + mailobj.to + "] not actually sent (sending mail to debug log instead).");
-			arserver.logm(appconst.DefLogTypeDebug + ".mailer", "mailer:DEBUG option preventing mail from being sent", null, mailobj);
+			await arserver.logm(appconst.DefLogTypeDebug + ".mailer", "mailer:DEBUG option preventing mail from being sent", mailobj);
 			return JrResult.makeSuccess("Mail sent (but only to log because of mail debug flag).");
 		}
 

@@ -55,6 +55,14 @@ class CrudAid {
 
 
 	//---------------------------------------------------------------------------
+	/**
+	 * Setup a router for a model's crud access (add/edit/view/list/delete)
+	 *
+	 * @param {*} router
+	 * @param {*} modelClass
+	 * @param {*} baseCrudUrl
+	 * @memberof CrudAid
+	 */
 	setupRouter(router, modelClass, baseCrudUrl) {
 		// this is called during server setup, for each route that we want to provide crud route support on
 		// note that we use const variables with different names here so that we can precalc the view files ONCE
@@ -136,6 +144,19 @@ class CrudAid {
 	//---------------------------------------------------------------------------
 	// These functions do the actual work of crud routes
 
+	/**
+	 * Route invokes this on a list get route
+	 *
+	 * @param {*} req
+	 * @param {*} res
+	 * @param {*} next
+	 * @param {*} modelClass
+	 * @param {*} baseCrudUrl
+	 * @param {*} viewFileSet
+	 * @param {*} extraViewData
+	 * @returns true on route handled
+	 * @memberof CrudAid
+	 */
 	async handleListGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
@@ -146,10 +167,23 @@ class CrudAid {
 		}
 
 		// present the list
-		return await this.doHandleList(req, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
+		return await this.doPresentListForm(req, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
 	}
 
 
+	/**
+	 * Route invokes this on a list post route, which happens when user performs bulk actions on list view
+	 *
+	 * @param {*} req
+	 * @param {*} res
+	 * @param {*} next
+	 * @param {*} modelClass
+	 * @param {*} baseCrudUrl
+	 * @param {*} viewFileSet
+	 * @param {*} extraViewData
+	 * @returns true on route handled
+	 * @memberof CrudAid
+	 */
 	async handleListPost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// this is called for bulk action
 
@@ -173,13 +207,26 @@ class CrudAid {
 		jrResult.addToSession(req);
 
 		// present the list
-		return await this.doHandleList(req, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
+		return await this.doPresentListForm(req, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
 	}
 
 
 
 
-	async doHandleList(req, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	/**
+	 * Shared function for handling list route (get and post)
+	 *
+	 * @param {*} req
+	 * @param {*} res
+	 * @param {*} user
+	 * @param {*} modelClass
+	 * @param {*} baseCrudUrl
+	 * @param {*} viewFileSet
+	 * @param {*} extraViewData
+	 * @returns true on handled
+	 * @memberof CrudAid
+	 */
+	async doPresentListForm(req, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		var jrResult = JrResult.makeNew();
 
 		// ATTN: We might set these differently based on who is logged in and looking at the list
@@ -241,8 +288,20 @@ class CrudAid {
 
 
 
-
 	//---------------------------------------------------------------------------
+	/**
+	 * Handles get add route
+	 *
+	 * @param {*} req
+	 * @param {*} res
+	 * @param {*} next
+	 * @param {*} modelClass
+	 * @param {*} baseCrudUrl
+	 * @param {*} viewFileSet
+	 * @param {*} extraViewData
+	 * @returns true on handled
+	 * @memberof CrudAid
+	 */
 	async handleAddGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
@@ -276,39 +335,24 @@ class CrudAid {
 			return true;
 		}
 
-		// any helper data
-		const helperData = await modelClass.calcCrudEditHelperData(user);
-
-		// parse view file set
-		var { viewFile, isGeneric } = viewFileSet;
-
-		// generic main html for page (add form)
-		var genericMainHtml;
-		if (isGeneric) {
-			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, reqbody, jrResult, "add", helperData);
-		}
-
-		// cancel button goes where?
-		const cancelUrl = baseCrudUrl;
-
-		// render
-		res.render(viewFile, {
-			headline: "Add " + modelClass.getNiceName(),
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
-			csrfToken: arserver.makeCsrf(req, res),
-			reqbody,
-			helperData,
-			genericMainHtml,
-			baseCrudUrl,
-			cancelUrl,
-			crudAdd: true,
-			extraViewData,
-		});
-
-		return true;
+		// present form
+		return await this.doPresentAddForm(req, reqbody, jrResult, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
 	}
 
 
+	/**
+	 * Handles post add route
+	 *
+	 * @param {*} req
+	 * @param {*} res
+	 * @param {*} next
+	 * @param {*} modelClass
+	 * @param {*} baseCrudUrl
+	 * @param {*} viewFileSet
+	 * @param {*} extraViewData
+	 * @returns true on handled
+	 * @memberof CrudAid
+	 */
 	async handleAddPost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// user posts form for adding submission
 
@@ -342,7 +386,7 @@ class CrudAid {
 		if (!jrResult.isError()) {
 			// now save add changes
 			// form fields that we dont complain about finding even though they arent for the form object
-			var ignoreFields = this.getIgnoreFields();
+			var ignoreFields = this.getCrudEditFormIgnoreFields();
 
 			// process
 
@@ -395,6 +439,27 @@ class CrudAid {
 			}
 		}
 
+		// re-present form
+		return await this.doPresentAddForm(req, reqbody, jrResult, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
+	}
+
+
+	/**
+	 * Shared function for handling add request (get and post)
+	 *
+	 * @param {*} req
+	 * @param {*} reqbody
+	 * @param {*} jrResult
+	 * @param {*} res
+	 * @param {*} user
+	 * @param {*} modelClass
+	 * @param {*} baseCrudUrl
+	 * @param {*} viewFileSet
+	 * @param {*} extraViewData
+	 * @returns
+	 * @memberof CrudAid
+	 */
+	async doPresentAddForm(req, reqbody, jrResult, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// any helper data
 		const helperData = await modelClass.calcCrudEditHelperData(user);
 
@@ -430,7 +495,21 @@ class CrudAid {
 
 
 
+
 	//---------------------------------------------------------------------------
+	/**
+	 * 	 * Handles get edit route
+	 *
+	 * @param {*} req
+	 * @param {*} res
+	 * @param {*} next
+	 * @param {*} modelClass
+	 * @param {*} baseCrudUrl
+	 * @param {*} viewFileSet
+	 * @param {*} extraViewData
+	 * @returns true on handled
+	 * @memberof CrudAid
+	 */
 	async handleEditGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
@@ -449,46 +528,25 @@ class CrudAid {
 		// put object fields in body, for view form
 		var reqbody = obj.modelObjPropertyCopy(true);
 
-		// any helper data
-		const helperData = await modelClass.calcCrudEditHelperData(user, id);
 
-		// parse view file set
-		var { viewFile, isGeneric } = viewFileSet;
-
-		// generic main html for page (edit form)
-		var genericMainHtml;
-		if (isGeneric) {
-			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, reqbody, jrResult, "edit", helperData);
-		}
-
-		// cancel button goes where?
-		const cancelUrl = baseCrudUrl + "/view/" + id;
-
-		//
-		const flagOfferDelete = modelClass.getDefaultDeleteDisableModeIsVirtual() && (obj.disabled === 0 || (obj.disabled !== appconst.DefMdbVirtDelete));
-		const flagOfferUnDelete = obj.disabled === appconst.DefMdbVirtDelete;
-		const flagOfferPermDelete = true;
-
-		// render
-		res.render(viewFile, {
-			headline: "Edit " + modelClass.getNiceName() + " #" + id,
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
-			csrfToken: arserver.makeCsrf(req, res),
-			reqbody,
-			helperData,
-			genericMainHtml,
-			baseCrudUrl,
-			cancelUrl,
-			extraViewData,
-			flagOfferDelete,
-			flagOfferPermDelete,
-			flagOfferUnDelete,
-		});
-
-		return true;
+		// present form
+		return await this.doPresentEditForm(req, reqbody, jrResult, obj, id, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
 	}
 
 
+	/**
+	 * Handles post edit route
+	 *
+	 * @param {*} req
+	 * @param {*} res
+	 * @param {*} next
+	 * @param {*} modelClass
+	 * @param {*} baseCrudUrl
+	 * @param {*} viewFileSet
+	 * @param {*} extraViewData
+	 * @returns true on handle
+	 * @memberof CrudAid
+	 */
 	async handleEditPost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// user posts form for adding submission
 
@@ -503,7 +561,7 @@ class CrudAid {
 
 		// get id from post, ignore url param
 		var id = req.body._id;
-		var ignoreFields = this.getIgnoreFields();
+		var ignoreFields = this.getCrudEditFormIgnoreFields();
 
 		// acl test
 		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appconst.DefAclActionEdit, id)) {
@@ -553,6 +611,29 @@ class CrudAid {
 			}
 		}
 
+		// re-present form
+		return await this.doPresentEditForm(req, reqbody, jrResult, obj, id, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
+	}
+
+
+	/**
+	 * Common presentation of edit form
+	 *
+	 * @param {*} req
+	 * @param {*} reqbody
+	 * @param {*} jrResult
+	 * @param {*} obj
+	 * @param {*} id
+	 * @param {*} res
+	 * @param {*} user
+	 * @param {*} modelClass
+	 * @param {*} baseCrudUrl
+	 * @param {*} viewFileSet
+	 * @param {*} extraViewData
+	 * @returns true on handled
+	 * @memberof CrudAid
+	 */
+	async doPresentEditForm(req, reqbody, jrResult, obj, id, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// any helper data
 		const helperData = await modelClass.calcCrudEditHelperData(user, id);
 
@@ -570,7 +651,7 @@ class CrudAid {
 		const flagOfferUnDelete = obj.disabled === appconst.DefMdbVirtDelete;
 		const flagOfferPermDelete = true;
 
-		// render -- just like original edit
+		// render
 		res.render(viewFile, {
 			headline: "Edit " + modelClass.getNiceName() + " #" + id,
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
@@ -598,6 +679,19 @@ class CrudAid {
 
 
 	//---------------------------------------------------------------------------
+	/**
+	 * Handle get view route
+	 *
+	 * @param {*} req
+	 * @param {*} res
+	 * @param {*} next
+	 * @param {*} modelClass
+	 * @param {*} baseCrudUrl
+	 * @param {*} viewFileSet
+	 * @param {*} extraViewData
+	 * @returns true on handled
+	 * @memberof CrudAid
+	 */
 	async handleViewGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
@@ -649,9 +743,25 @@ class CrudAid {
 
 
 
-	getAclActionForChangeReqMode(reqmode) {
+	/**
+	 * Helper function that validated the change mode string and returns the ACL action associated with it or throws error
+	 *
+	 * @param {*} reqmode
+	 * @returns the acl action string or null on error; error pushed to jrResult
+	 * @memberof CrudAid
+	 */
+	getAclActionForChangeReqMode(modelClass, reqmode, jrResult) {
+		if (reqmode === "virtdelete") {
+			if (modelClass.supportsVirtualDelete()) {
+				return appconst.DefAclActionDelete;
+			}
+			jrResult.pushError("Virtual delete not supported for model class " + modelClass.getNiceName());
+			return null;
+		}
 		if (reqmode === "delete") {
-			return appconst.DefAclActionDelete;
+			// this will either be a virtual delete or a permanent delete
+			// return appconst.DefAclActionDelete;
+			return modelClass.getDefaultDeleteDisableModeAsAclAction();
 		}
 		if (reqmode === "permdelete") {
 			return appconst.DefAclActionPermDelete;
@@ -659,14 +769,53 @@ class CrudAid {
 		if (reqmode === "undelete") {
 			return appconst.DefAclActionUnDelete;
 		}
-		throw new Error("Unknown reqmode in getAclActionForChangeReqMode: " + reqmode);
+		// error
+		jrResult.pushError("Unknown reqmode in getAclActionForChangeReqMode: " + reqmode);
+		return null;
+	}
+
+
+
+	/**
+	 * Given a change mode acl action return the database mode change value it represents
+	 *
+	 * @param {*} aclAction
+	 * @param {*} jrResult
+	 * @returns appconst.DefMdbVirtDelete or appconst.DefMdbRealDelete or appconst.DefMdbEnable
+	 * @memberof CrudAid
+	 */
+	convertAclChangeModeActionToDeleteDatabaseStateValue(aclAction, jrResult) {
+		// what kind of delete do we want, virtual or real?
+		if (aclAction === appconst.DefAclActionDelete) {
+			return appconst.DefMdbVirtDelete;
+		}
+		if (aclAction === appconst.DefAclActionPermDelete) {
+			return appconst.DefMdbRealDelete;
+		}
+		if (aclAction === appconst.DefAclActionUnDelete) {
+			return appconst.DefMdbEnable;
+		}
+		jrResult.pushError("Unknown aclAction in convertAclChangeModeActionToDeleteDatabaseStateValue: " + aclAction);
+		return null;
 	}
 
 
 
 
-
-
+	/**
+	 * Handle get chagemode route
+	 *
+	 * @param {*} req
+	 * @param {*} res
+	 * @param {*} next
+	 * @param {*} modelClass
+	 * @param {*} baseCrudUrl
+	 * @param {*} viewFileSet
+	 * @param {*} extraViewData
+	 * @param {*} reqmode
+	 * @returns true on handled
+	 * @memberof CrudAid
+	 */
 	async handleChangeModeGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode) {
 		var jrResult = JrResult.makeNew();
 
@@ -675,22 +824,40 @@ class CrudAid {
 
 		// get id from get param
 		var id = req.params.id;
+		var obj;
 
 		// which acl permission to check for
-		const aclAction = this.getAclActionForChangeReqMode(reqmode);
+		const aclAction = this.getAclActionForChangeReqMode(modelClass, reqmode, jrResult);
 
 		// get object AND perform ACL test
-		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, aclAction);
+		if (!jrResult.isError()) {
+			obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, aclAction);
+		}
 		if (jrResult.isError()) {
 			return true;
 		}
 
-		return await this.handleChangeModePresentView(id, obj, req, res, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode);
+		return await this.doPresentChangeModeForm(id, obj, req, res, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode);
 	}
 
 
 
+	/**
+	 * 	 * Handle post chagemode route
+	 *
+	 * @param {*} req
+	 * @param {*} res
+	 * @param {*} next
+	 * @param {*} modelClass
+	 * @param {*} baseCrudUrl
+	 * @param {*} viewFileSet
+	 * @param {*} extraViewData
+	 * @param {*} reqmode
+	 * @returns true on handled
+	 * @memberof CrudAid
+	 */
 	async handleChangeModePost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode) {
+		var jrResult = JrResult.makeNew();
 
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
@@ -698,34 +865,28 @@ class CrudAid {
 		// get id from post, ignore url param
 		var id = req.body._id;
 		var obj;
-		var newmode;
 
-		// which acl permission to check for
-		const aclAction = this.getAclActionForChangeReqMode(reqmode);
-		// get object AND perform ACL test
-		var jrResult = JrResult.makeNew();
-		obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, aclAction);
+		// ATTN: change this to drop down re-present rather than error
+		// check required csrf token
+		jrResult = arserver.testCsrfReturnJrResult(req, res);
 		if (jrResult.isError()) {
 			return true;
 		}
 
-		// check required csrf token
-		jrResult = arserver.testCsrfReturnJrResult(req, res);
+		// which acl permission to check for
+		const aclAction = this.getAclActionForChangeReqMode(modelClass, reqmode, jrResult);
 		if (!jrResult.isError()) {
-			// process delete
+			// get object AND perform ACL test
+			obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, aclAction);
+		}
+		if (jrResult.isError()) {
+			return true;
+		}
 
-			// what kind of delete do we want, virtual or real?
+		// process delete
+		var newmode = this.convertAclChangeModeActionToDeleteDatabaseStateValue(aclAction, jrResult);
 
-			if (reqmode === "delete") {
-				newmode = modelClass.getDefaultDeleteDisableMode();
-			} else if (reqmode === "permdelete") {
-				newmode = appconst.DefMdbRealDelete;
-			} else if (reqmode === "undelete") {
-				newmode = appconst.DefMdbEnable;
-			} else {
-				throw new Error("Unknown reqmode in handleChangeModePost: " + reqmode);
-			}
-
+		if (!jrResult.isError()) {
 			// do the actual mode change (delete / virtual or real)
 			await obj.doChangeMode(newmode, jrResult);
 		}
@@ -747,12 +908,27 @@ class CrudAid {
 		}
 
 		// error, re-present form
-		return await this.handleChangeModePresentView(id, obj, req, res, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode);
+		return await this.doPresentChangeModeForm(id, obj, req, res, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode);
 	}
 
 
 
-	async handleChangeModePresentView(id, obj, req, res, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode) {
+	/**
+	 * Present the form that lets user change the mode (deleted, etc.)
+	 *
+	 * @param {*} id
+	 * @param {*} obj
+	 * @param {*} req
+	 * @param {*} res
+	 * @param {*} modelClass
+	 * @param {*} baseCrudUrl
+	 * @param {*} viewFileSet
+	 * @param {*} extraViewData
+	 * @param {*} reqmode
+	 * @returns true on handled
+	 * @memberof CrudAid
+	 */
+	async doPresentChangeModeForm(id, obj, req, res, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode) {
 		var jrResult = JrResult.makeNew();
 
 		// any helper data
@@ -793,6 +969,7 @@ class CrudAid {
 		return true;
 	}
 
+	//---------------------------------------------------------------------------
 
 
 
@@ -812,6 +989,20 @@ class CrudAid {
 
 
 
+	//---------------------------------------------------------------------------
+	/**
+	 * Simple stats view for a model class
+	 *
+	 * @param {*} req
+	 * @param {*} res
+	 * @param {*} next
+	 * @param {*} modelClass
+	 * @param {*} baseCrudUrl
+	 * @param {*} viewFileSet
+	 * @param {*} extraViewData
+	 * @returns true on handled
+	 * @memberof CrudAid
+	 */
 	async handleStatsGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
@@ -853,8 +1044,14 @@ class CrudAid {
 
 
 	//---------------------------------------------------------------------------
-	getIgnoreFields() {
-		// fields that we dont need to complain about and just ignore when they are found in an edit form submission
+	/**
+	 * Helper for parsing crud forms
+	 *
+	 * @returns	array list of fields that we dont need to complain about and just ignore when they are found in an edit form submission
+	 * @memberof CrudAid
+	 */
+	getCrudEditFormIgnoreFields() {
+
 		return ["_csrf", "_id"];
 	}
 	//---------------------------------------------------------------------------
@@ -866,8 +1063,15 @@ class CrudAid {
 
 
 	//---------------------------------------------------------------------------
-	// helper to determine which view file to show
-	// checks first for model specific view, then defaults to crud generic if the specific one not found
+	/**
+	 * Helper function that calculates the view file to be used for different routes
+	 * Checks first for model specific view, then defaults to crud generic if the specific one not found.
+	 *
+	 * @param {*} subview
+	 * @param {*} modelClass
+	 * @returns object with .viewfile and .isGeneric fields
+	 * @memberof CrudAid
+	 */
 	calcViewFile(subview, modelClass) {
 		var fname = path.join("crud", subview);
 		var fnameModelSpecific = path.join("crud", modelClass.getCollectionName() + "_" + subview);
@@ -889,7 +1093,22 @@ class CrudAid {
 
 
 
+
+
+
 	//---------------------------------------------------------------------------
+	/**
+	 * Generate the main html for different crudSubType views
+	 *
+	 * @param {*} modelClass
+	 * @param {*} req
+	 * @param {*} obj
+	 * @param {*} jrResult
+	 * @param {*} crudSubType
+	 * @param {*} helperData
+	 * @returns html string
+	 * @memberof CrudAid
+	 */
 	async buildGenericMainHtml(modelClass, req, obj, jrResult, crudSubType, helperData) {
 		var rethtml;
 
@@ -914,6 +1133,18 @@ class CrudAid {
 	}
 
 
+	/**
+	 * Generate the main html for add/edit crudSubType view
+	 *
+	 * @param {*} modelClass
+	 * @param {*} req
+	 * @param {*} obj
+	 * @param {*} jrResult
+	 * @param {*} crudSubType
+	 * @param {*} helperData
+	 * @returns html string
+	 * @memberof CrudAid
+	 */
 	async buildGenericMainHtmlAddEdit(modelClass, req, obj, helperData, jrResult) {
 		var rethtml = "";
 
@@ -992,7 +1223,7 @@ class CrudAid {
 				if (isReadOnly) {
 					// read only value
 					if (choices) {
-						valHtml = this.buildChoiceHtmlForView(choices, val);
+						valHtml = jrhText.jrHtmlNiceOptionFromList(choices, val, "[NOT SET]");
 					} else {
 						if (format === "checkbox") {
 							// checkbox
@@ -1007,7 +1238,7 @@ class CrudAid {
 					}
 				} else if (choices) {
 					var flagShowBlank = true;
-					valHtml = this.buildChoiceHtmlForAddEdit(fieldName, choices, val, flagShowBlank);
+					valHtml = jrhText.jrHtmlFormOptionListSelect(fieldName, choices, val, flagShowBlank);
 				} else if (format === "textarea") {
 					// textview block
 					valHtml = `<textarea name="${fieldName}" rows="4" cols="80">${val}</textarea>`;
@@ -1045,6 +1276,18 @@ class CrudAid {
 	}
 
 
+	/**
+	 * Generate the main html for main view crudSubType view
+	 *
+	 * @param {*} modelClass
+	 * @param {*} req
+	 * @param {*} obj
+	 * @param {*} jrResult
+	 * @param {*} crudSubType
+	 * @param {*} helperData
+	 * @returns html string
+	 * @memberof CrudAid
+	 */
 	async buildGenericMainHtmlView(modelClass, req, obj, helperData, jrResult) {
 		var rethtml = "";
 
@@ -1117,7 +1360,7 @@ class CrudAid {
 					// is it multiple choice type?
 					choices = modelClass.getSchemaFieldVal(fieldName, "choices", null);
 					if (choices) {
-						valHtml = this.buildChoiceHtmlForView(choices, val);
+						valHtml = jrhText.jrHtmlNiceOptionFromList(choices, val, "[NOT SET]");
 					} else if (format === "checkbox") {
 						// checkbox
 						if (val) {
@@ -1151,6 +1394,18 @@ class CrudAid {
 	}
 
 
+	/**
+	 * Generate the main html for main stats crudSubType view
+	 *
+	 * @param {*} modelClass
+	 * @param {*} req
+	 * @param {*} obj
+	 * @param {*} jrResult
+	 * @param {*} crudSubType
+	 * @param {*} helperData
+	 * @returns html string
+	 * @memberof CrudAid
+	 */
 	async buildGenericMainHtmlStats(modelClass, req, obj, helperData, jrResult) {
 		var rethtml;
 		rethtml = "<div>stats</div>";
@@ -1158,6 +1413,18 @@ class CrudAid {
 	}
 
 
+	/**
+	 * Generate the main html for stats view crudSubType view
+	 *
+	 * @param {*} modelClass
+	 * @param {*} req
+	 * @param {*} obj
+	 * @param {*} jrResult
+	 * @param {*} crudSubType
+	 * @param {*} helperData
+	 * @returns html string
+	 * @memberof CrudAid
+	 */
 	async buildGenericMainHtmlList(modelClass, req, obj, helperData, jrResult) {
 		var rehtml = await jrhGrid.jrGridList(req, helperData);
 		return rehtml;
@@ -1166,18 +1433,6 @@ class CrudAid {
 
 
 
-	//---------------------------------------------------------------------------
-	buildChoiceHtmlForAddEdit(fieldName, choices, val, flagShowBlank) {
-		var rethtml = jrhText.jrHtmlFormOptionListSelect(fieldName, choices, val, flagShowBlank);
-		return rethtml;
-	}
-
-
-	buildChoiceHtmlForView(choices, val) {
-		var rethtml = jrhText.jrHtmlNiceOptionFromList(choices, val, "[NOT SET]");
-		return rethtml;
-	}
-	//---------------------------------------------------------------------------
 
 
 
@@ -1186,6 +1441,16 @@ class CrudAid {
 
 
 	//---------------------------------------------------------------------------
+	/**
+	 * Before a bulk action (deleting, etc).
+	 *
+	 * @param {*} user
+	 * @param {*} modelClass
+	 * @param {*} bulkAction
+	 * @param {*} idList
+	 * @returns jrResult
+	 * @memberof CrudAid
+	 */
 	async doBulkAction(user, modelClass, bulkAction, idList) {
 		var jrResult = JrResult.makeNew();
 
