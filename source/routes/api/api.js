@@ -124,7 +124,7 @@ async function routerPostReqrefresh(req, res, next) {
 	}
 
 	// success
-	var secureToken = await makeSecureTokenRefresh(userPassport, user);
+	var secureToken = await arserver.makeSecureTokenRefresh(userPassport, user);
 
 	// log request
 	arserver.logr(req, "api.token", "generated refresh token", user);
@@ -159,7 +159,7 @@ async function routerAllRefreshaccess(req, res, next) {
 	// jrdebug.debugObj(userPassport.token);
 
 	// ok they gave us a valid refresh token, so now we generate an access token for them
-	var secureToken = await makeSecureTokenAccessFromRefreshToken(userPassport, user, userPassport.token);
+	var secureToken = await arserver.makeSecureTokenAccessFromRefreshToken(userPassport, user, userPassport.token);
 
 	// log request
 	arserver.logr(req, "api.token", "refreshed access token", user);
@@ -186,6 +186,8 @@ async function routerAllTokentest(req, res, next) {
 	}
 
 	// it's good
+	// ATTN: not sure what we should return here -- user info, etc.
+	// ideally we would also return the token TYPE
 	const resultObj = {
 		userPassport,
 	};
@@ -235,68 +237,6 @@ async function routerGetDos(req, res, next) {
 
 
 
-
-
-//---------------------------------------------------------------------------
-// helper functions
-
-
-/**
- * Helper function to make a secure access token from a refresh token
- *
- * @param {Object} userPassport - minimal object with properties of the user
- * @param {UserModel} user - full model object of User class
- * @param {String} refreshToken - the refresh token object to use to generate access token
- * @returns a token object.
- */
-async function makeSecureTokenAccessFromRefreshToken(userPassport, user, refreshToken) {
-	// make an access token with SAME scope as refresh token
-	return await makeSecureTokenAccess(userPassport, user, refreshToken.scope);
-}
-
-
-/**
- * Helper function to make a Refresh token
- *
- * @param {Object} userPassport - minimal object with properties of the user
- * @param {UserModel} user - full model object of User class
- * @returns a token object
- */
-async function makeSecureTokenRefresh(userPassport, user) {
-	const payload = {
-		type: "refresh",
-		scope: "api",
-		apiCode: await user.getApiCodeEnsureValid(),
-		user: userPassport,
-	};
-	// create secure toke
-	const expirationSeconds = arserver.getConfigVal(appdef.DefConfigKeyTokenExpirationSecsRefresh);
-	const secureToken = arserver.createSecureToken(payload, expirationSeconds);
-	return secureToken;
-}
-
-
-/**
- * Helper function to make a generic secure token
- *
- * @param {Object} userPassport - minimal object with properties of the user
- * @param {UserModel} user - full model object of User class
- * @param {String} scope - the refresh token object to use to generate access token
- * @returns a token object
- */
-async function makeSecureTokenAccess(userPassport, user, scope) {
-	const payload = {
-		type: "access",
-		scope,
-		apiCode: await user.getApiCodeEnsureValid(),
-		user: userPassport,
-	};
-	// add accessId -- the idea here is for every user object in database to ahve an accessId (either sequential or random); that can be changed to invalidate all previously issues access tokens
-	const expirationSeconds = arserver.getConfigVal(appdef.DefConfigKeyTokenExpirationSecsAccess);
-	const secureToken = arserver.createSecureToken(payload, expirationSeconds);
-	return secureToken;
-}
-//---------------------------------------------------------------------------
 
 
 

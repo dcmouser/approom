@@ -43,6 +43,7 @@ class AppRoomClient {
 			getCredentialsFunction: null,
 			errorFunction: null,
 			debugFunction: null,
+			trustTokenExpiration: true,
 		};
 
 		// initial cache
@@ -102,26 +103,6 @@ class AppRoomClient {
 	}
 
 
-	/**
-	 * Accessor
-	 * Use this to set the refresh token value, which should be long lasting
-	 * @param {*} val
-	 * @memberof AppRoomClient
-	 */
-	setCacheRefreshToken(val) {
-		this.cache.refreshToken = val;
-	}
-
-	/**
-	 * Accessor
-	 *
-	 * @returns the stored refreshToken which is long lasting; serialize this and restore it on program shutdown and restart to avoid user having to put their username/password in
-	 * @memberof AppRoomClient
-	 */
-	getCacheRefreshToken() {
-		return this.cache.refreshToken;
-	}
-
 
 	/**
 	 * Accessor
@@ -142,6 +123,12 @@ class AppRoomClient {
 	 * @memberof AppRoomClient
 	 */
 	getValidApiAccess() {
+		if (this.validApiAccess && this.calcIsTokenExpiredAccess()) {
+			// we thought we have valid access but the token is no good because it is expired
+			this.validApiAccess = false;
+			return false;
+		}
+
 		return this.validApiAccess;
 	}
 
@@ -187,11 +174,62 @@ class AppRoomClient {
 	/**
 	 * Accessor
 	 *
+	 * @returns a cached api refresh token
+	 * @memberof AppRoomClient
+	 */
+	getRefreshToken() {
+		return this.cache.refreshToken;
+	}
+
+	/**
+	 * Accessor
+	 *
+	 * @returns a cached api refresh token
+	 * @memberof AppRoomClient
+	 */
+	getRefreshTokenVal() {
+		var token = this.cache.refreshToken;
+		if (!token) {
+			return undefined;
+		}
+		return token.val;
+	}
+
+
+	/**
+	 * Accessor
+	 * Set the cached api access token
+	 *
+	 * @param {*} val
+	 * @memberof AppRoomClient
+	 */
+	setRefreshToken(val) {
+		this.cache.refreshToken = val;
+	}
+
+
+	/**
+	 * Accessor
+	 *
 	 * @returns a cached api access token
 	 * @memberof AppRoomClient
 	 */
 	getAccessToken() {
 		return this.cache.accessToken;
+	}
+
+	/**
+	 * Accessor
+	 *
+	 * @returns a cached api access token
+	 * @memberof AppRoomClient
+	 */
+	getAccessTokenVal() {
+		var token = this.cache.accessToken;
+		if (!token) {
+			return undefined;
+		}
+		return token.val;
 	}
 
 	/**
@@ -223,7 +261,7 @@ class AppRoomClient {
 	//---------------------------------------------------------------------------
 	/**
 	 * This is the main async function that tries to connect to the server prior to being usable
-	 * Note that this function will attempt to us an existing long-living access token,
+	 * Note that this function will attempt to use an existing long-living access token,
 	 * or if that expires, fall back on requesting a new access token if it has a stored refresh token
 	 * or failing that, it may prompt user to log in to get a new refresh token, etc.
 	 * On success the getValidApiAcces() will be true; on failure it will be false and lastError will be non-blank
@@ -232,7 +270,6 @@ class AppRoomClient {
 	 * @returns true on success
 	 */
 	async connect(flagForceAcquireNewAccessToken) {
-
 		// clear any prior errors
 		this.clearErrors();
 
@@ -240,9 +277,9 @@ class AppRoomClient {
 		this.setValidApiAccess(false);
 
 		// hint for prompt
-		var credentialsPromptMessage = "Your credentials are required in order to retrieve an API refresh key";
+		var credentialsPromptMessage = "Your credentials are required in order to retrieve an API";
 
-		// ok now, we may have some information for the connection already stored (refreshToken, etc.)
+		// ok now, *we* already have some information for the connection already stored (refreshToken, etc.)
 
 		if (this.getAccessToken() && !flagForceAcquireNewAccessToken) {
 			// we already have an access token -- we just need to see if its stil VALID
@@ -255,10 +292,13 @@ class AppRoomClient {
 			// drop down and try to get a new one
 		}
 
-		if (this.cache.refreshToken) {
+		if (this.getRefreshToken()) {
 			// we have a refresh token, now we need to try to use it to get an access token (our current one must be expired or bad or missing or caller just wants us to get a new one)
-			if (await this.retrieveAccessTokenFromRefreshToken()) {
-				// all good
+			if (this.calcIsTokenExpiredRefresh()) {
+				// the refresh token we have is expired, we are going to have to get a new one
+				this.setLastError("Refresh token is expired.");
+			} else if (await this.retrieveAccessTokenFromRefreshToken()) {
+				// ok we got a new access token, so all is good
 				this.setValidApiAccess(true);
 				return true;
 			}
@@ -361,10 +401,16 @@ class AppRoomClient {
 	 * @returns true on success
 	 */
 	async validateAccessToken() {
+
+		if (this.calcIsTokenExpiredAccess()) {
+			// we know the token is no good because it is expired; no need to ask the server
+			return false;
+		}
+
 		// post data
 		var url = this.getOptionServerUrlBase() + this.pathTokenValidate;
 		var postData = {
-			token: this.getAccessToken(),
+			token: this.getAccessTokenVal(),
 		};
 		var response = await jrhAxios.postCatchError(url, postData);
 
@@ -373,6 +419,43 @@ class AppRoomClient {
 		// return true if no error
 		return (!data.error);
 	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	calcIsTokenExpiredAccess(flagFalseIfUntrusted) {
+		return this.calcIsTokenExpired(this.getAccessToken(), flagFalseIfUntrusted);
+	}
+
+	calcIsTokenExpiredRefresh(flagFalseIfUntrusted) {
+		return this.calcIsTokenExpired(this.getRefreshToken(), flagFalseIfUntrusted);
+	}
+
+	calcIsTokenExpired(token, flagFalseIfUntrusted) {
+		if (!token) {
+			return true;
+		}
+		if (flagFalseIfUntrusted && !this.options.trustTokenExpiration) {
+			// we dont trust token expiration dates so we cant say its expired
+			return false;
+		}
+		// check if token is expired
+		var expires = token.expires;
+		if (!expires) {
+			// no date
+			return false;
+		}
+		// check the date
+		if (expires <= Math.floor(Date.now() / 1000)) {
+			// it's expired
+			return true;
+		}
+		return false;
+	}
+	//---------------------------------------------------------------------------
+
+
+
 
 
 
@@ -386,7 +469,7 @@ class AppRoomClient {
 		// post data
 		var url = this.getOptionServerUrlBase() + this.pathAccessTokenRequest;
 		var postData = {
-			token: this.cache.refreshToken,
+			token: this.getRefreshTokenVal(),
 		};
 		var responseData = await jrhAxios.postCatchError(url, postData);
 
@@ -432,7 +515,7 @@ class AppRoomClient {
 		// extract data, check for error, set succsss status, last error, etc.
 		var data = await this.extractDataTriggerError(responseData, url, "retrieveRefreshTokenUsingCredentials", "token");
 		if (!data.error) {
-			this.cache.refreshToken = data.token;
+			this.setRefreshToken(data.token);
 			return true;
 		}
 
@@ -601,12 +684,11 @@ class AppRoomClient {
 
 		// now a small loop to post the data and get a reply;
 		// we loop so that we can try our existing access token first, and request a new one and retry if it fails.
-		// ATTN: TODO - check out own expiration date for our access token and proactively get a new one when we think it's near expiration.
 		var responseData;
 		var data;
 		for (var tryCount = 0; tryCount < 2; tryCount += 1) {
-			tryCount += 1;
 			// if not connected (which may be case after our first fail or initially), lets try to connect
+			// note that this call to getValidApiAccess() may check for token expiration and will clear validApiAccess flag when its expired so that we get new one
 			if (!this.getValidApiAccess()) {
 				// try to reconnect and then try again
 				if (!await this.connect(true)) {
@@ -620,7 +702,7 @@ class AppRoomClient {
 			}
 
 			// set token (which may be newly gotten from our connect attempt above
-			postData.token = this.getAccessToken();
+			postData.token = this.getAccessTokenVal();
 
 			// post and get response
 			responseData = await jrhAxios.postCatchError(url, postData);
@@ -635,6 +717,7 @@ class AppRoomClient {
 			// we got a tokenError, meaning we should try to get a new api token
 			// clear valid api access flag which will try to reaquire api access token, and either reloop and try to get access again
 			this.setValidApiAccess(false);
+			// loop and try again
 		}
 
 		// ok we have the reply data object (where data.error is non empty string if there was an error); data.tokenError will be true if the problem was related to bad api token

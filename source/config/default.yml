@@ -58,4 +58,4 @@ testing:
   CLIENT_USERPASSWORD: "TEST_CLIENT_PASSWORD_NOT_SET_SEE_CONFIG_FILE"
 logging:
   # this directory can be absolute, or relative to the INSTALL (above source) directory by starting with ./
-  # DIRECTORY: "./local/logs"
+  DIRECTORY: "./local/logs"

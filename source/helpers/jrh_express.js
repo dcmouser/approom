@@ -168,20 +168,25 @@ function normalizePort(portval) {
  */
 function calcExpressMiddleWare(app) {
 	const jrdebug = require("./jrdebug");
-	var middlewareName, middlewareHint;
+	//
+	var middlewareName, middlewareHint, extraDebugInfo;
 	var appStack = app._router.stack;
 	return Array.prototype.map.call(appStack, (middleware, index) => {
 		middlewareName = middleware.handle.name;
-		if (middleware.handle.name === "router") {
-			middlewareHint = calcExpressMiddlewareRouterHint(middleware.handle);
-			middlewareName += " (" + middlewareHint + ")";
-			// jrdebug.debugObj(middleware.handle, "got router");
-		} else if (false && middleware.handle.name === "") {
-			middlewareHint = calcExpressMiddlewareRouterHint(middleware.handle);
-			middlewareName += " (" + middlewareHint + ")";
-			// jrdebug.debugObj(middleware.handle, "got blank");
+		middlewareHint = "";
+
+		// jrdebug.debugObj(middleware, middlewareName);
+		middlewareHint = calcExpressMiddlewareRouterHint(middleware);
+		if (middlewareHint) {
+			middlewareName += " " + middlewareHint;
 		}
-		return index + ". " + (middlewareName || "<anonymous function>") + " " + calcExpressMiddlewareGetFileLine(middleware.handle);
+
+		var lineInfo = calcExpressMiddlewareGetFileLine(middleware.handle);
+		var retv = index + ". " + (middlewareName || "<anonymous function>");
+		if (false || (lineInfo && !lineInfo.startsWith("at Function.handle") && !lineInfo.startsWith("at serveStatic"))) {
+			retv += " " + lineInfo;
+		}
+		return retv;
 	});
 }
 
@@ -193,6 +198,7 @@ function calcExpressMiddleWare(app) {
  * @returns string specifying the line number of the handler
  */
 function calcExpressMiddlewareGetFileLine(handler) {
+	const jrdebug = require("./jrdebug");
 
 	// This is a little trick we found to get the line number
 	// ATTN: But on 3/31/20 it stopped working, due to our custom error handler catching this exception; we fixed the custom error catcher so it works now but I'm leaving this a flag so it can be bypassed if it ceases to work in the future
@@ -205,9 +211,10 @@ function calcExpressMiddlewareGetFileLine(handler) {
 	try {
 		// trigger an ignorable exception (caught in arserver and ignored)
 		handler("IGNORE_EXCEPTION");
-		// handler(undefined);
 	} catch (e) {
-		return e.stack.split("\n")[1];
+		var retstr = e.stack.split("\n")[1];
+		retstr = retstr.trim();
+		return retstr;
 	}
 	return null;
 }
@@ -219,8 +226,30 @@ function calcExpressMiddlewareGetFileLine(handler) {
  *
  * @param {*} middlewareHandle
  */
-function calcExpressMiddlewareRouterHint(middlewareHandle) {
-	return "";
+function calcExpressMiddlewareRouterHint(middleware) {
+	const jrhMisc = require("./jrh_misc");
+	var hintstr = "";
+
+	// extra debug info?
+	if (middleware.handle.appRoomDebugInfo) {
+		hintstr += jrhMisc.objToString(middleware.handle.appRoomDebugInfo, true);
+	}
+
+	if (middleware.regexp) {
+		var rhint;
+		if (middleware.regexp.source) {
+			rhint = middleware.regexp.source;
+		} else {
+			rhint = middleware.regexp;
+		}
+		if (rhint !== "^\\/?(?=\\/|$)") {
+			if (hintstr !== "") {
+				hintstr += " ";
+			}
+			hintstr += "[regex:" + rhint + "]";
+		}
+	}
+	return hintstr;
 }
 
 

@@ -642,9 +642,15 @@ class AppRoomServer {
 		const jsurl = staticUrl + "/js";
 		const cssurl = staticUrl + "/css";
 		const nodemodulespath = path.join(__dirname, "..", "node_modules");
-		expressApp.use(jsurl + "/bootstrap", express.static(path.join(nodemodulespath, "bootstrap", "dist", "js")));
-		expressApp.use(cssurl + "/bootstrap", express.static(path.join(nodemodulespath, "bootstrap", "dist", "css")));
-		expressApp.use(jsurl + "/jquery", express.static(path.join(nodemodulespath, "jquery", "dist")));
+		this.setupExpressStaticRoute(expressApp, jsurl + "/bootstrap", path.join(nodemodulespath, "bootstrap", "dist", "js"));
+		this.setupExpressStaticRoute(expressApp, cssurl + "/bootstrap", path.join(nodemodulespath, "bootstrap", "dist", "css"));
+		this.setupExpressStaticRoute(expressApp, jsurl + "/jquery", path.join(nodemodulespath, "jquery", "dist"));
+	}
+
+
+	setupExpressStaticRoute(expressApp, urlPath, dirPath) {
+		var route = express.static(dirPath);
+		this.useExpressRoute(expressApp, urlPath, route, dirPath);
 	}
 	//---------------------------------------------------------------------------
 
@@ -743,7 +749,8 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	setupRoute(expressApp, urlPath, routeFilename) {
 		// require in the file in the routes directory so we can discover its functions
-		var route = require("../routes/" + routeFilename);
+		var requireRouteFileName = "../routes/" + routeFilename;
+		var route = require(requireRouteFileName);
 
 		// ok there are two ways that our route files can be written
 		// the first is by exporting a setupRouter function, in which case we call it with urlPath and it returns the router
@@ -752,9 +759,9 @@ class AppRoomServer {
 		if (route.setupRouter) {
 			var expressRouter = route.setupRouter(urlPath);
 			assert(expressRouter);
-			this.useExpressRoute(expressApp, urlPath, expressRouter);
+			this.useExpressRoute(expressApp, urlPath, expressRouter, requireRouteFileName);
 		} else {
-			this.useExpressRoute(expressApp, urlPath, route);
+			this.useExpressRoute(expressApp, urlPath, route, requireRouteFileName);
 		}
 	}
 
@@ -766,7 +773,7 @@ class AppRoomServer {
 		// setup paths on it
 		this.crudAid.setupRouter(router, modelClass, urlPath);
 		// register it
-		this.useExpressRoute(expressApp, urlPath, router);
+		this.useExpressRoute(expressApp, urlPath, router, "../controllers/crudaid");
 
 		// let app model know about its crud path
 		modelClass.setCrudBaseUrl(urlPath);
@@ -775,9 +782,14 @@ class AppRoomServer {
 	}
 
 
-	useExpressRoute(expressApp, urlPath, route) {
+	useExpressRoute(expressApp, urlPath, route, dirPath) {
 		// register it with the express App
 		expressApp.use(urlPath, route);
+		// attempt to inject some internal debug helping info -- this is displayed when doing site internals web server info (see jrh_express.js function calcExpressMiddleWare())
+		route.appRoomDebugInfo = {
+			urlPath,
+			dirPath,
+		};
 	}
 	//---------------------------------------------------------------------------
 
@@ -2960,6 +2972,65 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
+
+	/**
+	 * Helper function to make a secure access token from a refresh token
+	 *
+	 * @param {Object} userPassport - minimal object with properties of the user
+	 * @param {UserModel} user - full model object of User class
+	 * @param {String} refreshToken - the refresh token object to use to generate access token
+	 * @returns a token object.
+	 */
+	async makeSecureTokenAccessFromRefreshToken(userPassport, user, refreshToken) {
+		// make an access token with SAME scope as refresh token
+		return await this.makeSecureTokenAccess(userPassport, user, refreshToken.scope);
+	}
+
+
+	/**
+	 * Helper function to make a Refresh token
+	 *
+	 * @param {Object} userPassport - minimal object with properties of the user
+	 * @param {UserModel} user - full model object of User class
+	 * @returns a token object
+	 */
+	async makeSecureTokenRefresh(userPassport, user) {
+		const payload = {
+			type: "refresh",
+			scope: "api",
+			apiCode: await user.getApiCodeEnsureValid(),
+			user: userPassport,
+		};
+		// create secure toke
+		const expirationSeconds = this.getConfigVal(appdef.DefConfigKeyTokenExpirationSecsRefresh);
+		const secureToken = this.createSecureToken(payload, expirationSeconds);
+		return secureToken;
+	}
+
+
+	/**
+	 * Helper function to make a generic secure token
+	 *
+	 * @param {Object} userPassport - minimal object with properties of the user
+	 * @param {UserModel} user - full model object of User class
+	 * @param {String} scope - the refresh token object to use to generate access token
+	 * @returns a token object
+	 */
+	async makeSecureTokenAccess(userPassport, user, scope) {
+		const payload = {
+			type: "access",
+			scope,
+			apiCode: await user.getApiCodeEnsureValid(),
+			user: userPassport,
+		};
+		// add accessId -- the idea here is for every user object in database to ahve an accessId (either sequential or random); that can be changed to invalidate all previously issues access tokens
+		const expirationSeconds = this.getConfigVal(appdef.DefConfigKeyTokenExpirationSecsAccess);
+		const secureToken = this.createSecureToken(payload, expirationSeconds);
+		return secureToken;
+	}
+
+
+
 	createSecureToken(payload, expirationSeconds) {
 		// add stuff to payload
 		payload.iat = Math.floor(Date.now() / 1000);
@@ -2970,13 +3041,16 @@ class AppRoomServer {
 		}
 		// make it
 		const serverJwtCryptoKey = this.getConfigVal(appdef.DefConfigKeyTokenCryptoKey);
-		const token = jsonwebtoken.sign(payload, serverJwtCryptoKey);
+		const tokenval = jsonwebtoken.sign(payload, serverJwtCryptoKey);
+		// return an object that contains both the (encrypted) packed token string, but also the expiration date in plain text
 		const tokenObj = {
-			token,
+			token: {
+				val: tokenval,
+				expires: payload.exp,
+			},
 		};
 		return tokenObj;
 	}
-
 
 
 	validateSecureTokenGeneric(tokenObj, jrResult) {
@@ -2999,6 +3073,7 @@ class AppRoomServer {
 
 
 	isSecureTokenExpired(exp) {
+		// ATTN:TODO - do we need to worry about local vs gmt/etc time?
 		if (!exp) {
 			// what to do in this case? no expiration date?
 			// ATTN:TODO - for now we treat it as ok

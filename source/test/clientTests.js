@@ -228,6 +228,7 @@ function createTestClient() {
 		getCredentialsFunction: async (clientp, hintMessage) => { return await handleGetCredentialsCallbackFunction(clientp, hintMessage); },
 		errorFunction: async (clientp, errorMessage) => { return await handleErrorCallbackFunction(clientp, errorMessage); },
 		debugFunction: async (clientp, debugMessage) => { return await handleDebugCallbackFunction(clientp, debugMessage); },
+		trustTokenExpiration: true,
 	};
 	client.setOptions(clientOptions);
 	return client;

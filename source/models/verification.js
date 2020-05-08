@@ -166,12 +166,14 @@ class VerificationModel extends ModelBaseMongoose {
 				mongoose: {
 					type: Date,
 				},
+				readOnly: ["edit"],
 			},
 			expirationDate: {
 				label: "Date expired",
 				mongoose: {
 					type: Date,
 				},
+				readOnly: ["edit"],
 			},
 		};
 	}
