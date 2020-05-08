@@ -26,7 +26,8 @@ const JrResult = require("../../helpers/jrresult");
 const jrhExpress = require("../../helpers/jrh_express");
 const jrdebug = require("../../helpers/jrdebug");
 
-
+// constants
+const appdef = jrequire("appdef");
 
 
 
@@ -269,7 +270,7 @@ async function makeSecureTokenRefresh(userPassport, user) {
 		user: userPassport,
 	};
 	// create secure toke
-	const expirationSeconds = arserver.getConfigVal("token:EXPIRATIONSECS_REFRESH");
+	const expirationSeconds = arserver.getConfigVal(appdef.DefConfigKeyTokenExpirationSecsRefresh);
 	const secureToken = arserver.createSecureToken(payload, expirationSeconds);
 	return secureToken;
 }
@@ -291,7 +292,7 @@ async function makeSecureTokenAccess(userPassport, user, scope) {
 		user: userPassport,
 	};
 	// add accessId -- the idea here is for every user object in database to ahve an accessId (either sequential or random); that can be changed to invalidate all previously issues access tokens
-	const expirationSeconds = arserver.getConfigVal("token:EXPIRATIONSECS_ACCESS");
+	const expirationSeconds = arserver.getConfigVal(appdef.DefConfigKeyTokenExpirationSecsAccess);
 	const secureToken = arserver.createSecureToken(payload, expirationSeconds);
 	return secureToken;
 }

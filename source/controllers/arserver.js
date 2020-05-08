@@ -69,7 +69,7 @@ const jrhRateLimiter = require("../helpers/jrh_ratelimiter");
 const arGlobals = require("../approomglobals");
 
 // constants
-const appconst = jrequire("appconst");
+const appdef = jrequire("appdef");
 
 
 
@@ -145,7 +145,7 @@ class AppRoomServer {
 
 	getLogDir() {
 		// default is in the parent folder of source dir in /local/logs subdir
-		var dir = this.getConfigValDefault("logging:DIRECTORY", "./local/logs");
+		var dir = this.getConfigValDefault(appdef.DefConfigKeyLoggingDirectory, "./local/logs");
 		return jrhMisc.resolvePossiblyRelativeDirectory(dir, this.getInstallDir());
 	}
 
@@ -181,27 +181,27 @@ class AppRoomServer {
 	// getting options via jrconfig
 	//
 
-	getOptionDbUrl() { return this.getConfigVal("server:DB_URL"); }
+	getOptionDbUrl() { return this.getConfigVal(appdef.DefConfigKeyServerDbUrl); }
 
-	getOptionHttp() { return this.getConfigVal("server:HTTP"); }
+	getOptionHttp() { return this.getConfigVal(appdef.DefConfigKeyServerHttp); }
 
-	getOptionHttpPort() { return this.getConfigVal("server:HTTP_PORT"); }
+	getOptionHttpPort() { return this.getConfigVal(appdef.DefConfigKeyServerHttpPort); }
 
-	getOptionHttps() { return this.getConfigVal("server:HTTPS"); }
+	getOptionHttps() { return this.getConfigVal(appdef.DefConfigKeyServerHttps); }
 
-	getOptionHttpsKey() { return this.getConfigVal("server:HTTPS_KEY"); }
+	getOptionHttpsKey() { return this.getConfigVal(appdef.DefConfigKeyServerHttpsKey); }
 
-	getOptionHttpsCert() { return this.getConfigVal("server:HTTPS_CERT"); }
+	getOptionHttpsCert() { return this.getConfigVal(appdef.DefConfigKeyServerHttpsCert); }
 
-	getOptionHttpsPort() { return this.getConfigVal("server:HTTPS_PORT"); }
+	getOptionHttpsPort() { return this.getConfigVal(appdef.DefConfigKeyServerHttpsPort); }
 
-	getOptionSiteDomain() { return this.getConfigVal("server:SITE_DOMAIN"); }
+	getOptionSiteDomain() { return this.getConfigVal(appdef.DefConfigKeyServerSiteDomain); }
 
-	getOptionDebugEnabled() { return this.getConfigValDefault("DEBUG", false); }
+	getOptionDebugEnabled() { return this.getConfigValDefault(appdef.DefConfigKeyDebug, false); }
 
-	getOptionProfileEnabled() { return this.getConfigVal("PROFILE", false); }
+	getOptionProfileEnabled() { return this.getConfigVal(appdef.DefConfigKeyProfile, false); }
 
-	getOptionUseFullRegistrationForm() { return this.getConfigValDefault("account:SIGNUP_FULLREGISTRATIONFORM", false); }
+	getOptionUseFullRegistrationForm() { return this.getConfigValDefault(appdef.DefConfigKeyAccountSignupFullRegForm, false); }
 
 	// see https://stackoverflow.com/questions/2683803/gravatar-is-there-a-default-image
 	/*
@@ -213,11 +213,11 @@ class AppRoomServer {
 		retro: awesome generated, 8-bit arcade-style pixelated faces
 		blank: a transparent PNG image (border added to HTML below for demonstration purposes)
 	*/
-	getOptionsGravatar() { return this.getConfigValDefault("account:GRAVATAR_OPTIONS", {}); }
+	getOptionsGravatar() { return this.getConfigValDefault(appdef.DefConfigKeyAccountGravatarOptions, {}); }
 
-	getEmergencyAlertContactsPrimary() { return this.getConfigValDefault("emergencyAlert:primary", []); }
+	getEmergencyAlertContactsPrimary() { return this.getConfigValDefault(appdef.DefConfigKeyEmergencyAlertPrimaryEmails, []); }
 
-	getEmergencyAlertContactsSecondary() { return this.getConfigValDefault("emergencyAlert:secondary", []); }
+	getEmergencyAlertContactsSecondary() { return this.getConfigValDefault(appdef.DefConfigKeyEmergencyAlertSecondaryEmails, []); }
 	//---------------------------------------------------------------------------
 
 
@@ -404,7 +404,7 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	discoverPlugins() {
 		// get the plugin config object
-		const pluginConfig = this.getConfigVal("plugins");
+		const pluginConfig = this.getConfigVal(appdef.DefConfigKeyPlugins);
 		// now iterate over it and register the plugins
 		var pluginObj;
 		Object.keys(pluginConfig).forEach((name) => {
@@ -475,10 +475,10 @@ class AppRoomServer {
 		jrlog.setup(arGlobals.programName, this.getLogDir());
 
 		// winston logger files
-		jrlog.setupWinstonLogger(appconst.DefLogCategoryError, appconst.DefLogCategoryError);
-		jrlog.setupWinstonLogger(appconst.DefLogCategoryError404, appconst.DefLogCategoryError404);
-		jrlog.setupWinstonLogger(appconst.DefLogCategoryDebug, appconst.DefLogCategoryDebug);
-		jrlog.setupWinstonLogger(appconst.DefLogCategory, appconst.DefLogCategory);
+		jrlog.setupWinstonLogger(appdef.DefLogCategoryError, appdef.DefLogCategoryError);
+		jrlog.setupWinstonLogger(appdef.DefLogCategoryError404, appdef.DefLogCategoryError404);
+		jrlog.setupWinstonLogger(appdef.DefLogCategoryDebug, appdef.DefLogCategoryDebug);
+		jrlog.setupWinstonLogger(appdef.DefLogCategory, appdef.DefLogCategory);
 	}
 	//---------------------------------------------------------------------------
 
@@ -604,8 +604,8 @@ class AppRoomServer {
 		// sesssion support
 		// see https://github.com/expressjs/session
 		const asession = session({
-			name: this.getConfigVal("session:SESSIONIDNAME"),
-			secret: this.getConfigVal("session:SESSIONSECRET"),
+			name: this.getConfigVal(appdef.DefConfigKeySessionIdName),
+			secret: this.getConfigVal(appdef.DefConfigKeySessionSecret),
 			resave: false,
 			cookie: cookieOptions,
 			saveUninitialized: false,
@@ -895,7 +895,7 @@ class AppRoomServer {
 		const ExtractJwt = passportJwt.ExtractJwt;
 
 		var strategyOptions = {
-			secretOrKey: this.getConfigVal("token:CRYPTOKEY"),
+			secretOrKey: this.getConfigVal(appdef.DefConfigKeyTokenCryptoKey),
 			// get jwt from URL or from post body if not in url
 			jwtFromRequest: ExtractJwt.fromExtractors([ExtractJwt.fromUrlQueryParameter("token"), ExtractJwt.fromBodyField("token")]),
 			// we ignore expiration auto handling; we will check it ourselves
@@ -940,8 +940,8 @@ class AppRoomServer {
 		const Strategy = passportFacebook.Strategy;
 
 		var strategyOptions = {
-			clientID: this.getConfigVal("passport:FACEBOOK_APP_ID"),
-			clientSecret: this.getConfigVal("passport:FACEBOOK_APP_SECRET"),
+			clientID: this.getConfigVal(appdef.DefConfigKeyPassportFacebookAppId),
+			clientSecret: this.getConfigVal(appdef.DefConfigKeyPassportFacebookAppSecret),
 			callbackURL: this.calcAbsoluteSiteUrlPreferHttps("/login/facebook/auth"),
 			passReqToCallback: true,
 		};
@@ -977,8 +977,8 @@ class AppRoomServer {
 		const Strategy = passportTwitter.Strategy;
 
 		var strategyOptions = {
-			consumerKey: this.getConfigVal("passport:TWITTER_consumerKey"),
-			consumerSecret: this.getConfigVal("passport:TWITTER_consumerSecret"),
+			consumerKey: this.getConfigVal(appdef.DefConfigKeyPassportTwitterConsumerKey),
+			consumerSecret: this.getConfigVal(appdef.DefConfigKeyPassportTwitterConsumerSecret),
 			callbackURL: this.calcAbsoluteSiteUrlPreferHttps("/login/twitter/auth"),
 			passReqToCallback: true,
 		};
@@ -1015,8 +1015,8 @@ class AppRoomServer {
 		const Strategy = passportGoogle.Strategy;
 
 		var strategyOptions = {
-			clientID: this.getConfigVal("passport:GOOGLE_clientid"),
-			clientSecret: this.getConfigVal("passport:GOOGLE_secret"),
+			clientID: this.getConfigVal(appdef.DefConfigKeyPassportGoogleClientId),
+			clientSecret: this.getConfigVal(appdef.DefConfigKeyPassportGoogleClientSecret),
 			callbackURL: this.calcAbsoluteSiteUrlPreferHttps("/login/google/auth"),
 			passReqToCallback: true,
 		};
@@ -1765,7 +1765,7 @@ class AppRoomServer {
 		if (addr === null) {
 			msg = "Could not bind server listener, got null return from listener.address paramater.  Is server already running (in debugger) ?";
 			jrdebug.debug(msg);
-			await this.logm(appconst.DefLogTypeErrorServer, msg);
+			await this.logm(appdef.DefLogTypeErrorServer, msg);
 			process.exit(1);
 		} else if (typeof addr === "string") {
 			bind = "pipe " + addr;
@@ -1774,18 +1774,18 @@ class AppRoomServer {
 		} else {
 			msg = "Could not bind server listener, the listener.address paramater was not understood: " + addr;
 			jrdebug.debug(msg);
-			await this.logm(appconst.DefLogTypeErrorServer, msg);
+			await this.logm(appdef.DefLogTypeErrorServer, msg);
 			process.exit(1);
 		}
 
 		// handle specific listen errors with friendly messages
 		switch (error.code) {
 			case "EACCES":
-				this.logm(appconst.DefLogTypeErrorServer, bind + " requires elevated privileges");
+				this.logm(appdef.DefLogTypeErrorServer, bind + " requires elevated privileges");
 				process.exit(1);
 				break;
 			case "EADDRINUSE":
-				this.logm(appconst.DefLogTypeErrorServer, bind + " is already in use");
+				this.logm(appdef.DefLogTypeErrorServer, bind + " is already in use");
 				process.exit(1);
 				break;
 			default:
@@ -1850,17 +1850,17 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	async setupSendAid() {
 		const mailTransportConfigObj = {
-			host: this.getConfigVal("mailer:HOST"),
-			port: this.getConfigVal("mailer:PORT"),
-			secure: this.getConfigVal("mailer:SECURE"),
+			host: this.getConfigVal(appdef.DefConfigKeyMailerHost),
+			port: this.getConfigVal(appdef.DefConfigKeyMailerPort),
+			secure: this.getConfigVal(appdef.DefConfigKeyMailerSecure),
 			auth: {
-				user: this.getConfigVal("mailer:USERNAME"),
-				pass: this.getConfigVal("mailer:PASSWORD"),
+				user: this.getConfigVal(appdef.DefConfigKeyMailerUsername),
+				pass: this.getConfigVal(appdef.DefConfigKeyMailerPassword),
 			},
 		};
 		//
-		const defaultFrom = this.getConfigVal("mailer:FROM");
-		const flagDebugMode = this.getConfigValDefault("mailer:DEBUG", false);
+		const defaultFrom = this.getConfigVal(appdef.DefConfigKeyMailerFrom);
+		const flagDebugMode = this.getConfigValDefault(appdef.DefConfigKeyMailerDebug, false);
 		//
 		await this.sendAid.setupMailer(mailTransportConfigObj, defaultFrom, flagDebugMode);
 	}
@@ -2011,26 +2011,26 @@ class AppRoomServer {
 	 */
 	async setupRateLimiters() {
 		//
-		jrhRateLimiter.setupRateLimiter(appconst.DefRateLimiterBasic, { points: 5, duration: 10, blockDuration: 10 });
-		jrhRateLimiter.setupRateLimiter(appconst.DefRateLimiterApi, { points: 5, duration: 30, blockDuration: 30 });
-		jrhRateLimiter.setupRateLimiter(appconst.DefRateLimiterEmergencyAlert, { points: 5, duration: 60, blockDuration: 30 });
-		jrhRateLimiter.setupRateLimiter(appconst.DefRateLimiterTest, { points: 5, duration: 2, blockDuration: 2 });
+		jrhRateLimiter.setupRateLimiter(appdef.DefRateLimiterBasic, { points: 5, duration: 10, blockDuration: 10 });
+		jrhRateLimiter.setupRateLimiter(appdef.DefRateLimiterApi, { points: 5, duration: 30, blockDuration: 30 });
+		jrhRateLimiter.setupRateLimiter(appdef.DefRateLimiterEmergencyAlert, { points: 5, duration: 60, blockDuration: 30 });
+		jrhRateLimiter.setupRateLimiter(appdef.DefRateLimiterTest, { points: 5, duration: 2, blockDuration: 2 });
 	}
 
 	getRateLimiterBasic() {
-		return jrhRateLimiter.getRateLimiter(appconst.DefRateLimiterBasic);
+		return jrhRateLimiter.getRateLimiter(appdef.DefRateLimiterBasic);
 	}
 
 	getRateLimiterApi() {
-		return jrhRateLimiter.getRateLimiter(appconst.DefRateLimiteApi);
+		return jrhRateLimiter.getRateLimiter(appdef.DefRateLimiterApi);
 	}
 
 	getRateLimiterEmergencyAlert() {
-		return jrhRateLimiter.getRateLimiter(appconst.DefRateEmergencyAlert);
+		return jrhRateLimiter.getRateLimiter(appdef.DefRateLimiterEmergencyAlert);
 	}
 
 	getRateLimiterTest() {
-		return jrhRateLimiter.getRateLimiter(appconst.DefRateLimiterTest);
+		return jrhRateLimiter.getRateLimiter(appdef.DefRateLimiterTest);
 	}
 	//---------------------------------------------------------------------------
 
@@ -2045,10 +2045,10 @@ class AppRoomServer {
 		if (this.isDevelopmentMode()) {
 			msg += "  Development mode enabled.";
 		}
-		await this.logm(appconst.DefLogTypeInfoServer, msg);
+		await this.logm(appdef.DefLogTypeInfoServer, msg);
 
 		if (this.getOptionDebugEnabled()) {
-			await this.logm(appconst.DefLogTypeDebug, "Starting up with debug mode enabled.");
+			await this.logm(appdef.DefLogTypeDebug, "Starting up with debug mode enabled.");
 		}
 	}
 
@@ -2056,7 +2056,7 @@ class AppRoomServer {
 	async logShutdown() {
 		// log the shutdown event
 		var msg = util.format("Shutting down server on %s.", jrhMisc.getNiceNowString());
-		await this.logm(appconst.DefLogTypeInfoServer, msg);
+		await this.logm(appdef.DefLogTypeInfoServer, msg);
 	}
 	//---------------------------------------------------------------------------
 
@@ -2172,7 +2172,7 @@ class AppRoomServer {
 		// some errors we should trigger emergency alert
 		if (this.shouldAlertOnLogMessageType(type)) {
 			// trigger emegency alert
-			await this.emergencyAlert(type, "Critical error logged on " + jrhMisc.getNiceNowString(), message, req, extraDataPlus);
+			await this.emergencyAlert(type, "Critical error logged on " + jrhMisc.getNiceNowString(), message, req, extraDataPlus, false);
 		}
 	}
 
@@ -2187,7 +2187,7 @@ class AppRoomServer {
 			// log EXCEPTION message (INCLUDES original) to file; note we may still try to log the original cleanly to file below
 			jrdebug.debug("Logging fatal exception to error log file:");
 			jrdebug.debugObj(err, "Error");
-			jrlog.logExceptionErrorWithMessage(appconst.DefLogCategoryError, err, type, message, extraData, mergeData);
+			jrlog.logExceptionErrorWithMessage(appdef.DefLogCategoryError, err, type, message, extraData, mergeData);
 		}
 	}
 	//---------------------------------------------------------------------------
@@ -2201,20 +2201,20 @@ class AppRoomServer {
 		// ATTN: we might replace this with something that loops through an array of prefixes associated with categories to make it easier and less hard coded
 
 		// 404s go in their own file
-		if (type.startsWith(appconst.DefLogTypeError404)) {
-			return appconst.DefLogCategoryError404;
+		if (type.startsWith(appdef.DefLogTypeError404)) {
+			return appdef.DefLogCategoryError404;
 		}
 
-		if (type.startsWith(appconst.DefLogTypeError)) {
-			return appconst.DefLogCategoryError;
+		if (type.startsWith(appdef.DefLogTypeError)) {
+			return appdef.DefLogCategoryError;
 		}
 
-		if (type.startsWith(appconst.DefLogTypeDebug)) {
-			return appconst.DefLogCategoryDebug;
+		if (type.startsWith(appdef.DefLogTypeDebug)) {
+			return appdef.DefLogCategoryDebug;
 		}
 
 		// fallback to default
-		return appconst.DefLogCategory;
+		return appdef.DefLogCategory;
 	}
 
 
@@ -2227,7 +2227,7 @@ class AppRoomServer {
 
 
 	shouldAlertOnLogMessageType(type) {
-		if (type.startsWith(appconst.DefLogTypeErrorCritical)) {
+		if (type.startsWith(appdef.DefLogTypeErrorCritical)) {
 			return true;
 		}
 		return false;
@@ -2352,7 +2352,7 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	async aclRequireLoggedInSitePermission(permission, req, res, goalRelUrl) {
-		return await this.aclRequireLoggedInPermission(permission, appconst.DefAclObjectTypeSite, null, req, res, goalRelUrl);
+		return await this.aclRequireLoggedInPermission(permission, appdef.DefAclObjectTypeSite, null, req, res, goalRelUrl);
 	}
 
 	async aclRequireLoggedInPermission(permission, permissionObjType, permissionObjId, req, res, goalRelUrl) {
@@ -2360,7 +2360,7 @@ class AppRoomServer {
 		// we just need to check if the user is non-empty
 		if (!user) {
 			// user is not logged in
-			this.handleRequireLoginFailure(req, res, user, goalRelUrl, null, appconst.DefRequiredLoginMessage);
+			this.handleRequireLoginFailure(req, res, user, goalRelUrl, null, appdef.DefRequiredLoginMessage);
 			return false;
 		}
 
@@ -2386,7 +2386,7 @@ class AppRoomServer {
 		// otherwise return true
 
 		if (!user) {
-			this.handleRequireLoginFailure(req, res, user, goalRelUrl, failureRelUrl, appconst.DefRequiredLoginMessage);
+			this.handleRequireLoginFailure(req, res, user, goalRelUrl, failureRelUrl, appdef.DefRequiredLoginMessage);
 			return false;
 		}
 
@@ -2413,7 +2413,7 @@ class AppRoomServer {
 	divertToLoginPageThenBackToCurrentUrl(req, res) {
 		// redirect them to login page and then back to their currently requested page
 		var failureRelUrl = "/login";
-		this.rememberDivertedRelUrlAndGo(req, res, null, failureRelUrl, appconst.DefRequiredLoginMessage);
+		this.rememberDivertedRelUrlAndGo(req, res, null, failureRelUrl, appdef.DefRequiredLoginMessage);
 	}
 
 
@@ -2581,9 +2581,10 @@ class AppRoomServer {
 		// let csrf throw the error to next, ONLY if there is an error, otherwise just return and dont call next
 		var jrResult = JrResult.makeNew();
 
-		// TEST of csrf
-		if (false && Math.random() > 0.6) {
-			jrResult.pushError("Testing failed csrf.");
+		// Useful for testing csrf, make it fail
+		var forceFail = this.getConfigValDefault(appdef.DefConfigKeyTestingForceCsrfFail, false);
+		if (forceFail) {
+			jrResult.pushError("Forcing csrf test to return false for testing purposes; to disable see option '" + appdef.DefConfigKeyTestingForceCsrfFail + "'.");
 			return jrResult;
 		}
 
@@ -2600,6 +2601,21 @@ class AppRoomServer {
 		});
 
 		return jrResult;
+	}
+
+
+	testCsrfRedirectToOriginalUrl(req, res) {
+		var jrResult = this.testCsrfReturnJrResult(req, res);
+		if (jrResult.isError()) {
+			// add error to session
+			jrResult.addToSession(req);
+			// redirect to same url
+			// jrdebug.debug("req.route.path: " + req.route.path + ", req.baseUrl: " + req.baseUrl + ", req.originalUrl: " + req.originalUrl + ", req.url:" + req.url);
+			res.redirect(jrhExpress.reqOriginalUrl(req));
+			return false;
+		}
+		// success
+		return true;
 	}
 	//---------------------------------------------------------------------------
 
@@ -2906,7 +2922,7 @@ class AppRoomServer {
 
 
 		const rawData = {
-			configPlugins: this.getConfigVal("plugins"),
+			configPlugins: this.getConfigVal(appdef.DefConfigKeyPlugins),
 			loadedPluginsByCategory: loadedPluginData,
 		};
 
@@ -2947,13 +2963,13 @@ class AppRoomServer {
 	createSecureToken(payload, expirationSeconds) {
 		// add stuff to payload
 		payload.iat = Math.floor(Date.now() / 1000);
-		payload.iss = this.getConfigVal("token:ISSUER");
+		payload.iss = this.getConfigVal(appdef.DefConfigKeyTokenIssuer);
 		// expiration?
 		if (expirationSeconds > 0) {
 			payload.exp = Math.floor(Date.now() / 1000) + expirationSeconds;
 		}
 		// make it
-		const serverJwtCryptoKey = this.getConfigVal("token:CRYPTOKEY");
+		const serverJwtCryptoKey = this.getConfigVal(appdef.DefConfigKeyTokenCryptoKey);
 		const token = jsonwebtoken.sign(payload, serverJwtCryptoKey);
 		const tokenObj = {
 			token,
@@ -3004,8 +3020,7 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	isDevelopmentMode() {
-		return (this.getConfigVal("NODE_ENV") === "development");
-		// return (this.expressApp.get("env") === "development");
+		return (this.getConfigVal(appdef.DefConfigKeyNodeEnv) === "development");
 	}
 	//---------------------------------------------------------------------------
 
@@ -3149,6 +3164,10 @@ class AppRoomServer {
 			// add url to display
 			if (req !== undefined && req.url !== undefined) {
 				errorDetails += "\nRequested url: " + req.url;
+				var originalUrl = jrhExpress.reqOriginalUrl(req);
+				if (req.url !== originalUrl) {
+					errorDetails += " (" + originalUrl + ")";
+				}
 			}
 
 			// extra details if in development mode
@@ -3262,7 +3281,7 @@ class AppRoomServer {
 				return;
 			}
 
-			console.log("Encountered UncaughtException, attempting to log...");
+			console.log("Encountered UncaughtException, logging.");
 
 			// add flag to it to prevent infinite loops
 			err.escapeLoops = true;
@@ -3290,14 +3309,14 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	async handleUncaughtError(err) {
 
-		console.log("Encountered UncaughtError, attempting to log...");
+		console.log("Encountered UncaughtError, logging.");
 
 		const errString = "Uncaught error occurred on " + jrhMisc.getNiceNowString() + ":\n\n" + jrhMisc.objToString(err, false);
 
 		if (true) {
 			// log the critical error to file and database
 			try {
-				await this.logm(appconst.DefLogTypeErrorCriticalException, errString);
+				await this.logm(appdef.DefLogTypeErrorCriticalException, errString);
 			} catch (exceptionError) {
 				err.loggingException = exceptionError;
 				jrdebug.debugObj(err, "Exception while trying to log uncaught error");
@@ -3316,7 +3335,7 @@ class AppRoomServer {
 			// log the critical error to file and database
 			try {
 				const errString = "Fatal/critical error occurred on " + jrhMisc.getNiceNowString() + ":\n\n" + jrhMisc.objToString(err, false);
-				await this.logm(appconst.DefLogTypeErrorCriticalException, errString);
+				await this.logm(appdef.DefLogTypeErrorCriticalException, errString);
 			} catch (exceptionError) {
 				err.loggingException = exceptionError;
 				jrdebug.debugObj(err, "Exception while trying to log fatal error");
@@ -3332,7 +3351,7 @@ class AppRoomServer {
 			const msg = {
 				url: req.url,
 			};
-			await this.logr(req, appconst.DefLogTypeError404, msg);
+			await this.logr(req, appdef.DefLogTypeError404, msg);
 		}
 	}
 	//---------------------------------------------------------------------------
@@ -3379,29 +3398,35 @@ class AppRoomServer {
 	 * @returns number of messages sent
 	 */
 
-	async emergencyAlert(eventType, subject, message, req, extraData, flagAlsoSendToSecondaries) {
+	async emergencyAlert(eventType, subject, message, req, extraData, flagAlsoSendToSecondaries, flagOverrideRateLimiter) {
 		// first we check rate limiting
 		var messageSentCount = 0;
 
-		const rateLimiter = this.getRateLimiterEmergencyAlert();
-		// ATTN: with rateLimiterKey == "" it means that we share a single rate limter for all emergencyAlerts
-		const rateLimiterKey = "";
-		//
-		try {
-			// consume a point of action
-			await rateLimiter.consume(rateLimiterKey, 1);
-		} catch (rateLimiterRes) {
-			// rate limiter triggered; if this is not our FIRST trigger of rate limiter within this time period, then just silently return
-			// if it is the first trigger, send an alert about alerts being rate limited
-			if (!rateLimiterRes.isFirstInDuration) {
-				return messageSentCount;
+		if (!flagOverrideRateLimiter) {
+			const rateLimiter = this.getRateLimiterEmergencyAlert();
+			// ATTN: with rateLimiterKey == "" it means that we share a single rate limter for all emergencyAlerts
+			const rateLimiterKey = "";
+			//
+			try {
+				// consume a point of action
+				await rateLimiter.consume(rateLimiterKey, 1);
+			} catch (rateLimiterRes) {
+				// rate limiter triggered; if this is not our FIRST trigger of the emergency alert rate limiter within this time period, then just silently return
+				if (!rateLimiterRes.isFirstInDuration) {
+					return 0;
+				}
+				// otherwise we will not send the alert but we will send a message about turning off emergency alerts
+
+				// send them a message saying emergency alerts are disabled for X amount of time
+				const blockTime = rateLimiterRes.msBeforeNext / 1000.0;
+				// send a message saying we are disabling emergency alerts
+				var esubject = util.format("Emergency alerts temporarily disabled for %d seconds", blockTime);
+				var emessage = util.format("Due to rate limiting, no further alerts will be sent for %d seconds.", blockTime);
+				await this.emergencyAlert("ratelimit.emergency", esubject, emessage, req, {}, false, true);
+
+				// now return saying we did not send the alert
+				return 0;
 			}
-			// drop down with warning about rate limiting
-			// send them a message saying emergency alerts are disabled for X amount of time
-			const blockTime = rateLimiterRes.msBeforeNext / 1000.0;
-			// overrise subject and message
-			subject = util.format("Emergency alerts temporarily disabled for %d seconds", blockTime);
-			message = util.format("Due to rate limiting, no further alerts will be sent for %d seconds.", blockTime);
 		}
 
 		// ok send the message
@@ -3411,7 +3436,6 @@ class AppRoomServer {
 		if (flagAlsoSendToSecondaries) {
 			recipients = jrhMisc.mergeArraysKeepDupes(recipients, this.getEmergencyAlertContactsSecondary());
 		}
-
 
 		// add req info to extra data of message
 		var extraDataPlus;

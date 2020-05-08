@@ -18,7 +18,7 @@ const jrequire = require("../helpers/jrequire");
 
 // controllers
 const arserver = jrequire("arserver");
-const appconst = jrequire("appconst");
+const appdef = jrequire("appdef");
 
 // our helper modules
 const jrdebug = require("../helpers/jrdebug");
@@ -145,10 +145,10 @@ class ModelBaseMongoose {
 			disabled: {
 				label: "Disabled?",
 				format: "choices",
-				choices: appconst.DefStateModeLabels,
-				choicesEdit: appconst.DefStateModeLabelsEdit,
+				choices: appdef.DefStateModeLabels,
+				choicesEdit: appdef.DefStateModeLabelsEdit,
 				filterSize: 8,
-				defaultValue: appconst.DefMdbEnable,
+				defaultValue: appdef.DefMdbEnable,
 				mongoose: {
 					type: Number,
 				},
@@ -185,11 +185,11 @@ class ModelBaseMongoose {
 
 	// override this to default to real delete for some models
 	static getDefaultDeleteDisableMode() {
-		return appconst.DefMdbVirtDelete;
+		return appdef.DefMdbVirtDelete;
 	}
 
 	static getDefaultDeleteDisableModeIsVirtual() {
-		return (this.getDefaultDeleteDisableMode() === appconst.DefMdbVirtDelete);
+		return (this.getDefaultDeleteDisableMode() === appdef.DefMdbVirtDelete);
 	}
 
 	static supportsVirtualDelete() {
@@ -198,10 +198,10 @@ class ModelBaseMongoose {
 
 	static getDefaultDeleteDisableModeAsAclAction() {
 		var deleteDisableMode = this.getDefaultDeleteDisableMode();
-		if (deleteDisableMode === appconst.DefMdbVirtDelete) {
-			return appconst.DefAclActionDelete;
+		if (deleteDisableMode === appdef.DefMdbVirtDelete) {
+			return appdef.DefAclActionDelete;
 		}
-		return appconst.DefAclActionPermDelete;
+		return appdef.DefAclActionPermDelete;
 	}
 
 
@@ -215,6 +215,19 @@ class ModelBaseMongoose {
 	 */
 	static getShouldBeOwned() {
 		return false;
+	}
+
+
+	/**
+	 * Should we log database actions on instances of this model?
+	 * Subclasses can override this (logModel) to say that we shouldnt create log entries when they are deleted etc.
+	 *
+	 * @static
+	 * @returns true or false
+	 * @memberof ModelBaseMongoose
+	 */
+	static getShouldLogDbActions() {
+		return true;
 	}
 	//---------------------------------------------------------------------------
 
@@ -1782,11 +1795,17 @@ class ModelBaseMongoose {
 	 */
 	static async doChangeModeById(id, mode, jrResult) {
 
-		if (mode === appconst.DefMdbRealDelete) {
+		if (mode === appdef.DefMdbRealDelete) {
 			// direct database delete
 			await this.getMongooseModel().deleteOne({ _id: id }, (err) => {
 				if (err) {
-					jrResult.pushError("Error while tryign to delete " + this.getNiceNameWithId(id) + ": " + err.message);
+					var msg = "Error while tryign to delete " + this.getNiceNameWithId(id) + ": " + err.message;
+					jrResult.pushError(msg);
+				} else {
+					// log the action
+					if (this.getShouldLogDbActions()) {
+						arserver.logr(null, "db.delete", "Deleted " + this.getNiceNameWithId(id));
+					}
 				}
 			});
 		} else {
@@ -1796,7 +1815,13 @@ class ModelBaseMongoose {
 			const nowDate = new Date();
 			await this.getMongooseModel().updateOne({ _id: id }, { $set: { disabled: mode, modificationDate: nowDate } }, (err) => {
 				if (err) {
-					jrResult.pushError("Error while changing to " + appconst.DefStateModeLabels[mode] + "  " + this.getNiceNameWithId(id) + ": " + err.message);
+					var msg = "Error while changing to " + appdef.DefStateModeLabels[mode] + "  " + this.getNiceNameWithId(id) + ": " + err.message;
+					jrResult.pushError(msg);
+				} else {
+					if (this.getShouldLogDbActions()) {
+						// log the action
+						arserver.logr(null, "db.modify", "Changing to " + appdef.DefStateModeLabels[mode] + "  " + this.getNiceNameWithId(id));
+					}
 				}
 			});
 		}
@@ -1827,7 +1852,7 @@ class ModelBaseMongoose {
 			++successCount;
 		}
 
-		const modeLabel = jrhText.capitalizeFirstLetter(appconst.DefStateModeLabels[mode]);
+		const modeLabel = jrhText.capitalizeFirstLetter(appdef.DefStateModeLabels[mode]);
 		if (!jrResult.isError()) {
 			if (!flagSupressSuccessMessage) {
 				jrResult.pushSuccess(modeLabel + " " + this.getNiceNamePluralized(successCount) + ".");

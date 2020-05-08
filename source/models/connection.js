@@ -4,6 +4,8 @@
  * @copyright 5/1/19
  * @description
  * A Connection model represents someone who is connected into the system, whethther they are a logged-in "User" or just an anonymous guest
+ *
+ * ATTN: THIS CLASS IS NOT USED YET (5/8/20); it is included only as a placeholder to remind us to add this functionality later
  */
 
 "use strict";
@@ -13,7 +15,7 @@
 const jrequire = require("../helpers/jrequire");
 
 // models
-const ModelBaseMongoose = jrequire("models/model_base_mongoose");
+const ModelBaseMongooseMinimal = jrequire("models/model_base_mongoose_minimal");
 
 
 
@@ -27,7 +29,7 @@ const ModelBaseMongoose = jrequire("models/model_base_mongoose");
  * @class ConnectionModel
  * @extends {ModelBaseMongoose}
  */
-class ConnectionModel extends ModelBaseMongoose {
+class ConnectionModel extends ModelBaseMongooseMinimal {
 
 	//---------------------------------------------------------------------------
 	getModelClass() {

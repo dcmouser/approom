@@ -33,7 +33,7 @@ const arserver = jrequire("arserver");
 const aclAid = jrequire("aclaid");
 
 // constants
-const appconst = jrequire("appconst");
+const appdef = jrequire("appdef");
 
 
 
@@ -162,7 +162,7 @@ class CrudAid {
 		var user = await arserver.getLoggedInUser(req);
 
 		// acl test
-		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appconst.DefAclActionList)) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appdef.DefAclActionList)) {
 			return true;
 		}
 
@@ -191,7 +191,7 @@ class CrudAid {
 		var user = await arserver.getLoggedInUser(req);
 
 		// acl test
-		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appconst.DefAclActionList)) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appdef.DefAclActionList)) {
 			return true;
 		}
 
@@ -316,7 +316,7 @@ class CrudAid {
 			modelClass.validateId(jrResult, id);
 			if (!jrResult.isError()) {
 				// acl test to VIEW the item we are CLONING
-				if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appconst.DefAclActionView, id)) {
+				if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appdef.DefAclActionView, id)) {
 					return true;
 				}
 				// get object being edited
@@ -331,7 +331,7 @@ class CrudAid {
 		}
 
 		// acl test to add
-		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appconst.DefAclActionAdd)) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appdef.DefAclActionAdd)) {
 			return true;
 		}
 
@@ -365,7 +365,7 @@ class CrudAid {
 		var reqbody = req.body;
 
 		// acl test
-		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appconst.DefAclActionAdd)) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appdef.DefAclActionAdd)) {
 			return true;
 		}
 
@@ -405,7 +405,7 @@ class CrudAid {
 					// so first things first lets delete the object
 					var jrResultFollowup = JrResult.makeNew();
 					// we do a REAL delete here (as opposed to a virtual one) since the object was just added in failure
-					await savedobj.doChangeMode(appconst.DefMdbRealDelete, jrResultFollowup);
+					await savedobj.doChangeMode(appdef.DefMdbRealDelete, jrResultFollowup);
 					if (jrResultFollowup.isError()) {
 						// yikes we couldn't even delete the object
 						errmsg += "  In addition, the newly created object could not be rolled back and deleted.";
@@ -414,7 +414,7 @@ class CrudAid {
 						errmsg += "  The newly created object was successfully rolled back and deleted: " + jrResultFollowup.getErrorsAsString();
 					}
 					// now log error
-					arserver.logr(req, appconst.DefLogTypeErrorCriticalDb, errmsg);
+					arserver.logr(req, appdef.DefLogTypeErrorCriticalDb, errmsg);
 
 					// clear object
 					savedobj = null;
@@ -520,7 +520,7 @@ class CrudAid {
 		var id = req.params.id;
 
 		// validate and get id, this will also do an ACL test
-		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, appconst.DefAclActionEdit);
+		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, appdef.DefAclActionEdit);
 		if (jrResult.isError()) {
 			return false;
 		}
@@ -549,6 +549,7 @@ class CrudAid {
 	 */
 	async handleEditPost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// user posts form for adding submission
+		var flagFilledObjPropertiesInReqData = false;
 
 		// get logged in user
 		var user = await arserver.getLoggedInUser(req);
@@ -559,12 +560,13 @@ class CrudAid {
 		var reqbody = req.body;
 		var obj;
 
+
 		// get id from post, ignore url param
 		var id = req.body._id;
 		var ignoreFields = this.getCrudEditFormIgnoreFields();
 
 		// acl test
-		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appconst.DefAclActionEdit, id)) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appdef.DefAclActionEdit, id)) {
 			return false;
 		}
 		// form fields that we dont complain about finding even though they arent for the form object
@@ -577,7 +579,6 @@ class CrudAid {
 			// check required csrf token
 			jrResult = arserver.testCsrfReturnJrResult(req, res);
 		}
-
 
 		if (!jrResult.isError()) {
 			// now save edit changes
@@ -602,13 +603,18 @@ class CrudAid {
 				if (flagRepresentAfterSuccess) {
 					// fill form data with object properties and drop down to let user re-edit
 					reqbody = savedobj.modelObjPropertyCopy(true);
+					flagFilledObjPropertiesInReqData = true;
 				} else {
 					jrResult.addToSession(req);
 					res.redirect(baseCrudUrl + "/view/" + savedobj.getIdAsString());
 					return true;
 				}
-
 			}
+		}
+
+		if (!flagFilledObjPropertiesInReqData) {
+			// fill form data with object properties and drop down to let user re-edit
+			reqbody = obj.modelObjPropertyCopy(true);
 		}
 
 		// re-present form
@@ -647,8 +653,8 @@ class CrudAid {
 		}
 
 		//
-		const flagOfferDelete = modelClass.getDefaultDeleteDisableModeIsVirtual() && (obj.disabled === 0 || (obj.disabled !== appconst.DefMdbVirtDelete));
-		const flagOfferUnDelete = obj.disabled === appconst.DefMdbVirtDelete;
+		const flagOfferDelete = modelClass.getDefaultDeleteDisableModeIsVirtual() && (obj.disabled === 0 || (obj.disabled !== appdef.DefMdbVirtDelete));
+		const flagOfferUnDelete = obj.disabled === appdef.DefMdbVirtDelete;
 		const flagOfferPermDelete = true;
 
 		// render
@@ -701,7 +707,7 @@ class CrudAid {
 		var id = req.params.id;
 
 		// get obj AND perform acl test
-		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, appconst.DefAclActionView);
+		var obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, appdef.DefAclActionView);
 		if (jrResult.isError()) {
 			return true;
 		}
@@ -718,8 +724,8 @@ class CrudAid {
 			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, obj, jrResult, "view", helperData);
 		}
 
-		const flagOfferDelete = modelClass.getDefaultDeleteDisableModeIsVirtual() && (obj.disabled === 0 || (obj.disabled !== appconst.DefMdbVirtDelete));
-		const flagOfferUnDelete = obj.disabled === appconst.DefMdbVirtDelete;
+		const flagOfferDelete = modelClass.getDefaultDeleteDisableModeIsVirtual() && (obj.disabled === 0 || (obj.disabled !== appdef.DefMdbVirtDelete));
+		const flagOfferUnDelete = obj.disabled === appdef.DefMdbVirtDelete;
 		const flagOfferPermDelete = true;
 
 		// render
@@ -753,21 +759,21 @@ class CrudAid {
 	getAclActionForChangeReqMode(modelClass, reqmode, jrResult) {
 		if (reqmode === "virtdelete") {
 			if (modelClass.supportsVirtualDelete()) {
-				return appconst.DefAclActionDelete;
+				return appdef.DefAclActionDelete;
 			}
 			jrResult.pushError("Virtual delete not supported for model class " + modelClass.getNiceName());
 			return null;
 		}
 		if (reqmode === "delete") {
 			// this will either be a virtual delete or a permanent delete
-			// return appconst.DefAclActionDelete;
+			// return appdef.DefAclActionDelete;
 			return modelClass.getDefaultDeleteDisableModeAsAclAction();
 		}
 		if (reqmode === "permdelete") {
-			return appconst.DefAclActionPermDelete;
+			return appdef.DefAclActionPermDelete;
 		}
 		if (reqmode === "undelete") {
-			return appconst.DefAclActionUnDelete;
+			return appdef.DefAclActionUnDelete;
 		}
 		// error
 		jrResult.pushError("Unknown reqmode in getAclActionForChangeReqMode: " + reqmode);
@@ -781,19 +787,19 @@ class CrudAid {
 	 *
 	 * @param {*} aclAction
 	 * @param {*} jrResult
-	 * @returns appconst.DefMdbVirtDelete or appconst.DefMdbRealDelete or appconst.DefMdbEnable
+	 * @returns appdef.DefMdbVirtDelete or appdef.DefMdbRealDelete or appdef.DefMdbEnable
 	 * @memberof CrudAid
 	 */
 	convertAclChangeModeActionToDeleteDatabaseStateValue(aclAction, jrResult) {
 		// what kind of delete do we want, virtual or real?
-		if (aclAction === appconst.DefAclActionDelete) {
-			return appconst.DefMdbVirtDelete;
+		if (aclAction === appdef.DefAclActionDelete) {
+			return appdef.DefMdbVirtDelete;
 		}
-		if (aclAction === appconst.DefAclActionPermDelete) {
-			return appconst.DefMdbRealDelete;
+		if (aclAction === appdef.DefAclActionPermDelete) {
+			return appdef.DefMdbRealDelete;
 		}
-		if (aclAction === appconst.DefAclActionUnDelete) {
-			return appconst.DefMdbEnable;
+		if (aclAction === appdef.DefAclActionUnDelete) {
+			return appdef.DefMdbEnable;
 		}
 		jrResult.pushError("Unknown aclAction in convertAclChangeModeActionToDeleteDatabaseStateValue: " + aclAction);
 		return null;
@@ -895,11 +901,11 @@ class CrudAid {
 		if (!jrResult.isError()) {
 			// success (push message to top since helper deleted may have been pushed on earlier)
 			const objIdString = obj.getIdAsString();
-			jrResult.pushSuccess(modelClass.getNiceName() + " #" + objIdString + " has been " + appconst.DefStateModeLabels[newmode] + ".", true);
+			jrResult.pushSuccess(modelClass.getNiceName() + " #" + objIdString + " has been " + appdef.DefStateModeLabels[newmode] + ".", true);
 
 			// log the action
 			const logIdString = obj.getLogIdString();
-			arserver.logr(req, "crud." + reqmode, appconst.DefStateModeLabels[newmode] + " " + logIdString);
+			arserver.logr(req, "crud." + reqmode, appdef.DefStateModeLabels[newmode] + " " + logIdString);
 
 			// redirect
 			jrResult.addToSession(req);
@@ -1008,7 +1014,7 @@ class CrudAid {
 		var user = await arserver.getLoggedInUser(req);
 
 		// acl test
-		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appconst.DefAclActionStats)) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appdef.DefAclActionStats)) {
 			return true;
 		}
 
@@ -1456,7 +1462,7 @@ class CrudAid {
 
 		if (bulkAction === "delete") {
 			// do they have permission to delete all in the list
-			const permission = appconst.DefAclActionDelete;
+			const permission = appdef.DefAclActionDelete;
 			const objectType = modelClass.getAclName();
 			if (!await user.aclHasPermissionOnAll(permission, objectType, idList)) {
 				return JrResult.makeError("Permission denied; you do not have permission to " + bulkAction + " these items.");
@@ -1473,7 +1479,7 @@ class CrudAid {
 
 		if (bulkAction === "permdelete") {
 			// do they have permission to delete all in the list
-			const permission = appconst.DefAclActionPermDelete;
+			const permission = appdef.DefAclActionPermDelete;
 			const objectType = modelClass.getAclName();
 			if (!await user.aclHasPermissionOnAll(permission, objectType, idList)) {
 				return JrResult.makeError("Permission denied; you do not have permission to " + bulkAction + " these items.");
@@ -1482,7 +1488,7 @@ class CrudAid {
 			// they have permission!
 
 			// real permanent delete
-			const mode = appconst.DefMdbRealDelete;
+			const mode = appdef.DefMdbRealDelete;
 
 			await modelClass.doChangeModeByIdList(idList, mode, jrResult, false);
 			return jrResult;
@@ -1490,7 +1496,7 @@ class CrudAid {
 
 		if (bulkAction === "undelete") {
 			// do they have permission to undelete all in the list
-			const permission = appconst.DefAclActionUnDelete;
+			const permission = appdef.DefAclActionUnDelete;
 			const objectType = modelClass.getAclName();
 			if (!await user.aclHasPermissionOnAll(permission, objectType, idList)) {
 				return JrResult.makeError("Permission denied; you do not have permission to " + bulkAction + " these items.");
@@ -1499,7 +1505,7 @@ class CrudAid {
 			// they have permission!
 
 			// undelete means make enabled
-			const mode = appconst.DefMdbEnable;
+			const mode = appdef.DefMdbEnable;
 
 			await modelClass.doChangeModeByIdList(idList, mode, jrResult, false);
 			return jrResult;

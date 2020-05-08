@@ -476,11 +476,16 @@ function fixConfigFilePathName(baseDir, filepath) {
  */
 function getVal(...args) {
 	// just pass along to nconf
+	if (args.length === 0) {
+		// complain
+		throw new Error("Request for config getVal but no variable key name was passed.");
+	}
+
 	var val = nconf.get(...args);
 	if (val === undefined) {
 		throw new Error("Request for config getVal of a non-existent variable (" + args[0] + ")");
 	}
-	return val;
+	return configAutoConverTypeVal(val);
 }
 
 
@@ -497,6 +502,32 @@ function getValDefault(arg, defaultVal) {
 	if (val === undefined) {
 		return defaultVal;
 	}
+	return configAutoConverTypeVal(val);
+}
+
+/**
+ * Convert boolean "strings" to boolean values
+ *
+ * @param {*} val
+ * @returns val converted to bool if its "true" or "false"
+ */
+function configAutoConverTypeVal(val) {
+	// ATTN: TODO auto convert numbers?
+	// ATTN: this is not needed; its auto performed by the yml reader
+	/*
+	if (typeof val === "string") {
+		if (val === "true") {
+			return true;
+		}
+		if (val === "false") {
+			return false;
+		}
+		if (val === "undefined") {
+			return undefined;
+		}
+	}
+	*/
+	// return it as is
 	return val;
 }
 

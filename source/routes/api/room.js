@@ -32,7 +32,7 @@ const RoomModel = jrequire("models/room");
 const AppModel = jrequire("models/app");
 
 // constants
-const appconst = jrequire("appconst");
+const appdef = jrequire("appdef");
 
 
 
@@ -117,7 +117,7 @@ async function routerLookup(req, res, next) {
 	}
 
 	// now let's ask if user is actually ALLOWED to look at this room room
-	const permission = appconst.DefAclActionView;
+	const permission = appdef.DefAclActionView;
 	const permissionObjType = RoomModel.getAclName();
 	const permissionObjId = room.getIdAsM();
 	const hasPermission = await user.aclHasPermission(permission, permissionObjType, permissionObjId);
@@ -166,7 +166,7 @@ async function routerAdd(req, res, next) {
 
 	// now let's ask if user is actually ALLOWED to add a room to this app
 	var appId = query.appId;
-	const permission = appconst.DefAclActionAddData;
+	const permission = appdef.DefAclActionAddData;
 	const permissionObjType = AppModel.getAclName();
 	const permissionObjId = appId;
 	const hasPermission = await user.aclHasPermission(permission, permissionObjType, permissionObjId);

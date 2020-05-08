@@ -145,6 +145,29 @@ class LogModel extends ModelBaseMongooseMinimal {
 
 
 
+	//---------------------------------------------------------------------------
+	/**
+	 * Should we log database actions on instances of this model? NO
+	 *
+	 * @static
+	 * @returns true or false
+	 * @memberof ModelBaseMongoose
+	 */
+	static getShouldLogDbActions() {
+		return false;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
 
 
 

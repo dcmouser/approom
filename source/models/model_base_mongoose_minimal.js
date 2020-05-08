@@ -20,7 +20,7 @@ const jrequire = require("../helpers/jrequire");
 const ModelBaseMongoose = jrequire("models/model_base_mongoose");
 
 // controllers
-const appconst = jrequire("appconst");
+const appdef = jrequire("appdef");
 
 // our helper modules
 const jrlog = require("../helpers/jrlog");
@@ -91,7 +91,7 @@ class ModelBaseMongooseMinimal extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	// override this to default to real delete for some models
 	static getDefaultDeleteDisableMode() {
-		return appconst.DefMdbRealDelete;
+		return appdef.DefMdbRealDelete;
 	}
 	//---------------------------------------------------------------------------
 

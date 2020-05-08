@@ -1,9 +1,9 @@
 /**
- * @module controllers/appconst
+ * @module controllers/appdef
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 11/26/19
  * @description
- * This module defines some constants, that we used to have in arserver, aclaid, etc., but the class definition makes accessing module globals from other modules difficult, so we move it all here
+ * This module defines some define constants, that we used to have in arserver, aclaid, etc., but the class definition makes accessing module globals from other modules difficult, so we move it all here
  */
 
 
@@ -150,3 +150,62 @@ exports.DefRateLimiterApi = "api";
 exports.DefRateLimiterEmergencyAlert = "emergencyAlert";
 exports.DefRateLimiterTest = "test";
 //---------------------------------------------------------------------------
+
+
+//---------------------------------------------------------------------------
+// config option strings
+exports.DefConfigKeyTestingForceCsrfFail = "testing:FORCE_CSRF_FAIL";
+exports.DefConfigKeyLoggingDirectory = "logging:DIRECTORY";
+//
+exports.DefConfigKeyServerDbUrl = "server:DB_URL";
+exports.DefConfigKeyServerHttp = "server:HTTP";
+exports.DefConfigKeyServerHttpPort = "server:HTTP_PORT";
+exports.DefConfigKeyServerHttps = "server:HTTPS";
+exports.DefConfigKeyServerHttpsKey = "server:HTTPS_KEY";
+exports.DefConfigKeyServerHttpsCert = "server:HTTPS_CERT";
+exports.DefConfigKeyServerHttpsPort = "server:HTTPS_PORT";
+exports.DefConfigKeyServerSiteDomain = "server:SITE_DOMAIN";
+//
+exports.DefConfigKeyDebug = "DEBUG";
+exports.DefConfigKeyProfile = "PROFILE";
+//
+exports.DefConfigKeyAccountSignupFullRegForm = "account:SIGNUP_FULLREGISTRATIONFORM";
+exports.DefConfigKeyAccountGravatarOptions = "account:GRAVATAR_OPTIONS";
+//
+exports.DefConfigKeyEmergencyAlertPrimaryEmails = "emergencyAlert:primary";
+exports.DefConfigKeyEmergencyAlertSecondaryEmails = "emergencyAlert:secondary";
+//
+exports.DefConfigKeyMailerDebug = "mailer:DEBUG";
+exports.DefConfigKeyMailerHost = "mailer:HOST";
+exports.DefConfigKeyMailerPort = "mailer:PORT";
+exports.DefConfigKeyMailerSecure = "mailer:SECURE";
+exports.DefConfigKeyMailerUsername = "mailer:USERNAME";
+exports.DefConfigKeyMailerPassword = "mailer:PASSWORD";
+exports.DefConfigKeyMailerFrom = "mailer:FROM";
+//
+exports.DefConfigKeyPlugins = "plugins";
+//
+exports.DefConfigKeySessionIdName = "session:SESSIONIDNAME";
+exports.DefConfigKeySessionSecret = "session:SESSIONSECRET";
+//
+exports.DefConfigKeyTokenCryptoKey = "token:CRYPTOKEY";
+exports.DefConfigKeyTokenIssuer = "token:ISSUER";
+exports.DefConfigKeyTokenExpirationSecsRefresh = "token:EXPIRATIONSECS_REFRESH";
+exports.DefConfigKeyTokenExpirationSecsAccess = "token:EXPIRATIONSECS_ACCESS";
+//
+exports.DefConfigKeyCrypto = "crypto:VERIFICATIONCODESALT";
+//
+exports.DefConfigKeyPassportFacebookAppId = "passport:FACEBOOK_APP_ID";
+exports.DefConfigKeyPassportFacebookAppSecret = "passport:FACEBOOK_APP_SECRET";
+exports.DefConfigKeyPassportTwitterConsumerKey = "passport:TWITTER_consumerKey";
+exports.DefConfigKeyPassportTwitterConsumerSecret = "passport:TWITTER_consumerSecret";
+exports.DefConfigKeyPassportGoogleClientId = "passport:GOOGLE_clientid";
+exports.DefConfigKeyPassportGoogleClientSecret = "passport:GOOGLE_secret";
+//
+exports.DefConfigKeyNodeEnv = "NODE_ENV";
+//
+exports.DefConfigKeyTestingClientUsernameEmail = "testing:CLIENT_USERNAMEEMAIL";
+exports.DefConfigKeyTestingClientPassword = "testing:CLIENT_USERPASSWORD";
+//---------------------------------------------------------------------------
+
+

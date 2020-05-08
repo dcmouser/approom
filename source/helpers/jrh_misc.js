@@ -651,8 +651,14 @@ function getNonNullValueFromObject(obj, key, jrResult, hintMessage) {
 
 
 
-
 //---------------------------------------------------------------------------
+/**
+ * If path starts with a . then resolve it relative to the passed basedir
+ *
+ * @param {*} dirpath
+ * @param {*} basedir
+ * @returns absolute path of dirpath
+ */
 function resolvePossiblyRelativeDirectory(dirpath, basedir) {
 	if (dirpath.startsWith(".")) {
 		// relative to our base dir
@@ -666,7 +672,14 @@ function resolvePossiblyRelativeDirectory(dirpath, basedir) {
 
 
 //---------------------------------------------------------------------------
-// see https://stackoverflow.com/questions/14249506/how-can-i-wait-in-node-js-javascript-l-need-to-pause-for-a-period-of-time
+/**
+ * Awaiting on this will sleep the program for a specified number of milliseconds.
+ * Used for testing.
+ * see https://stackoverflow.com/questions/14249506/how-can-i-wait-in-node-js-javascript-l-need-to-pause-for-a-period-of-time
+ *
+ * @param {*} ms
+ * @returns
+ */
 function usleep(ms) {
 	return new Promise((resolve) => {
 		setTimeout(resolve, ms);

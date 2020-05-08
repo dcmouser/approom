@@ -39,7 +39,7 @@ const jrhMisc = require("../helpers/jrh_misc");
 const JrResult = require("../helpers/jrresult");
 
 // constants
-const appconst = jrequire("appconst");
+const appdef = jrequire("appdef");
 
 
 
@@ -83,37 +83,37 @@ class AclAid {
 		this.roleAcl = new roleAcl();
 
 		// create some grant classes
-		this.roleAcl.grant(appconst.DefAclRoleSiteAdmin);
-		this.roleAcl.grant(appconst.DefAclRoleGlobalMod);
-		this.roleAcl.grant(appconst.DefAclRoleModerator);
-		this.roleAcl.grant(appconst.DefAclRoleOwner);
-		this.roleAcl.grant(appconst.DefAclRoleVisitor);
-		this.roleAcl.grant(appconst.DefAclRoleNone);
-		this.roleAcl.grant(appconst.DefAclRoleFriend);
+		this.roleAcl.grant(appdef.DefAclRoleSiteAdmin);
+		this.roleAcl.grant(appdef.DefAclRoleGlobalMod);
+		this.roleAcl.grant(appdef.DefAclRoleModerator);
+		this.roleAcl.grant(appdef.DefAclRoleOwner);
+		this.roleAcl.grant(appdef.DefAclRoleVisitor);
+		this.roleAcl.grant(appdef.DefAclRoleNone);
+		this.roleAcl.grant(appdef.DefAclRoleFriend);
 
 		// create crud permissions for all models
 		await this.createDefaultAclCrudGrantsForAllModelResources();
 
 		// files can be viewed by friends of the ROOM (note we dont have to say the role is only for rooms, the func checking it will know how to interpret)
-		this.roleAcl.grant(appconst.DefAclRoleFriend).execute(appconst.DefAclActionView).on(arserver.getModelClassAclName("FileModel"));
+		this.roleAcl.grant(appdef.DefAclRoleFriend).execute(appdef.DefAclActionView).on(arserver.getModelClassAclName("FileModel"));
 
 		// roomdata can be viewed by friends of the ROOM
-		this.roleAcl.grant(appconst.DefAclRoleFriend).execute(appconst.DefAclActionView).on(arserver.getModelClassAclName("RoomdataModel"));
+		this.roleAcl.grant(appdef.DefAclRoleFriend).execute(appdef.DefAclActionView).on(arserver.getModelClassAclName("RoomdataModel"));
 
 		// global site admin can admin the site
-		this.roleAcl.grant(appconst.DefAclRoleSiteAdmin).execute(appconst.DefAclActionAdminister).on(appconst.DefAclObjectTypeSite);
+		this.roleAcl.grant(appdef.DefAclRoleSiteAdmin).execute(appdef.DefAclActionAdminister).on(appdef.DefAclObjectTypeSite);
 
 		// admin also inherits the permissions of globalModerator
-		this.roleAcl.extendRole(appconst.DefAclRoleSiteAdmin, appconst.DefAclRoleGlobalMod);
+		this.roleAcl.extendRole(appdef.DefAclRoleSiteAdmin, appdef.DefAclRoleGlobalMod);
 
 		// owner inherits permissions of moderator
-		this.roleAcl.extendRole(appconst.DefAclRoleOwner, appconst.DefAclRoleModerator);
+		this.roleAcl.extendRole(appdef.DefAclRoleOwner, appdef.DefAclRoleModerator);
 
 		// TEST - we wanted to see if this showed up on App view when we listed users who had role on the object; but it does not
-		// this.roleAcl.grant(appconst.DefAclRoleSiteAdmin).execute(appconst.DefAclActionAnalytics).on(arserver.getModelClassAclName("RoomModel"));
+		// this.roleAcl.grant(appdef.DefAclRoleSiteAdmin).execute(appdef.DefAclActionAnalytics).on(arserver.getModelClassAclName("RoomModel"));
 
 		// stats and analytics
-		this.roleAcl.grant(appconst.DefAclRoleGlobalMod).execute(appconst.DefAclActionAnalytics).on(appconst.DefAclObjectTypeSite);
+		this.roleAcl.grant(appdef.DefAclRoleGlobalMod).execute(appdef.DefAclActionAnalytics).on(appdef.DefAclObjectTypeSite);
 
 		return true;
 	}
@@ -147,40 +147,40 @@ class AclAid {
 	 */
 	createDefaultAclCrudGrantsForResource(resourceName) {
 		// permission groups
-		const permAll = [appconst.DefAclActionAdd, appconst.DefAclActionEdit, appconst.DefAclActionView, appconst.DefAclActionViewData, appconst.DefAclActionAddData, appconst.DefAclActionList, appconst.DefAclActionDelete, appconst.DefAclActionPermDelete];
-		const permReadOnly = [appconst.DefAclActionView, appconst.DefAclActionViewData, appconst.DefAclActionList];
-		const permExtraAdminMods = [appconst.DefAclActionUnDelete, appconst.DefAclActionSeeVdeletes];
-		const permManageOwners = [appconst.DefAclActionAddOwner, appconst.DefAclActionRemoveOwner];
-		const permManageModerators = [appconst.DefAclActionAddModerator, appconst.DefAclActionRemoveModerator];
-		const permManageMembers = [appconst.DefAclActionAddMember, appconst.DefAclActionRemoveMember];
+		const permAll = [appdef.DefAclActionAdd, appdef.DefAclActionEdit, appdef.DefAclActionView, appdef.DefAclActionViewData, appdef.DefAclActionAddData, appdef.DefAclActionList, appdef.DefAclActionDelete, appdef.DefAclActionPermDelete];
+		const permReadOnly = [appdef.DefAclActionView, appdef.DefAclActionViewData, appdef.DefAclActionList];
+		const permExtraAdminMods = [appdef.DefAclActionUnDelete, appdef.DefAclActionSeeVdeletes];
+		const permManageOwners = [appdef.DefAclActionAddOwner, appdef.DefAclActionRemoveOwner];
+		const permManageModerators = [appdef.DefAclActionAddModerator, appdef.DefAclActionRemoveModerator];
+		const permManageMembers = [appdef.DefAclActionAddMember, appdef.DefAclActionRemoveMember];
 
 		// moderator permissions
-		this.roleAcl.grant(appconst.DefAclRoleGlobalMod).execute(permAll).on(resourceName);
-		this.roleAcl.grant(appconst.DefAclRoleModerator).execute(permAll).on(resourceName);
+		this.roleAcl.grant(appdef.DefAclRoleGlobalMod).execute(permAll).on(resourceName);
+		this.roleAcl.grant(appdef.DefAclRoleModerator).execute(permAll).on(resourceName);
 
 		// give global mods (site admin) ability to see deleted items and undelete them
-		this.roleAcl.grant(appconst.DefAclRoleGlobalMod).execute(permExtraAdminMods).on(resourceName);
-		this.roleAcl.grant(appconst.DefAclRoleModerator).execute(permExtraAdminMods).on(resourceName);
+		this.roleAcl.grant(appdef.DefAclRoleGlobalMod).execute(permExtraAdminMods).on(resourceName);
+		this.roleAcl.grant(appdef.DefAclRoleModerator).execute(permExtraAdminMods).on(resourceName);
 
 		// now owner
-		this.roleAcl.grant(appconst.DefAclRoleOwner).execute(permAll).on(resourceName);
+		this.roleAcl.grant(appdef.DefAclRoleOwner).execute(permAll).on(resourceName);
 
 		// owner management
-		this.roleAcl.grant(appconst.DefAclRoleOwner).execute(permManageOwners).on(resourceName);
-		this.roleAcl.grant(appconst.DefAclRoleOwner).execute(permManageModerators).on(resourceName);
+		this.roleAcl.grant(appdef.DefAclRoleOwner).execute(permManageOwners).on(resourceName);
+		this.roleAcl.grant(appdef.DefAclRoleOwner).execute(permManageModerators).on(resourceName);
 
 		// inherited by default?
-		// this.roleAcl.grant(appconst.DefAclRoleOwner).execute(permManageMembers).on(resourceName);
+		// this.roleAcl.grant(appdef.DefAclRoleOwner).execute(permManageMembers).on(resourceName);
 
 		// moderator management
-		this.roleAcl.grant(appconst.DefAclRoleModerator).execute(permManageMembers).on(resourceName);
+		this.roleAcl.grant(appdef.DefAclRoleModerator).execute(permManageMembers).on(resourceName);
 
 		// friend
-		this.roleAcl.grant(appconst.DefAclRoleFriend).execute(permReadOnly).on(resourceName);
-		this.roleAcl.grant(appconst.DefAclRoleMember).execute(permReadOnly).on(resourceName);
+		this.roleAcl.grant(appdef.DefAclRoleFriend).execute(permReadOnly).on(resourceName);
+		this.roleAcl.grant(appdef.DefAclRoleMember).execute(permReadOnly).on(resourceName);
 
 		// untested; the idea here is that we want users to be able to access models that have the public:true property
-		this.roleAcl.grant(appconst.DefAclRoleNone).execute(permReadOnly).when({ Fn: "EQUALS", args: { public: true } }).on(resourceName);
+		this.roleAcl.grant(appdef.DefAclRoleNone).execute(permReadOnly).when({ Fn: "EQUALS", args: { public: true } }).on(resourceName);
 	}
 	//---------------------------------------------------------------------------
 
@@ -240,7 +240,7 @@ class AclAid {
 			const arserver = jrequire("arserver");
 			const errmsg = "Acl permission check threw error while asking about roleAcl.can(" + role + ").execute(" + action + ").on(" + target + "): " + err.message;
 			jrdebug.cdebug("RoleImpliesPermission, role check threw exception: " + errmsg);
-			await arserver.logm(appconst.DefLogTypeErrorCriticalAcl, errmsg, err);
+			await arserver.logm(appdef.DefLogTypeErrorCriticalAcl, errmsg, err);
 			// return permission denied
 			return false;
 		}
@@ -286,7 +286,7 @@ class AclAid {
 		roles.forEach((role) => {
 			userhtml = role.uname + "(#" + role.uid + ")";
 			rolehtml = role.r;
-			if (role.i === appconst.DefAclObjectIdAll) {
+			if (role.i === appdef.DefAclObjectIdAll) {
 				objecthtml = "all " + role.t + "s";
 			} else {
 				objecthtml = role.t + " #" + role.i;

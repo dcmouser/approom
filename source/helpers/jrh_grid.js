@@ -703,7 +703,7 @@ function jrGridListShowHiddenOptions(req, listHelperData, queryUrlData) {
 	// show a drop down with hidden options
 	// what we show may depend on user acl permissions
 	const tableid = queryUrlData.tableId;
-	const appconst = jrequire("appconst");
+	const appdef = jrequire("appdef");
 
 	var rethtml = "";
 
@@ -712,7 +712,7 @@ function jrGridListShowHiddenOptions(req, listHelperData, queryUrlData) {
 		rethtml += "<hr/><div>";
 		// build form input
 		var selectedid = "all";
-		rethtml += "Show: " + jrhText.jrHtmlFormOptionListSelect("showdisabled", appconst.DefShowStateModeLabels, selectedid, false);
+		rethtml += "Show: " + jrhText.jrHtmlFormOptionListSelect("showdisabled", appdef.DefShowStateModeLabels, selectedid, false);
 	}
 
 	// end stuff

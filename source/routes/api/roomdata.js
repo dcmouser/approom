@@ -33,7 +33,7 @@ const jrhMongo = require("../../helpers/jrh_mongo");
 const RoomModel = jrequire("models/room");
 
 // constants
-const appconst = jrequire("appconst");
+const appdef = jrequire("appdef");
 
 
 
@@ -112,7 +112,7 @@ async function routerList(req, res, next) {
 	}
 
 	// now let's ask if user is actually ALLOWED to look at the data in this room
-	const permission = appconst.DefAclActionViewData;
+	const permission = appdef.DefAclActionViewData;
 	const permissionObjType = RoomModel.getAclName();
 	const permissionObjId = roomId;
 	const hasPermission = await user.aclHasPermission(permission, permissionObjType, permissionObjId);
@@ -172,7 +172,7 @@ async function routerAdd(req, res, next) {
 
 	// now let's ask if user is actually ALLOWED to look at the data in this room
 	var roomId = query.roomId;
-	const permission = appconst.DefAclActionAddData;
+	const permission = appdef.DefAclActionAddData;
 	const permissionObjType = RoomModel.getAclName();
 	const permissionObjId = roomId;
 	const hasPermission = await user.aclHasPermission(permission, permissionObjType, permissionObjId);

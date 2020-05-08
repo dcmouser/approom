@@ -43,7 +43,8 @@ const jrdebug = require("../helpers/jrdebug");
 const jrhCrypto = require("../helpers/jrh_crypto");
 const JrResult = require("../helpers/jrresult");
 
-
+// constants
+const appdef = jrequire("appdef");
 
 
 
@@ -445,7 +446,7 @@ If this request was not made by you, please ignore this email.
 	static async calcHashOfVerificationCode(verificationCode) {
 		// hash the verification code -- this is what we will store in our database
 		// this function needs to retun the SAME HASH no matter when we call it, so that we can search for result; that's why we used a fixed salt
-		return await jrhCrypto.hashPlaintextStringInsecureButSearchable(verificationCode, arserver.getConfigVal("crypto:VERIFICATIONCODESALT"));
+		return await jrhCrypto.hashPlaintextStringInsecureButSearchable(verificationCode, arserver.getConfigVal(appdef.DefConfigKeyCrypto));
 	}
 	//---------------------------------------------------------------------------
 

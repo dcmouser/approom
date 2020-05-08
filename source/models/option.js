@@ -4,6 +4,7 @@
  * @copyright 5/15/19
  * @description
  * The database object that represents database-stored options (those not stored in config files)
+ * ATTN: THIS CLASS IS NOT USED YET (5/8/20); it is included only as a placeholder to remind us to add this functionality later
  */
 
 "use strict";

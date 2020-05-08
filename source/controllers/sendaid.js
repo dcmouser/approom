@@ -11,10 +11,10 @@
 
 
 // modules
+const assert = require("assert");
 
 // mail
 const nodemailer = require("nodemailer");
-
 
 // requirement service locator
 const jrequire = require("../helpers/jrequire");
@@ -31,7 +31,7 @@ const jrlog = require("../helpers/jrlog");
 const arserver = jrequire("arserver");
 
 // constants
-const appconst = jrequire("appconst");
+const appdef = jrequire("appdef");
 
 
 
@@ -55,6 +55,8 @@ class SendAid {
 		this.mailTransport = nodemailer.createTransport(mailTransportConfigObj);
 		this.defaultFrom = defaultFrom;
 		this.flagDebugMode = flagDebugMode;
+
+		assert(defaultFrom);
 
 		jrdebug.cdebugf("Setting up mail transport through %s.", mailTransportConfigObj.host);
 
@@ -156,7 +158,7 @@ class SendAid {
 		if (this.flagDebugMode) {
 			// don't actually mail, instead just log it to console and file
 			jrdebug.debug("Config flag mailer:DEBUG set, so mail to [" + mailobj.to + "] not actually sent (sending mail to debug log instead).");
-			await arserver.logm(appconst.DefLogTypeDebug + ".mailer", "mailer:DEBUG option preventing mail from being sent", mailobj);
+			await arserver.logm(appdef.DefLogTypeDebug + ".mailer", "mailer:DEBUG option preventing mail from being sent", mailobj);
 			return JrResult.makeSuccess("Mail sent (but only to log because of mail debug flag).");
 		}
 

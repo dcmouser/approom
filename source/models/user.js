@@ -32,7 +32,7 @@ const arserver = jrequire("arserver");
 const aclAid = jrequire("aclaid");
 
 // constants
-const appconst = jrequire("appconst");
+const appdef = jrequire("appdef");
 
 
 
@@ -40,7 +40,7 @@ const appconst = jrequire("appconst");
 
 
 //---------------------------------------------------------------------------
-// ATTN: Note that these constants may be hard to use outside of this module; we could move them to appconst instead for more global use
+// ATTN: Note that these constants may be hard to use outside of this module; we could move them to appdef instead for more global use
 // constants
 const DefDefaultUsername = "Usr";
 const DefRandomUsernameRandomSuffixLength = 4;
@@ -257,9 +257,9 @@ class UserModel extends ModelBaseMongoose {
 			// now create model (this will also add default properties to it)
 			var user = UserModel.createModel(userAdminObj);
 			// set some permissions for it
-			user.addRole(appconst.DefAclRoleSiteAdmin, appconst.DefAclObjectTypeSite);
+			user.addRole(appdef.DefAclRoleSiteAdmin, appdef.DefAclObjectTypeSite);
 			// test acl roles
-			// user.addRole(appconst.DefAclRoleOwner, "app", "A1234");
+			// user.addRole(appdef.DefAclRoleOwner, "app", "A1234");
 			// and save it
 			var userdoc = await user.dbSave();
 			//
@@ -290,7 +290,7 @@ class UserModel extends ModelBaseMongoose {
 			var user = UserModel.createModel(userAdminObj);
 			// set some permissions for it
 			// test acl roles
-			// user.addRole(appconst.DefAclRoleModerator, "app", "A1234");
+			// user.addRole(appdef.DefAclRoleModerator, "app", "A1234");
 			// and save it
 			var userdoc = await user.dbSave();
 			//
@@ -321,7 +321,7 @@ class UserModel extends ModelBaseMongoose {
 			// now create model (this will also add default properties to it)
 			var user = UserModel.createModel(userAdminObj);
 			// add visitor role
-			user.addRole(appconst.DefAclRoleVisitor, appconst.DefAclObjectTypeSite);
+			user.addRole(appdef.DefAclRoleVisitor, appdef.DefAclObjectTypeSite);
 			// and save it
 			var userdoc = await user.dbSave();
 			//
@@ -1045,13 +1045,13 @@ class UserModel extends ModelBaseMongoose {
 			robjectType = this.roles[key].t;
 			robjectId = this.roles[key].i;
 			// jrdebug.cdebugObj(this.roles[key], "Examining roles " + key);
-			if ((robjectType === objectType && (robjectId === appconst.DefAclObjectIdAll || robjectId === objectId))) {
-				// user has this permission on this object, or has this permission on ALL objects of this type (indicated by this.roles[key].i === appconst.DefAclObjectIdAll)
+			if ((robjectType === objectType && (robjectId === appdef.DefAclObjectIdAll || robjectId === objectId))) {
+				// user has this permission on this object, or has this permission on ALL objects of this type (indicated by this.roles[key].i === appdef.DefAclObjectIdAll)
 				matchesRole = true;
 				// jrdebug.cdebug("Matches 1.");
 			} else {
 				// do we want roles not specifically related to this object type (for example if they are site admin)
-				if ((robjectType === appconst.DefAclObjectTypeSite || robjectType === null) && (robjectId === appconst.DefAclObjectIdAll || robjectId === null)) {
+				if ((robjectType === appdef.DefAclObjectTypeSite || robjectType === null) && (robjectId === appdef.DefAclObjectIdAll || robjectId === null)) {
 					// here we have matched a global site role, or a role without a type, and there is no object id associated with it
 					matchesRole = true;
 					// jrdebug.cdebug("Matches 2.");
@@ -1069,7 +1069,7 @@ class UserModel extends ModelBaseMongoose {
 
 		if (flagAddNoneRole) {
 			// add 'none' role, to help when looking for permissions related when we have no role on this object
-			rolesFound.push(appconst.DefAclRoleNone);
+			rolesFound.push(appdef.DefAclRoleNone);
 		}
 
 		return rolesFound;
@@ -1234,7 +1234,7 @@ class UserModel extends ModelBaseMongoose {
 	 * @returns true if they have permission
 	 */
 	async aclHasPermissionOnAll(permission, objectType, objectIdList) {
-		if (!this.aclHasPermission(permission, objectType, appconst.DefAclObjectIdAll)) {
+		if (!this.aclHasPermission(permission, objectType, appdef.DefAclObjectIdAll)) {
 			// they don't have blanket permission, so we have to check each one
 			for (let i = 0; i < objectIdList.length; ++i) {
 				if (!this.aclHasPermission(permission, objectType, objectIdList[i])) {
@@ -1255,7 +1255,7 @@ class UserModel extends ModelBaseMongoose {
 	 * @returns true if they have permission
 	 */
 	async aclHasPermissionSeeVDeletes(modelClass) {
-		return await this.aclHasPermission(appconst.DefAclActionSeeVdeletes, modelClass.getAclName(), null);
+		return await this.aclHasPermission(appdef.DefAclActionSeeVdeletes, modelClass.getAclName(), null);
 	}
 	//---------------------------------------------------------------------------
 
@@ -1266,7 +1266,7 @@ class UserModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	async isSiteAdmin() {
 		// just check if user has permission to admin the site
-		return await this.aclHasPermission(appconst.DefAclActionAdminister, "site");
+		return await this.aclHasPermission(appdef.DefAclActionAdminister, "site");
 	}
 
 
@@ -1289,7 +1289,7 @@ class UserModel extends ModelBaseMongoose {
 			objectType = roles[key].t;
 			if (objectType != null) {
 				objectId = roles[key].i;
-				if (objectId === appconst.DefAclObjectIdAll) {
+				if (objectId === appdef.DefAclObjectIdAll) {
 					rolestring += " (All " + objectType + "s)";
 				} else if (objectId === null) {
 					rolestring += " (" + objectType + ")";
@@ -1419,7 +1419,7 @@ class UserModel extends ModelBaseMongoose {
 			user = users[index];
 			if (user.roles) {
 				user.roles.forEach((role) => {
-					if (role.t === objectModelAclName && (role.i === objectId || role.i === appconst.DefAclObjectIdAll)) {
+					if (role.t === objectModelAclName && (role.i === objectId || role.i === appdef.DefAclObjectIdAll)) {
 						// ok we want to add this role to our list
 						var roleObj = {
 							uid: user.getIdAsString(),
@@ -1446,8 +1446,8 @@ class UserModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	async addOwnerCreatorRolesForNewObject(obj, flagSaveUser, jrResult) {
 		// add owner role
-		this.addRole(appconst.DefAclRoleOwner, obj.getModelClass().getAclName(), obj.getIdAsString());
-		this.addRole(appconst.DefAclRoleCreator, obj.getModelClass().getAclName(), obj.getIdAsString());
+		this.addRole(appdef.DefAclRoleOwner, obj.getModelClass().getAclName(), obj.getIdAsString());
+		this.addRole(appdef.DefAclRoleCreator, obj.getModelClass().getAclName(), obj.getIdAsString());
 		// save user
 		if (flagSaveUser) {
 			await this.dbSave(jrResult);

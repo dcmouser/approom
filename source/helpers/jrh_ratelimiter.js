@@ -9,6 +9,8 @@
 
 "use strict";
 
+// modules
+const assert = require("assert");
 
 // rate limiter module
 const ratelimiter = require("rate-limiter-flexible");
@@ -29,6 +31,8 @@ var rateLimiters = {};
 
 //---------------------------------------------------------------------------
 function setupRateLimiter(name, options) {
+	assert(name);
+
 	// make it
 	var rlimiter = new ratelimiter.RateLimiterMemory({
 		keyPrefix: "rlflx_" + name,
@@ -41,6 +45,9 @@ function setupRateLimiter(name, options) {
 }
 
 function getRateLimiter(name) {
+	if (!rateLimiters[name]) {
+		throw Error("In getRateLimiter, could not find rate limiter under index '" + name + "'."); 
+	}
 	return rateLimiters[name];
 }
 

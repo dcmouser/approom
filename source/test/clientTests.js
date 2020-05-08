@@ -14,12 +14,6 @@
 
 
 
-
-
-
-
-
-
 //---------------------------------------------------------------------------
 // any option overrides?
 const configOverrides = {
@@ -33,9 +27,6 @@ const configOverrides = {
 // testing modules
 const assert = require("assert");
 //---------------------------------------------------------------------------
-
-
-
 
 //---------------------------------------------------------------------------
 // program globals (version, author, etc.)
@@ -54,10 +45,21 @@ const jrequire = require("../helpers/jrequire");
 const arserver = jrequire("arserver");
 const arclient = jrequire("arclient");
 
+// constants
+const appdef = jrequire("appdef");
+
 // helper modules
 const JrResult = require("../helpers/jrresult");
 const jrdebug = require("../helpers/jrdebug");
 //---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
 
 
 //---------------------------------------------------------------------------
@@ -236,8 +238,8 @@ function createTestClient() {
 async function handleGetCredentialsCallbackFunction(clientp, hintMessage) {
 	jrdebug.cdebug("DEBUG - in client callback - handleGetCredentialsFunction: " + hintMessage);
 	var credentials = {
-		usernameEmail: arserver.getConfigVal("testing:CLIENT_USERNAMEEMAIL"),
-		password: arserver.getConfigVal("testing:CLIENT_USERPASSWORD"),
+		usernameEmail: arserver.getConfigVal(appdef.DefConfigKeyTestingClientUsernameEmail),
+		password: arserver.getConfigVal(appdef.DefConfigKeyTestingClientPassword),
 	};
 	return credentials;
 }

@@ -23,7 +23,7 @@ const arserver = jrequire("arserver");
 const JrResult = require("../helpers/jrresult");
 
 // constants
-const appconst = jrequire("appconst");
+const appdef = jrequire("appdef");
 
 
 
@@ -68,7 +68,7 @@ function setupRouter(urlPath) {
 
 
 async function routerGetIndex(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
+	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
 		res.render("internals/index", {
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 		});
@@ -77,7 +77,7 @@ async function routerGetIndex(req, res, next) {
 
 
 async function routerGetAppInfo(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
+	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
 		var rawData = arserver.calcAppInfo();
 		res.render("internals/appinfo", {
 			rawData,
@@ -92,7 +92,7 @@ async function routerGetAppInfo(req, res, next) {
 async function routerGetConfigOptions(req, res, next) {
 	// await arserver.adminPermissionRenderRawData(req, res, () => {} );
 
-	if (await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
+	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
 		var rawData = arserver.getJrConfig().getDebugOptions();
 		res.render("internals/config", {
 			rawData,
@@ -103,7 +103,7 @@ async function routerGetConfigOptions(req, res, next) {
 
 
 async function routerGetConfigFiles(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
+	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
 		var rawData = arserver.getJrConfig().getDebugFiles();
 		res.render("internals/config", {
 			rawData,
@@ -113,7 +113,7 @@ async function routerGetConfigFiles(req, res, next) {
 }
 
 async function routerGetConfigHierarchy(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
+	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
 		var rawData = arserver.getJrConfig().getDebugHierarchy();
 		res.render("internals/config", {
 			rawData,
@@ -126,7 +126,7 @@ async function routerGetConfigHierarchy(req, res, next) {
 
 
 async function routerGetRoutes(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
+	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
 		var rawData = arserver.calcExpressRoutePathData();
 		res.render("internals/routes", {
 			rawData,
@@ -137,7 +137,7 @@ async function routerGetRoutes(req, res, next) {
 
 
 async function routerGetStructureDb(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
+	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
 		var rawData = await arserver.calcDatabaseStructure();
 		res.render("internals/structure_db", {
 			rawData,
@@ -148,7 +148,7 @@ async function routerGetStructureDb(req, res, next) {
 
 
 async function routerGetResourceuse(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
+	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
 		// get database resource use
 		var rawDataDb = await arserver.calcDatabaseResourceUse();
 		res.render("internals/resourceuse", {
@@ -160,7 +160,7 @@ async function routerGetResourceuse(req, res, next) {
 
 
 async function routerGetServerinfo(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
+	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
 		// get database resource use
 		var rawData = await arserver.calcWebServerInformation();
 		res.render("internals/serverinfo", {
@@ -172,7 +172,7 @@ async function routerGetServerinfo(req, res, next) {
 
 
 async function routerGetAclStructure(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
+	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
 		// get database resource use
 		var rawData = arserver.calcAclStructure();
 		res.render("internals/aclstructure", {
@@ -184,7 +184,7 @@ async function routerGetAclStructure(req, res, next) {
 
 
 async function routerGetNodejs(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
+	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
 		// get database resource use
 		var rawData = arserver.calcNodeJsInfo();
 		res.render("internals/nodejs", {
@@ -196,7 +196,7 @@ async function routerGetNodejs(req, res, next) {
 
 
 async function routerDependencies(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
+	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
 		// get database resource use
 		var rawData = arserver.calcDependencyInfo();
 		res.render("internals/dependencies", {
@@ -208,7 +208,7 @@ async function routerDependencies(req, res, next) {
 
 
 async function routerPlugins(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appconst.DefAclActionAdminister, req, res)) {
+	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
 		// get database resource use
 		var rawData = arserver.calcPluginInfo();
 		res.render("internals/plugins", {

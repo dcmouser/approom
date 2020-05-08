@@ -32,7 +32,7 @@ const RoomModel = jrequire("models/room");
 const AppModel = jrequire("models/app");
 
 // constants
-const appconst = jrequire("appconst");
+const appdef = jrequire("appdef");
 
 
 
@@ -108,7 +108,7 @@ async function routerLookup(req, res, next) {
 	}
 
 	// now let's ask if user is actually ALLOWED to look at this app
-	const permission = appconst.DefAclActionView;
+	const permission = appdef.DefAclActionView;
 	const permissionObjType = AppModel.getAclName();
 	const permissionObjId = app.getIdAsString();
 	const hasPermission = await user.aclHasPermission(permission, permissionObjType, permissionObjId);

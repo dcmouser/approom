@@ -22,7 +22,7 @@ const ModelBaseMongoose = jrequire("models/model_base_mongoose");
 
 // controllers
 const arserver = jrequire("arserver");
-const appconst = jrequire("appconst");
+const appdef = jrequire("appdef");
 
 
 // our helper modules
@@ -283,7 +283,7 @@ class RoomModel extends ModelBaseMongoose {
 		super.auxChangeModeById(id, mode, jrResult);
 
 		// if we are enabling or disabling, then we don't touch rooms
-		if (mode === appconst.DefMdbEnable || mode === appconst.DefMdbDisable) {
+		if (mode === appdef.DefMdbEnable || mode === appdef.DefMdbDisable) {
 			// nothing to do
 			return;
 		}
@@ -304,7 +304,7 @@ class RoomModel extends ModelBaseMongoose {
 		const RoomDataModel = jrequire("models/roomdata");
 		await RoomDataModel.doChangeModeByIdList(roomDataIdList, mode, jrResult, true);
 		if (!jrResult.isError()) {
-			const modeLabel = jrhText.capitalizeFirstLetter(appconst.DefStateModeLabels[mode]);
+			const modeLabel = jrhText.capitalizeFirstLetter(appdef.DefStateModeLabels[mode]);
 			jrResult.pushSuccess(modeLabel + " " + RoomDataModel.getNiceNamePluralized(roomDataIdList.length) + " attached to " + this.getNiceName() + " #" + id + ".");
 		}
 	}

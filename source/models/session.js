@@ -12,6 +12,9 @@
 "use strict";
 
 
+// modules
+const mongoose = require("mongoose");
+
 // requirement service locator
 const jrequire = require("../helpers/jrequire");
 
@@ -44,13 +47,40 @@ class SessionModel extends ModelBaseMongooseMinimal {
 		// used by log and other minimal models?
 		return {
 			_id: {
-				type: String,
-				/* auto: true, */
+				label: "Id",
+				readOnly: ["edit"],
+				mongoose: {
+					type: String,
+					// auto: true,
+				},
 			},
+		};
+	}
 
+
+	static calcSchemaDefinition() {
+		return {
+			...(this.getBaseSchemaDefinition()),
+			//
+			expires: {
+				label: "Date expires",
+				readOnly: ["edit"],
+				mongoose: {
+					type: Date,
+				},
+			},
+			session: {
+				label: "Session data",
+				readOnly: ["edit"],
+				mongoose: {
+					type: String,
+				},
+			},
 		};
 	}
 	//---------------------------------------------------------------------------
+
+
 
 	//---------------------------------------------------------------------------
 	// global static version info
@@ -77,6 +107,7 @@ class SessionModel extends ModelBaseMongooseMinimal {
 	//---------------------------------------------------------------------------
 
 
+	/*
 	//---------------------------------------------------------------------------
 	static calcSchemaDefinition() {
 		return {
@@ -93,12 +124,12 @@ class SessionModel extends ModelBaseMongooseMinimal {
 				readOnly: ["edit"],
 				mongoose: {
 					type: String,
-
 				},
 			},
 		};
 	}
 	//---------------------------------------------------------------------------
+	*/
 
 
 	//---------------------------------------------------------------------------
