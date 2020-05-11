@@ -19,8 +19,6 @@ exports.DefRequiredLoginMessage = "You need to log in before you can access the 
 
 
 
-
-
 //---------------------------------------------------------------------------
 // log constants
 
@@ -154,6 +152,10 @@ exports.DefRateLimiterTest = "test";
 
 //---------------------------------------------------------------------------
 // config option strings
+
+exports.DefConfigKeyDbBaseUrl = "database:BASE_URL";
+exports.DefConfigKeyDbName = "database:DB_NAME";
+
 exports.DefConfigKeyTestingForceCsrfFail = "testing:FORCE_CSRF_FAIL";
 exports.DefConfigKeyLoggingDirectory = "logging:DIRECTORY";
 //

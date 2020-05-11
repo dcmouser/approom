@@ -43,7 +43,8 @@ class AppRoomClient {
 			getCredentialsFunction: null,
 			errorFunction: null,
 			debugFunction: null,
-			trustTokenExpiration: true,
+			checkTokenExpiration: true,
+			tokenExpirationPaddingSecs: 2,
 		};
 
 		// initial cache
@@ -76,7 +77,8 @@ class AppRoomClient {
  	 * @memberof AppRoomClient
  	 */
 	setOptions(val) {
-		this.options = val;
+		// merge in the options on top of current (default) settings
+		this.options = Object.assign(this.options, val);
 	}
 
 
@@ -435,18 +437,18 @@ class AppRoomClient {
 		if (!token) {
 			return true;
 		}
-		if (flagFalseIfUntrusted && !this.options.trustTokenExpiration) {
+		if (flagFalseIfUntrusted && !this.options.checkTokenExpiration) {
 			// we dont trust token expiration dates so we cant say its expired
 			return false;
 		}
 		// check if token is expired
-		var expires = token.expires;
+		var expires = token.exp;
 		if (!expires) {
 			// no date
 			return false;
 		}
-		// check the date
-		if (expires <= Math.floor(Date.now() / 1000)) {
+		// check the date (with some padding to give time for the request to arrive)
+		if (expires <= Math.floor(Date.now() / 1000) + this.options.tokenExpirationPaddingSecs) {
 			// it's expired
 			return true;
 		}

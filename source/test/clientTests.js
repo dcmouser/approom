@@ -15,15 +15,6 @@
 
 
 //---------------------------------------------------------------------------
-// any option overrides?
-const configOverrides = {
-	// DEBUG: true,
-};
-//---------------------------------------------------------------------------
-
-
-
-//---------------------------------------------------------------------------
 // testing modules
 const assert = require("assert");
 //---------------------------------------------------------------------------
@@ -32,8 +23,6 @@ const assert = require("assert");
 // program globals (version, author, etc.)
 const arGlobals = require("../approomglobals");
 
-// override options
-arGlobals.setOverrideOptions(configOverrides);
 
 // initialize the service dependency requires helper
 arGlobals.setupDefaultModulePaths();
@@ -66,7 +55,8 @@ const jrdebug = require("../helpers/jrdebug");
 // this should be done by even the unit test runners
 
 // setup initial config stuff
-arserver.setup();
+arserver.addEarlyConfigFileSet("testing");
+arserver.setup(["testing"]);
 //---------------------------------------------------------------------------
 
 
@@ -228,7 +218,7 @@ function createTestClient() {
 		getCredentialsFunction: async (clientp, hintMessage) => { return await handleGetCredentialsCallbackFunction(clientp, hintMessage); },
 		errorFunction: async (clientp, errorMessage) => { return await handleErrorCallbackFunction(clientp, errorMessage); },
 		debugFunction: async (clientp, debugMessage) => { return await handleDebugCallbackFunction(clientp, debugMessage); },
-		trustTokenExpiration: true,
+		checkTokenExpiration: true,
 	};
 	client.setOptions(clientOptions);
 	return client;

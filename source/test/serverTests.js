@@ -10,11 +10,6 @@
 "use strict";
 
 
-//---------------------------------------------------------------------------
-// any option overrides?
-const configOverrides = {
-};
-//---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
 // testing modules
@@ -29,7 +24,7 @@ const assert = require("assert");
 const arGlobals = require("../approomglobals");
 
 // override options
-arGlobals.setOverrideOptions(configOverrides);
+// arGlobals.setOverrideOptions(configOverrides);
 
 // initialize the service dependency requires helper
 arGlobals.setupDefaultModulePaths();
@@ -52,6 +47,7 @@ const jrdebug = require("../helpers/jrdebug");
 // this should be done by even the unit test runners
 
 // setup initial config stuff
+arserver.addEarlyConfigFileSet("testing");
 arserver.setup();
 //---------------------------------------------------------------------------
 

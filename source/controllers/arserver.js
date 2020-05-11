@@ -181,8 +181,6 @@ class AppRoomServer {
 	// getting options via jrconfig
 	//
 
-	getOptionDbUrl() { return this.getConfigVal(appdef.DefConfigKeyServerDbUrl); }
-
 	getOptionHttp() { return this.getConfigVal(appdef.DefConfigKeyServerHttp); }
 
 	getOptionHttpPort() { return this.getConfigVal(appdef.DefConfigKeyServerHttpPort); }
@@ -241,7 +239,16 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 
 
+	//---------------------------------------------------------------------------
+	calcFullDbUrl() {
+		var url = this.getConfigVal(appdef.DefConfigKeyDbBaseUrl) + "/";
 
+		// during testing the config might override this
+		url += this.getConfigVal(appdef.DefConfigKeyDbName);
+
+		return url;
+	}
+	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
@@ -399,6 +406,15 @@ class AppRoomServer {
 	}
 	//---------------------------------------------------------------------------
 
+
+
+	//---------------------------------------------------------------------------
+	// just pass along to jrconfig
+	// this should be called BEFORE arserver.setup()
+	addEarlyConfigFileSet(filename) {
+		jrconfig.addEarlyConfigFileSet(filename);
+	}
+	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
@@ -589,7 +605,7 @@ class AppRoomServer {
 		// connect-mongo see https://www.npmjs.com/package/connect-mongo
 		// ATTN: we could try to share the mongod connection instead of re-specifying it here; not clear what performance implications are
 		const mongoStoreOptions = {
-			url: this.getOptionDbUrl(),
+			url: this.calcFullDbUrl(),
 			autoRemove: "interval",
 			autoRemoveInterval: 600, // minutes
 		};
@@ -1915,7 +1931,7 @@ class AppRoomServer {
 
 		try {
 			// connect to db
-			const mongoUrl = this.getOptionDbUrl();
+			const mongoUrl = this.calcFullDbUrl();
 			jrdebug.cdebug("Connecting to mongoose-mongodb: " + mongoUrl);
 			await mongoose.connect(mongoUrl, mongooseOptions);
 
@@ -3046,7 +3062,9 @@ class AppRoomServer {
 		const tokenObj = {
 			token: {
 				val: tokenval,
-				expires: payload.exp,
+				type: payload.type,
+				exp: payload.exp,
+				scope: payload.scope,
 			},
 		};
 		return tokenObj;

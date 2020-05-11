@@ -51,6 +51,14 @@ jrconfig.setYargs(createYargsObj());
 
 
 //---------------------------------------------------------------------------
+// should we use testing config files?
+if (true) {
+	arserver.addEarlyConfigFileSet("testing");
+}
+//---------------------------------------------------------------------------
+
+
+//---------------------------------------------------------------------------
 // Generic setup call after commandline options are parsed; this call should be done by even the unit test runners
 arserver.setup();
 //---------------------------------------------------------------------------

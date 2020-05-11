@@ -46,8 +46,9 @@ const jrlog = require("./jrlog");
 const envListDefault = ["NODE_ENV"];
 
 // default files we always look for -- note that earlier dominates later in this list
-const configFilesNormal = ["%SERVERPREFIX%_private", "%SERVERPREFIX%_public", "sitePrivate", "sitePublic", "defaultPrivate", "default"];
-const configFilesSource = ["defaultPrivate", "default"];
+var configFileEarlySet = [];
+const configFilesNormal = ["%SERVERPREFIX%_private", "%SERVERPREFIX%_public", "site_private", "site_public", "private", "public"];
+const configFilesSource = ["default_private", "default_public"];
 //---------------------------------------------------------------------------
 
 
@@ -233,21 +234,38 @@ function setConfigDirs(inSourceConfigDir, inNormalConfigDir) {
 	normalConfigDir = inNormalConfigDir;
 }
 
-
+/**
+ * Add all the config files we can find from default source config dir, and local dir, plus maybe some cli passed ones, PLUS some special early ones (if we are running unit tests, etc.)
+ *
+ */
 function discoverConfigFiles() {
 	// now that we have the config fir, we can se the default a default configfile to process before others
 
 	// first commandline config files get precedence
 	addConfigFilesCli();
 
+	// after cli comes these early ones
+	configFileEarlySet.forEach((earlyName) => {
+		// each early name in set means we try a bunch in normal user local dir
+		configFilesNormal.forEach((setBaseName) => {
+			var filepath = setBaseName + "_" + earlyName;
+			addConfigFile(normalConfigDir, filepath, false, false);
+		});
+		// and some in default source config dir
+		configFilesSource.forEach((setBaseName) => {
+			var filepath = setBaseName + "_" + earlyName;
+			addConfigFile(sourceConfigDir, filepath, false, false);
+		});
+	});
+
 	// earlier has priority over later, so we start with normalConfig dir
 	configFilesNormal.forEach((filepath) => {
-		addConfigFile(normalConfigDir, filepath, false);
+		addConfigFile(normalConfigDir, filepath, false, false);
 	});
 
 	// and now source config dir as our fallback
 	configFilesSource.forEach((filepath) => {
-		addConfigFile(sourceConfigDir, filepath, false);
+		addConfigFile(sourceConfigDir, filepath, false, false);
 	});
 }
 
@@ -268,8 +286,15 @@ function addConfigFilesCli() {
 	var configFileStrs = configFileStr.split(",");
 	configFileStrs.forEach((filepath) => {
 		// try to load it (note last parameter true meaning trigger error if not found)
-		addConfigFile(normalConfigDir, filepath, true);
+		addConfigFile(normalConfigDir, filepath, true, false);
 	});
+}
+
+
+
+// add to list of early config files
+function addEarlyConfigFileSet(filename) {
+	configFileEarlySet.push(filename);
 }
 
 
@@ -328,7 +353,6 @@ function setYargs(val) {
 
 
 
-
 //---------------------------------------------------------------------------
 // private functions
 /**
@@ -337,29 +361,38 @@ function setYargs(val) {
  *
  * @param {*} filepath
  * @param {*} flagErrorOnFileNotExist - if set then an exception will be thrown if file does not exist; otherwise nothing happens
- * @returns true if file found and loaded
+ * @returns true if file found and queued for loading
  * @throws error if file is not found and flagErrorOnFileNotExist is true
  */
-function addConfigFile(baseDir, filepath, flagErrorOnFileNotExist) {
+function addConfigFile(baseDir, filepath, flagErrorOnFileNotExist, flagInsertAtBeginning) {
 	// queue a config file to load
+	var foundFlag = true;
 	var filepathFixed = fixConfigFilePathName(baseDir, filepath);
+
 	if (!fs.existsSync(filepathFixed)) {
 		if (flagErrorOnFileNotExist) {
 			// it"s an error that we couldn"t find it
 			throw (new Error("Could not locate config file: " + filepath));
 		}
-		// not found so don"t add it
-		configFiles.push({
-			path: filepathFixed,
-			found: false,
-		});
-		return false;
+		// not found
+		// drop down and "add" it to our list for debugging purposes, but set found flag false meaning it cannot be loaded
+		foundFlag = false;
+
 	}
-	configFiles.push({
+
+	// add it
+	var fval = {
 		path: filepathFixed,
-		found: true,
-	});
-	return true;
+		found: foundFlag,
+	};
+	if (flagInsertAtBeginning) {
+		configFiles.unshift(fval);
+	} else {
+		configFiles.push(fval);
+	}
+
+	// return true if found
+	return foundFlag;
 }
 
 
@@ -642,6 +675,7 @@ module.exports = {
 	findQueuedCommand,
 
 	setConfigDirs,
+	addEarlyConfigFileSet,
 	discoverConfigFiles,
 
 	setDefaultOptions,
