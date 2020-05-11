@@ -43,7 +43,7 @@ const jrlog = require("./jrlog");
 // constants
 
 // what environmental variables to grab out of OS environment and put into config data
-const envListDefault = ["NODE_ENV"];
+var envList = ["NODE_ENV"];
 
 // default files we always look for -- note that earlier dominates later in this list
 var configFileEarlySet = [];
@@ -58,7 +58,6 @@ const configFilesSource = ["default_private", "default_public"];
 var sourceConfigDir, normalConfigDir;
 //
 var serverFilenamePrefix;
-var envList;
 var yargsObj;
 var configFileCount = 0;
 var didParse = false;
@@ -102,7 +101,7 @@ function parse() {
 		nconf.argv();
 	}
 
-	// 3. environmental variables
+	// 3. which environmental variables are imported into settings
 	nconf.env(envList);
 
 	// 4. discover configuration files and add to configFiles
@@ -235,7 +234,7 @@ function setConfigDirs(inSourceConfigDir, inNormalConfigDir) {
 }
 
 /**
- * Add all the config files we can find from default source config dir, and local dir, plus maybe some cli passed ones, PLUS some special early ones (if we are running unit tests, etc.)
+ * Add all the config files we can find from default source config dir, and local dir, plus maybe some cli passed ones, PLUS some special overrides that can be used for testing
  *
  */
 function discoverConfigFiles() {
@@ -327,7 +326,7 @@ function setOverrideOptions(val) {
  * @param {array} val - list of strings that identify which variables from environment to load
  */
 function setEnvList(val) {
-	envList = jrhMisc.mergeArraysDedupe(val, envListDefault);
+	envList = jrhMisc.mergeArraysDedupe(val, envList);
 }
 
 /**

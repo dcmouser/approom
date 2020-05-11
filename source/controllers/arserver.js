@@ -66,7 +66,7 @@ const jrhRateLimiter = require("../helpers/jrh_ratelimiter");
 
 
 // approomserver globals
-const arGlobals = require("../approomglobals");
+const arGlobals = require("../arglobals");
 
 // constants
 const appdef = jrequire("appdef");
@@ -239,6 +239,30 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 
 
+
+	//---------------------------------------------------------------------------
+	getServerIp() {
+		return jrhMisc.getServerIpAddress();
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	getDebugKeyName() {
+		// what to use for debug word, and log filename, profile output filename, etc.
+		return appdef.DefDebugbKeyName;
+		// return arGlobals.programName;
+	}
+
+	getLogFileBaseName() {
+		// for log files
+		return this.getConfigVal(appdef.DefConfigKeyLogFileBaseName);
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
 	//---------------------------------------------------------------------------
 	calcFullDbUrl() {
 		var url = this.getConfigVal(appdef.DefConfigKeyDbBaseUrl) + "/";
@@ -254,15 +278,20 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	getAboutInfo() {
 		const data = {
-			name: arGlobals.programName,
-			version: arGlobals.programVersion,
-			date: arGlobals.programDate,
-			author: arGlobals.programAuthor,
+			appName: arGlobals.programName,
+			appVersion: arGlobals.programVersion,
+			appVersionDate: arGlobals.programVersionDate,
+			appAuthor: arGlobals.programAuthor,
+			appDescription: arGlobals.programDescription,
+			libName: appdef.DefLibName,
+			libVersion: appdef.DefLibVersion,
+			libVersionDate: appdef.DefLibVersionDate,
+			libAuthor: appdef.DefLibAuthor,
+			libDescription: appdef.DefLibDescription,
 		};
 		return data;
 	}
 	//---------------------------------------------------------------------------
-
 
 
 
@@ -326,10 +355,6 @@ class AppRoomServer {
 	}
 
 
-	getServerIp() {
-		return jrhMisc.getServerIpAddress();
-	}
-
 
 	setupPreConfig() {
 		// perform global configuration actions that are shared and should be run regardless of the cli app or unit tests
@@ -342,7 +367,8 @@ class AppRoomServer {
 		this.setupLateRequires();
 
 		// setup debugger
-		jrdebug.setup(arGlobals.programName, true);
+		jrdebug.setup(this.getDebugKeyName(), true);
+		// jrdebug.setup(appdef.DefLibName, true);
 
 		// setup loggers -- can we wait until after config so that config can tell us log dir?
 		if (false) {
@@ -350,17 +376,14 @@ class AppRoomServer {
 		}
 
 		// show some info about app
-		jrdebug.debugf("%s v%s (%s) by %s", arGlobals.programName, arGlobals.programVersion, arGlobals.programDate, arGlobals.programAuthor);
+		jrdebug.debugf("%s v%s (%s) by %s", arGlobals.programName, arGlobals.programVersion, arGlobals.programVersionDate, arGlobals.programAuthor);
+		jrdebug.debugf("%s v%s (%s) by %s", appdef.DefLibName, appdef.DefLibVersion, appdef.DefLibVersionDate, appdef.DefLibAuthor);
 
 		// try to get server ip
 		var serverIp = this.getServerIp();
 		jrconfig.setServerFilenamePrefixFromServerIp(serverIp);
 		jrdebug.debugf("Running on server: %s", serverIp);
 
-		// setup singleton jrconfig from options
-		jrconfig.setDefaultOptions(arGlobals.defaultOptions);
-		jrconfig.setOverrideOptions(arGlobals.overrideOptions);
-		jrconfig.setEnvList(arGlobals.envListOptions);
 
 		// Set base directory to look for config files -- caller can modify this, and discover them
 		jrconfig.setConfigDirs(this.getSourceConfigDir(), this.getNormalConfigDir());
@@ -488,7 +511,7 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	setupLoggers() {
 		// setup singleton loggers
-		jrlog.setup(arGlobals.programName, this.getLogDir());
+		jrlog.setup(this.getLogFileBaseName(), this.getLogDir());
 
 		// winston logger files
 		jrlog.setupWinstonLogger(appdef.DefLogCategoryError, appdef.DefLogCategoryError);
@@ -2915,13 +2938,14 @@ class AppRoomServer {
 
 		const started = jrhMisc.getNiceDateValString(this.procesData.started);
 		const uptime = jrhMisc.getNiceDurationTimeMs(Date.now() - this.procesData.started);
+		const aboutInfo = this.getAboutInfo();
 
 		const rawData = {
 			appData: {
 				started,
 				uptime,
 			},
-			appGlobals: arGlobals,
+			about: aboutInfo,
 		};
 
 		return rawData;
@@ -3638,7 +3662,7 @@ class AppRoomServer {
 	}
 
 	getProfileOutputFile() {
-		return this.getLogDir() + "/" + arGlobals.programName + "_" + jrhMisc.getCompactNowString() + ".cpuprofile";
+		return this.getLogDir() + "/" + this.getLogFileBaseName() + "_" + jrhMisc.getCompactNowString() + ".cpuprofile";
 	}
 	//---------------------------------------------------------------------------
 

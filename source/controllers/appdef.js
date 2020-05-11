@@ -7,6 +7,18 @@
  */
 
 
+"use strict";
+
+
+
+//---------------------------------------------------------------------------
+// LIBRARY INFO
+exports.DefLibName = "AppRoomLib";
+exports.DefLibVersion = "1.0.10";
+exports.DefLibVersionDate = "5/1/19 - 5/12/20";
+exports.DefLibAuthor = "mouser@donationcoder.com";
+exports.DefLibDescription = "multi-user room-based coordination framework (mewlo2)";
+//---------------------------------------------------------------------------
 
 
 
@@ -14,8 +26,6 @@
 // text constants
 exports.DefRequiredLoginMessage = "You need to log in before you can access the requested page.";
 //---------------------------------------------------------------------------
-
-
 
 
 
@@ -43,6 +53,11 @@ exports.DefLogTypeInfoServer = "info.server";
 //
 exports.DefLogTypeAdmin = "admin";
 exports.DefLogTypeDebug = "debug";
+//---------------------------------------------------------------------------
+
+
+//---------------------------------------------------------------------------
+exports.DefDebugbKeyName = "approom";
 //---------------------------------------------------------------------------
 
 
@@ -208,6 +223,9 @@ exports.DefConfigKeyNodeEnv = "NODE_ENV";
 //
 exports.DefConfigKeyTestingClientUsernameEmail = "testing:CLIENT_USERNAMEEMAIL";
 exports.DefConfigKeyTestingClientPassword = "testing:CLIENT_USERPASSWORD";
+//
+exports.DefConfigKeyLogFileBaseName = "logging:FILENAME_BASE";
 //---------------------------------------------------------------------------
+
 
 

@@ -44,7 +44,7 @@ function setupDefaultModulePaths() {
 	// but we might turn off deferred requirements in order to get the order safe and predictable.
 
 	// generic helpers
-	// NOTE: these dont really need the service locator system, as they are not really candidates for swapping out
+	// NOTE: these dont really need the service locator system, as they are not really candidates for swapping out?
 	if (false) {
 		jrequire.registerPath("helpers/jrdebug", require.resolve("../helpers/jrdebug"));
 		jrequire.registerPath("helpers/jrconfig", require.resolve("../helpers/jrconfig"));

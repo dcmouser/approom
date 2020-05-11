@@ -21,11 +21,7 @@ const assert = require("assert");
 
 //---------------------------------------------------------------------------
 // program globals (version, author, etc.)
-const arGlobals = require("../approomglobals");
-
-// override options
-// arGlobals.setOverrideOptions(configOverrides);
-
+const arGlobals = require("../arglobals");
 // initialize the service dependency requires helper
 arGlobals.setupDefaultModulePaths();
 

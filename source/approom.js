@@ -17,8 +17,7 @@ const yargs = require("yargs");
 
 //---------------------------------------------------------------------------
 // program globals (version, author, etc.)
-const arGlobals = require("./approomglobals");
-
+const arGlobals = require("./arglobals");
 // initialize the service dependency requires helper
 arGlobals.setupDefaultModulePaths();
 
@@ -52,7 +51,7 @@ jrconfig.setYargs(createYargsObj());
 
 //---------------------------------------------------------------------------
 // should we use testing config files?
-if (true) {
+if (false) {
 	arserver.addEarlyConfigFileSet("testing");
 }
 //---------------------------------------------------------------------------
@@ -100,7 +99,7 @@ function processJrConfigAndCommandline() {
 
 function createYargsObj() {
 	yargs.version("v" + arGlobals.programVersion);
-	yargs.epilog("copyright " + arGlobals.programDate + " by " + arGlobals.programAuthor);
+	yargs.epilog(arGlobals.programName + " copyright " + arGlobals.programVersionDate + " by " + arGlobals.programAuthor);
 	yargs.strict();
 	yargs.options({
 		config: {

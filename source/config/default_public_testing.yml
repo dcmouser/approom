@@ -4,10 +4,13 @@
 # INSTEAD, YOUR CUSTOM CONFIG FILES SHOULD BE IN THE directory ../../local/config/
 # WHERE THEY WILL OVERRIDE THESE VALUES
 
-DEBUG: true
+DEBUG: false
 database:
-  DB_NAME: "approom_test_db"
+  DB_NAME: "approomdb_test"
 testing:
   CLIENT_USERNAMEEMAIL: "TEST_CLIENT_USERNAME_NOT_SET_SEE_LOCAL_CONFIG_FILE"
   CLIENT_USERPASSWORD: "TEST_CLIENT_PASSWORD_NOT_SET_SEE_LOCALCONFIG_FILE"
   FORCE_CSRF_FAIL: false
+logging:
+  # this directory can be absolute, or relative to the INSTALL (above source) directory by starting with ./
+  FILENAME_BASE: "approomtest"
