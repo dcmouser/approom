@@ -276,17 +276,34 @@ function discoverConfigFiles() {
  */
 function addConfigFilesCli() {
 	// find any config files requested on the commandline
-	var configFileStr = nconf.get("config");
-	if (!configFileStr) {
-		// nothing to do
-		return;
+	var configFileStr, configFileStrs;
+
+	configFileStr = nconf.get("config");
+	if (configFileStr) {
+		// split list of config files by commas
+		configFileStrs = configFileStr.split(",");
+		configFileStrs.forEach((filepath) => {
+			var bretv1 = addConfigFile(normalConfigDir, filepath, false, false);
+			var bretv2 = addConfigFile(sourceConfigDir, filepath, false, false);
+			if (!bretv1 && !bretv2) {
+				// error not found
+				throw (new Error("Could not locate commandline specified config file (in local or source config dirs): " + filepath));
+			}
+		});
 	}
-	// split list of config files by commas
-	var configFileStrs = configFileStr.split(",");
-	configFileStrs.forEach((filepath) => {
-		// try to load it (note last parameter true meaning trigger error if not found)
-		addConfigFile(normalConfigDir, filepath, true, false);
-	});
+
+	// configSETS
+	configFileStr = nconf.get("configset");
+	if (configFileStr) {
+		// split list of config files by commas
+		configFileStrs = configFileStr.split(",");
+		configFileStrs.forEach((filepath) => {
+			// add a whole set of config files based on this base name
+			addEarlyConfigFileSet(filepath);
+		});
+	}
+
+
 }
 
 

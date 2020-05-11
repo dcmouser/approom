@@ -15,7 +15,7 @@
 // LIBRARY INFO
 exports.DefLibName = "AppRoomLib";
 exports.DefLibVersion = "1.0.10";
-exports.DefLibVersionDate = "5/1/19 - 5/12/20";
+exports.DefLibVersionDate = "5/1/19-5/12/20";
 exports.DefLibAuthor = "mouser@donationcoder.com";
 exports.DefLibDescription = "multi-user room-based coordination framework (mewlo2)";
 //---------------------------------------------------------------------------
@@ -225,6 +225,7 @@ exports.DefConfigKeyTestingClientUsernameEmail = "testing:CLIENT_USERNAMEEMAIL";
 exports.DefConfigKeyTestingClientPassword = "testing:CLIENT_USERPASSWORD";
 //
 exports.DefConfigKeyLogFileBaseName = "logging:FILENAME_BASE";
+exports.DefConfigLoggingAnnouncement = "logging:ANNOUNCEMENT";
 //---------------------------------------------------------------------------
 
 

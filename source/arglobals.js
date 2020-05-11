@@ -16,7 +16,7 @@
 // PROGRAM INFO
 const programName = "AppRoom";
 const programVersion = "1.0.6";
-const programVersionDate = "5/1/19 - 4/14/20";
+const programVersionDate = "5/1/19-4/14/20";
 const programAuthor = "mouser@donationcoder.com";
 const programDescription = "Commandline test app for approom/mewlo";
 //---------------------------------------------------------------------------

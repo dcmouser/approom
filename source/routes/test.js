@@ -203,7 +203,9 @@ async function routerPostShutdown(req, res, next) {
 		return;
 	}
 	// check required csrf token
-	arserver.testCsrfRedirectToOriginalUrl(req, res);
+	if (!arserver.testCsrfRedirectToOriginalUrl(req, res)) {
+		return;
+	}
 
 	// render simple message
 	res.status(200).send("Initiating shutdown.");

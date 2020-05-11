@@ -46,8 +46,7 @@ const util = require("util");
 const gravatar = require("gravatar");
 
 // profiler (only used when PROFILE option set)
-var profiler = require("v8-profiler-next");
-// var profiler;
+var profiler; // = require("v8-profiler-next");
 
 // requirement service locator
 const jrequire = require("../helpers/jrequire");
@@ -63,10 +62,6 @@ const JrResult = require("../helpers/jrresult");
 const jrhHandlebars = require("../helpers/jrh_handlebars");
 const jrhText = require("../helpers/jrh_text");
 const jrhRateLimiter = require("../helpers/jrh_ratelimiter");
-
-
-// approomserver globals
-const arGlobals = require("../arglobals");
 
 // constants
 const appdef = jrequire("appdef");
@@ -114,6 +109,8 @@ class AppRoomServer {
 		this.models = {};
 		//
 		this.procesData = {};
+		//
+		this.appInfo = {};
 	}
 	//---------------------------------------------------------------------------
 
@@ -126,6 +123,14 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	// accessors, directory
+
+	setAppInfo(val) {
+		this.appInfo = val;
+	}
+
+	getAppinfo() {
+		return this.appInfo;
+	}
 
 	getSourceDir() {
 		return path.resolve(__dirname, "..");
@@ -195,11 +200,11 @@ class AppRoomServer {
 
 	getOptionSiteDomain() { return this.getConfigVal(appdef.DefConfigKeyServerSiteDomain); }
 
-	getOptionDebugEnabled() { return this.getConfigValDefault(appdef.DefConfigKeyDebug, false); }
+	getOptionDebugEnabled() { return this.getConfigVal(appdef.DefConfigKeyDebug); }
 
-	getOptionProfileEnabled() { return this.getConfigVal(appdef.DefConfigKeyProfile, false); }
+	getOptionProfileEnabled() { return this.getConfigVal(appdef.DefConfigKeyProfile); }
 
-	getOptionUseFullRegistrationForm() { return this.getConfigValDefault(appdef.DefConfigKeyAccountSignupFullRegForm, false); }
+	getOptionUseFullRegistrationForm() { return this.getConfigVal(appdef.DefConfigKeyAccountSignupFullRegForm); }
 
 	// see https://stackoverflow.com/questions/2683803/gravatar-is-there-a-default-image
 	/*
@@ -211,11 +216,13 @@ class AppRoomServer {
 		retro: awesome generated, 8-bit arcade-style pixelated faces
 		blank: a transparent PNG image (border added to HTML below for demonstration purposes)
 	*/
-	getOptionsGravatar() { return this.getConfigValDefault(appdef.DefConfigKeyAccountGravatarOptions, {}); }
+	getOptionsGravatar() { return this.getConfigVal(appdef.DefConfigKeyAccountGravatarOptions); }
 
-	getEmergencyAlertContactsPrimary() { return this.getConfigValDefault(appdef.DefConfigKeyEmergencyAlertPrimaryEmails, []); }
+	getEmergencyAlertContactsPrimary() { return this.getConfigVal(appdef.DefConfigKeyEmergencyAlertPrimaryEmails); }
 
-	getEmergencyAlertContactsSecondary() { return this.getConfigValDefault(appdef.DefConfigKeyEmergencyAlertSecondaryEmails, []); }
+	getEmergencyAlertContactsSecondary() { return this.getConfigVal(appdef.DefConfigKeyEmergencyAlertSecondaryEmails); }
+
+	getLoggingAnnouncement() { return this.getConfigVal(appdef.DefConfigLoggingAnnouncement); }
 	//---------------------------------------------------------------------------
 
 
@@ -251,7 +258,6 @@ class AppRoomServer {
 	getDebugKeyName() {
 		// what to use for debug word, and log filename, profile output filename, etc.
 		return appdef.DefDebugbKeyName;
-		// return arGlobals.programName;
 	}
 
 	getLogFileBaseName() {
@@ -277,12 +283,13 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	getAboutInfo() {
+		const appInfo = this.getAppinfo();
 		const data = {
-			appName: arGlobals.programName,
-			appVersion: arGlobals.programVersion,
-			appVersionDate: arGlobals.programVersionDate,
-			appAuthor: arGlobals.programAuthor,
-			appDescription: arGlobals.programDescription,
+			appName: appInfo.programName,
+			appVersion: appInfo.programVersion,
+			appVersionDate: appInfo.programVersionDate,
+			appAuthor: appInfo.programAuthor,
+			appDescription: appInfo.programDescription,
 			libName: appdef.DefLibName,
 			libVersion: appdef.DefLibVersion,
 			libVersionDate: appdef.DefLibVersionDate,
@@ -291,8 +298,18 @@ class AppRoomServer {
 		};
 		return data;
 	}
-	//---------------------------------------------------------------------------
 
+	getMiscInfo() {
+		const data = {
+			database: this.calcFullDbUrl(),
+			loggingPath: this.getLogDir() + "/" + this.getLogFileBaseName() + ".log",
+			LoggingAnnouncement: this.getLoggingAnnouncement(),
+			serverIp: this.getServerIp(),
+			developmentMode: this.isDevelopmentMode(),
+		};
+		return data;
+	}
+	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
@@ -352,6 +369,9 @@ class AppRoomServer {
 		this.setupPreConfig();
 		this.processConfig();
 		this.setupPostConfig();
+
+		// Display some starting info
+		this.announceStartingStuff();
 	}
 
 
@@ -370,20 +390,14 @@ class AppRoomServer {
 		jrdebug.setup(this.getDebugKeyName(), true);
 		// jrdebug.setup(appdef.DefLibName, true);
 
-		// setup loggers -- can we wait until after config so that config can tell us log dir?
-		if (false) {
-			this.setupLoggers();
-		}
-
 		// show some info about app
-		jrdebug.debugf("%s v%s (%s) by %s", arGlobals.programName, arGlobals.programVersion, arGlobals.programVersionDate, arGlobals.programAuthor);
+		var appInfo = this.getAppinfo();
+		jrdebug.debugf("%s v%s (%s) by %s", appInfo.programName, appInfo.programVersion, appInfo.programVersionDate, appInfo.programAuthor);
 		jrdebug.debugf("%s v%s (%s) by %s", appdef.DefLibName, appdef.DefLibVersion, appdef.DefLibVersionDate, appdef.DefLibAuthor);
 
 		// try to get server ip
 		var serverIp = this.getServerIp();
 		jrconfig.setServerFilenamePrefixFromServerIp(serverIp);
-		jrdebug.debugf("Running on server: %s", serverIp);
-
 
 		// Set base directory to look for config files -- caller can modify this, and discover them
 		jrconfig.setConfigDirs(this.getSourceConfigDir(), this.getNormalConfigDir());
@@ -413,11 +427,6 @@ class AppRoomServer {
 			this.setupLoggers();
 		}
 
-		// tell user if we are running in development mode
-		if (this.isDevelopmentMode()) {
-			jrdebug.debug("Running in development mode (verbose errors shown).");
-		}
-
 		// view/template extra stuff
 		this.setupViewTemplateExtras();
 
@@ -426,6 +435,18 @@ class AppRoomServer {
 
 		// misc global hooks
 		this.setupGlobalHooks();
+	}
+
+
+	announceStartingStuff() {
+		jrdebug.debugf("%s.", this.getLoggingAnnouncement());
+		jrdebug.debugf("Using database %s.", this.calcFullDbUrl());
+		jrdebug.debugf("Logging to %s.", this.getLogFileBaseName() + ".log");
+		jrdebug.debugf("Running on server: %s.", this.getServerIp());
+		// tell user if we are running in development mode
+		if (this.isDevelopmentMode()) {
+			jrdebug.debug("Running in development mode (verbose errors shown).");
+		}
 	}
 	//---------------------------------------------------------------------------
 
@@ -2092,9 +2113,12 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	async logStartup() {
 		// log the startup event
-		var msg = util.format("Starting up on %s.", jrhMisc.getNiceNowString());
+		var msg = "Starting up on " + jrhMisc.getNiceNowString() + ".\n";
+		msg += " " + this.getLoggingAnnouncement() + ".\n";
+		msg += 	" Logging to " + this.getLogFileBaseName() + ".log.\n";
+		msg += 	" Running on server " + this.getServerIp() + ".\n";
 		if (this.isDevelopmentMode()) {
-			msg += "  Development mode enabled.";
+			msg += " Development mode enabled.\n";
 		}
 		await this.logm(appdef.DefLogTypeInfoServer, msg);
 
@@ -2936,16 +2960,13 @@ class AppRoomServer {
 	calcAppInfo() {
 		// info about the app (version, author, etc.)
 
-		const started = jrhMisc.getNiceDateValString(this.procesData.started);
-		const uptime = jrhMisc.getNiceDurationTimeMs(Date.now() - this.procesData.started);
-		const aboutInfo = this.getAboutInfo();
-
 		const rawData = {
 			appData: {
-				started,
-				uptime,
+				started: jrhMisc.getNiceDateValString(this.procesData.started),
+				uptime: jrhMisc.getNiceDurationTimeMs(Date.now() - this.procesData.started),
 			},
-			about: aboutInfo,
+			about: this.getAboutInfo(),
+			misc: this.getMiscInfo(),
 		};
 
 		return rawData;
@@ -3641,7 +3662,7 @@ class AppRoomServer {
 	engageProfilerIfAppropriate() {
 		// see https://npmdoc.github.io/node-npmdoc-v8-profiler/build/apidoc.html#apidoc.element.v8-profiler.startProfiling
 		if (this.getOptionProfileEnabled()) {
-			// profiler = require("v8-profiler-next");
+			profiler = require("v8-profiler-next");
 			jrdebug.debug("Engaging v8 profiler.");
 			profiler.startProfiling("", true);
 		}

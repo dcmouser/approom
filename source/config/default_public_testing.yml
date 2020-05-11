@@ -14,3 +14,4 @@ testing:
 logging:
   # this directory can be absolute, or relative to the INSTALL (above source) directory by starting with ./
   FILENAME_BASE: "approomtest"
+  ANNOUNCEMENT: "Using TEST configuration"

@@ -59,6 +59,7 @@ if (false) {
 
 //---------------------------------------------------------------------------
 // Generic setup call after commandline options are parsed; this call should be done by even the unit test runners
+arserver.setAppInfo(arGlobals);
 arserver.setup();
 //---------------------------------------------------------------------------
 
@@ -103,7 +104,10 @@ function createYargsObj() {
 	yargs.strict();
 	yargs.options({
 		config: {
-			describe: "Comma separated list of json configuration files to load",
+			describe: "Comma separated list of yaml configuration files to load",
+		},
+		configset: {
+			describe: "Comma separated list of yaml configuration file sets to load (each item will try to load a set of public private source and local config files",
 		},
 	});
 	//

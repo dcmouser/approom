@@ -43,6 +43,7 @@ const jrdebug = require("../helpers/jrdebug");
 // this should be done by even the unit test runners
 
 // setup initial config stuff
+arserver.setAppInfo(arGlobals);
 arserver.addEarlyConfigFileSet("testing");
 arserver.setup();
 //---------------------------------------------------------------------------

@@ -11,6 +11,7 @@
     "mongod": "C:\\Programs\\MongoDB\\Server\\4.0\\bin\\mongod.exe -f C:\\Programs\\MongoDB\\Server\\4.0\\bin\\mongod.cfg",
     "help": "cls && node approom.js --help",
     "runserver": "cls && node approom.js runserver",
+    "runtestserver": "cls && node approom.js runserver --configset testing",
     "runprodserver": "cls && cross-env NODE_ENV=production node approom.js runserver",
     "profileserver": "cls && node approom.js runserver --config profile",
     "dbsetup": "cls && node approom.js dbsetup",
