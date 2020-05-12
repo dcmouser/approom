@@ -62,6 +62,23 @@ function isInAnyArray(val, ...arrays) {
 	}
 	return false;
 }
+
+
+/**
+ * Copy over any values with keys not already in target; leave others identical
+ * @example asyncAwaitForEachFunctionCall([1 2 3], (x) => {console.log(x)})
+ * @see <a href="https://gist.github.com/Atinux/fd2bcce63e44a7d3addddc166ce93fb2">foreach async</a>
+ *
+ * @param {object} target
+ * @param {object} source
+ */
+function copyMissingValues(target, source) {
+	for (var key in source) {
+		if (!(key in target)) {
+			target[key] = source[key];
+		}
+	}
+}
 //---------------------------------------------------------------------------
 
 
@@ -693,6 +710,7 @@ module.exports = {
 	mergeArraysKeepDupes,
 	mergeArraysDedupe,
 	isInAnyArray,
+	copyMissingValues,
 
 	asyncAwaitForEachFunctionCall,
 	asyncAwaitForEachObjectKeyFunctionCall,

@@ -94,7 +94,7 @@ describe("client", function test() {
 			client.debugToConsole();
 		}
 		// close client
-		client.shutDown();
+		await client.shutDown();
 	});
 
 

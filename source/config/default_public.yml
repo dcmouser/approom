@@ -6,6 +6,8 @@
 DEBUG: false
 PROFILE: false
 NODE_ENV: "development"
+general:
+  EXIT_ON_FATAL_ERROR: true
 database:
   BASE_URL: "mongodb://localhost"
   DB_NAME: "approomdb"

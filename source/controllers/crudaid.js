@@ -613,8 +613,10 @@ class CrudAid {
 		}
 
 		if (!flagFilledObjPropertiesInReqData) {
+			// ATTN: this was added recently -- to fix a problem -- but 5/12/20 creates a new one where errors on submission are wiping out form values we want to re-present
+			// what we need is for the object data to only be used to replace values that are NOT already present in req.body
 			// fill form data with object properties and drop down to let user re-edit
-			reqbody = obj.modelObjPropertyCopy(true);
+			jrhMisc.copyMissingValues(reqbody, obj.modelObjPropertyCopy(true));
 		}
 
 		// re-present form
@@ -657,6 +659,10 @@ class CrudAid {
 		const flagOfferUnDelete = obj.disabled === appdef.DefMdbVirtDelete;
 		const flagOfferPermDelete = true;
 
+		// cancel button goes where?
+		const cancelUrl = baseCrudUrl + "/view/" + id;
+
+
 		// render
 		res.render(viewFile, {
 			headline: "Edit " + modelClass.getNiceName() + " #" + id,
@@ -666,6 +672,7 @@ class CrudAid {
 			helperData,
 			genericMainHtml,
 			baseCrudUrl,
+			cancelUrl,
 			extraViewData,
 			flagOfferDelete,
 			flagOfferPermDelete,
@@ -1374,6 +1381,9 @@ class CrudAid {
 						} else {
 							valHtml = "false";
 						}
+					} else if (format === "textarea") {
+						// change \n to br/
+						valHtml = val.replace(/\n/g, "<br/>\n");
 					}
 				}
 				if (valHtml === undefined) {

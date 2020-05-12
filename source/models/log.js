@@ -89,6 +89,7 @@ class LogModel extends ModelBaseMongooseMinimal {
 			},
 			message: {
 				label: "Message",
+				format: "textarea",
 				mongoose: {
 					type: String,
 				},
@@ -209,18 +210,11 @@ class LogModel extends ModelBaseMongooseMinimal {
 		// create the model
 		const logModel = LogModel.createModel(logObj);
 
-		// test
-		if (false) {
-			throw Error("Testing throwing error from logdb save");
-		}
-
 		// save it to db
-		await logModel.dbSave();
+		// ATTN: 5/12/20 - we are having a hard time catching exception on fatal error shutdown here
+		var retv = await logModel.dbSave();
+		return retv;
 	}
-
-
-
-
 	//---------------------------------------------------------------------------
 
 

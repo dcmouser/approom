@@ -742,7 +742,7 @@ class AppRoomClient {
 	 *
 	 * @memberof AppRoomClient
 	 */
-	shutDown() {
+	async shutDown() {
 		// shutdown client
 		this.setValidApiAccess(false);
 	}

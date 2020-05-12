@@ -1853,11 +1853,11 @@ class AppRoomServer {
 		// handle specific listen errors with friendly messages
 		switch (error.code) {
 			case "EACCES":
-				this.logm(appdef.DefLogTypeErrorServer, bind + " requires elevated privileges");
+				await this.logm(appdef.DefLogTypeErrorServer, bind + " requires elevated privileges");
 				process.exit(1);
 				break;
 			case "EADDRINUSE":
-				this.logm(appdef.DefLogTypeErrorServer, bind + " is already in use");
+				await this.logm(appdef.DefLogTypeErrorServer, bind + " is already in use");
 				process.exit(1);
 				break;
 			default:
@@ -1973,6 +1973,10 @@ class AppRoomServer {
 			useCreateIndex: true,
 		};
 
+		// ATTN: 5/12/20 trying this to figure out why we can't catch mongoose exceptions on save
+		// see https://stackoverflow.com/questions/31396021/mongoose-save-using-native-promise-how-to-catch-errors
+		mongoose.Promise = Promise;
+
 		try {
 			// connect to db
 			const mongoUrl = this.calcFullDbUrl();
@@ -2021,13 +2025,13 @@ class AppRoomServer {
 			return;
 		}
 
+		// clear flag
+		this.setNeedsShutdown(false);
+
 		jrdebug.debug("Server shutting down..");
 
 		// now create a log entry about the server starting up
 		await this.logShutdown();
-
-		// clear flat
-		this.setNeedsShutdown(false);
 
 		// close the listeners
 		if (this.serverHttps) {
@@ -2042,7 +2046,7 @@ class AppRoomServer {
 		}
 
 		// now disconnect the database connections
-		this.dbDisconnect();
+		await this.dbDisconnect();
 
 		jrdebug.debug("Server shutdown complete.");
 
@@ -2051,16 +2055,20 @@ class AppRoomServer {
 	}
 
 
-	dbDisconnect() {
+	async dbDisconnect() {
 		// disconnect from mongoose/mongodb
 		jrdebug.debug("Closing mongoose-mongodb connection..");
-		mongoose.disconnect();
-		mongoose.connection.close();
+
+		// sleep for a bit so that any pending db writes still have some time
+		// jrhMisc.usleep(appdef.DefDbShutdownSleepMs);
+
+		await mongoose.disconnect();
+		await mongoose.connection.close();
 
 		// ATTN: took several hours to track this down why mocha tests could not shut down server
 		// session store needs explicit close to exit gracefully
 		if (this.rememberedSessionStore) {
-			this.rememberedSessionStore.close();
+			await this.rememberedSessionStore.close();
 		}
 	}
 	//---------------------------------------------------------------------------
@@ -2887,7 +2895,13 @@ class AppRoomServer {
 
 	async calcWebServerInformation() {
 		// return info about web server
-		const serverInfo = {};
+		const serverInfo = {
+			runtime: {
+				started: jrhMisc.getNiceDateValString(this.procesData.started),
+				uptime: jrhMisc.getNiceDurationTimeMs(Date.now() - this.procesData.started),
+			},
+			setup: this.getMiscInfo(),
+		};
 
 		// add http and https server info
 		if (this.serverHttp) {
@@ -2904,16 +2918,11 @@ class AppRoomServer {
 	}
 
 
-	async calcDatabaseResourceUse() {
-		// return info about database memory and file use, etc.
-		var retv = await jrhMongo.calcDatabaseResourceUse();
-		return retv;
-	}
 
 
-	async calcDatabaseStructure() {
+	async calcDatabaseInfo() {
 		// return info about the database structure
-		const dbStrcuture = await jrhMongo.calcDatabaseResourceUse();
+		const dbStrcuture = await jrhMongo.calcDatabaseInfo();
 		return dbStrcuture;
 	}
 
@@ -2961,12 +2970,7 @@ class AppRoomServer {
 		// info about the app (version, author, etc.)
 
 		const rawData = {
-			appData: {
-				started: jrhMisc.getNiceDateValString(this.procesData.started),
-				uptime: jrhMisc.getNiceDurationTimeMs(Date.now() - this.procesData.started),
-			},
 			about: this.getAboutInfo(),
-			misc: this.getMiscInfo(),
 		};
 
 		return rawData;
@@ -3434,11 +3438,19 @@ class AppRoomServer {
 				origin,
 			};
 
-			// shutdown profiler?
-			this.disEngageProfilerIfAppropriate();
 
-			// throw it up, this will display it on console and crash out of node
-			throw reerr;
+			var flagExit = this.getConfigVal(appdef.DefConfigKeyExitOnFatalError);
+			if (flagExit) {
+				// shutdown profiler early, in case we crash trying to shutdown server
+				this.disEngageProfilerIfAppropriate();
+				// attempt to try to shutdown
+				// ATTN: THIS DOES NOT WORK CLEANLY -- AFTER THIS UNCAUGHT EXCEPTION I CAN'T GET APP TO CLEANLY RUN SHUTDOWN STUFF -- it seems to balk
+				await this.shutDown();
+				// throw it up, this will display it on console and crash out of node
+				throw reerr;
+			} else {
+				console.log("\n\n--- Not exiting despite fatal error, because config value of EXIT_ON_FATAL_ERROR = false. ---\n\n");
+			}
 		});
 	}
 	//---------------------------------------------------------------------------

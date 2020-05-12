@@ -47,8 +47,8 @@ function setupRouter(urlPath) {
 	router.get("/config_files", routerGetConfigFiles);
 	router.get("/config_hierarchy", routerGetConfigHierarchy);
 	router.get("/routes", routerGetRoutes);
-	router.get("/structure_db", routerGetStructureDb);
-	router.get("/resourceuse", routerGetResourceuse);
+	router.get("/database", routerGetDatabaseInfo);
+	// router.get("/resourceuse", routerGetResourceuse);
 	router.get("/serverinfo", routerGetServerinfo);
 	router.get("/aclstructure", routerGetAclStructure);
 	router.get("/nodejs", routerGetNodejs);
@@ -136,23 +136,11 @@ async function routerGetRoutes(req, res, next) {
 }
 
 
-async function routerGetStructureDb(req, res, next) {
+async function routerGetDatabaseInfo(req, res, next) {
 	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
-		var rawData = await arserver.calcDatabaseStructure();
-		res.render("internals/structure_db", {
+		var rawData = await arserver.calcDatabaseInfo();
+		res.render("internals/database", {
 			rawData,
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-		});
-	}
-}
-
-
-async function routerGetResourceuse(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
-		// get database resource use
-		var rawDataDb = await arserver.calcDatabaseResourceUse();
-		res.render("internals/resourceuse", {
-			rawDataDb,
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 		});
 	}

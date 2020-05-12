@@ -507,20 +507,36 @@ class ModelBaseMongoose {
 		// update modification date
 		this.updateModificationDate();
 
-		// first we check if jrResult is passed to us; IF SO, it means *WE* should catch the error and set it in jrResult
-		// if not, we drop down and just do a save and let exceptions get caught
-
-		if (jrResult === undefined) {
-			// ok just save it and let exceptions throw and percolate
-			return await this.save();
-		}
-
 		// save and we catch any exceptions and convert to jrResults
 		var retv;
+		var serr;
 		try {
-			retv = await this.save();
+			retv = await await this.save();
+			/*
+			retv = await await this.save((err) => {
+				// ATTN: had a hard time catching exceptions on mongoose save, lets see if error callback works better
+				if (err) {
+					serr = err;
+					console.log("ATTN: Unexpected error 1 while trying to mongoose save object:");
+					console.log(err);
+				} else {
+					// success, drop down
+				}
+			});
+			*/
 		} catch (err) {
-			jrResult.pushError("Failed to save " + this.getModelClass().getNiceName() + ". " + err.toString());
+			// just set serr and drop down
+			serr = err;
+		}
+
+		if (serr !== undefined) {
+			if (jrResult === undefined) {
+				// just let exceptions percolate up
+				console.log("ATTN: Unexpected error 2 while trying to mongoose save object:");
+				console.log(serr);
+				throw serr;
+			}
+			jrResult.pushError("Failed to save " + this.getModelClass().getNiceName() + ". " + serr.toString());
 			return null;
 		}
 		// success
@@ -1118,7 +1134,8 @@ class ModelBaseMongoose {
 	static newMongooseModel(obj) {
 		// const mmodel = this.mongooseModel;
 		// jrdebug.debugObj(mmodel, "MongooseModelm");
-		return new this.mongooseModel(obj);
+		var retv = new this.mongooseModel(obj);
+		return retv;
 	}
 	//---------------------------------------------------------------------------
 
@@ -1621,6 +1638,8 @@ class ModelBaseMongoose {
 			// let them edit the json string
 			if (viewType === "edit") {
 				str = `<textarea name="${fieldName}" rows="4" cols="80">${str}</textarea>`;
+			} else {
+				str = str.replace(/\n/g, "<br/>\n");
 			}
 			return str;
 		};

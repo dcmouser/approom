@@ -226,7 +226,11 @@ exports.DefConfigKeyTestingClientPassword = "testing:CLIENT_USERPASSWORD";
 //
 exports.DefConfigKeyLogFileBaseName = "logging:FILENAME_BASE";
 exports.DefConfigLoggingAnnouncement = "logging:ANNOUNCEMENT";
+//
+exports.DefConfigKeyExitOnFatalError = "general:EXIT_ON_FATAL_ERROR";
 //---------------------------------------------------------------------------
 
 
-
+//---------------------------------------------------------------------------
+exports.DefDbShutdownSleepMs = 1000;
+//---------------------------------------------------------------------------

@@ -256,7 +256,10 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 					} else if (val === null) {
 						valDisplay = "null";
 					} else {
-						if (valformat === "date") {
+						if (valformat === "textarea") {
+							// change \n to br/
+							valDisplay = val.replace(/\n/g, "<br/>\n");
+						} else if (valformat === "date") {
 							// format as compact date
 							valDisplay = val.toLocaleString();
 						} else {
