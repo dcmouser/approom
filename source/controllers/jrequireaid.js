@@ -14,7 +14,7 @@
 const jrequire = require("../helpers/jrequire");
 
 // set module flag so we dont run setup twice
-var didSetup = false;
+let didSetup = false;
 
 
 
@@ -62,6 +62,7 @@ function setupDefaultModulePaths() {
 	// some early controller dependencies
 	jrequire.registerPath("appdef", require.resolve("./appdef"));
 	jrequire.registerPath("aclaid", require.resolve("./aclaid"));
+	jrequire.registerPath("setupaid", require.resolve("./setupaid"));
 	jrequire.registerPath("arserver", require.resolve("./arserver"));
 
 	jrequire.registerPath("arclient", require.resolve("../client/arclient"));
@@ -76,6 +77,7 @@ function setupDefaultModulePaths() {
 	jrequire.registerPath("models/user", require.resolve("../models/user"));
 	jrequire.registerPath("models/login", require.resolve("../models/login"));
 	jrequire.registerPath("models/option", require.resolve("../models/option"));
+	jrequire.registerPath("models/role", require.resolve("../models/role"));
 	jrequire.registerPath("models/room", require.resolve("../models/room"));
 	jrequire.registerPath("models/roomdata", require.resolve("../models/roomdata"));
 	jrequire.registerPath("models/file", require.resolve("../models/file"));

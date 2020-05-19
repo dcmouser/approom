@@ -70,7 +70,7 @@ async function routerGetIndex(req, res, next) {
 //---------------------------------------------------------------------------
 async function routerGetInvite(req, res, next) {
 	// require them to be logged in, or creates a redirect
-	var user = await arserver.getLoggedInUser(req);
+	const user = await arserver.getLoggedInUser(req);
 	if (!arserver.requireUserIsLoggedIn(req, res, user)) {
 		// all done
 		return;
@@ -84,18 +84,18 @@ async function routerGetInvite(req, res, next) {
 
 async function routerPostInvite(req, res, next) {
 	// require them to be logged in, or creates a redirect
-	var user = await arserver.getLoggedInUser(req);
+	const user = await arserver.getLoggedInUser(req);
 	if (!arserver.requireUserIsLoggedIn(req, res, user)) {
 		// all done
 		return;
 	}
 
 	// test csrf token
-	var jrResult = arserver.testCsrfReturnJrResult(req, res);
+	let jrResult = arserver.testCsrfReturnJrResult(req, res);
 
 	if (!jrResult.isError()) {
 		// variables from form
-		var roleChange = {
+		const roleChange = {
 			operation: "add",
 			role: req.body.role,
 			object: {

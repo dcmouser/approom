@@ -45,8 +45,6 @@ const appdef = jrequire("appdef");
 const DefDefaultUsername = "Usr";
 const DefRandomUsernameRandomSuffixLength = 4;
 //
-const DefPasswordAdminPlaintextDefault = "test";
-//
 const DefRegexUsernamePattern = /^[A-Za-z][A-Za-z0-9_-]{3,16}$/;
 const DefRegexUsernameExplanation = "Must start with a letter (a-z), followed by a string of letters,"
 	+ " digits, and the symbols _ and -, minimum length of 3, maximum length of 16 (no spaces).";
@@ -153,7 +151,8 @@ class UserModel extends ModelBaseMongoose {
 				format: "checkbox",
 				visibleFunction: async (viewType, fieldName, req, obj, helperData) => {
 					if (viewType === "edit") {
-						return await arserver.isLoggedInUserSiteAdmin(req);
+						const bretv = await arserver.isLoggedInUserSiteAdmin(req);
+						return bretv;
 					}
 					return false;
 				},
@@ -183,16 +182,17 @@ class UserModel extends ModelBaseMongoose {
 			roles: {
 				label: "Roles",
 				readOnly: ["edit"],
-				valueFunction: async (viewType, fieldName, req, obj, helperData) => { if (obj !== undefined) return this.stringifyUserRoles(obj.roles); return ""; },
+				valueFunction: async (viewType, fieldName, req, obj, helperData) => { return await this.roleDisplayValueFunction(viewType, fieldName, req, obj, helperData); },
 				filterSize: 0,
-				mongoose: {
-					type: Array,
-				},
 			},
 			// additional fields we may add dynamically for in-memory use, but not saved to db
 			// loginId : { type: ObjectId },
 		};
 	}
+
+
+
+
 
 	static safeDisplayPasswordInfoFromPasswordHashed(passwordHashed) {
 		// regex way
@@ -201,12 +201,12 @@ class UserModel extends ModelBaseMongoose {
 				return "";
 			}
 			const regexCensor = /"hash":"[^"]*"/;
-			var safeStr = passwordHashed.replace(regexCensor, "\"hash\":[HIDDEN]");
+			const safeStr = passwordHashed.replace(regexCensor, "\"hash\":[HIDDEN]");
 			return safeStr;
 		}
 
 		// old way, dejson then rejson
-		var passwordObj = this.passwordHashToObj(passwordHashed);
+		const passwordObj = this.passwordHashToObj(passwordHashed);
 		if (!passwordObj) {
 			return "";
 		}
@@ -230,110 +230,8 @@ class UserModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	// database init
 	static async dbInit(mongooser) {
-		jrdebug.cdebug("Inside User dbInit");
-
-		await this.createAdminUser();
-		await this.createVisitorUser();
-		await this.createTestUser();
-	}
-
-	static async createAdminUser() {
-		// see if admin user exists, if not add it
-		var doc = await this.findOneExec({ username: "admin" });
-		if (!doc) {
-			// create admin object
-			jrdebug.cdebug("  Creating admin user");
-			// hash password
-			var passwordObj = await this.hashPlaintextPasswordToObj(this.getPasswordAdminPlaintextDefault());
-			var passwordHashed = this.passwordObjToHash(passwordObj);
-			// create generic new object
-			var userAdminObj = {
-				username: "admin",
-				realName: "jesse reichler",
-				email: "mouser@donationcoder.com",
-				passwordHashed,
-				notes: "Global site admin user created at setup",
-			};
-			// now create model (this will also add default properties to it)
-			var user = UserModel.createModel(userAdminObj);
-			// set some permissions for it
-			user.addRole(appdef.DefAclRoleSiteAdmin, appdef.DefAclObjectTypeSite);
-			// test acl roles
-			// user.addRole(appdef.DefAclRoleOwner, "app", "A1234");
-			// and save it
-			var userdoc = await user.dbSave();
-			//
-			jrdebug.cdebugObj(userdoc, "  userAdmin");
-		} else {
-			jrdebug.cdebug("  Found admin user.");
-		}
-	}
-
-	static async createTestUser() {
-		// see if testuser user exists, if not add it
-		var doc = await this.findOneExec({ username: "testuser" });
-		if (!doc) {
-			// create admin object
-			jrdebug.cdebug("  Creating testuser user");
-			// hash password
-			var passwordObj = await this.hashPlaintextPasswordToObj("test");
-			var passwordHashed = this.passwordObjToHash(passwordObj);
-			// create generic new object
-			var userAdminObj = {
-				username: "testuser",
-				realName: "j reichler",
-				email: "mouser-test@donationcoder.com",
-				passwordHashed,
-				notes: "Test user created at setup",
-			};
-			// now create model (this will also add default properties to it)
-			var user = UserModel.createModel(userAdminObj);
-			// set some permissions for it
-			// test acl roles
-			// user.addRole(appdef.DefAclRoleModerator, "app", "A1234");
-			// and save it
-			var userdoc = await user.dbSave();
-			//
-			jrdebug.cdebugObj(userdoc, "  testuser");
-		} else {
-			jrdebug.cdebug("  Found testuser user.");
-		}
-	}
-
-	static async createVisitorUser() {
-		// this is a user object shared between all non-logged-in visitors
-		var doc = await this.findOneExec({ username: "visitor" });
-		if (!doc) {
-			// create admin object
-			jrdebug.cdebug("  Creating testuser user");
-			// hash password -- plain text password of "" will not be usable to log in
-			// var passwordObj = await this.hashPlaintextPasswordToObj("");
-			// var passwordHashed = this.passwordObjToHash(passwordObj);
-			var passwordHashed = "";
-			// create generic new object
-			var userAdminObj = {
-				username: "visitor",
-				realName: "visitor",
-				email: "",
-				passwordHashed,
-				notes: "Visitor user shared between all non-logged in visitors",
-			};
-			// now create model (this will also add default properties to it)
-			var user = UserModel.createModel(userAdminObj);
-			// add visitor role
-			user.addRole(appdef.DefAclRoleVisitor, appdef.DefAclObjectTypeSite);
-			// and save it
-			var userdoc = await user.dbSave();
-			//
-			jrdebug.cdebugObj(userdoc, "  visitor");
-		} else {
-			jrdebug.cdebug("  Found visitor user.");
-		}
 	}
 	//---------------------------------------------------------------------------
-
-
-
 
 	//---------------------------------------------------------------------------
 	// accessors
@@ -350,6 +248,11 @@ class UserModel extends ModelBaseMongoose {
 		this.updateloginDate();
 		await this.dbSave(jrResult);
 	}
+
+
+	getExtRoles() {
+		return this.extRoles;
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -360,15 +263,15 @@ class UserModel extends ModelBaseMongoose {
 	// test password on a LOADED user object
 	async testPlaintextPassword(passwordPlaintext) {
 		// return true if password matches, false if not or if any error
-		var passwordObj = this.getPasswordObj();
-		var bretv = await jrhCrypto.testPlaintextPassword(passwordPlaintext, passwordObj);
+		const passwordObj = this.getPasswordObj();
+		const bretv = await jrhCrypto.testPlaintextPassword(passwordPlaintext, passwordObj);
 		return bretv;
 	}
 
 
 	// static hash password helper
 	static async hashPlaintextPasswordToObj(passwordPlaintext) {
-		var oretv = await jrhCrypto.hashPlaintextPasswordToObj(passwordPlaintext);
+		const oretv = await jrhCrypto.hashPlaintextPasswordToObj(passwordPlaintext);
 		return oretv;
 	}
 
@@ -381,12 +284,9 @@ class UserModel extends ModelBaseMongoose {
 	}
 
 	static passwordHashToObj(passwordHashed) {
-		var passwordObj = jrhMisc.createObjectFromJsonParse(passwordHashed, {});
+		const passwordObj = jrhMisc.createObjectFromJsonParse(passwordHashed, {});
 		return passwordObj;
 	}
-
-	// test
-	static getPasswordAdminPlaintextDefault() { return DefPasswordAdminPlaintextDefault; }
 	//---------------------------------------------------------------------------
 
 
@@ -408,11 +308,11 @@ class UserModel extends ModelBaseMongoose {
 			return null;
 		}
 
-		var user;
+		let user;
 
 		// if it starts with # its a user id
 		if (usernameEmailId.startsWith("#")) {
-			var uid = usernameEmailId.substring(1, usernameEmailId.length);
+			const uid = usernameEmailId.substring(1, usernameEmailId.length);
 			if (!jrhMongo.isValidMongooseObjectId(uid)) {
 				user = null;
 			} else {
@@ -434,7 +334,7 @@ class UserModel extends ModelBaseMongoose {
 		if (!usernameEmail) {
 			return null;
 		}
-		var user = await this.findOneExec({
+		const user = await this.findOneExec({
 			$or: [
 				{ username: usernameEmail },
 				{ email: usernameEmail },
@@ -452,7 +352,7 @@ class UserModel extends ModelBaseMongoose {
 		if (!username) {
 			return null;
 		}
-		var user = await this.findOneExec({ username });
+		const user = await this.findOneExec({ username });
 		jrdebug.cdebugObj(user, "in findUserByUsername");
 		return user;
 	}
@@ -464,7 +364,7 @@ class UserModel extends ModelBaseMongoose {
 			return null;
 		}
 		//
-		var user = await this.findOneAndUpdateExec({ _id: id }, { $set: { loginDate: new Date() } });
+		const user = await this.findOneAndUpdateExec({ _id: id }, { $set: { loginDate: new Date() } });
 		//
 		return user;
 	}
@@ -476,7 +376,7 @@ class UserModel extends ModelBaseMongoose {
 		}
 		// ask user model to find user by email
 		// return null if not found
-		var user = await this.findOneExec({ email });
+		const user = await this.findOneExec({ email });
 		return user;
 	}
 	//---------------------------------------------------------------------------
@@ -507,7 +407,7 @@ class UserModel extends ModelBaseMongoose {
 
 		// check if used by someone already
 		if (flagMustBeUnique) {
-			var user = await this.findUserByEmail(email);
+			const user = await this.findUserByEmail(email);
 			if (user && (!existingUser || existingUser.id !== user.id)) {
 				jrResult.pushFieldError("email", "Email already in use (" + email + ").");
 				return undefined;
@@ -549,7 +449,7 @@ class UserModel extends ModelBaseMongoose {
 
 		// check if used by someone already
 		if (flagMustBeUnique) {
-			var user = await this.findUserByUsername(username);
+			const user = await this.findUserByUsername(username);
 			if (user && (!existingUser || existingUser.id !== user.id)) {
 				jrResult.pushFieldError("username", "Username already in use.");
 				return undefined;
@@ -563,8 +463,8 @@ class UserModel extends ModelBaseMongoose {
 	static checkDisallowedNewUsername(jrResult, username) {
 		// return true if the str is not allowed for new users
 		// note that his may include usernames or emails that admins are allowed to set up, just not users
-		var errorStr;
-		for (var word of DefDisallowedUsernameList) {
+		let errorStr;
+		for (let word of DefDisallowedUsernameList) {
 			if (word[word.length - 1] === "*") {
 				// match against it or prefix
 				word = word.substring(0, word.length - 1);
@@ -614,8 +514,8 @@ class UserModel extends ModelBaseMongoose {
 		}
 
 		// it's good
-		var passwordObj = await UserModel.hashPlaintextPasswordToObj(passwordPlaintext);
-		var passwordHashed = this.passwordObjToHash(passwordObj);
+		const passwordObj = await UserModel.hashPlaintextPasswordToObj(passwordPlaintext);
+		const passwordHashed = this.passwordObjToHash(passwordObj);
 		return passwordHashed;
 	}
 	//---------------------------------------------------------------------------
@@ -638,13 +538,13 @@ class UserModel extends ModelBaseMongoose {
 		// return identifier for passport to track to know what user is logged in
 		// if user is a real db model, then provider is "localUser"; otherwise it
 		//  can be a minimal proxy for a bridged login or a verification based id, which is more like a pre-account login
-		var provider;
+		let provider;
 		if (this.id) {
 			provider = "localUser";
 		} else if (this.loginId) {
 			provider = "localLogin";
 		}
-		var profile = {
+		const profile = {
 			// any time we are getting passport profile from a USER, it is local
 			provider,
 			id: this.id,
@@ -660,7 +560,7 @@ class UserModel extends ModelBaseMongoose {
 	// create a unique user based on bridged login info
 	static async createUniqueUserFromBridgedLogin(bridgedLoginObj, flagUpdateLoginDate) {
 		// this could be tricky because we may have collisions in our desired username, email, etc.
-		var userObj = {
+		const userObj = {
 			username: jrhMisc.getNonFalseValueOrDefault(bridgedLoginObj.getExtraDataField("username"), undefined),
 			realName: jrhMisc.getNonFalseValueOrDefault(bridgedLoginObj.getExtraDataField("realName"), undefined),
 			email: jrhMisc.getNonFalseValueOrDefault(bridgedLoginObj.getExtraDataField("email"), undefined),
@@ -669,7 +569,7 @@ class UserModel extends ModelBaseMongoose {
 		// modify or tweak username if its not unique
 		await this.uniqueifyUserObj(userObj, bridgedLoginObj.providerName + "_" + bridgedLoginObj.providerId);
 		// now create model (this will also add default properties to it)
-		var user = UserModel.createModel(userObj);
+		const user = UserModel.createModel(userObj);
 		// set login date to now?
 		if (flagUpdateLoginDate) {
 			user.loginDate = new Date();
@@ -685,7 +585,7 @@ class UserModel extends ModelBaseMongoose {
 		// ensure userObj has a unique username (and any other fields? modifying properties as needed)
 
 		// first initialize username
-		var username = userObj.username;
+		let username = userObj.username;
 		if (!username) {
 			// is there a real name for this person
 			username = userObj.realName;
@@ -714,15 +614,15 @@ class UserModel extends ModelBaseMongoose {
 		// we may have cases where we are importing a username, or getting one from a bridged login
 		// here we need to ensure it meets our rules
 		const MAXTRIES = 100;
-		var jrResult = JrResult.makeNew();
+		const jrResult = JrResult.makeNew();
 
-		var flagCheckDisallowedUsername = true;
+		const flagCheckDisallowedUsername = true;
 
 		// part 1 is getting a syntax conforming username, short enough for us to add random suffix
 		username = await this.fixImportedUsernameSyntaxLength(username);
 
 		// remember name so we can add suffix if we need to in order to make unique
-		var baseUsername = username;
+		let baseUsername = username;
 		if (baseUsername.length + 1 + DefRandomUsernameRandomSuffixLength > DefUsernameMaxLength) {
 			baseUsername = baseUsername.substring(0, DefUsernameMaxLength - (1 + DefRandomUsernameRandomSuffixLength));
 		}
@@ -730,7 +630,7 @@ class UserModel extends ModelBaseMongoose {
 		// part 2 will be to add random suffixes if needed, until we get a unique one
 
 		// ok now loop trying to fix unique username by adding suffixes to uniqueify
-		for (var i = 1; i < MAXTRIES; ++i) {
+		for (let i = 1; i < MAXTRIES; ++i) {
 			// see if user with username already exists (or if this is base default username we are pretending already exists)
 			jrResult.clear();
 			await this.validateUsername(jrResult, username, true, false, flagCheckDisallowedUsername, null);
@@ -762,15 +662,15 @@ class UserModel extends ModelBaseMongoose {
 			username = username.toLowerCase();
 		}
 
-		var flagCheckDisallowedUsername = true;
+		const flagCheckDisallowedUsername = true;
 
 		// REMOVE bad characters
 
 		// loop through the username
-		var c;
+		let c;
 		const allowedStartChars = DefUsernameAllowedStartingCharacters;
 		const allowedChars = DefUsernameAllowedCharacters;
-		for (var i = 0; i < username.length; ++i) {
+		for (let i = 0; i < username.length; ++i) {
 			c = username.charAt(i);
 			if ((i === 0 && DefUsernameAllowedStartingCharacters.indexOf(c) === -1) || (i > 0 && DefUsernameAllowedCharacters.indexOf(c) === -1)) {
 				// not in our list of allowed characters, so splice it out
@@ -790,7 +690,7 @@ class UserModel extends ModelBaseMongoose {
 		}
 
 		// ok let's take an early try at validating it -- IT SHOULD be good.
-		var jrResult = JrResult.makeNew();
+		const jrResult = JrResult.makeNew();
 		await this.validateUsername(jrResult, username, false, false, flagCheckDisallowedUsername, null);
 		if (!jrResult.isError()) {
 			// good!
@@ -806,7 +706,7 @@ class UserModel extends ModelBaseMongoose {
 
 	static randomUsernameSuffix() {
 		// just return some random letters to add to a username that has a clash with an existing one
-		var str = jrhCrypto.genRandomStringHumanEasy(DefRandomUsernameRandomSuffixLength);
+		let str = jrhCrypto.genRandomStringHumanEasy(DefRandomUsernameRandomSuffixLength);
 		if (DefUsernameAlwaysLowercase) {
 			str = str.toLowerCase();
 		}
@@ -824,8 +724,8 @@ class UserModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	// error helper
 	static makeJrResultErrorNoUserFromField(key, value) {
-		var msgShort, msgLong;
-		var keylabel = (key === "usernameEmail") ? "username or email" : key;
+		let msgShort, msgLong;
+		const keylabel = (key === "usernameEmail") ? "username or email" : key;
 		if (!value) {
 			msgShort = "Specify " + keylabel;
 			msgLong = "No " + keylabel + " specified to search for.";
@@ -833,7 +733,7 @@ class UserModel extends ModelBaseMongoose {
 			msgShort = "User not found.";
 			msgLong = "No user found with user " + keylabel + " matching " + value + ".";
 		}
-		var jrResult = JrResult.makeNew();
+		const jrResult = JrResult.makeNew();
 		jrResult.pushBiFieldError(key, msgShort, msgLong);
 		return jrResult;
 	}
@@ -868,7 +768,7 @@ class UserModel extends ModelBaseMongoose {
 		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
 		// subclasses implement; by default we return empty array
 		// NOTE: this list can be generated dynamically based on logged in user
-		var reta = [];
+		let reta = [];
 		if (operationType === "crudAdd" || operationType === "crudEdit" || operationType === "add") {
 			reta = ["username", "realName", "email", "password", "passwordHashed", "apiCode", "disabled", "notes", "extraData"];
 		}
@@ -882,13 +782,13 @@ class UserModel extends ModelBaseMongoose {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 		// ATTN: TODO there is duplication with code in registrationaid.js currently, because we are trying to decide where best to do these things - ELIMINATE
-		var objdoc;
+		let objdoc;
 		//
-		var flagCheckDisallowedUsername = true;
-		var flagTrustEmailChange = false;
-		var flagRrequiredEmail = false;
-		var flagUserIsSiteAdmin = user && (await user.isSiteAdmin());
-		var flagIsNew = obj.getIsNew();
+		let flagCheckDisallowedUsername = true;
+		let flagTrustEmailChange = false;
+		const flagRrequiredEmail = false;
+		const flagUserIsSiteAdmin = user && (await user.isSiteAdmin());
+		const flagIsNew = obj.getIsNew();
 
 		// super users can do some things others cannot
 		if (flagUserIsSiteAdmin) {
@@ -896,7 +796,7 @@ class UserModel extends ModelBaseMongoose {
 		}
 
 		// REMEMBER old email addresss
-		var emailAddressOld = obj.email;
+		const emailAddressOld = obj.email;
 
 		// set fields from form and validate
 		await this.validateMergeAsync(jrResult, "username", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await UserModel.validateUsername(jrr, inVal, true, flagRequired, flagCheckDisallowedUsername, obj));
@@ -918,7 +818,7 @@ class UserModel extends ModelBaseMongoose {
 		if (options.flagTrustEmailChange) {
 			flagTrustEmailChange = true;
 		} else if (flagUserIsSiteAdmin) {
-			var keynameEmailBypass = "emailBypassVerify";
+			const keynameEmailBypass = "emailBypassVerify";
 			flagTrustEmailChange = jrhValidate.validateTrueFalse(jrResult, keynameEmailBypass, source[keynameEmailBypass], false);
 		}
 
@@ -932,7 +832,7 @@ class UserModel extends ModelBaseMongoose {
 		}
 
 		// new email address we are about to save
-		var emailAddressNew = obj.email;
+		const emailAddressNew = obj.email;
 
 
 		// do this last because it may send a verification email
@@ -981,8 +881,8 @@ class UserModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	async createAndSendVerificationEmailChange(emailAddressNew) {
 		const VerificationModel = jrequire("models/verification");
-		var emailAddressOld = this.email;
-		var userId = this.getIdAsM();
+		const emailAddressOld = this.email;
+		const userId = this.getIdAsM();
 		return await VerificationModel.createAndSendVerificationEmailChange(emailAddressOld, emailAddressNew, userId);
 	}
 	//---------------------------------------------------------------------------
@@ -991,210 +891,72 @@ class UserModel extends ModelBaseMongoose {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	//---------------------------------------------------------------------------
-	// ACL stuff
-
-	getThisUsersRolesOnObject(objectType, objectId, flagAddNoneRole) {
-		// get any roles the user is assigned to this ojbectId
-		// if objectId is null then get roles unrelated to object
-		// this will also return roles that match this objectType but have no objectId (meaning they are global)
-		// this will also return roles that have no objectType or the "all" object type, i.e. global roles that MIGHT be relevant for this object
-		// e.g. a site admin will always return the role "admin->site" when check if it has permission on a specific object
-
-		if (objectId && typeof objectId !== "string") {
-			// mongo object ids are not strings
-			objectId = objectId.toString();
+	async getApiCodeEnsureValid() {
+		// if user has a valid apiCode, just return it
+		// if not, create and save one then return it
+		// this will not CHANGE a valid one
+		if (!this.apiCode) {
+			await this.resetUpdateApiCode();
 		}
-
-		// make sure objectId is null if not passed
-		if (objectId === undefined) {
-			objectId = null;
-		}
-
-		var rolesFound = [];
-
-		jrdebug.cdebug("Asking for roles on objectType = " + objectType + " and objectid = " + objectId);
-
-		// simple walk of roles array
-		var matchesRole;
-		var robjectType, robjectId;
-		for (var key in this.roles) {
-			matchesRole = false;
-			// check if this role is relevant
-			robjectType = this.roles[key].t;
-			robjectId = this.roles[key].i;
-			// jrdebug.cdebugObj(this.roles[key], "Examining roles " + key);
-			if ((robjectType === objectType && (robjectId === appdef.DefAclObjectIdAll || robjectId === objectId))) {
-				// user has this permission on this object, or has this permission on ALL objects of this type (indicated by this.roles[key].i === appdef.DefAclObjectIdAll)
-				matchesRole = true;
-				// jrdebug.cdebug("Matches 1.");
-			} else {
-				// do we want roles not specifically related to this object type (for example if they are site admin)
-				if ((robjectType === appdef.DefAclObjectTypeSite || robjectType === null) && (robjectId === appdef.DefAclObjectIdAll || robjectId === null)) {
-					// here we have matched a global site role, or a role without a type, and there is no object id associated with it
-					matchesRole = true;
-					// jrdebug.cdebug("Matches 2.");
-				}
-			}
-
-			if (matchesRole) {
-				// found a role on this object, OR found a role that doesnt refer to an object but with flagCheckNonObjectSpecificRoles set
-				// jrdebug.cdebug("We got a match for role " + key);
-				rolesFound.push(this.roles[key].r);
-			} else {
-				// jrdebug.cdebug("We did NOT get a match for role " + key);
-			}
-		}
-
-		if (flagAddNoneRole) {
-			// add 'none' role, to help when looking for permissions related when we have no role on this object
-			rolesFound.push(appdef.DefAclRoleNone);
-		}
-
-		return rolesFound;
+		return this.apiCode;
 	}
 
-
-	setExclusiveRole(role, objectType = null, objectId = null) {
-		// set that the user has role on objectId, removing any other roles that the user previously had on objectId)
-
-		// remove other roles on this object
-		this.removeAllRolesForObject(objectType, objectId);
-
-		// now add this one by handing off to addRole function
-		this.addRole(role, objectType, objectId);
+	async resetUpdateApiCode() {
+		// update the apicode which will invalidate any previously issues api access tokens for user
+		this.apiCode = jrhMisc.getPreciseNowString();
+		// save it to database
+		const userdoc = await this.dbSave();
+		if (userdoc) {
+			// return it
+			return this.apiCode;
+		}
+		// error
+		return null;
 	}
 
-
-	hasExplicitRole(role, objectType = null, objectId = null) {
-		// return true if user has an explicit role on (optional) objectId
-		// simple walk of roles array
-		for (var key in this.roles) {
-			if (this.roles[key].r === role && this.roles[key].t === objectType && this.roles[key].i === objectId) {
-				// found it
-				return true;
-			}
+	verifyApiCode(tokenApiCode) {
+		// check if token api code matches user's latest apicode
+		if (this.apiCode === tokenApiCode) {
+			return true;
 		}
-		// not found
 		return false;
 	}
-
-
-	addRole(role, objectType = null, objectId = null) {
-		// add that the user has role on objectId
-
-		// first check if it already exists
-		if (this.roles.length > 0 && this.hasExplicitRole(role, objectType, objectId)) {
-			// already set
-			return;
-		}
-
-		// add it
-		var roleObj = {
-			r: role,
-			t: objectType,
-			i: objectId,
-		};
-		this.roles.push(roleObj);
-
-		// log the acl change
-		this.logChangedAcl("addRole", roleObj);
-	}
-
-
-	removeRole(role, objectType = null, objectId = null) {
-		// remove any record that user has role on objectId
-
-		// simple walk of roles array, but backwards
-		var foundCount = 0;
-		for (var key = this.roles.length - 1; key >= 0; key--) {
-			if (this.roles[key].r === role && this.roles[key].t === objectType && this.roles[key].i === objectId) {
-				// found it
-				this.splice(key, 1);
-				++foundCount;
-				// log the acl change
-				this.logChangedAcl("removeRole", this.roles[key]);
-			}
-		}
-
-		return foundCount;
-	}
-
-	removeAllRolesForObject(objectType = null, objectId = null) {
-		// remove all roles for the user and this object
-		// simple walk of roles array, but backwards
-		var foundCount = 0;
-		for (var key = this.roles.length - 1; key >= 0; key--) {
-			if (this.roles[key].t === objectType && this.roles[key].i === objectId) {
-				// found it
-				this.splice(key, 1);
-				++foundCount;
-				// log the acl change
-				this.logChangedAcl("removeRole", this.roles[key]);
-			}
-		}
-
-		return foundCount;
-	}
-
-	removeAllRoles() {
-		// remove all roles for the user
-		var foundCount = this.roles.length;
-		this.roles = [];
-
-		// log the acl change
-		this.logChangedAcl("removeAllRoles", null);
-
-		return foundCount;
-	}
-
-
-	makeRoleAclChange(operation, role, object, jrResult) {
-		// make a role change; the permissions have already been checked to make sure this is legal
-		if (operation === "add") {
-			if (!object) {
-				this.addRole(role);
-			} else {
-				this.addRole(role, object.getModelClass().getAclName(), object.getIdAsString());
-			}
-		} else if (operation === "remove") {
-			if (!object) {
-				this.removeRole(role);
-			} else {
-				this.removeRole(role, object.getModelClass().getAclName(), object.getIdAsString());
-			}
-		} else {
-			jrResult.pushFieldError("operation", "makeRoleAclChange operation must be from 'add' or 'remove'");
-		}
-	}
-
-
-	logChangedAcl(label, roleObj) {
-		var roleStr = jrhMisc.objToString(roleObj, true);
-		arserver.logr(null, "acl." + label, this.getLogIdString() + " " + label + ": " + roleStr, this);
-	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1215,16 +977,22 @@ class UserModel extends ModelBaseMongoose {
 
 		// get roles held on the object in question (optional)
 		const flagAddNoneRole = true;
-		const objectRoles = this.getThisUsersRolesOnObject(objectType, objectId, flagAddNoneRole);
+		const objectRoles = await this.getThisUsersRolesOnObject(objectType, objectId, flagAddNoneRole);
 
 		jrdebug.cdebugObj(objectRoles, "ObjectRoles for user on object type " + objectType);
 
 		// now ask if any of these rules imply the permission
 		return await aclAid.anyRolesImplyPermission(objectRoles, permission, objectType);
 	}
+	//---------------------------------------------------------------------------
 
 
 
+
+
+
+
+	//---------------------------------------------------------------------------
 	/**
 	 * Check if user has permission to do the operation on ALL ids in the objectIdList
 	 *
@@ -1257,6 +1025,11 @@ class UserModel extends ModelBaseMongoose {
 	async aclHasPermissionSeeVDeletes(modelClass) {
 		return await this.aclHasPermission(appdef.DefAclActionSeeVdeletes, modelClass.getAclName(), null);
 	}
+
+
+
+
+
 	//---------------------------------------------------------------------------
 
 
@@ -1268,40 +1041,6 @@ class UserModel extends ModelBaseMongoose {
 		// just check if user has permission to admin the site
 		return await this.aclHasPermission(appdef.DefAclActionAdminister, "site");
 	}
-
-
-	static stringifyUserRoles(roles) {
-		// nice stringify of user roles
-		if (!roles) {
-			return "none";
-		}
-		if (roles.length === 0) {
-			return "none";
-		}
-
-		var objectType, objectId;
-		var rolestring = "";
-		for (var key in roles) {
-			if (rolestring !== "") {
-				rolestring += " | ";
-			}
-			rolestring += roles[key].r;
-			objectType = roles[key].t;
-			if (objectType != null) {
-				objectId = roles[key].i;
-				if (objectId === appdef.DefAclObjectIdAll) {
-					rolestring += " (All " + objectType + "s)";
-				} else if (objectId === null) {
-					rolestring += " (" + objectType + ")";
-				} else {
-					const objectLink = arserver.makeAlinkHtmlToAclModel(objectType, objectId);
-					rolestring += " (" + objectLink + ")";
-				}
-			}
-		}
-
-		return rolestring;
-	}
 	//---------------------------------------------------------------------------
 
 
@@ -1322,122 +1061,6 @@ class UserModel extends ModelBaseMongoose {
 
 
 
-
-
-	//---------------------------------------------------------------------------
-	async getApiCodeEnsureValid() {
-		// if user has a valid apiCode, just return it
-		// if not, create and save one then return it
-		// this will not CHANGE a valid one
-		if (!this.apiCode) {
-			await this.resetUpdateApiCode();
-		}
-		return this.apiCode;
-	}
-
-	async resetUpdateApiCode() {
-		// update the apicode which will invalidate any previously issues api access tokens for user
-		this.apiCode = jrhMisc.getPreciseNowString();
-		// save it to database
-		var userdoc = await this.dbSave();
-		if (userdoc) {
-			// return it
-			return this.apiCode;
-		}
-		// error
-		return null;
-	}
-
-	verifyApiCode(tokenApiCode) {
-		// check if token api code matches user's latest apicode
-		if (this.apiCode === tokenApiCode) {
-			return true;
-		}
-		return false;
-	}
-	//---------------------------------------------------------------------------
-
-
-
-
-
-
-	//---------------------------------------------------------------------------
-	// see https://docs.mongodb.com/manual/tutorial/query-arrays/
-	// see https://docs.mongodb.com/manual/tutorial/query-array-of-documents/
-	// see https://stackoverflow.com/questions/50602874/elemmatch-and-in-query-for-array-of-documents
-	static async getRolesForAllUsersOnObject(objectModelClass, objectId, flagIncludeNullObjectIds) {
-		var objectModelAclName = objectModelClass.getAclName();
-		// the condition we search for -- all users who have a role that matches the type and object id
-
-		// explicitly match
-		var cond;
-		if (!flagIncludeNullObjectIds || objectId == null) {
-			cond = {
-				roles: {
-					$elemMatch: {
-						t: objectModelAclName,
-						i: objectId,
-					},
-				},
-			};
-		} else {
-			// match if objectid matches OR if role says to match on ALL objectid
-			cond = {
-				$or: [
-					{
-						roles: {
-							$elemMatch: {
-								t: objectModelAclName,
-								i: objectId,
-							},
-						},
-					},
-					{
-						roles: {
-							$elemMatch: {
-								t: objectModelAclName,
-								i: null,
-							},
-						},
-					},
-				],
-			};
-		}
-
-		// get the users with the matching roles
-		var fullRoles = [];
-		var users = await this.findAllExec(cond);
-		var usercount = users.length;
-		if (usercount === 0) {
-			return fullRoles;
-		}
-
-		// build array of roles, which are just the normal role arrays BUT with user added
-		var user;
-		for (var index = 0; index < usercount; ++index) {
-			user = users[index];
-			if (user.roles) {
-				user.roles.forEach((role) => {
-					if (role.t === objectModelAclName && (role.i === objectId || role.i === appdef.DefAclObjectIdAll)) {
-						// ok we want to add this role to our list
-						var roleObj = {
-							uid: user.getIdAsString(),
-							uname: user.getUsername(),
-							...role,
-						};
-						fullRoles.push(roleObj);
-					}
-				});
-			}
-		}
-
-		// console.log("Results from search for all condition.");
-		// console.log(cond);
-		// console.log(fullRoles);
-		return fullRoles;
-	}
-	//---------------------------------------------------------------------------
 
 
 
@@ -1446,14 +1069,337 @@ class UserModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	async addOwnerCreatorRolesForNewObject(obj, flagSaveUser, jrResult) {
 		// add owner role
-		this.addRole(appdef.DefAclRoleOwner, obj.getModelClass().getAclName(), obj.getIdAsString());
-		this.addRole(appdef.DefAclRoleCreator, obj.getModelClass().getAclName(), obj.getIdAsString());
+		await this.addRole(appdef.DefAclRoleOwner, obj.getModelClass().getAclName(), obj.getIdAsString());
+		await this.addRole(appdef.DefAclRoleCreator, obj.getModelClass().getAclName(), obj.getIdAsString());
 		// save user
 		if (flagSaveUser) {
 			await this.dbSave(jrResult);
 		}
 	}
 	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	static async setupCreateUser(userObj) {
+		let doc = await this.findOneExec({ username: userObj.username });
+		if (!doc && userObj.email) {
+			doc = await this.findOneExec({ email: userObj.email });
+		}
+		if (doc) {
+			// user already exists
+			jrdebug.cdebug(" SetupAid user already exists: " + userObj.username + ".");
+			return true;
+		}
+
+		// announce
+		jrdebug.debugObj(userObj, "Setup creating user");
+
+		// does not exist, create it
+		// ATTN: note that we do not validate it
+		// ATTN: TODO - validate the user object?
+		if (userObj.passwordPlaintext) {
+			// convert plaintext password to hashed
+			const passwordObj = await this.hashPlaintextPasswordToObj(userObj.passwordPlaintext);
+			userObj.passwordHashed = this.passwordObjToHash(passwordObj);
+			// clear plaintext password
+			delete userObj.passwordPlaintext;
+		}
+		// create the user account
+		const user = this.createModel(userObj);
+		// add acl roles, if any
+		if (userObj.setupRoles) {
+			for (const role of userObj.setupRoles) {
+				await user.addRole(role.role, role.objectType, role.objectId);
+			}
+		}
+
+		// save it
+		const userdoc = await user.dbSave();
+
+		// success
+		return true;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	async makeRoleAclChange(operation, role, object, jrResult) {
+		// make a role change; the permissions have already been checked to make sure this is legal
+		if (operation === "add") {
+			if (!object) {
+				await this.addRole(role);
+			} else {
+				await this.addRole(role, object.getModelClass().getAclName(), object.getIdAsString());
+			}
+		} else if (operation === "remove") {
+			if (!object) {
+				await this.deleteRole(role);
+			} else {
+				await this.deleteRole(role, object.getModelClass().getAclName(), object.getIdAsString());
+			}
+		} else {
+			jrResult.pushFieldError("operation", "makeRoleAclChange operation must be from 'add' or 'remove'");
+		}
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	// new role (extRole) helpers
+
+
+	//---------------------------------------------------------------------------
+	static async roleDisplayValueFunction(viewType, fieldName, req, obj, helperData) {
+		if (obj === undefined) {
+			return "n/a";
+		}
+
+		// OLD: original built in roles
+		// return this.stringifyUserRoles(obj.roles);
+
+		// get roles
+		const RoleModel = jrequire("models/role");
+		let roles;
+		if (obj.loadRolesForUserIfNeeded) {
+			// obj is a full user model obj
+			roles = await obj.loadRolesForUserIfNeeded();
+		} else {
+			// obj is a simple json object we need to look up roles by id
+			roles = await RoleModel.loadRolesForUserById(obj._id);
+		}
+
+		// stringify them for nice display
+		return RoleModel.stringifyRoles(roles, false, true);
+	}
+	//---------------------------------------------------------------------------
+
+	//---------------------------------------------------------------------------
+	// ATTN: these don't work quite as expected because we live in hell where everything is magic
+	// we can set the property but it will be invisible in any console log, or object copy, json stringificationm, etc. FUCK YOU MONGOOSE
+	// https://stackoverflow.com/questions/31534534/add-a-new-property-to-mongoose-document-after-fetch
+	// https://stackoverflow.com/questions/14504385/why-cant-you-modify-the-data-returned-by-a-mongoose-query-ex-findbyid
+	//
+	async loadRolesForUserIfNeeded() {
+		if (this.extRoles === undefined) {
+			await this.reloadRolesForUser();
+		}
+		// return roles
+		return this.extRoles;
+	}
+
+	async reloadRolesForUser() {
+		// load all roles related to the user, and then add them to the user (at .extRoles)
+		const RoleModel = jrequire("models/role");
+		const roleList = await RoleModel.loadRolesForUserById(this.getIdAsM());
+		// store it
+		this.extRoles = roleList;
+		// return it
+		return this.extRoles;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// ACL stuff
+	async getThisUsersRolesOnObject(objectType, objectId, flagAddNoneRole) {
+		// get any roles the user is assigned to this ojbectId
+		// if objectId is null then get roles unrelated to object
+		// this will also return roles that match this objectType but have no objectId (meaning they are global)
+		// this will also return roles that have no objectType or the "all" object type, i.e. global roles that MIGHT be relevant for this object
+		// e.g. a site admin will always return the role "admin->site" when check if it has permission on a specific object
+
+		// load roles for this users
+		const roles = await this.loadRolesForUserIfNeeded();
+
+		/*
+		if (objectId && typeof objectId !== "string") {
+			// mongo object ids are not strings
+			objectId = objectId.toString();
+		}
+		*/
+
+		// make sure objectId is null if not passed
+		if (objectId === undefined) {
+			objectId = null;
+		}
+
+		const rolesFound = [];
+
+		jrdebug.cdebug("Asking for roles on objectType = " + objectType + " and objectid = " + objectId);
+
+		// simple walk of roles array
+		let matchesRole;
+		let robjectType, robjectId;
+		for (let i = 0; i < roles.length; i++) {
+			matchesRole = false;
+			// check if this role is relevant
+			robjectType = roles[i].objectType;
+			robjectId = roles[i].objectId;
+			// jrdebug.cdebugObj(this.roles[key], "Examining roles " + key);
+			if (robjectType === objectType && (robjectId === appdef.DefAclObjectIdAll || jrhMongo.equalIds(robjectId, objectId))) {
+				// user has this permission on this object, or has this permission on ALL objects of this type (indicated by this.roles[key].i === appdef.DefAclObjectIdAll)
+				matchesRole = true;
+				// jrdebug.cdebug("Matches 1.");
+			} else {
+				// do we want roles not specifically related to this object type (for example if they are site admin)
+				if ((robjectType === appdef.DefAclObjectTypeSite || robjectType === null) && (robjectId === appdef.DefAclObjectIdAll || robjectId === null)) {
+					// here we have matched a global site role, or a role without a type, and there is no object id associated with it
+					matchesRole = true;
+					// jrdebug.cdebug("Matches 2.");
+				}
+			}
+
+			if (matchesRole) {
+				// found a role on this object, OR found a role that doesnt refer to an object but with flagCheckNonObjectSpecificRoles set
+				// jrdebug.cdebug("We got a match for role " + key);
+				rolesFound.push(roles[i].role);
+			} else {
+				// jrdebug.cdebug("We did NOT get a match for role " + key);
+			}
+		}
+
+		if (flagAddNoneRole) {
+			// add 'none' role, to help when looking for permissions related when we have no role on this object
+			rolesFound.push(appdef.DefAclRoleNone);
+		}
+
+		return rolesFound;
+	}
+
+
+
+	async hasExplicitRole(role, objectType = null, objectId = null) {
+		// return true if user has an explicit role on (optional) objectId
+
+		// load roles for this users
+		const roles = await this.loadRolesForUserIfNeeded();
+
+		// simple walk of roles array
+		for (let i = 0; i < roles.length; i++) {
+			if (roles[i].role === role && roles[i].objectType === objectType && jrhMongo.equalIds(roles[i].objectId, objectId)) {
+				// found it
+				return true;
+			}
+		}
+		// not found
+		return false;
+	}
+
+
+	async addRole(role, objectType = null, objectId = null) {
+		// add that the user has role on objectId
+
+		// first check if it already exists
+		if (await this.hasExplicitRole(role, objectType, objectId)) {
+			// already set
+			return;
+		}
+
+		// add it
+		const RoleModel = jrequire("models/role");
+		await RoleModel.addRole(this, role, objectType, objectId);
+	}
+
+
+	async deleteRole(role, objectType = null, objectId = null) {
+		// remove any record that user has role on objectId
+
+		const cond = {
+			userId: this.getIdAsM(),
+			role,
+			objectType,
+			objectId,
+		};
+
+		const RoleModel = jrequire("models/role");
+		await RoleModel.deleteRolesByCondition(this, cond);
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

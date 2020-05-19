@@ -78,7 +78,7 @@ async function routerGetIndex(req, res, next) {
 
 async function routerGetAppInfo(req, res, next) {
 	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
-		var rawData = arserver.calcAppInfo();
+		const rawData = arserver.calcAppInfo();
 		res.render("internals/appinfo", {
 			rawData,
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
@@ -93,7 +93,7 @@ async function routerGetConfigOptions(req, res, next) {
 	// await arserver.adminPermissionRenderRawData(req, res, () => {} );
 
 	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
-		var rawData = arserver.getJrConfig().getDebugOptions();
+		const rawData = arserver.getJrConfig().getDebugOptions();
 		res.render("internals/config", {
 			rawData,
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
@@ -104,7 +104,7 @@ async function routerGetConfigOptions(req, res, next) {
 
 async function routerGetConfigFiles(req, res, next) {
 	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
-		var rawData = arserver.getJrConfig().getDebugFiles();
+		const rawData = arserver.getJrConfig().getDebugFiles();
 		res.render("internals/config", {
 			rawData,
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
@@ -114,7 +114,7 @@ async function routerGetConfigFiles(req, res, next) {
 
 async function routerGetConfigHierarchy(req, res, next) {
 	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
-		var rawData = arserver.getJrConfig().getDebugHierarchy();
+		const rawData = arserver.getJrConfig().getDebugHierarchy();
 		res.render("internals/config", {
 			rawData,
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
@@ -127,7 +127,7 @@ async function routerGetConfigHierarchy(req, res, next) {
 
 async function routerGetRoutes(req, res, next) {
 	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
-		var rawData = arserver.calcExpressRoutePathData();
+		const rawData = arserver.calcExpressRoutePathData();
 		res.render("internals/routes", {
 			rawData,
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
@@ -138,7 +138,7 @@ async function routerGetRoutes(req, res, next) {
 
 async function routerGetDatabaseInfo(req, res, next) {
 	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
-		var rawData = await arserver.calcDatabaseInfo();
+		const rawData = await arserver.calcDatabaseInfo();
 		res.render("internals/database", {
 			rawData,
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
@@ -150,7 +150,7 @@ async function routerGetDatabaseInfo(req, res, next) {
 async function routerGetServerinfo(req, res, next) {
 	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
 		// get database resource use
-		var rawData = await arserver.calcWebServerInformation();
+		const rawData = await arserver.calcWebServerInformation();
 		res.render("internals/serverinfo", {
 			rawData,
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
@@ -162,7 +162,7 @@ async function routerGetServerinfo(req, res, next) {
 async function routerGetAclStructure(req, res, next) {
 	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
 		// get database resource use
-		var rawData = arserver.calcAclStructure();
+		const rawData = arserver.calcAclStructure();
 		res.render("internals/aclstructure", {
 			rawData,
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
@@ -174,7 +174,7 @@ async function routerGetAclStructure(req, res, next) {
 async function routerGetNodejs(req, res, next) {
 	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
 		// get database resource use
-		var rawData = arserver.calcNodeJsInfo();
+		const rawData = arserver.calcNodeJsInfo();
 		res.render("internals/nodejs", {
 			rawData,
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
@@ -186,7 +186,7 @@ async function routerGetNodejs(req, res, next) {
 async function routerDependencies(req, res, next) {
 	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
 		// get database resource use
-		var rawData = arserver.calcDependencyInfo();
+		const rawData = arserver.calcDependencyInfo();
 		res.render("internals/dependencies", {
 			rawData,
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
@@ -198,7 +198,7 @@ async function routerDependencies(req, res, next) {
 async function routerPlugins(req, res, next) {
 	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
 		// get database resource use
-		var rawData = arserver.calcPluginInfo();
+		const rawData = arserver.calcPluginInfo();
 		res.render("internals/plugins", {
 			rawData,
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res),

@@ -190,7 +190,7 @@ class AppRoomClient {
 	 * @memberof AppRoomClient
 	 */
 	getRefreshTokenVal() {
-		var token = this.cache.refreshToken;
+		const token = this.cache.refreshToken;
 		if (!token) {
 			return undefined;
 		}
@@ -227,7 +227,7 @@ class AppRoomClient {
 	 * @memberof AppRoomClient
 	 */
 	getAccessTokenVal() {
-		var token = this.cache.accessToken;
+		const token = this.cache.accessToken;
 		if (!token) {
 			return undefined;
 		}
@@ -279,7 +279,7 @@ class AppRoomClient {
 		this.setValidApiAccess(false);
 
 		// hint for prompt
-		var credentialsPromptMessage = "Your credentials are required in order to retrieve an API";
+		let credentialsPromptMessage = "Your credentials are required in order to retrieve an API";
 
 		// ok now, *we* already have some information for the connection already stored (refreshToken, etc.)
 
@@ -354,7 +354,7 @@ class AppRoomClient {
 	async extractDataTriggerError(response, url, hintActionString, expectedKey) {
 
 		// get data from response
-		var data = response.data;
+		const data = response.data;
 
 		// clear any existing error
 		this.clearErrors();
@@ -410,14 +410,14 @@ class AppRoomClient {
 		}
 
 		// post data
-		var url = this.getOptionServerUrlBase() + this.pathTokenValidate;
-		var postData = {
+		const url = this.getOptionServerUrlBase() + this.pathTokenValidate;
+		const postData = {
 			token: this.getAccessTokenVal(),
 		};
-		var response = await jrhAxios.postCatchError(url, postData);
+		const response = await jrhAxios.postCatchError(url, postData);
 
 		// extract data, check for error, set succsss status, last error, etc.
-		var data = await this.extractDataTriggerError(response, url, "validateAccessToken", null);
+		const data = await this.extractDataTriggerError(response, url, "validateAccessToken", null);
 		// return true if no error
 		return (!data.error);
 	}
@@ -442,7 +442,7 @@ class AppRoomClient {
 			return false;
 		}
 		// check if token is expired
-		var expires = token.exp;
+		const expires = token.exp;
 		if (!expires) {
 			// no date
 			return false;
@@ -469,14 +469,14 @@ class AppRoomClient {
 	 */
 	async retrieveAccessTokenFromRefreshToken() {
 		// post data
-		var url = this.getOptionServerUrlBase() + this.pathAccessTokenRequest;
-		var postData = {
+		const url = this.getOptionServerUrlBase() + this.pathAccessTokenRequest;
+		const postData = {
 			token: this.getRefreshTokenVal(),
 		};
-		var responseData = await jrhAxios.postCatchError(url, postData);
+		const responseData = await jrhAxios.postCatchError(url, postData);
 
 		// extract data, check for error, set last error on error, etc.
-		var data = await this.extractDataTriggerError(responseData, url, "retrieveAccessTokenFromRefreshToken", "token");
+		const data = await this.extractDataTriggerError(responseData, url, "retrieveAccessTokenFromRefreshToken", "token");
 		if (!data.error) {
 			this.setAccessToken(data.token);
 			return true;
@@ -500,22 +500,22 @@ class AppRoomClient {
 		this.clearErrors();
 
 		// get login credentials
-		var credentials = await this.triggerRequestCredentials(hintMessage);
+		const credentials = await this.triggerRequestCredentials(hintMessage);
 		if (!credentials.usernameEmail || !credentials.password) {
 			this.setLastError("Credentials missing; aborting request for refresh token.", true);
 			return false;
 		}
 
 		// post data
-		var url = this.getOptionServerUrlBase() + this.pathRefreshTokenRequest;
-		var postData = {
+		const url = this.getOptionServerUrlBase() + this.pathRefreshTokenRequest;
+		const postData = {
 			usernameEmail: credentials.usernameEmail,
 			password: credentials.password,
 		};
-		var responseData = await jrhAxios.postCatchError(url, postData);
+		const responseData = await jrhAxios.postCatchError(url, postData);
 
 		// extract data, check for error, set succsss status, last error, etc.
-		var data = await this.extractDataTriggerError(responseData, url, "retrieveRefreshTokenUsingCredentials", "token");
+		const data = await this.extractDataTriggerError(responseData, url, "retrieveRefreshTokenUsingCredentials", "token");
 		if (!data.error) {
 			this.setRefreshToken(data.token);
 			return true;
@@ -607,7 +607,7 @@ class AppRoomClient {
 	async triggerRequestCredentials(hintMessage) {
 		// call error callback function if one is registered
 		if (this.options.getCredentialsFunction) {
-			var credentials = await this.options.getCredentialsFunction(this, hintMessage);
+			const credentials = await this.options.getCredentialsFunction(this, hintMessage);
 			return credentials;
 		}
 		// no credentials available
@@ -677,18 +677,18 @@ class AppRoomClient {
 	async invoke(urlEndpoint, query) {
 
 		// url to hit
-		var url = this.getOptionServerUrlBase() + urlEndpoint;
+		const url = this.getOptionServerUrlBase() + urlEndpoint;
 
 		// data to post (we will add token later)
-		var postData = {
+		const postData = {
 			query,
 		};
 
 		// now a small loop to post the data and get a reply;
 		// we loop so that we can try our existing access token first, and request a new one and retry if it fails.
-		var responseData;
-		var data;
-		for (var tryCount = 0; tryCount < 2; tryCount += 1) {
+		let responseData;
+		let data;
+		for (let tryCount = 0; tryCount < 2; tryCount += 1) {
 			// if not connected (which may be case after our first fail or initially), lets try to connect
 			// note that this call to getValidApiAccess() may check for token expiration and will clear validApiAccess flag when its expired so that we get new one
 			if (!this.getValidApiAccess()) {

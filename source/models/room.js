@@ -146,7 +146,7 @@ class RoomModel extends ModelBaseMongoose {
 		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
 		// subclasses implement; by default we return empty array
 		// NOTE: this list can be generated dynamically based on logged in user
-		var reta = [];
+		let reta = [];
 		if (operationType === "crudAdd" || operationType === "crudEdit" || operationType === "add") {
 			reta = ["appid", "shortcode", "label", "description", "password", "passwordHashed", "disabled", "notes", "extraData"];
 		}
@@ -160,7 +160,7 @@ class RoomModel extends ModelBaseMongoose {
 	static async doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
-		var objdoc;
+		let objdoc;
 		const UserModel = jrequire("models/user");
 
 		// set fields from form and validate
@@ -212,7 +212,7 @@ class RoomModel extends ModelBaseMongoose {
 	// crud helper for view
 	static async calcCrudViewHelperData(req, res, id, obj) {
 	// get nice label of the app it's attached to
-		var appLabel;
+		let appLabel;
 		const appid = obj.appid;
 		if (appid) {
 			const AppModel = jrequire("models/app");
@@ -231,14 +231,14 @@ class RoomModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	static async buildSimpleRoomListUserTargetable(user) {
 		// build room list, pairs of id -> nicename, that are targetable to current logged in user
-		var roomlist = await this.buildSimpleRoomList(user);
+		const roomlist = await this.buildSimpleRoomList(user);
 		return roomlist;
 	}
 
 	// see http://thecodebarbarian.com/whats-new-in-mongoose-53-async-iterators.html
 	static async buildSimpleRoomList(user) {
 		const docs = await this.findAllAndSelect("_id shortcode label");
-		var roomlist = [];
+		const roomlist = [];
 		for (const doc of docs) {
 			roomlist[doc._id] = doc.shortcode + " - " + doc.label;
 		}
@@ -248,7 +248,7 @@ class RoomModel extends ModelBaseMongoose {
 
 	static async buildSimpleRoomIdListUserTargetable(user) {
 		const docs = await this.buildSimpleRoomListUserTargetable(user);
-		var ids = Object.keys(docs);
+		const ids = Object.keys(docs);
 		return ids;
 	}
 	//---------------------------------------------------------------------------
@@ -263,11 +263,11 @@ class RoomModel extends ModelBaseMongoose {
 	static async findOneByAppIdAndRoomShortcode(appId, roomShortcode) {
 		// first we need to find the app id from the appShortcode
 		// now find the room by its appid and shortcode
-		var args = {
+		const args = {
 			appid: appId,
 			shortcode: roomShortcode,
 		};
-		var retv = await this.findOneExec(args);
+		const retv = await this.findOneExec(args);
 		return retv;
 	}
 	//---------------------------------------------------------------------------
@@ -315,10 +315,10 @@ class RoomModel extends ModelBaseMongoose {
 		// get a list (array) of all room ids that are attached to this app
 
 		const RoomDataModel = jrequire("models/roomdata");
-		var roomDataObjs = await RoomDataModel.findAllExec({ roomid }, "_id");
+		const roomDataObjs = await RoomDataModel.findAllExec({ roomid }, "_id");
 
 		// convert array of objects with _id fields to simple id array
-		var roomDataIds = jrhMongo.convertArrayOfObjectIdsToIdArray(roomDataObjs);
+		const roomDataIds = jrhMongo.convertArrayOfObjectIdsToIdArray(roomDataObjs);
 
 		return roomDataIds;
 	}

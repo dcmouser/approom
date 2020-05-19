@@ -97,15 +97,15 @@ function jrHbsSelectOption(selected, options) {
  * @param {string} prefix
  */
 function loadPartialFiles(partialsDir, prefix) {
-	var filenames = fs.readdirSync(partialsDir);
+	const filenames = fs.readdirSync(partialsDir);
 
 	filenames.forEach((name) => {
 		if (name !== ".") {
 			// recurse subdirs
-			var fullPath = path.join(partialsDir, name);
+			const fullPath = path.join(partialsDir, name);
 			if (fs.lstatSync(fullPath).isDirectory()) {
 				// recurse
-				var recursivePrefix = prefix;
+				let recursivePrefix = prefix;
 				if (recursivePrefix) {
 					recursivePrefix += "/";
 				}
@@ -114,13 +114,13 @@ function loadPartialFiles(partialsDir, prefix) {
 				loadPartialFiles(fullPath, recursivePrefix);
 			} else {
 				// files
-				var matches = /^([^.]+).hbs$/.exec(name);
+				const matches = /^([^.]+).hbs$/.exec(name);
 				if (!matches) {
 					return;
 				}
-				var partialName = matches[1];
-				var prefixedPartialName = prefix ? (prefix + "/") + partialName : partialName;
-				var template = fs.readFileSync(fullPath, "utf8");
+				const partialName = matches[1];
+				const prefixedPartialName = prefix ? (prefix + "/") + partialName : partialName;
+				const template = fs.readFileSync(fullPath, "utf8");
 				jrdebug.cdebugf("Adding handlebar view partial: %s.", prefixedPartialName);
 				hbs.registerPartial(prefixedPartialName, template);
 			}

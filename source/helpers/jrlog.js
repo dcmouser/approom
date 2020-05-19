@@ -40,9 +40,9 @@ const path = require("path");
 
 //---------------------------------------------------------------------------
 // module variables
-var serviceName;
-var logDir;
-var winstonCategoryLoggers = [];
+let serviceName;
+let logDir;
+const winstonCategoryLoggers = [];
 //---------------------------------------------------------------------------
 
 
@@ -74,7 +74,7 @@ function setup(iserviceName, ilogDir) {
 function setupMorganMiddlewareForExpressWebAccessLogging() {
 	const morganMode = "combined";
 	const morganOutputAbsoluteFilePath = calcLogFilePath("access");
-	var morganOutput = {
+	const morganOutput = {
 		stream: fs.createWriteStream(morganOutputAbsoluteFilePath, { flags: "a" }),
 	};
 	const morganMiddleware = morgan(morganMode, morganOutput);
@@ -138,7 +138,7 @@ function createWinstonLoggerObject(filenameSuffix) {
 		return info;
 	});
 
-	var wobj = winston.createLogger({
+	const wobj = winston.createLogger({
 		// level: "maxlevel",
 		// levels: winstonCustomLevels,
 		format: winston.format.combine(
@@ -191,7 +191,7 @@ function getWinstonCategoryLogger(category) {
  * @returns full file path
  */
 function calcLogFilePath(fileSuffix) {
-	var filePath = path.join(logDir, serviceName);
+	let filePath = path.join(logDir, serviceName);
 	if (fileSuffix !== "") {
 		filePath += ("_" + fileSuffix + ".log");
 	} else {
@@ -232,7 +232,7 @@ function calcLogFilePath(fileSuffix) {
 function logMessage(category, type, message, extraData, mergeData) {
 
 	// make the object to save in file log
-	var logObj = createLogFileObj(type, message, extraData, mergeData);
+	const logObj = createLogFileObj(type, message, extraData, mergeData);
 
 	// get the level corrresponding to this error type (usually leftmost of dot notation)
 	logObject(category, logObj);
@@ -283,7 +283,7 @@ function logExceptionError(category, err) {
  */
 function logExceptionErrorWithMessage(category, err, type, message, extraData, mergeData) {
 	// create normal log messsage object
-	var logObj = createLogFileObj(type, message, extraData, mergeData);
+	const logObj = createLogFileObj(type, message, extraData, mergeData);
 	// now alter it for exception
 	const logObjError = {
 		type: "errorCrit.logging",
@@ -354,7 +354,7 @@ function log(category, ...args) {
  * @returns object to log
  */
 function createLogFileObj(type, message, extraData, mergeData) {
-	var logObj;
+	let logObj;
 	if (message && !(typeof message === "string")) {
 		// unusual case where the message is an object; for file we merge in message properties, and others
 		logObj = {

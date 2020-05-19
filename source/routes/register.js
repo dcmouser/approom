@@ -72,10 +72,10 @@ async function routerGetIndex(req, res, next) {
 
 	// initialize req.body with default values for form if we find them in a session field
 	//  (for example if they just verified their new account), similar to as if they had submitted values and we were re-presenting with errors
-	var jrResult = await registrationAid.fillReqBodyWithSessionedFieldValues(req);
+	const jrResult = await registrationAid.fillReqBodyWithSessionedFieldValues(req);
 
 	// render
-	var viewpath = await getRegisterViewPath(req);
+	const viewpath = await getRegisterViewPath(req);
 	res.render(viewpath, {
 		jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult, true),
 		reqbody: req.body,
@@ -97,8 +97,8 @@ async function routerPostIndex(req, res, next) {
 	}
 
 	// test csrf token
-	var jrResult = arserver.testCsrfReturnJrResult(req, res);
-	var successRedirectTo;
+	const jrResult = arserver.testCsrfReturnJrResult(req, res);
+	let successRedirectTo;
 
 	if (!jrResult.isError()) {
 		// ok hand off processing of the registration form
@@ -108,7 +108,7 @@ async function routerPostIndex(req, res, next) {
 
 	// any errors, re-render form with errors
 	if (jrResult.isError()) {
-		var viewpath = await getRegisterViewPath(req);
+		const viewpath = await getRegisterViewPath(req);
 		res.render(viewpath, {
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
 			reqbody: req.body,
@@ -133,11 +133,11 @@ async function routerPostIndex(req, res, next) {
 
 // which register view we render depends on whether this is initial registration, or continuing one after they have verified an email
 async function getRegisterViewPath(req) {
-	var renderview;
+	let renderview;
 
 	// get any verification code associated with this registration, to prove they own the email
 	// verificationCode can come explicitly from the form (takes priority) OR the session if not in the form
-	var verification = await registrationAid.getValidNewAccountVerificationFromRequestOrLastSession(req);
+	const verification = await registrationAid.getValidNewAccountVerificationFromRequestOrLastSession(req);
 
 	if (verification) {
 		// show full form

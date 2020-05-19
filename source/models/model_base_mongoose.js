@@ -197,7 +197,7 @@ class ModelBaseMongoose {
 	}
 
 	static getDefaultDeleteDisableModeAsAclAction() {
-		var deleteDisableMode = this.getDefaultDeleteDisableMode();
+		const deleteDisableMode = this.getDefaultDeleteDisableMode();
 		if (deleteDisableMode === appdef.DefMdbVirtDelete) {
 			return appdef.DefAclActionDelete;
 		}
@@ -262,10 +262,10 @@ class ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	static extractMongooseDbSchemaDefintion() {
 		// get the full schema definition
-		var schemaDefinition = this.getSchemaDefinition();
+		const schemaDefinition = this.getSchemaDefinition();
 		// now build a new object with only the key mongoose values
-		var mongooseDbSchemaDefinition = {};
-		for (var key in schemaDefinition) {
+		const mongooseDbSchemaDefinition = {};
+		for (const key in schemaDefinition) {
 			if (schemaDefinition[key].mongoose) {
 				mongooseDbSchemaDefinition[key] = schemaDefinition[key].mongoose;
 			}
@@ -277,7 +277,7 @@ class ModelBaseMongoose {
 
 	// User model mongoose db schema
 	static buildMongooseDbSchema(mongooser) {
-		var mongooseDbSchemaDefinition = this.extractMongooseDbSchemaDefintion();
+		const mongooseDbSchemaDefinition = this.extractMongooseDbSchemaDefintion();
 		this.schema = new mongooser.Schema(mongooseDbSchemaDefinition, {
 			collection: this.getCollectionName(),
 		});
@@ -304,7 +304,7 @@ class ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	static getBaseSchemaType(fieldname) {
-		var baseSchemaDefinition = this.getBaseSchemaDefinition();
+		const baseSchemaDefinition = this.getBaseSchemaDefinition();
 		if (baseSchemaDefinition[fieldname]) {
 			return baseSchemaDefinition[fieldname].type;
 		}
@@ -314,7 +314,7 @@ class ModelBaseMongoose {
 
 	// ATTN: TODO -- cache the schema definition and extras
 	static getSchemaFieldVal(fieldName, key, defaultVal) {
-		var modelSchemaDefinition = this.getSchemaDefinition();
+		const modelSchemaDefinition = this.getSchemaDefinition();
 		if (modelSchemaDefinition[fieldName] && modelSchemaDefinition[fieldName][key] !== undefined) {
 			return modelSchemaDefinition[fieldName][key];
 		}
@@ -322,11 +322,11 @@ class ModelBaseMongoose {
 	}
 
 	static async getSchemaKeysMatchingViewType(viewType, req) {
-		var retKeys = [];
-		var modelSchemaDefinition = this.getSchemaDefinition();
-		var keys = Object.keys(modelSchemaDefinition);
-		var keyHideArray;
-		var visfunc, isVisible;
+		const retKeys = [];
+		const modelSchemaDefinition = this.getSchemaDefinition();
+		const keys = Object.keys(modelSchemaDefinition);
+		let keyHideArray;
+		let visfunc, isVisible;
 
 		await jrhMisc.asyncAwaitForEachFunctionCall(keys, async (key) => {
 			keyHideArray = modelSchemaDefinition[key].hide;
@@ -381,7 +381,7 @@ class ModelBaseMongoose {
 
 	static getCrudUrlBase(suburl, id) {
 		// return url for crud access, adding suburl and id
-		var url = this.crudBaseUrl;
+		let url = this.crudBaseUrl;
 		if (suburl) {
 			url += "/" + suburl;
 		}
@@ -414,7 +414,7 @@ class ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	// create new obj
 	static createModel(inobj) {
-		var obj = {
+		const obj = {
 			version: this.getVersion(),
 			creator: null,
 			creationDate: new Date(),
@@ -423,7 +423,7 @@ class ModelBaseMongoose {
 			notes: "",
 			...inobj,
 		};
-		var model = this.newMongooseModel(obj);
+		const model = this.newMongooseModel(obj);
 		return model;
 	}
 
@@ -434,7 +434,7 @@ class ModelBaseMongoose {
 		if (this.getModelClass().modelObjPropertyList) {
 			return this.getModelClass().modelObjPropertyList;
 		}
-		var propkeys = Object.keys(this.getModelClass().getSchemaDefinition());
+		const propkeys = Object.keys(this.getModelClass().getSchemaDefinition());
 		return propkeys;
 	}
 	//---------------------------------------------------------------------------
@@ -466,7 +466,7 @@ class ModelBaseMongoose {
 		await this.modelSchema.loadClass(this);
 
 		// create the mongoose model
-		var collectionName = this.getCollectionName();
+		const collectionName = this.getCollectionName();
 		this.setMongooseModel(await mongooser.model(collectionName, this.modelSchema));
 
 
@@ -486,7 +486,7 @@ class ModelBaseMongoose {
 
 	static async collectionExists(mongooser, collectionName) {
 		// return true if collection already exists
-		var list = await mongooser.connection.db.listCollections({ name: collectionName }).toArray();
+		const list = await mongooser.connection.db.listCollections({ name: collectionName }).toArray();
 		if (list.length > 0) {
 			return true;
 		}
@@ -508,8 +508,8 @@ class ModelBaseMongoose {
 		this.updateModificationDate();
 
 		// save and we catch any exceptions and convert to jrResults
-		var retv;
-		var serr;
+		let retv;
+		let serr;
 		try {
 			retv = await await this.save();
 			/*
@@ -568,10 +568,9 @@ class ModelBaseMongoose {
 	 */
 	static async validateSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj, flagUpdateUserRolesForNewObject) {
 		// is this a new object?
-		var savedObj;
-		var flagIsNew = obj.isNew;
+		const flagIsNew = obj.isNew;
 		// call validate and save
-		savedObj = await this.doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj);
+		const savedObj = await this.doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj);
 		// success?
 		if (flagUpdateUserRolesForNewObject && flagIsNew && !jrResult.isError() && user) {
 			// successful save and it was a new object, and caller wants us to set roles of owner
@@ -579,7 +578,7 @@ class ModelBaseMongoose {
 			if (jrResult.isError()) {
 				// error setting roles, which means we would like to DESTROY the object and reset it..
 				// ATTN: unfinished
-				var emsg = "ATTN: Failed to set ownership roles on " + obj.getLogIdString();
+				const emsg = "ATTN: Failed to set ownership roles on " + obj.getLogIdString();
 				arserver.logr(null, "error.imp", emsg);
 				jrdebug.debug(emsg);
 			}
@@ -589,7 +588,7 @@ class ModelBaseMongoose {
 
 
 	static async validateAndSaveNewWrapper(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, flagUpdateUserRolesForNewObject) {
-		var newObj = this.createModel({});
+		const newObj = this.createModel({});
 		await this.validateSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, newObj, flagUpdateUserRolesForNewObject);
 		return newObj;
 	}
@@ -606,7 +605,7 @@ class ModelBaseMongoose {
 	}
 
 	static async validateAndSaveNew(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields) {
-		var newObj = this.createModel({});
+		const newObj = this.createModel({});
 		await this.doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, newObj);
 		return newObj;
 	}
@@ -634,8 +633,8 @@ class ModelBaseMongoose {
 		}
 
 		// first see if value was pre-validated
-		var validatedVal, unvalidatedVal;
-		var fieldNameUsed;
+		let validatedVal, unvalidatedVal;
+		let fieldNameUsed;
 		if (preValidatedFields && (preValidatedFields === "*" || (preValidatedFields.includes(fieldNameTarget)))) {
 			// field is pre-validated, so just grab its prevalidated value
 			fieldNameUsed = fieldNameTarget;
@@ -742,7 +741,7 @@ class ModelBaseMongoose {
 	 */
 	static async validateComplainExtraFields(jrResult, options, source, saveFields, preValidatedFields, ignoreFields) {
 		// walk the properties in source, and complain if not found in saveFields, preValidatedFields, and ignoreFields
-		for (var prop in source) {
+		for (const prop in source) {
 			if (Object.prototype.hasOwnProperty.call(source, prop)) {
 				if ((saveFields && saveFields.includes(prop)) || (preValidatedFields && preValidatedFields.includes(prop)) || (ignoreFields && ignoreFields.includes(prop))) {
 					// good
@@ -750,7 +749,7 @@ class ModelBaseMongoose {
 				} else {
 					// not found, first check if its a _checkbox version of an allowed field
 					if (prop.endsWith("_checkbox")) {
-						var preprop = prop.substr(0, prop.length - 9);
+						const preprop = prop.substr(0, prop.length - 9);
 						if ((saveFields && saveFields.includes(preprop)) || (preValidatedFields && preValidatedFields.includes(preprop)) || (ignoreFields && ignoreFields.includes(preprop))) {
 							// good
 							continue;
@@ -773,7 +772,7 @@ class ModelBaseMongoose {
 		// return {id, existingModel}
 
 		// get id from form
-		var id = req.body._id;
+		const id = req.body._id;
 
 		// add form should not have shortcode specified
 		if (formTypeStr === "add") {
@@ -796,7 +795,7 @@ class ModelBaseMongoose {
 		}
 
 		// now try to look it up
-		var existingModel = await this.findOneById(id);
+		const existingModel = await this.findOneById(id);
 		if (!existingModel) {
 			jrResult.pushError("Lookup of " + this.getNiceName() + " not found for id specified.");
 			return {};
@@ -815,14 +814,14 @@ class ModelBaseMongoose {
 		// OR an instance of jrResult if error
 
 		// get any existing model
-		var { id, existingModel } = await this.validateAddEditFormId(jrResult, req, res, formTypeStr);
+		const { id, existingModel } = await this.validateAddEditFormId(jrResult, req, res, formTypeStr);
 		if (jrResult.isError()) {
 			return null;
 		}
 
 		if (!existingModel) {
 			// create new one (doesn't save it yet)
-			existingModel = this.createModel();
+			return this.createModel();
 		}
 
 		return existingModel;
@@ -839,7 +838,7 @@ class ModelBaseMongoose {
 			jrResult.pushFieldError(key, "Value for " + key + " cannot be blank (must be unique).");
 		}
 		// must be unique so we search for collissions
-		var criteria;
+		let criteria;
 		if (existingModel._id) {
 			// there is an id for the object we are working on, so DONT include that one when searching for a colission
 			criteria = {
@@ -852,7 +851,7 @@ class ModelBaseMongoose {
 			};
 		}
 
-		var clashObj = await this.findOneExec(criteria);
+		const clashObj = await this.findOneExec(criteria);
 		if (clashObj) {
 			// error
 			jrResult.pushFieldError(key, "Duplicate " + key + " entry found for another " + this.getNiceName());
@@ -873,7 +872,7 @@ class ModelBaseMongoose {
 	static validateShortcodeSyntax(jrResult, key, val) {
 		if (!val) {
 			if (jrResult) {
-				var sstr = (key === "shortcode") ? "shortcode" : "shortcode (" + key + ")";
+				const sstr = (key === "shortcode") ? "shortcode" : "shortcode (" + key + ")";
 				jrResult.pushFieldError(key, sstr + " cannot be left blank");
 			}
 			return null;
@@ -886,7 +885,7 @@ class ModelBaseMongoose {
 		const regexPat = /^[A-Z0-9_\-.]*$/;
 		if (!regexPat.test(val)) {
 			if (jrResult) {
-				var sstr2 = (key === "shortcode") ? "shortcode" : "shortcode (" + key + ")";
+				const sstr2 = (key === "shortcode") ? "shortcode" : "shortcode (" + key + ")";
 				jrResult.pushFieldError(key, "Syntax error in " + sstr2 + " value; it should be uppercase, and shouold contain only the characters A-Z 0-9 _-. (no spaces).");
 			}
 			return null;
@@ -905,7 +904,7 @@ class ModelBaseMongoose {
 		}
 
 		// must be unique so we search for collissions
-		var criteria;
+		let criteria;
 		if (existingModel._id) {
 			// there is an id for the object we are working on, so DONT include that one when searching for a colission
 			criteria = {
@@ -929,7 +928,7 @@ class ModelBaseMongoose {
 
 
 	static async isShortcodeInUse(criteria) {
-		var clashObj = await this.findOneExec(criteria);
+		const clashObj = await this.findOneExec(criteria);
 		if (clashObj) {
 			return true;
 		}
@@ -941,11 +940,11 @@ class ModelBaseMongoose {
 		// try to make an unused random shortcode
 		const maxTrycount = 100;
 		const shortcodeLen = 9;
-		var shortcode;
-		var criteria = {};
-		var charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+		let shortcode;
+		const criteria = {};
+		const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-		for (var trycount = 0; trycount < maxTrycount; trycount += 1) {
+		for (let trycount = 0; trycount < maxTrycount; trycount += 1) {
 			// random shortcode
 			shortcode = "RND" + jrhCrypto.genRandomStringFromCharSet(charset, shortcodeLen);
 			criteria[key] = shortcode;
@@ -1051,7 +1050,7 @@ class ModelBaseMongoose {
 
 	/*
 	getExtraData(key, defaultVal) {
-		var val = this.extraData.get(key);
+		let val = this.extraData.get(key);
 		if (val === undefined) {
 			return defaultVal;
 		}
@@ -1134,7 +1133,7 @@ class ModelBaseMongoose {
 	static newMongooseModel(obj) {
 		// const mmodel = this.mongooseModel;
 		// jrdebug.debugObj(mmodel, "MongooseModelm");
-		var retv = new this.mongooseModel(obj);
+		const retv = new this.mongooseModel(obj);
 		return retv;
 	}
 	//---------------------------------------------------------------------------
@@ -1154,27 +1153,27 @@ class ModelBaseMongoose {
 
 	static async findOneExec(...args) {
 		// actually call mongooseModel findOne
-		var retv = await this.mongooseModel.findOne(...args).exec();
+		const retv = await this.mongooseModel.findOne(...args).exec();
 		return retv;
 	}
 
 
 	static async findOneAndUpdateExec(criteria, setObject) {
 		// actually call mongooseModel findOneAndUpdateExec
-		var retv = await this.mongooseModel.findOneAndUpdate(criteria, setObject).exec();
+		const retv = await this.mongooseModel.findOneAndUpdate(criteria, setObject).exec();
 		return retv;
 	}
 
 
 	static async findAllAndSelect(...args) {
-		var retv = await this.mongooseModel.find().select(...args);
+		const retv = await this.mongooseModel.find().select(...args);
 		return retv;
 	}
 
 
 	static async findAllExec(...args) {
 		// actually call mongooseModel findOneAndUpdateExec
-		var retv = await this.mongooseModel.find(...args).exec();
+		const retv = await this.mongooseModel.find(...args).exec();
 		return retv;
 	}
 	//---------------------------------------------------------------------------
@@ -1200,12 +1199,12 @@ class ModelBaseMongoose {
 	static async findSomeByQuery(query, queryOptions, jrResult) {
 		// fetch the array of items to be displayed in grid
 		// see https://thecodebarbarian.com/how-find-works-in-mongoose
-		var queryProjection = "";
+		const queryProjection = "";
 		try {
-			var items = await this.mongooseModel.find(query, queryProjection, queryOptions).exec();
+			const items = await this.mongooseModel.find(query, queryProjection, queryOptions).exec();
 
-			var resultCount;
-			var isQueryEmpty = ((Object.keys(query)).length === 0);
+			let resultCount;
+			const isQueryEmpty = ((Object.keys(query)).length === 0);
 			if (isQueryEmpty) {
 				resultCount = await this.mongooseModel.countDocuments();
 			} else {
@@ -1301,8 +1300,8 @@ class ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	modelObjPropertyCopy(flagIncludeId) {
 		// copy the properties in schema
-		var obj = {};
-		var keylist = this.getModelObjPropertyList();
+		const obj = {};
+		const keylist = this.getModelObjPropertyList();
 
 		keylist.forEach((key) => {
 			if (key in this) {
@@ -1396,7 +1395,7 @@ class ModelBaseMongoose {
 		// perform a find filter and create table grid
 
 		// schema for obj
-		var gridSchema = this.getSchemaDefinition();
+		const gridSchema = this.getSchemaDefinition();
 
 		// force add the invisible id field to schema for display
 		// we shouldn't have to do this anymore, we found out had to add it to the model schema
@@ -1405,13 +1404,13 @@ class ModelBaseMongoose {
 		}
 
 		// headers for list grid
-		var gridHeaders = [];
+		const gridHeaders = [];
 
 		// default sorting?
-		var crudDefaults = this.getCrudDefaults();
+		const crudDefaults = this.getCrudDefaults();
 
 		// options for filter construction
-		var filterOptions = {
+		const filterOptions = {
 			defaultPageSize: 10,
 			minPageSize: 1,
 			maxPageSize: 1000,
@@ -1424,7 +1423,7 @@ class ModelBaseMongoose {
 
 		// convert filter into query and options
 		const jrhMongoFilter = require("../helpers/jrh_mongo_filter");
-		var { query, queryOptions, queryUrlData } = jrhMongoFilter.buildMongooseQueryFromReq(filterOptions, gridSchema, req, jrResult);
+		const { query, queryOptions, queryUrlData } = jrhMongoFilter.buildMongooseQueryFromReq(filterOptions, gridSchema, req, jrResult);
 
 		// Force the lean option to speed up retrieving of results, since we only need for read-only display here; see https://mongoosejs.com/docs/tutorials/lean.html
 		// Note that if we wanted to call methods on the model class we couldn't do this, as it returns results as plain generic objects
@@ -1440,7 +1439,7 @@ class ModelBaseMongoose {
 		// jrdebug.debugObj(query, "222 Test query in calcCrudListHelperData.");
 
 		// get the items using query
-		var [gridItems, resultcount] = await this.findSomeByQuery(query, queryOptions, jrResult);
+		const [gridItems, resultcount] = await this.findSomeByQuery(query, queryOptions, jrResult);
 		queryUrlData.resultCount = resultcount;
 
 		// store other stuff in queryUrl data to aid in making urls for pager and grid links, etc.
@@ -1498,7 +1497,7 @@ class ModelBaseMongoose {
 			query.disabled = addFilter;
 		} else {
 			// more complicated, we have to inject it
-			var oldDisabled = query.disabled;
+			const oldDisabled = query.disabled;
 			delete query.disabled;
 			if (query.$and) {
 				// there is an and we need to add it to
@@ -1523,8 +1522,8 @@ class ModelBaseMongoose {
 		// get a model object, performing acl access check first
 		// if not, render an error and return null
 
-		var obj;
-		var id = this.validateModelFieldId(jrResult, val);
+		let obj;
+		const id = this.validateModelFieldId(jrResult, val);
 
 		if (!jrResult.isError()) {
 			// acl test
@@ -1583,18 +1582,18 @@ class ModelBaseMongoose {
 	static makeModelValueFunctionPasswordAdminEyesOnly(flagRequired) {
 		// a value function usable by model definitions
 		return async (viewType, fieldName, req, obj, helperData) => {
-			var retv;
-			var isLoggedInUserSiteAdmin = await arserver.isLoggedInUserSiteAdmin(req);
+			let retv;
+			const isLoggedInUserSiteAdmin = await arserver.isLoggedInUserSiteAdmin(req);
 			if (viewType === "view" && obj !== undefined) {
 				if (isLoggedInUserSiteAdmin) {
 					// for debuging
-					retv = obj.passwordhashed;
+					retv = obj.passwordHashed;
 				} else {
 					// safe
 					retv = this.safeDisplayPasswordInfoFromPasswordHashed(obj.passwordHashed);
 				}
 			} else if (viewType === "edit") {
-				var flagExistingIsNonBlank = (obj && (obj.passwordHashed !== undefined && obj.passwordHashed !== null && obj.password !== ""));
+				const flagExistingIsNonBlank = (obj && (obj.passwordHashed !== undefined && obj.passwordHashed !== null && obj.password !== ""));
 				retv = jrhText.jrHtmlFormInputPassword("password", obj, flagRequired, flagExistingIsNonBlank);
 			} else if (viewType === "list" && obj !== undefined) {
 				if (isLoggedInUserSiteAdmin) {
@@ -1624,7 +1623,7 @@ class ModelBaseMongoose {
 	static makeModelValueFunctionExtraData() {
 		// a value function usable by model definitions
 		return async (viewType, fieldName, req, obj, helperData) => {
-			var str;
+			let str;
 			if (obj !== undefined && obj.extraData) {
 				if (typeof obj.extraData === "string") {
 					// already a string -- this is used when form error being reshown..
@@ -1686,7 +1685,7 @@ class ModelBaseMongoose {
 	 */
 	static makeModelValueFunctionCrudObjectIdFromList(modelClass, fieldId, fieldLabel, fieldList) {
 		return async (viewType, fieldName, req, obj, helperData) => {
-			var viewUrl, oLabel, rethtml, oid;
+			let viewUrl, oLabel, rethtml, oid;
 			if (viewType === "view" && obj !== undefined) {
 				viewUrl = modelClass.getCrudUrlBase("view", obj[fieldId]);
 				oLabel = helperData[fieldLabel];
@@ -1720,20 +1719,31 @@ class ModelBaseMongoose {
 	 * @memberof ModelBaseMongoose
 	 */
 	static makeModelValueFunctionRoleOnObjectList(modelClass) {
-		//
+		const RoleModel = jrequire("models/role");
 		return async (viewType, fieldName, req, obj, helperData) => {
-			if (viewType === "list") {
+			//
+			if (false && viewType === "list") {
 				// too heavy to retrieve in this mode
 				return "...";
 			}
-			if (obj !== undefined && obj.getAllUsersRolesOnThisObject) {
-				const aclAid = jrequire("aclaid");
-				const flagIncludeNullObjectIds = true;
-				var roles = await obj.getAllUsersRolesOnThisObject(flagIncludeNullObjectIds);
-				var rethtml = aclAid.buildHtmlOfFullUserRoleArray(roles);
-				return rethtml;
+			if (obj === undefined) {
+				// no object, no roles
+				return "";
 			}
-			return "";
+			//
+			if (obj.getAllRolesOnThisObject) {
+				// it's a full object so we can resolve it
+				// ATTN: 5/13/20 -- because this needs a valid object, it doesnt work in crud edit mode only crud view mode
+				const roles = await obj.getAllRolesOnThisObject();
+				return RoleModel.stringifyRoles(roles, true, false);
+			}
+
+			// a thin json object, but we still know how to do this
+			const roles = await this.getAllRolesOnObjectById(obj._id);
+			return RoleModel.stringifyRoles(roles, true, false);
+
+			// its not a full object we wont show this info (though we could
+			// return "n/a";
 		};
 
 	}
@@ -1818,7 +1828,7 @@ class ModelBaseMongoose {
 			// direct database delete
 			await this.getMongooseModel().deleteOne({ _id: id }, (err) => {
 				if (err) {
-					var msg = "Error while tryign to delete " + this.getNiceNameWithId(id) + ": " + err.message;
+					const msg = "Error while tryign to delete " + this.getNiceNameWithId(id) + ": " + err.message;
 					jrResult.pushError(msg);
 				} else {
 					// log the action
@@ -1834,7 +1844,7 @@ class ModelBaseMongoose {
 			const nowDate = new Date();
 			await this.getMongooseModel().updateOne({ _id: id }, { $set: { disabled: mode, modificationDate: nowDate } }, (err) => {
 				if (err) {
-					var msg = "Error while changing to " + appdef.DefStateModeLabels[mode] + "  " + this.getNiceNameWithId(id) + ": " + err.message;
+					const msg = "Error while changing to " + appdef.DefStateModeLabels[mode] + "  " + this.getNiceNameWithId(id) + ": " + err.message;
 					jrResult.pushError(msg);
 				} else {
 					if (this.getShouldLogDbActions()) {
@@ -1858,10 +1868,10 @@ class ModelBaseMongoose {
 
 	static async doChangeModeByIdList(idList, mode, jrResult, flagSupressSuccessMessage) {
 		// delete/disable a bunch of items
-		var successCount = 0;
+		let successCount = 0;
 
 		// walk the list and do a deep delete of each
-		var id;
+		let id;
 		for (let i = 0; i < idList.length; ++i) {
 			id = idList[i];
 			await this.doChangeModeById(id, mode, jrResult);
@@ -1896,17 +1906,22 @@ class ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	async getAllUsersRolesOnThisObject(flagIncludeNullObjectIds) {
+	async getAllRolesOnThisObject() {
 		// get all roles held by all users on this object
-		const UserModel = jrequire("models/user");
-		var allUserRoles = await UserModel.getRolesForAllUsersOnObject(this.getModelClass(), this.getIdAsString(), flagIncludeNullObjectIds);
-		jrdebug.cdebugObj(allUserRoles, "User roles on object");
-		return allUserRoles;
+		return await this.getModelClass().getAllRolesOnObjectById(this.getIdAsString());
+	}
+
+
+	static async getAllRolesOnObjectById(objectIdString) {
+		const cond = {
+			objectType: this.getAclName(),
+			objectId: objectIdString,
+		};
+		const RoleModel = jrequire("models/role");
+		const roles = await RoleModel.findRolesByCondition(cond);
+		return roles;
 	}
 	//---------------------------------------------------------------------------
-
-
-
 
 
 

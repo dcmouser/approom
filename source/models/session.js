@@ -136,7 +136,7 @@ class SessionModel extends ModelBaseMongooseMinimal {
 	// Override to create minimal model
 	// create new obj -- used by classes which are super minimal (LogModel)
 	static createModel(inobj) {
-		var model = super.createModel(inobj);
+		const model = super.createModel(inobj);
 		model.expires = null;
 		model.session = null;
 		return model;

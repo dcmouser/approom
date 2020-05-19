@@ -31,7 +31,7 @@ function jrPluralizeCount(number, singular, plural) {
 		number = number.length;
 	}
 	//
-	var numberStr = number.toString();
+	const numberStr = number.toString();
 	if (number === 1) {
 		return numberStr + " " + singular;
 	}
@@ -76,8 +76,8 @@ function jrPluralize(number, singular, plural) {
  * @returns html for inclusion in form
  */
 function jrHtmlFormOptionListSelect(selectName, pairlist, selectedid, flagShowBlank) {
-	var appHtmlList = jrHtmlFormOptionList(pairlist, selectedid, flagShowBlank);
-	var rethtml = `
+	const appHtmlList = jrHtmlFormOptionList(pairlist, selectedid, flagShowBlank);
+	const rethtml = `
 		<select name="${selectName}">
 			${appHtmlList}
 		</select>
@@ -94,8 +94,8 @@ function jrHtmlFormOptionListSelect(selectName, pairlist, selectedid, flagShowBl
  * @returns html for inclusion in form (inside a select form object usually)
  */
 function jrHtmlFormOptionList(pairlist, selectedid, flagShowBlank) {
-	var rethtml = "";
-	var foundId = false;
+	let rethtml = "";
+	let foundId = false;
 	// cast id to a string
 	selectedid = (selectedid === null || selectedid === undefined) ? "" : selectedid.toString();
 
@@ -105,8 +105,8 @@ function jrHtmlFormOptionList(pairlist, selectedid, flagShowBlank) {
 
 	// now find it in list
 	if (pairlist) {
-		var seltext;
-		for (var key in pairlist) {
+		let seltext;
+		for (const key in pairlist) {
 			if (key === selectedid) {
 				seltext = " selected";
 				foundId = true;
@@ -137,7 +137,7 @@ function jrHtmlNiceOptionFromList(pairlist, selectedid, defaultVal) {
 	if (selectedid === null || selectedid === undefined || selectedid === "") {
 		return defaultVal;
 	}
-	var label = pairlist[selectedid];
+	const label = pairlist[selectedid];
 	if (label === undefined) {
 		return defaultVal;
 	}
@@ -164,7 +164,7 @@ function jrBootstrapCollapseBox(title, body, footer) {
 		body = "<pre>" + JSON.stringify(body, null, "  ") + "</pre>";
 	}
 
-	var rethtml = `
+	const rethtml = `
 		<div class="card" style="padding: 5px; margin: 5px;">
 				<div class="card-heading">
 					<h4 class="card-title">
@@ -193,7 +193,7 @@ function jrBootstrapCollapseBox(title, body, footer) {
  * @returns html string
  */
 function jrHtmlStrigifyObject(obj) {
-	var rethtml = "<pre>" + JSON.stringify(obj, null, "  ") + "</pre>";
+	const rethtml = "<pre>" + JSON.stringify(obj, null, "  ") + "</pre>";
 	return rethtml;
 }
 //---------------------------------------------------------------------------
@@ -213,7 +213,7 @@ function jrHtmlStrigifyObject(obj) {
  * @returns html string
  */
 function jrHtmlFormInputPassword(fieldName, obj, flagRequired, flagExistingIsNonBlank) {
-	var rethtml, val;
+	let rethtml, val;
 	if (obj && obj[fieldName]) {
 		val = obj[fieldName];
 	} else {

@@ -16,10 +16,10 @@ function requestGridUpdate(tableId, varChangeObj, flagClearPager) {
 	// note that we should grab all filter_ field inputs explicitly since multiple of those might be changed before requesting update
 
 	// first grab the global data object associated with this tableId
-	var tableData = grabGlobalJrGridDataStructure(tableId);
+	const tableData = grabGlobalJrGridDataStructure(tableId);
 
 	// parse filters
-	var filterData = jrGridGrabFilterInputValues(tableId, tableData);
+	const filterData = jrGridGrabFilterInputValues(tableId, tableData);
 
 	// merge in filters
 	jrGridDataMerge(tableData.fieldFilters, filterData);
@@ -33,15 +33,15 @@ function requestGridUpdate(tableId, varChangeObj, flagClearPager) {
 	jrGridDataMerge(tableData, varChangeObj);
 
 	// now build the new url to go to
-	var url = jrGridBuildUrl(tableData);
+	const url = jrGridBuildUrl(tableData);
 	window.location.href = url;
 }
 
 
 function grabGlobalJrGridDataStructure(tableId) {
 	// grab the global variable with dynamically constructed name
-	var varName = "jrGridListData_" + tableId;
-	var data = window[varName];
+	const varName = "jrGridListData_" + tableId;
+	const data = window[varName];
 	return data;
 }
 
@@ -50,23 +50,23 @@ function jrGridGrabFilterInputValues(tableId, tableData) {
 
 	// alert("Stage1");
 
-	var formObj = document.forms["jrGridList_" + tableId];
+	const formObj = document.forms["jrGridList_" + tableId];
 	if (!formObj) {
 		return {};
 	}
 
-	var filterData = {};
+	const filterData = {};
 
-	var eleObj;
-	var fieldKeys = tableData.fieldKeys;
-	var key;
-	for (var i = 0; i < fieldKeys.length; i += 1) {
+	let eleObj;
+	const fieldKeys = tableData.fieldKeys;
+	let key;
+	for (let i = 0; i < fieldKeys.length; i += 1) {
 		key = fieldKeys[i];
 		// alert("Stage3 " + key);
 		eleObj = formObj.elements["filter_" + key];
 		if (eleObj) {
 			// found it
-			var val = eleObj.value;
+			const val = eleObj.value;
 			// alert("Stage4 " + key + " = " + val);
 			filterData[key] = val;
 		}
@@ -85,7 +85,7 @@ function jrGridDataMerge(tableData, varChangeObj) {
 
 function jrGridBuildUrl(tableData) {
 	// build the url to navigate to based on the data
-	var url;
+	let url;
 
 	// build the url up
 	url = tableData.baseUrl + "?";
@@ -99,9 +99,9 @@ function jrGridBuildUrl(tableData) {
 	url += "sortField=" + tableData.sortField + "&";
 	url += "sortDir=" + tableData.sortDir;
 	// filter fields
-	var fieldKeys = Object.keys(tableData.fieldFilters);
-	var key;
-	for (var i = 0; i < fieldKeys.length; i += 1) {
+	const fieldKeys = Object.keys(tableData.fieldFilters);
+	let key;
+	for (let i = 0; i < fieldKeys.length; i += 1) {
 		key = fieldKeys[i];
 		if (tableData.fieldFilters[key] !== "" && tableData.fieldFilters[key] !== undefined) {
 			url += "&filter_" + key + "=" + tableData.fieldFilters[key];
@@ -125,12 +125,12 @@ function jrGridGenericOnEnterRefresh(event, tableId, flagClearPager) {
 
 function jrGridToggleCheckboxes(tableId) {
 	// toggle the checkboxes
-	var formObj = document.forms["jrGridList_" + tableId];
+	const formObj = document.forms["jrGridList_" + tableId];
 	if (!formObj) {
 		return;
 	}
-	var items = formObj.getElementsByTagName("input");
-	for (var i = 0; i < items.length; i++) {
+	const items = formObj.getElementsByTagName("input");
+	for (let i = 0; i < items.length; i++) {
 		if (items[i].type === "checkbox") {
 			items[i].checked = !items[i].checked;
 		}
@@ -140,13 +140,13 @@ function jrGridToggleCheckboxes(tableId) {
 
 function jrCountCheckedItems(tableId) {
 	// toggle the checkboxes
-	var formObj = document.forms["jrGridList_" + tableId];
+	const formObj = document.forms["jrGridList_" + tableId];
 	if (!formObj) {
 		return 0;
 	}
-	var checkedCount = 0;
-	var items = formObj.getElementsByTagName("input");
-	for (var i = 0; i < items.length; i++) {
+	let checkedCount = 0;
+	const items = formObj.getElementsByTagName("input");
+	for (let i = 0; i < items.length; i++) {
 		if (items[i].type === "checkbox") {
 			if (items[i].checked) {
 				checkedCount += 1;
@@ -159,12 +159,12 @@ function jrCountCheckedItems(tableId) {
 
 function jrGridClearFilters(tableId) {
 	// toggle the checkboxes
-	var formObj = document.forms["jrGridList_" + tableId];
+	const formObj = document.forms["jrGridList_" + tableId];
 	if (!formObj) {
 		return;
 	}
-	var items = formObj.getElementsByTagName("input");
-	for (var i = 0; i < items.length; i++) {
+	const items = formObj.getElementsByTagName("input");
+	for (let i = 0; i < items.length; i++) {
 		if (items[i].type === "text") {
 			items[i].value = "";
 		}
@@ -179,8 +179,8 @@ function jrGridClearFilters(tableId) {
 function requestGridBulkAction(tableId) {
 	// submit checkbox batch
 
-	var itemCountString;
-	var itemCount = jrCountCheckedItems(tableId);
+	let itemCountString;
+	const itemCount = jrCountCheckedItems(tableId);
 	if (itemCount === 0) {
 		alert("You need to check some items first.");
 		return;
@@ -192,26 +192,26 @@ function requestGridBulkAction(tableId) {
 		itemCountString = "these " + itemCount.toString() + " items";
 	}
 
-	var formObj = document.forms["jrGridList_" + tableId];
+	const formObj = document.forms["jrGridList_" + tableId];
 	if (!formObj) {
 		alert("Internal error -- table [" + tableId + "] not found.");
 		return;
 	}
 
 	// get bulk action
-	var bulkAction = formObj.elements.namedItem("bulkaction");
+	const bulkAction = formObj.elements.namedItem("bulkaction");
 	if (!bulkAction) {
 		alert("Internal error -- bulk action select for table [" + tableId + "] not found.");
 		return;
 	}
-	var actionString = bulkAction.options[bulkAction.selectedIndex].value;
+	const actionString = bulkAction.options[bulkAction.selectedIndex].value;
 
 	if (actionString === "") {
 		alert("You need to select a bulk action first.");
 		return;
 	}
 
-	var bretv = window.confirm("Are you sure you want to " + actionString + " " + itemCountString + "?");
+	const bretv = window.confirm("Are you sure you want to " + actionString + " " + itemCountString + "?");
 	if (!bretv) {
 		return;
 	}

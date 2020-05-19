@@ -142,7 +142,7 @@ class AppModel extends ModelBaseMongoose {
 		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
 		// subclasses implement; by default we return empty array
 		// NOTE: this list can be generated dynamically based on logged in user
-		var reta = [];
+		let reta = [];
 		if (operationType === "crudAdd" || operationType === "crudEdit" || operationType === "add") {
 			reta = ["shortcode", "label", "description", "notes", "isPublic", "supportsFiles", "disabled", "extraData"];
 		}
@@ -154,7 +154,7 @@ class AppModel extends ModelBaseMongoose {
 	static async doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
-		var objdoc;
+		let objdoc;
 
 		// set fields from form and validate
 		await this.validateMergeAsync(jrResult, "shortcode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await this.validateShortcodeUnique(jrr, keyname, inVal, obj));
@@ -190,14 +190,14 @@ class AppModel extends ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	static async buildSimpleAppListUserTargetable(user) {
 		// build app list, pairs of id -> nicename, that are targetable (ie user can add rooms to) to current logged in user
-		var applist = await this.buildSimpleAppList(user);
+		const applist = await this.buildSimpleAppList(user);
 		return applist;
 	}
 
 	// see http://thecodebarbarian.com/whats-new-in-mongoose-53-async-iterators.html
 	static async buildSimpleAppList(user) {
 		const docs = await this.findAllAndSelect("_id shortcode label");
-		var applist = [];
+		const applist = [];
 		for (const doc of docs) {
 			applist[doc._id] = doc.shortcode + " - " + doc.label;
 		}
@@ -207,7 +207,7 @@ class AppModel extends ModelBaseMongoose {
 
 	static async buildSimpleAppIdListUserTargetable(user) {
 		const docs = await this.buildSimpleAppListUserTargetable(user);
-		var ids = Object.keys(docs);
+		const ids = Object.keys(docs);
 		return ids;
 	}
 	//---------------------------------------------------------------------------
@@ -260,10 +260,10 @@ class AppModel extends ModelBaseMongoose {
 		// get a list (array) of all room ids that are attached to this app
 
 		const RoomModel = jrequire("models/room");
-		var roomObjs = await RoomModel.findAllExec({ appid }, "_id");
+		const roomObjs = await RoomModel.findAllExec({ appid }, "_id");
 
 		// convert array of objects with _id fields to simple id array
-		var roomIds = jrhMongo.convertArrayOfObjectIdsToIdArray(roomObjs);
+		const roomIds = jrhMongo.convertArrayOfObjectIdsToIdArray(roomObjs);
 
 		return roomIds;
 	}

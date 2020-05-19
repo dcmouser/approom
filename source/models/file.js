@@ -111,13 +111,13 @@ class FileModel extends RoomdataModel {
 	// crud add/edit form helper data
 	// in case of rooms, this should be the list of APPS that the USER has access to
 	static async calcCrudEditHelperData(user, id) {
-		var reta = super.calcCrudEditHelperData(user, id);
+		const reta = super.calcCrudEditHelperData(user, id);
 		return reta;
 	}
 
 	// crud helper for view
 	static async calcCrudViewHelperData(req, res, id, obj) {
-		var reta = super.calcCrudViewHelperData(req, res, id, obj);
+		const reta = super.calcCrudViewHelperData(req, res, id, obj);
 		return reta;
 	}
 	//---------------------------------------------------------------------------
@@ -136,7 +136,7 @@ class FileModel extends RoomdataModel {
 		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
 		// subclasses implement; by default we return empty array
 		// NOTE: this list can be generated dynamically based on logged in user
-		var reta = super.getSaveFields(operationType);
+		let reta = super.getSaveFields(operationType);
 
 		if (operationType === "crudAdd" || operationType === "crudEdit" || operationType === "add") {
 			reta = jrhMisc.mergeArraysKeepDupes(reta, ["path", "label", "sizeInBytes"]);
@@ -154,7 +154,7 @@ class FileModel extends RoomdataModel {
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 
 		// first base class work (but make sure to tell it NOT to save)
-		var objdoc;
+		let objdoc;
 
 		// ATTN: why do our other model classes not do this...
 		// await super.doValidateAndSave(jrResult, options, false, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, obj);

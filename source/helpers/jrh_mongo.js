@@ -16,6 +16,16 @@ const mongoose = require("mongoose");
 
 
 
+
+
+//---------------------------------------------------------------------------
+function equalIds(id1, id2) {
+	// do a COERCIVE compare of ids (where one may be a string and another a mongo id)
+	// note that this gives a lint warning
+	return (id1 == id2);
+}
+
+
 /**
  * Check if two mongo object ids are identical, with support for ids being undefined/null.
  * ##### Note
@@ -25,7 +35,7 @@ const mongoose = require("mongoose");
  * @param {*} id2
  * @returns true if they are equal mongo ids, and neither is null or undefined
  */
-function mongoIdEqual(id1, id2) {
+function OldUnusedMongoIdEqual(id1, id2) {
 
 	// return false if either is null (even if both null)
 	if (!id1 || !id2) {
@@ -62,17 +72,17 @@ async function calcDatabaseInfo() {
 	const statsOptions = {
 		scale: 1024,
 	};
-	var dbStats = await mongoose.connection.db.stats(statsOptions);
+	const dbStats = await mongoose.connection.db.stats(statsOptions);
 
 	// get database structure
-	var dbStructure = await calcDatabaseStructure();
+	const dbStructure = await calcDatabaseStructure();
 	// add resource use for each collection
-	var collection;
-	var collectionName, collectionStats;
-	var schema;
-	var len = dbStructure.length;
+	let collection;
+	let collectionName, collectionStats;
+	let schema;
+	const len = dbStructure.length;
 	//
-	for (var i = 0; i < len; ++i) {
+	for (let i = 0; i < len; ++i) {
 		collection = dbStructure[i];
 		collectionName = collection.name;
 		collectionStats = await mongoose.connection.db.command({ collstats: collectionName, scale: 1024 });
@@ -87,7 +97,7 @@ async function calcDatabaseInfo() {
 	}
 
 	// build return structure
-	var retv = {
+	const retv = {
 		overall: dbStats,
 		collections: dbStructure,
 	};
@@ -154,8 +164,13 @@ function convertArrayOfObjectIdsToIdArray(objArray) {
 
 
 
+
+
+
+
 module.exports = {
-	mongoIdEqual,
+	equalIds,
+	OldUnusedMongoIdEqual,
 	calcDatabaseInfo,
 	isValidMongooseObjectId,
 	convertArrayOfObjectIdsToIdArray,

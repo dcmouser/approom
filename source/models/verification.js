@@ -150,6 +150,7 @@ class VerificationModel extends ModelBaseMongoose {
 			userId: {
 				label: "User Id",
 				crudLink: UserModel.getCrudUrlBase(),
+				valueFunction: this.makeModelValueFunctionObjectId(UserModel),
 				mongoose: {
 					type: mongoose.Schema.ObjectId,
 				},
@@ -224,7 +225,7 @@ class VerificationModel extends ModelBaseMongoose {
 	static async createModel(type, key, val, userId, loginId, extraData, expirationMinutes) {
 		// base create
 
-		var verification = super.createModel();
+		const verification = super.createModel();
 
 		// store values
 		verification.type = type;
@@ -239,8 +240,8 @@ class VerificationModel extends ModelBaseMongoose {
 
 		// and save it
 		// note: we may have to try this multiple times if there is a collission with our uniqueCode
-		var verificationdoc;
-		var tryCount = 0;
+		let verificationdoc;
+		let tryCount = 0;
 		while (true) {
 			try {
 				++tryCount;
@@ -313,13 +314,13 @@ class VerificationModel extends ModelBaseMongoose {
 	// create a new account email verification, and email it
 	static async createVerificationNewAccountEmail(emailAddress, userId, loginId, extraData) {
 		// first let's cancel all other verifications of same type from this user
-		var vtype = "newAccountEmail";
+		const vtype = "newAccountEmail";
 		await this.cancelVerifications({ type: vtype, email: emailAddress });
 
 		// make the verification item and email the user about it with verification code
-		var verification = await this.createModel(vtype, "email", emailAddress, userId, loginId, extraData, DefExpirationDurationMinutesNormal);
+		const verification = await this.createModel(vtype, "email", emailAddress, userId, loginId, extraData, DefExpirationDurationMinutesNormal);
 		//
-		var mailobj = {
+		const mailobj = {
 			revealEmail: true,
 			subject: "E-mail verification for new website account",
 			text: `
@@ -336,13 +337,13 @@ ${verification.createVerificationCodeUrl()}
 	// create a one-time login token for the user, and email it
 	static async createVerificationOneTimeLoginTokenEmail(emailAddress, userId, flagRevealEmail, extraData) {
 		// first let's cancel all other verifications of same type from this user
-		var vtype = "onetimeLogin";
+		const vtype = "onetimeLogin";
 		await this.cancelVerifications({ type: vtype, userId });
 
 		// make the verification item and email and/or call the user with the one time login/verification code
-		var verification = await this.createModel(vtype, null, null, userId, null, extraData, DefExpirationDurationMinutesShort);
+		const verification = await this.createModel(vtype, null, null, userId, null, extraData, DefExpirationDurationMinutesShort);
 		//
-		var mailobj = {
+		const mailobj = {
 			revealEmail: flagRevealEmail,
 			subject: "Link for one-time login via E-Mail",
 			text: `
@@ -361,13 +362,13 @@ If this request was not made by you, please ignore this email.
 	// user wants to change their email address
 	static async createAndSendVerificationEmailChange(emailAddressOld, emailAddressNew, userId) {
 		// first let's cancel all other verifications of same type from this user
-		var vtype = "changeEmail";
+		const vtype = "changeEmail";
 		await this.cancelVerifications({ type: vtype, userId });
 
 		// make the verification item and email and/or call the user with the one time login/verification code
-		var verification = await this.createModel(vtype, "email", emailAddressNew, userId, null, {}, DefExpirationDurationMinutesLong);
+		const verification = await this.createModel(vtype, "email", emailAddressNew, userId, null, {}, DefExpirationDurationMinutesLong);
 		//
-		var mailobj = {
+		const mailobj = {
 			revealEmail: true,
 			subject: "Request for change of account E-mail address, confirmation needed",
 			text: `
@@ -457,9 +458,9 @@ If this request was not made by you, please ignore this email.
 	static async findVerificationByCode(verificationCode) {
 		// find it and return it
 		// hash code (predictable hash)
-		var verificationCodeHashed = await this.calcHashOfVerificationCode(verificationCode);
+		const verificationCodeHashed = await this.calcHashOfVerificationCode(verificationCode);
 		// find it
-		var verification = await this.findVerificationByCodeHashed(verificationCodeHashed);
+		const verification = await this.findVerificationByCodeHashed(verificationCodeHashed);
 		// NOW we save in it the plaintext code, in case caller wants to refer to it (it will NOT be saved in db)
 		if (verification) {
 			verification.uniqueCode = verificationCode;
@@ -470,7 +471,7 @@ If this request was not made by you, please ignore this email.
 
 	static async findVerificationByCodeHashed(verificationCodeHashed) {
 		// find it and return it
-		var verification = this.findOneExec({ uniqueCodeHashed: verificationCodeHashed });
+		const verification = this.findOneExec({ uniqueCodeHashed: verificationCodeHashed });
 		return verification;
 	}
 	//---------------------------------------------------------------------------
@@ -485,7 +486,7 @@ If this request was not made by you, please ignore this email.
 		mailobj.to = emailAddress;
 		//
 		// require here to avoid circular reference problem
-		var retv = await arserver.sendMail(mailobj);
+		const retv = await arserver.sendMail(mailobj);
 		//
 		return retv;
 	}
@@ -507,7 +508,7 @@ If this request was not made by you, please ignore this email.
 	// this is called by verify route
 	static async verifiyCode(code, extraValues, req, res) {
 
-		var verification = await this.findVerificationByCode(code);
+		const verification = await this.findVerificationByCode(code);
 		if (!verification) {
 			// not found
 			return {
@@ -517,7 +518,7 @@ If this request was not made by you, please ignore this email.
 		}
 
 		// make sure it's still valid (not used or expired, etc.)
-		var validityResult = verification.isStillValid(req);
+		const validityResult = verification.isStillValid(req);
 		if (validityResult.isError()) {
 			return {
 				jrResult: validityResult,
@@ -526,8 +527,8 @@ If this request was not made by you, please ignore this email.
 		}
 
 		// get the user
-		var userId = verification.getUserIdAsM();
-		var user;
+		const userId = verification.getUserIdAsM();
+		let user;
 		if (userId) {
 			user = await UserModel.findUserByIdAndUpdateLoginDate(userId);
 			if (!user) {
@@ -644,12 +645,12 @@ If this request was not made by you, please ignore this email.
 
 	//---------------------------------------------------------------------------
 	isValidNewAccountEmailReady(req) {
-		var verificationType = this.getTypestr();
+		const verificationType = this.getTypestr();
 		if (verificationType !== "newAccountEmail") {
 			return false;
 		}
 		// now we need to check if its valid and expired
-		var verificationResult = this.isStillValid(req);
+		const verificationResult = this.isStillValid(req);
 		if (verificationResult.isError()) {
 			return false;
 		}
@@ -676,7 +677,7 @@ If this request was not made by you, please ignore this email.
 		// ATTN: there is also the dilemma, do we use up token and then try to perform action, or vice versa; in case of error it matters
 		// ATTN: unfinished
 		// @return JrResult
-		var successRedirectTo;
+		let successRedirectTo;
 
 		// switch for the different kinds of verifications
 
@@ -691,7 +692,7 @@ If this request was not made by you, please ignore this email.
 		}
 
 		// unknown
-		var jrResult = JrResult.makeError("Unknown verification token type (" + this.type + ")");
+		const jrResult = JrResult.makeError("Unknown verification token type (" + this.type + ")");
 		return { jrResult, successRedirectTo };
 	}
 
@@ -719,13 +720,12 @@ If this request was not made by you, please ignore this email.
 	async useNowOneTimeLogin(user, req, res) {
 		// one-time login the user associated with this email address
 		// this could be used as an alternative to logging in with password
-		var jrResult;
-		var successRedirectTo;
+		let successRedirectTo;
 
 		// do the work of logging them in using this verification (addes to passport session, uses up verification model, etc.)
-		jrResult = await arserver.asyncLoginUserToSessionThroughPassport(req, user);
+		const jrResult = await arserver.asyncLoginUserToSessionThroughPassport(req, user);
 		if (!jrResult.isError()) {
-			var retvResult = await this.useUpAndSave(req, true);
+			const retvResult = await this.useUpAndSave(req, true);
 			jrResult.mergeIn(retvResult);
 			if (!retvResult.isError()) {
 				jrResult.pushSuccess("You have successfully logged in using your one-time login code.");
@@ -754,21 +754,21 @@ If this request was not made by you, please ignore this email.
 		// the fact that they have verified their email means we are now at least ready to let them create an account
 		// but also note that in some use cases perhaps we dont need to gather extra info from them, if we don't care about usernames and passwords...
 
-		var successRedirectTo;
-		var jrResult = JrResult.makeNew();
-		var retvResult;
+		let successRedirectTo;
+		let jrResult = JrResult.makeNew();
+		let retvResult;
 
 		// controllers
 		const registrationAid = jrequire("registrationaid");
 
 		// properties
-		var email = this.val;
-		var username = jrhMisc.firstCoercedTrueValue(this.getExtraDataField("username"), extraValues.username);
-		var realName = jrhMisc.firstCoercedTrueValue(this.getExtraDataField("realName"), extraValues.realName);
-		var passwordHashed = this.getExtraDataField("passwordHashed");
+		const email = this.val;
+		const username = jrhMisc.firstCoercedTrueValue(this.getExtraDataField("username"), extraValues.username);
+		const realName = jrhMisc.firstCoercedTrueValue(this.getExtraDataField("realName"), extraValues.realName);
+		const passwordHashed = this.getExtraDataField("passwordHashed");
 
 		// first step, let's check if the email has alread been used by someone, if so then we can just redirect them to try to sign up again and cancel this verification
-		var existingUserWithEmail = await UserModel.findUserByUsernameEmail(email);
+		const existingUserWithEmail = await UserModel.findUserByUsernameEmail(email);
 		if (existingUserWithEmail) {
 			// error, a user with this email already exist; but they just confirmed that THEY own the email which means that
 			// first they signed up when the email wasn't in use, and then later confirmed it through another different verification, and then tried to access via this verification
@@ -790,8 +790,8 @@ If this request was not made by you, please ignore this email.
 		// would be to complete their registration right now (asusming username is unique, etc.)
 
 		// do they NEED full register form?
-		var readyToCreateUser = true;
-		var requiredFields = registrationAid.calcRequiredRegistrationFieldsFinal();
+		let readyToCreateUser = true;
+		const requiredFields = registrationAid.calcRequiredRegistrationFieldsFinal();
 		if (requiredFields.includes("username") && !username) {
 			readyToCreateUser = false;
 		}
@@ -806,8 +806,8 @@ If this request was not made by you, please ignore this email.
 			// temporary non-fatal test to determine if we have enough info to create user right now
 			// valid username?
 			retvResult = JrResult.makeNew();
-			var flagRequired = requiredFields.includes("username");
-			var flagCheckDisallowedUsername = true;
+			const flagRequired = requiredFields.includes("username");
+			const flagCheckDisallowedUsername = true;
 			await UserModel.validateUsername(retvResult, username, true, flagRequired, flagCheckDisallowedUsername, null);
 			if (retvResult.isError()) {
 				// not a fatal error, just means we can't create user yet
@@ -817,7 +817,7 @@ If this request was not made by you, please ignore this email.
 
 		if (readyToCreateUser) {
 			// we think we have enough info, we can go ahead and directly create the user
-			var userData = {
+			const userData = {
 				username,
 				email,
 				passwordHashed,
@@ -873,11 +873,11 @@ If this request was not made by you, please ignore this email.
 	async useNowEmailChange(user, req, res) {
 		// one-time login the user associated with this email address
 		// this could be used as an alternative to logging in with password
-		var jrResult = JrResult.makeNew();
-		var successRedirectTo;
+		const jrResult = JrResult.makeNew();
+		const successRedirectTo = null;
 
 		// change the email address
-		var emailAddressNew = this.val;
+		let emailAddressNew = this.val;
 		// NOTE: we cannot assume the new email address is still validated so we have to validate it AGAIN
 		emailAddressNew = await UserModel.validateEmail(jrResult, emailAddressNew, true, false, user);
 		if (!jrResult.isError()) {
@@ -885,7 +885,7 @@ If this request was not made by you, please ignore this email.
 			user.email = emailAddressNew;
 			await user.dbSave(jrResult);
 			// now use up the verification
-			var retvResult = await this.useUpAndSave(req, true);
+			const retvResult = await this.useUpAndSave(req, true);
 			if (!retvResult.isError()) {
 				jrResult.pushSuccess("Your new E-mail address (" + emailAddressNew + ") has now been confirmed.");
 			}

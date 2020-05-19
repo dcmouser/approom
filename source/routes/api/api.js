@@ -116,15 +116,15 @@ async function routerPostReqrefresh(req, res, next) {
 	// jrdebug.cdebugObj(req.body, "REQ BODY");
 
 	// do a local login with passed username and password; DONT store session info
-	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateNonSessionGetUserTuple("local", "with username and password", req, res, next, jrResult, true);
+	const jrResult = JrResult.makeNew();
+	const [userPassport, user] = await arserver.asyncRoutePassportAuthenticateNonSessionGetUserTuple("local", "with username and password", req, res, next, jrResult, true);
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResult(res, 401, jrResult);
 		return;
 	}
 
 	// success
-	var secureToken = await arserver.makeSecureTokenRefresh(userPassport, user);
+	const secureToken = await arserver.makeSecureTokenRefresh(userPassport, user);
 
 	// log request
 	arserver.logr(req, "api.token", "generated refresh token", user);
@@ -147,8 +147,8 @@ async function routerAllRefreshaccess(req, res, next) {
 	jrdebug.cdebugObj(req.body, "REQ BODY");
 
 	// first the user has to give us a valid REFRESH token
-	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "refresh");
+	const jrResult = JrResult.makeNew();
+	const [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "refresh");
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResultTokenError(res, jrResult);
 		return;
@@ -159,7 +159,7 @@ async function routerAllRefreshaccess(req, res, next) {
 	// jrdebug.debugObj(userPassport.token);
 
 	// ok they gave us a valid refresh token, so now we generate an access token for them
-	var secureToken = await arserver.makeSecureTokenAccessFromRefreshToken(userPassport, user, userPassport.token);
+	const secureToken = await arserver.makeSecureTokenAccessFromRefreshToken(userPassport, user, userPassport.token);
 
 	// log request
 	arserver.logr(req, "api.token", "refreshed access token", user);
@@ -178,8 +178,8 @@ async function routerAllRefreshaccess(req, res, next) {
 async function routerAllTokentest(req, res, next) {
 	// test if user has passed user login info through api token
 
-	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, null);
+	const jrResult = JrResult.makeNew();
+	const [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, null);
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResultTokenError(res, jrResult);
 		return;
@@ -203,7 +203,7 @@ async function routerAllTokentest(req, res, next) {
  */
 // test rate limiting of generic 404s at api route
 async function routerGetDos(req, res, next) {
-	var msg;
+	let msg;
 
 	// ATTN: test of rate limiting block
 	const rateLimiter = arserver.getRateLimiterApi();

@@ -46,7 +46,7 @@ const util = require("util");
 const gravatar = require("gravatar");
 
 // profiler (only used when PROFILE option set)
-var profiler; // = require("v8-profiler-next");
+let profiler; // = require("v8-profiler-next");
 
 // requirement service locator
 const jrequire = require("../helpers/jrequire");
@@ -150,7 +150,7 @@ class AppRoomServer {
 
 	getLogDir() {
 		// default is in the parent folder of source dir in /local/logs subdir
-		var dir = this.getConfigValDefault(appdef.DefConfigKeyLoggingDirectory, "./local/logs");
+		const dir = this.getConfigValDefault(appdef.DefConfigKeyLoggingDirectory, "./local/logs");
 		return jrhMisc.resolvePossiblyRelativeDirectory(dir, this.getInstallDir());
 	}
 
@@ -271,7 +271,7 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	calcFullDbUrl() {
-		var url = this.getConfigVal(appdef.DefConfigKeyDbBaseUrl) + "/";
+		let url = this.getConfigVal(appdef.DefConfigKeyDbBaseUrl) + "/";
 
 		// during testing the config might override this
 		url += this.getConfigVal(appdef.DefConfigKeyDbName);
@@ -326,15 +326,15 @@ class AppRoomServer {
 		if (server == null) {
 			return null;
 		}
-		var serverIp = this.getServerIp();
-		var addr = server.address();
+		let serverIp = this.getServerIp();
+		const addr = server.address();
 		if (typeof addr === "string") {
 			serverIp += ":" + addr;
 		} else {
 			serverIp += ":" + addr.port;
 		}
 
-		var url = protocolStr + "://" + serverIp;
+		const url = protocolStr + "://" + serverIp;
 		return url;
 	}
 	//---------------------------------------------------------------------------
@@ -391,12 +391,12 @@ class AppRoomServer {
 		// jrdebug.setup(appdef.DefLibName, true);
 
 		// show some info about app
-		var appInfo = this.getAppinfo();
+		const appInfo = this.getAppinfo();
 		jrdebug.debugf("%s v%s (%s) by %s", appInfo.programName, appInfo.programVersion, appInfo.programVersionDate, appInfo.programAuthor);
 		jrdebug.debugf("%s v%s (%s) by %s", appdef.DefLibName, appdef.DefLibVersion, appdef.DefLibVersionDate, appdef.DefLibAuthor);
 
 		// try to get server ip
-		var serverIp = this.getServerIp();
+		const serverIp = this.getServerIp();
 		jrconfig.setServerFilenamePrefixFromServerIp(serverIp);
 
 		// Set base directory to look for config files -- caller can modify this, and discover them
@@ -466,7 +466,7 @@ class AppRoomServer {
 		// get the plugin config object
 		const pluginConfig = this.getConfigVal(appdef.DefConfigKeyPlugins);
 		// now iterate over it and register the plugins
-		var pluginObj;
+		let pluginObj;
 		Object.keys(pluginConfig).forEach((name) => {
 			pluginObj = pluginConfig[name];
 			if (pluginObj.enabled !== false) {
@@ -478,7 +478,7 @@ class AppRoomServer {
 
 	initializePlugins() {
 		// get list of all registered plugins
-		var category, pluginmodule;
+		let category, pluginmodule;
 		const plugins = jrequire.getAllPlugins();
 		// iterate all categories
 		Object.keys(plugins).forEach((categoryKey) => {
@@ -507,6 +507,7 @@ class AppRoomServer {
 		this.crudAid = jrequire("crudaid");
 		this.aclAid = jrequire("aclaid");
 		this.sendAid = jrequire("sendaid");
+		this.setupAid = jrequire("setupaid");
 
 		// model requires
 		this.registerModel("AppModel", jrequire("models/app"));
@@ -514,7 +515,9 @@ class AppRoomServer {
 		this.registerModel("FileModel", jrequire("models/file"));
 		this.registerModel("LogModel", jrequire("models/log"));
 		this.registerModel("LoginModel", jrequire("models/login"));
+		this.registerModel("RoleModel", jrequire("models/role"));
 		this.registerModel("OptionModel", jrequire("models/option"));
+		this.registerModel("RoleModel", jrequire("models/role"));
 		this.registerModel("RoomModel", jrequire("models/room"));
 		this.registerModel("RoomdataModel", jrequire("models/roomdata"));
 		this.registerModel("SessionModel", jrequire("models/session"));
@@ -547,7 +550,7 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	setupExpress() {
 		// create this.express
-		var expressApp = express();
+		const expressApp = express();
 		// save expressApp for easier referencing later
 		this.expressApp = expressApp;
 
@@ -709,7 +712,7 @@ class AppRoomServer {
 
 
 	setupExpressStaticRoute(expressApp, urlPath, dirPath) {
-		var route = express.static(dirPath);
+		const route = express.static(dirPath);
 		this.useExpressRoute(expressApp, urlPath, route, dirPath);
 	}
 	//---------------------------------------------------------------------------
@@ -763,11 +766,12 @@ class AppRoomServer {
 		this.setupRoute(expressApp, "/help", "help");
 
 		// crud routes
-		var crudUrlBase = "/crud";
+		const crudUrlBase = "/crud";
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/user", this.UserModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/login", this.LoginModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/verification", this.VerificationModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/connection", this.ConnectionModel);
+		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/role", this.RoleModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/option", this.OptionModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/log", this.LogModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/session", this.SessionModel);
@@ -795,7 +799,7 @@ class AppRoomServer {
 		this.setupRoute(expressApp, "/membersonly", "membersonly");
 
 		// crud routes
-		var crudUrlBase = "/crud";
+		const crudUrlBase = "/crud";
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/app", this.AppModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/room", this.RoomModel);
 		this.setupRouteGenericCrud(expressApp, crudUrlBase + "/file", this.FileModel);
@@ -809,15 +813,15 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	setupRoute(expressApp, urlPath, routeFilename) {
 		// require in the file in the routes directory so we can discover its functions
-		var requireRouteFileName = "../routes/" + routeFilename;
-		var route = require(requireRouteFileName);
+		const requireRouteFileName = "../routes/" + routeFilename;
+		const route = require(requireRouteFileName);
 
 		// ok there are two ways that our route files can be written
 		// the first is by exporting a setupRouter function, in which case we call it with urlPath and it returns the router
 		// the older method just exports default router
 		//
 		if (route.setupRouter) {
-			var expressRouter = route.setupRouter(urlPath);
+			const expressRouter = route.setupRouter(urlPath);
 			assert(expressRouter);
 			this.useExpressRoute(expressApp, urlPath, expressRouter, requireRouteFileName);
 		} else {
@@ -872,7 +876,7 @@ class AppRoomServer {
 			// profile is the user profile object returned by the passport strategy callback below, so we can decide what to return from that
 			// so in this case, we just return the profile object
 			jrdebug.cdebugObj(profile, "serializeUser profile");
-			var userProfileObj = profile;
+			const userProfileObj = profile;
 			// call passport callback
 			done(null, userProfileObj);
 		});
@@ -888,7 +892,7 @@ class AppRoomServer {
 			// however, remember that we might want to check that the user is STILL allowed into our site, etc.
 			jrdebug.cdebugObj(user, "deserializeUser user");
 			// build full user ?
-			var userFull = user;
+			const userFull = user;
 			// call passport callback
 			done(null, userFull);
 		});
@@ -917,7 +921,7 @@ class AppRoomServer {
 		// see https://www.sitepoint.com/local-authentication-using-passport-node-js/
 		const Strategy = passportLocal.Strategy;
 
-		var strategyOptions = {
+		const strategyOptions = {
 			passReqToCallback: true,
 			usernameField: "usernameEmail",
 		};
@@ -929,17 +933,17 @@ class AppRoomServer {
 				// this is the function called when user tries to login
 				// so we check their username and password and return either FALSE or the user
 				// first, find the user via their password
-				var jrResult;
+				let jrResult;
 				jrdebug.cdebugf("In passport local strategy test with username=%s and password=%s", usernameEmail, password);
 
-				var user = await this.UserModel.findUserByUsernameEmail(usernameEmail);
+				const user = await this.UserModel.findUserByUsernameEmail(usernameEmail);
 				if (!user) {
 					// not found
 					jrResult = JrResult.makeNew().pushFieldError("usernameEmail", "Username/Email-address not found");
 					return done(null, false, jrResult);
 				}
 				// ok we found the user, now check their password
-				var bretv = await user.testPlaintextPassword(password);
+				const bretv = await user.testPlaintextPassword(password);
 				if (!bretv) {
 					// password doesn't match
 					jrResult = JrResult.makeNew().pushFieldError("password", "Password does not match");
@@ -966,7 +970,7 @@ class AppRoomServer {
 		const Strategy = passportJwt.Strategy;
 		const ExtractJwt = passportJwt.ExtractJwt;
 
-		var strategyOptions = {
+		const strategyOptions = {
 			secretOrKey: this.getConfigVal(appdef.DefConfigKeyTokenCryptoKey),
 			// get jwt from URL or from post body if not in url
 			jwtFromRequest: ExtractJwt.fromExtractors([ExtractJwt.fromUrlQueryParameter("token"), ExtractJwt.fromBodyField("token")]),
@@ -982,7 +986,7 @@ class AppRoomServer {
 			async (payload, done) => {
 				// get the user payload from the token
 				// jrlog.debugObj(payload, "API TOKEN PAYLOAD DEBUG");
-				var userProfile = payload.user;
+				const userProfile = payload.user;
 				if (!userProfile) {
 					const errorstr = "Error decoding user data from access token";
 					return done(errorstr);
@@ -1011,7 +1015,7 @@ class AppRoomServer {
 		// see http://www.passportjs.org/packages/passport-facebook/
 		const Strategy = passportFacebook.Strategy;
 
-		var strategyOptions = {
+		const strategyOptions = {
 			clientID: this.getConfigVal(appdef.DefConfigKeyPassportFacebookAppId),
 			clientSecret: this.getConfigVal(appdef.DefConfigKeyPassportFacebookAppSecret),
 			callbackURL: this.calcAbsoluteSiteUrlPreferHttps("/login/facebook/auth"),
@@ -1028,7 +1032,7 @@ class AppRoomServer {
 				jrdebug.cdebugObj(tokenSecret, "facebook tokenSecret");
 				jrdebug.cdebugObj(profile, "facebook profile");
 				// get user associated with this facebook profile, OR create one, etc.
-				var bridgedLoginObj = {
+				const bridgedLoginObj = {
 					provider: profile.provider,
 					providerUserId: profile.id,
 					extraData: {
@@ -1048,7 +1052,7 @@ class AppRoomServer {
 		// see http://www.passportjs.org/packages/passport-twitter/
 		const Strategy = passportTwitter.Strategy;
 
-		var strategyOptions = {
+		const strategyOptions = {
 			consumerKey: this.getConfigVal(appdef.DefConfigKeyPassportTwitterConsumerKey),
 			consumerSecret: this.getConfigVal(appdef.DefConfigKeyPassportTwitterConsumerSecret),
 			callbackURL: this.calcAbsoluteSiteUrlPreferHttps("/login/twitter/auth"),
@@ -1065,7 +1069,7 @@ class AppRoomServer {
 				jrdebug.cdebugObj(tokenSecret, "twitter tokenSecret");
 				jrdebug.cdebugObj(profile, "twitter profile");
 				// get user associated with this twitter profile, OR create one, etc.
-				var bridgedLoginObj = {
+				const bridgedLoginObj = {
 					provider: profile.provider,
 					providerUserId: profile.id,
 					extraData: {
@@ -1086,7 +1090,7 @@ class AppRoomServer {
 		// see http://www.passportjs.org/packages/passport-google-oauth20/
 		const Strategy = passportGoogle.Strategy;
 
-		var strategyOptions = {
+		const strategyOptions = {
 			clientID: this.getConfigVal(appdef.DefConfigKeyPassportGoogleClientId),
 			clientSecret: this.getConfigVal(appdef.DefConfigKeyPassportGoogleClientSecret),
 			callbackURL: this.calcAbsoluteSiteUrlPreferHttps("/login/google/auth"),
@@ -1103,7 +1107,7 @@ class AppRoomServer {
 				jrdebug.cdebugObj(tokenSecret, "google tokenSecret");
 				jrdebug.cdebugObj(profile, "google profile");
 				// get user associated with this profile, OR create one, etc.
-				var bridgedLoginObj = {
+				const bridgedLoginObj = {
 					provider: profile.provider,
 					providerUserId: profile.id,
 					extraData: {
@@ -1125,14 +1129,14 @@ class AppRoomServer {
 	// bridge helper for facebook, twitter, etc.
 	async setupPassportStrategyFromBridge(req, bridgedLoginObj, done) {
 		// created bridged user
-		var { user, jrResult } = await this.LoginModel.processBridgedLoginGetOrCreateUserOrProxy(bridgedLoginObj, req);
+		const { user, jrResult } = await this.LoginModel.processBridgedLoginGetOrCreateUserOrProxy(bridgedLoginObj, req);
 		// if user could not be created, it's an error
 		// add jrResult to session in case we did extra stuff and info to show the user
 		if (jrResult) {
 			jrResult.addToSession(req);
 		}
 		// otherwise log in the user -- either with a REAL user account, OR if user is a just a namless proxy for the bridged login, with that
-		var userProfile;
+		let userProfile;
 		if (user) {
 			userProfile = user.getMinimalPassportProfile();
 		} else {
@@ -1191,9 +1195,9 @@ class AppRoomServer {
 
 	createOneExpressServerAndListen(flagHttps, port, options) {
 		// create an http or https server and listen
-		var expressServer;
+		let expressServer;
 
-		var normalizedPort = jrhExpress.normalizePort(port);
+		const normalizedPort = jrhExpress.normalizePort(port);
 
 		if (flagHttps) {
 			expressServer = https.createServer(options, this.expressApp);
@@ -1202,7 +1206,7 @@ class AppRoomServer {
 		}
 
 		// start listening
-		var listener = expressServer.listen(normalizedPort);
+		const listener = expressServer.listen(normalizedPort);
 
 		// add event handlers (after server is listening)
 		// expressServer.on("error", (...args) => { this.onErrorEs(listener, expressServer, flagHttps, ...args); });
@@ -1219,7 +1223,7 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	getLoggedInPassportUserOfProvider(req, provider) {
-		var passportUser = this.getLoggedInPassportUser(req);
+		const passportUser = this.getLoggedInPassportUser(req);
 		if (!passportUser) {
 			return undefined;
 		}
@@ -1246,7 +1250,7 @@ class AppRoomServer {
 			return req.arCachedUser;
 		}
 		// not cached
-		var user;
+		let user;
 		const userId = this.getLoggedInLocalUserIdFromSession(req);
 		if (!userId) {
 			user = null;
@@ -1265,7 +1269,7 @@ class AppRoomServer {
 			return req.arCachedLogin;
 		}
 		// not cached
-		var login;
+		let login;
 		const loginId = this.getLoggedInLocalLoginIdFromSession(req);
 		if (!loginId) {
 			login = null;
@@ -1293,7 +1297,7 @@ class AppRoomServer {
 			return req.arCachedLastVerification;
 		}
 		// not cached
-		var verification;
+		let verification;
 		const verificationId = this.getLastSessionedVerificationId(req);
 		if (!verificationId) {
 			verification = null;
@@ -1353,7 +1357,7 @@ class AppRoomServer {
 	async asyncRoutePassportAuthenticateFromTokenNonSessionGetMinimalPassportUserData(req, res, next, jrResult, requiredTokenType) {
 		// force passport authentication from request, looking for jwt token
 
-		var [userMinimalProfile, dummyNullUser] = await this.asyncRoutePassportAuthenticateNonSessionGetUserTuple("jwt", "using jwt", req, res, next, jrResult, false);
+		const [userMinimalProfile, dummyNullUser] = await this.asyncRoutePassportAuthenticateNonSessionGetUserTuple("jwt", "using jwt", req, res, next, jrResult, false);
 
 		if (!jrResult.isError()) {
 			// let's check token validity (expiration, etc.); this may push an error into jrResult
@@ -1380,14 +1384,14 @@ class AppRoomServer {
 
 
 	async asyncRoutePassportAuthenticateFromTokenNonSessionGetFullUserObject(req, res, next, jrResult, requiredTokenType) {
-		var [userMinimalProfile, user] = this.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, requiredTokenType);
+		const [userMinimalProfile, user] = this.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, requiredTokenType);
 		return user;
 	}
 
 
 	async asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, requiredTokenType) {
 		// force passport authentication from request, looking for jwt token
-		var userMinimalProfile = await this.asyncRoutePassportAuthenticateFromTokenNonSessionGetMinimalPassportUserData(req, res, next, jrResult, requiredTokenType);
+		const userMinimalProfile = await this.asyncRoutePassportAuthenticateFromTokenNonSessionGetMinimalPassportUserData(req, res, next, jrResult, requiredTokenType);
 
 		if (jrResult.isError()) {
 			return [userMinimalProfile, null];
@@ -1448,8 +1452,8 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	calcAbsoluteSiteUrlPreferHttps(relativePath) {
 		// build an absolute url
-		var protocol;
-		var port;
+		let protocol;
+		let port;
 
 		// get protocol and port (unless default port)
 		if (this.getOptionHttps()) {
@@ -1468,7 +1472,7 @@ class AppRoomServer {
 		}
 
 		// add full protocol
-		var url = protocol + "://" + this.getOptionSiteDomain() + ":" + port;
+		let url = protocol + "://" + this.getOptionSiteDomain() + ":" + port;
 
 		// add relative path
 		if (relativePath !== "") {
@@ -1553,11 +1557,11 @@ class AppRoomServer {
 		}
 
 		// but before we authenticate and log in the user lets see if they are already "logged in" using a Login object
-		var previousLoginId = this.getLoggedInLocalLoginIdFromSession(req);
+		const previousLoginId = this.getLoggedInLocalLoginIdFromSession(req);
 		const thisArserver = this;
 
 		// run and wait for passport.authenticate async
-		var userPassport = await jrhExpress.asyncPasswordAuthenticate({}, provider, providerNiceLabel, req, res, next, jrResult);
+		const userPassport = await jrhExpress.asyncPasswordAuthenticate({}, provider, providerNiceLabel, req, res, next, jrResult);
 
 		// run and wait for passport.login async
 		if (!jrResult.isError()) {
@@ -1569,7 +1573,7 @@ class AppRoomServer {
 			// success
 			try {
 				// userId we JUST signed in as -- NOTE: this could be null if its a local bridged login short of a full user account
-				var newlyLoggedInUserId = thisArserver.getLoggedInLocalUserIdFromSession(req);
+				const newlyLoggedInUserId = thisArserver.getLoggedInLocalUserIdFromSession(req);
 				// announce info
 				if (newlyLoggedInUserId) {
 					jrResult.pushSuccess("You have successfully logged in " + providerNiceLabel + ".");
@@ -1580,7 +1584,7 @@ class AppRoomServer {
 				// and NOW if they were previously sessioned with a pre-account Login object, we can connect that to this account
 				if (newlyLoggedInUserId && previousLoginId) {
 					// try to connect
-					var jrResult2 = await this.LoginModel.connectUserToLogin(newlyLoggedInUserId, previousLoginId, false);
+					const jrResult2 = await this.LoginModel.connectUserToLogin(newlyLoggedInUserId, previousLoginId, false);
 					if (jrResult2) {
 						jrResult.mergeIn(jrResult2);
 					}
@@ -1650,10 +1654,10 @@ class AppRoomServer {
 		jrdebug.cdebug("In asyncRoutePassportAuthenticateNonSessionGetUserTuple 1.");
 
 		const thisArserver = this;
-		var user;
+		let user;
 
 		// run and wait for passport.authenticate async
-		var userPassport = await jrhExpress.asyncPasswordAuthenticate({ session: false }, provider, providerNiceLabel, req, res, next, jrResult);
+		const userPassport = await jrhExpress.asyncPasswordAuthenticate({ session: false }, provider, providerNiceLabel, req, res, next, jrResult);
 
 		// error?
 		if (jrResult.isError()) {
@@ -1690,9 +1694,8 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	async asyncLoginUserToSessionThroughPassport(req, user) {
-		var jrResult = JrResult.makeNew();
-
-		var userPassport = user.getMinimalPassportProfile();
+		const jrResult = JrResult.makeNew();
+		const userPassport = user.getMinimalPassportProfile();
 
 		try {
 			// run login using async function wrapper
@@ -1825,15 +1828,15 @@ class AppRoomServer {
 	// Event listener for HTTP server "error" event.
 	async onErrorEs(listener, expressServer, flagHttps, error) {
 		// called not on 404 errors but other internal errors?
-		var msg;
+		let msg;
 
 		if (error.syscall !== "listen") {
 			throw error;
 		}
 
 		// ATTN: not clear why this uses different method than OnListeningEs to get port info, etc.
-		var addr = listener.address();
-		var bind;
+		const addr = listener.address();
+		let bind;
 		if (addr === null) {
 			msg = "Could not bind server listener, got null return from listener.address paramater.  Is server already running (in debugger) ?";
 			jrdebug.debug(msg);
@@ -1868,14 +1871,14 @@ class AppRoomServer {
 
 	// Event listener for HTTP server "listening" event.
 	onListeningEs(listener, expressServer, flagHttps) {
-		var server = expressServer;
-		var addr = server.address();
-		var bind = (typeof addr === "string")
+		const server = expressServer;
+		const addr = server.address();
+		const bind = (typeof addr === "string")
 			? "pipe " + addr
 			: "port " + addr.port;
 
 		// show some info
-		var serverTypestr = flagHttps ? "https" : "http";
+		const serverTypestr = flagHttps ? "https" : "http";
 		jrdebug.debug("Server (" + serverTypestr + ") started, listening on " + bind);
 	}
 	//---------------------------------------------------------------------------
@@ -1951,17 +1954,26 @@ class AppRoomServer {
 		// start profiling?
 		this.engageProfilerIfAppropriate();
 
-		var bretv = await this.createAndConnectToDatabase();
+		// create database structure and connect
+		let bretv = await this.createAndConnectToDatabase();
+
+		if (bretv) {
+			// set up initial (admin etc) users if needed
+			bretv = await this.setupAid.createDefaultUsers();
+		}
+
 		if (flagRunServer) {
+			// actually run the server and start listening
 			bretv = await this.runServer();
 		}
+
 		return bretv;
 	}
 
 
 	async createAndConnectToDatabase() {
 		// setup database stuff (create and connect to models -- callable whether db is already created or not)
-		var bretv = false;
+		let bretv = false;
 
 		// we need to shutdown
 		this.setNeedsShutdown(true);
@@ -2057,10 +2069,7 @@ class AppRoomServer {
 
 	async dbDisconnect() {
 		// disconnect from mongoose/mongodb
-		jrdebug.debug("Closing mongoose-mongodb connection..");
-
-		// sleep for a bit so that any pending db writes still have some time
-		// jrhMisc.usleep(appdef.DefDbShutdownSleepMs);
+		jrdebug.debug("Closing mongoose-mongodb connection.");
 
 		await mongoose.disconnect();
 		await mongoose.connection.close();
@@ -2121,7 +2130,7 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	async logStartup() {
 		// log the startup event
-		var msg = "Starting up on " + jrhMisc.getNiceNowString() + ".\n";
+		let msg = "Starting up on " + jrhMisc.getNiceNowString() + ".\n";
 		msg += " " + this.getLoggingAnnouncement() + ".\n";
 		msg += 	" Logging to " + this.getLogFileBaseName() + ".log.\n";
 		msg += 	" Running on server " + this.getServerIp() + ".\n";
@@ -2138,7 +2147,7 @@ class AppRoomServer {
 
 	async logShutdown() {
 		// log the shutdown event
-		var msg = util.format("Shutting down server on %s.", jrhMisc.getNiceNowString());
+		const msg = util.format("Shutting down server on %s.", jrhMisc.getNiceNowString());
 		await this.logm(appdef.DefLogTypeInfoServer, msg);
 	}
 	//---------------------------------------------------------------------------
@@ -2198,7 +2207,7 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	async logr(req, type, message, user, extraData) {
 		// create log obj
-		var userid, ip;
+		let userid, ip;
 
 		if (req === null) {
 			ip = undefined;
@@ -2228,11 +2237,11 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	async logm(type, message, extraData, mergeData, req) {
 		// we now want to hand off the job of logging this item to any registered file and/or db loggers
-		var flagLogToDb = true;
-		var flagLogToFile = true;
+		const flagLogToDb = true;
+		const flagLogToFile = true;
 
 		// extra data fixups
-		var extraDataPlus;
+		let extraDataPlus;
 		// if its an error object it doesnt handle properly to mongoose hash or log merge
 		if (extraData instanceof Error) {
 			extraDataPlus = jrhMisc.ErrorToHashableMapObject(extraData);
@@ -2248,7 +2257,7 @@ class AppRoomServer {
 
 		// save to file
 		if (flagLogToFile) {
-			var category = this.calcLoggingCategoryFromLogMessageType(type);
+			const category = this.calcLoggingCategoryFromLogMessageType(type);
 			jrlog.logMessage(category, type, message, extraDataPlus, mergeData);
 		}
 
@@ -2422,7 +2431,7 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	async requireLoggedIn(req, res, goalRelUrl) {
-		var user = await this.getLoggedInUser(req);
+		const user = await this.getLoggedInUser(req);
 		return this.requireUserIsLoggedIn(req, res, user, goalRelUrl);
 	}
 	//---------------------------------------------------------------------------
@@ -2439,7 +2448,7 @@ class AppRoomServer {
 	}
 
 	async aclRequireLoggedInPermission(permission, permissionObjType, permissionObjId, req, res, goalRelUrl) {
-		var user = await this.getLoggedInUser(req);
+		const user = await this.getLoggedInUser(req);
 		// we just need to check if the user is non-empty
 		if (!user) {
 			// user is not logged in
@@ -2495,7 +2504,7 @@ class AppRoomServer {
 
 	divertToLoginPageThenBackToCurrentUrl(req, res) {
 		// redirect them to login page and then back to their currently requested page
-		var failureRelUrl = "/login";
+		const failureRelUrl = "/login";
 		this.rememberDivertedRelUrlAndGo(req, res, null, failureRelUrl, appdef.DefRequiredLoginMessage);
 	}
 
@@ -2532,7 +2541,7 @@ class AppRoomServer {
 		}
 
 		// ok we got one
-		var divertedUrl = req.session.divertedUrl;
+		const divertedUrl = req.session.divertedUrl;
 		// forget it
 		this.forgetLoginDiversions(req);
 
@@ -2580,7 +2589,7 @@ class AppRoomServer {
 	sendLoggedInUsersElsewhere(req, res) {
 		// if they are logged in with a real user account already, just redirect them to their profile and return true
 		// otherwise return false;
-		var userId = this.getLoggedInLocalUserIdFromSession(req);
+		const userId = this.getLoggedInLocalUserIdFromSession(req);
 		if (userId) {
 			res.redirect("profile");
 			return true;
@@ -2662,16 +2671,16 @@ class AppRoomServer {
 	 */
 	testCsrfReturnJrResult(req, res) {
 		// let csrf throw the error to next, ONLY if there is an error, otherwise just return and dont call next
-		var jrResult = JrResult.makeNew();
+		const jrResult = JrResult.makeNew();
 
 		// Useful for testing csrf, make it fail
-		var forceFail = this.getConfigValDefault(appdef.DefConfigKeyTestingForceCsrfFail, false);
+		const forceFail = this.getConfigValDefault(appdef.DefConfigKeyTestingForceCsrfFail, false);
 		if (forceFail) {
 			jrResult.pushError("Forcing csrf test to return false for testing purposes; to disable see option '" + appdef.DefConfigKeyTestingForceCsrfFail + "'.");
 			return jrResult;
 		}
 
-		var retv = this.csrfInstance(req, res, (err) => {
+		const retv = this.csrfInstance(req, res, (err) => {
 			if (err) {
 				jrResult.pushError(err.toString());
 			} else {
@@ -2688,7 +2697,7 @@ class AppRoomServer {
 
 
 	testCsrfRedirectToOriginalUrl(req, res) {
-		var jrResult = this.testCsrfReturnJrResult(req, res);
+		const jrResult = this.testCsrfReturnJrResult(req, res);
 		if (jrResult.isError()) {
 			// add error to session
 			jrResult.addToSession(req);
@@ -2741,9 +2750,9 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	// user avatars
 	calcAvatarHtmlImgForUser(obj) {
-		var rethtml;
+		let rethtml;
 		if (obj) {
-			var avatarUrl = this.calcAvatarUrlForUser(obj);
+			const avatarUrl = this.calcAvatarUrlForUser(obj);
 			rethtml = `<img src="${avatarUrl}">`;
 		} else {
 			rethtml = "&nbsp;";
@@ -2753,8 +2762,8 @@ class AppRoomServer {
 
 	calcAvatarUrlForUser(obj) {
 		// ATTN: cache this somewhere to improve the speed of this function
-		var id = obj.email;
-		var url = gravatar.url(id, this.gravatarOptions);
+		const id = obj.email;
+		const url = gravatar.url(id, this.gravatarOptions);
 		return url;
 	}
 	//---------------------------------------------------------------------------
@@ -2764,8 +2773,8 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	makeAlinkHtmlToAclModel(objType, objId) {
 		// get nice linked html text for an object from acl object types
-		var label = objType + " #" + objId;
-		var modelClass;
+		const label = objType + " #" + objId;
+		let modelClass;
 		if (objType === "app") {
 			modelClass = this.appModel;
 		} else if (objType === "room") {
@@ -2777,8 +2786,8 @@ class AppRoomServer {
 		}
 
 		if (modelClass !== undefined) {
-			var alink = modelClass.getCrudUrlBase("view", objId);
-			var htmlText = "<a href=" + alink + ">" + label + "</a>";
+			const alink = modelClass.getCrudUrlBase("view", objId);
+			const htmlText = "<a href=" + alink + ">" + label + "</a>";
 			return htmlText;
 		}
 		return label;
@@ -2793,9 +2802,10 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	async isLoggedInUserSiteAdmin(req) {
-		var loggedInUser = await this.getLoggedInUser(req);
+		const loggedInUser = await this.getLoggedInUser(req);
 		if (loggedInUser) {
-			return await loggedInUser.isSiteAdmin();
+			const bretv = await loggedInUser.isSiteAdmin();
+			return bretv;
 		}
 		return false;
 	}
@@ -2838,9 +2848,9 @@ class AppRoomServer {
 		// ok they are logged in, now check their permission
 
 		// conversions from model info to acl info
-		var permission = accessTypeStr;
-		var permissionObjType = modelClass.getAclName();
-		var permissionObjId = modelId;
+		const permission = accessTypeStr;
+		const permissionObjType = modelClass.getAclName();
+		let permissionObjId = modelId;
 		if (permissionObjId === undefined) {
 			permissionObjId = null;
 		}
@@ -2860,7 +2870,7 @@ class AppRoomServer {
 
 
 	renderAclAccessError(req, res, modelClass, errorMessage) {
-		var jrError = JrResult.makeError(errorMessage);
+		const jrError = JrResult.makeError(errorMessage);
 		// render
 		res.render("acldeny", {
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrError),
@@ -2936,7 +2946,7 @@ class AppRoomServer {
 
 	calcNodeJsInfo() {
 		// Getting commandline
-		var comlinestr = process.execPath;
+		let comlinestr = process.execPath;
 		process.argv.forEach((val, index, array) => {
 			if (index !== 0) {
 				comlinestr += " '" + val + "'";
@@ -2951,6 +2961,7 @@ class AppRoomServer {
 			commandline: comlinestr,
 			memoryUsage: process.memoryUsage(),
 			resourceUsage: process.resourceUsage ? process.resourceUsage() : "Not supported by this version of nodeJs",
+			processPid: process.pid,
 		};
 
 		return nodeJsInfo;
@@ -2980,8 +2991,8 @@ class AppRoomServer {
 	calcPluginInfo() {
 
 		// get info about LOADED plugins
-		var loadedPluginData = {};
-		var category, pluginmodule;
+		const loadedPluginData = {};
+		let category, pluginmodule;
 		const plugins = jrequire.getAllPlugins();
 		// iterate all categories
 		Object.keys(plugins).forEach((categoryKey) => {
@@ -3175,15 +3186,6 @@ class AppRoomServer {
 			return true;
 		}
 
-		// TEST
-		if (false) {
-			var stack = new Error().stack;
-			console.log("ATTN:TEST stack");
-			console.log(stack);
-			console.log("ERR:");
-			console.log(err);
-		}
-
 		return false;
 	}
 
@@ -3253,7 +3255,7 @@ class AppRoomServer {
 				return;
 			}
 
-			var handled = false;
+			const handled = false;
 			if (req !== undefined) {
 				// this doesn't display anything, just handled preliminary recording, etc.
 
@@ -3285,8 +3287,8 @@ class AppRoomServer {
 			}
 
 			if (err === undefined || err.status === undefined) {
-				var stack = new Error().stack;
-				var fullerError = {
+				const stack = new Error().stack;
+				const fullerError = {
 					message: "Uncaught error",
 					status: 0,
 					stack,
@@ -3296,30 +3298,30 @@ class AppRoomServer {
 			}
 
 			// error message (e.g. "NOT FOUND")
-			var errorMessage = err.message;
+			const errorMessage = err.message;
 
 			// error status (e.g. 404)
-			var errorStatus = err.status;
+			const errorStatus = err.status;
 
 			// error details
-			var errorDetails = "";
+			let errorDetails = "";
 			// add url to display
 			if (req !== undefined && req.url !== undefined) {
 				errorDetails += "\nRequested url: " + req.url;
-				var originalUrl = jrhExpress.reqOriginalUrl(req);
+				const originalUrl = jrhExpress.reqOriginalUrl(req);
 				if (req.url !== originalUrl) {
 					errorDetails += " (" + originalUrl + ")";
 				}
 			}
 
 			// extra details if in development mode
-			var errorDebugDetails = "";
+			let errorDebugDetails = "";
 			if (mythis.isDevelopmentMode() && err.status !== 404) {
 				errorDebugDetails = mythis.isDevelopmentMode() ? err.stack : "";
 			}
 
 			// extra (session) error info
-			var jrResultError;
+			let jrResultError;
 			if (req !== undefined) {
 				jrResultError = JrResult.getMergeSessionResultAndClear(req, res);
 			} else {
@@ -3330,7 +3332,7 @@ class AppRoomServer {
 			// ATTN: 4/2/20 is this a serious error? if so, log (and possibly email) it
 			if (mythis.shouldLogError(err)) {
 				// log the actual exception error plus extra
-				var errorLog = err;
+				let errorLog = err;
 				if (jrResultError && jrResultError.isError()) {
 					errorLog += "\n" + jrResultError.getErrorsAsString();
 				}
@@ -3439,7 +3441,7 @@ class AppRoomServer {
 			};
 
 
-			var flagExit = this.getConfigVal(appdef.DefConfigKeyExitOnFatalError);
+			const flagExit = this.getConfigVal(appdef.DefConfigKeyExitOnFatalError);
 			if (flagExit) {
 				// shutdown profiler early, in case we crash trying to shutdown server
 				this.disEngageProfilerIfAppropriate();
@@ -3550,7 +3552,7 @@ class AppRoomServer {
 
 	async emergencyAlert(eventType, subject, message, req, extraData, flagAlsoSendToSecondaries, flagOverrideRateLimiter) {
 		// first we check rate limiting
-		var messageSentCount = 0;
+		let messageSentCount = 0;
 
 		if (!flagOverrideRateLimiter) {
 			const rateLimiter = this.getRateLimiterEmergencyAlert();
@@ -3570,8 +3572,8 @@ class AppRoomServer {
 				// send them a message saying emergency alerts are disabled for X amount of time
 				const blockTime = rateLimiterRes.msBeforeNext / 1000.0;
 				// send a message saying we are disabling emergency alerts
-				var esubject = util.format("Emergency alerts temporarily disabled for %d seconds", blockTime);
-				var emessage = util.format("Due to rate limiting, no further alerts will be sent for %d seconds.", blockTime);
+				const esubject = util.format("Emergency alerts temporarily disabled for %d seconds", blockTime);
+				const emessage = util.format("Due to rate limiting, no further alerts will be sent for %d seconds.", blockTime);
 				await this.emergencyAlert("ratelimit.emergency", esubject, emessage, req, {}, false, true);
 
 				// now return saying we did not send the alert
@@ -3582,16 +3584,16 @@ class AppRoomServer {
 		// ok send the message
 
 		// who gets it?
-		var recipients = this.getEmergencyAlertContactsPrimary();
+		let recipients = this.getEmergencyAlertContactsPrimary();
 		if (flagAlsoSendToSecondaries) {
 			recipients = jrhMisc.mergeArraysKeepDupes(recipients, this.getEmergencyAlertContactsSecondary());
 		}
 
 		// add req info to extra data of message
-		var extraDataPlus;
+		let extraDataPlus;
 		if (req) {
 			// add req info
-			var ip = (req.ip && req.ip.length > 7 && req.ip.substr(0, 7) === "::ffff:") ? req.ip.substr(7) : req.ip;
+			const ip = (req.ip && req.ip.length > 7 && req.ip.substr(0, 7) === "::ffff:") ? req.ip.substr(7) : req.ip;
 			extraDataPlus = {
 				...extraData,
 				req_userid: (req.user ? req.user.id : undefined),
@@ -3683,8 +3685,8 @@ class AppRoomServer {
 
 	disEngageProfilerIfAppropriate() {
 		if (this.getOptionProfileEnabled() && profiler !== undefined) {
-			var profileResult = profiler.stopProfiling("");
-			var profileOutputPath = this.getProfileOutputFile();
+			const profileResult = profiler.stopProfiling("");
+			const profileOutputPath = this.getProfileOutputFile();
 			profileResult.export().pipe(fs.createWriteStream(profileOutputPath)).on("finish", () => {
 				profileResult.delete();
 				const errmsg = "Wrote profile data to " + profileOutputPath + ".";

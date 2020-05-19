@@ -59,7 +59,7 @@ function setupRouter(urlPath) {
 async function routerGetIndex(req, res, next) {
 
 	// require them to be logged in, or creates a redirect
-	var user = await arserver.getLoggedInUser(req);
+	const user = await arserver.getLoggedInUser(req);
 	if (!arserver.requireUserIsLoggedIn(req, res, user, "/membersonly")) {
 		// all done
 		return;

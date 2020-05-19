@@ -43,17 +43,17 @@ function buildMongooseQueryFromReq(filterOptions, schema, req, jrResult) {
 	// Then for each field:
 	//	filterString
 
-	var fieldKeys = Object.keys(schema);
+	const fieldKeys = Object.keys(schema);
 	//
-	var pageNum = jrhExpress.reqValAsInt(req, "pageNum", 1, null, 1);
-	var pageSize = jrhExpress.reqValAsInt(req, "pageSize", filterOptions.minPageSize, filterOptions.maxPageSize, filterOptions.defaultPageSize);
-	var sortField = jrhExpress.reqValFromList(req, "sortField", fieldKeys, filterOptions.defaultSortField);
-	var sortDir = jrhExpress.reqValFromList(req, "sortDir", ["asc", "desc"], filterOptions.defaultSortDir);
+	const pageNum = jrhExpress.reqValAsInt(req, "pageNum", 1, null, 1);
+	const pageSize = jrhExpress.reqValAsInt(req, "pageSize", filterOptions.minPageSize, filterOptions.maxPageSize, filterOptions.defaultPageSize);
+	let sortField = jrhExpress.reqValFromList(req, "sortField", fieldKeys, filterOptions.defaultSortField);
+	const sortDir = jrhExpress.reqValFromList(req, "sortDir", ["asc", "desc"], filterOptions.defaultSortDir);
 	//
-	var fieldFilters = jrhExpress.reqPrefixedValueArray(req, "filter", fieldKeys);
+	const fieldFilters = jrhExpress.reqPrefixedValueArray(req, "filter", fieldKeys);
 	//
-	var protectedFields = filterOptions.protectedFields;
-	var hiddenFields = filterOptions.hiddenFields;
+	const protectedFields = filterOptions.protectedFields;
+	const hiddenFields = filterOptions.hiddenFields;
 
 	// block sort if its on our block list
 	if (jrhMisc.isInAnyArray(sortField, protectedFields, hiddenFields)) {
@@ -61,7 +61,7 @@ function buildMongooseQueryFromReq(filterOptions, schema, req, jrResult) {
 	}
 
 	// query options
-	var queryOptions = {};
+	const queryOptions = {};
 	// offset and limit
 	queryOptions.limit = pageSize;
 	queryOptions.skip = (pageNum - 1) * pageSize;
@@ -72,10 +72,10 @@ function buildMongooseQueryFromReq(filterOptions, schema, req, jrResult) {
 	}
 
 	// build the query
-	var query = {};
-	var aFindFilter;
-	var fieldSchema;
-	var fieldFilterKeys = Object.keys(fieldFilters);
+	const query = {};
+	let aFindFilter;
+	let fieldSchema;
+	const fieldFilterKeys = Object.keys(fieldFilters);
 	fieldFilterKeys.forEach((fieldFilterKey) => {
 
 		// certain fields we will refuse to filter on
@@ -113,7 +113,7 @@ function buildMongooseQueryFromReq(filterOptions, schema, req, jrResult) {
 	});
 
 	// obj data for url building and grid ui construction
-	var queryUrlData = {
+	const queryUrlData = {
 		pageNum,
 		pageSize,
 		sortField,
@@ -172,7 +172,7 @@ function buildMongooseQueryFromReq(filterOptions, schema, req, jrResult) {
 function convertReqQueryStringToAMongooseFindFilter(fkey, fieldSchema, querystr, jrResult) {
 	// user types a filter for a field (db column) as a string;
 	// here we convert it into something suitable for a mongoose find query obj
-	var schemaType;
+	let schemaType;
 	if (fieldSchema.mongoose) {
 		schemaType = fieldSchema.mongoose.type;
 	} else {
@@ -247,8 +247,8 @@ function convertReqQueryStringToAMongooseFindFilter(fkey, fieldSchema, querystr,
  * @returns query object
  */
 function convertReqQueryStringToAMongooseFindFilterNumeric(fkey, schemaType, querystr, subType, jrResult) {
-	var valPat;
-	var mongoValFunc;
+	let valPat;
+	let mongoValFunc;
 
 	// numeric mongo operators
 	const operators = {
@@ -267,12 +267,12 @@ function convertReqQueryStringToAMongooseFindFilterNumeric(fkey, schemaType, que
 	};
 
 	// eslint-disable-next-line no-useless-escape
-	var opChars = "\<\>=\!";
+	const opChars = "\<\>=\!";
 
 	if (subType === "integer") {
 		valPat = "[+-]{0,1}\\d+";
 		mongoValFunc = (strVal, jrResulti) => {
-			var num = Number(strVal);
+			let num = Number(strVal);
 			if (Number.isNaN(num)) {
 				jrResult.pushError("Search filter error: Not a valid number: " + strVal);
 				num = undefined;
@@ -283,10 +283,10 @@ function convertReqQueryStringToAMongooseFindFilterNumeric(fkey, schemaType, que
 		// eslint-disable-next-line no-useless-escape
 		valPat = "[\\d/\\.\\-]+";
 		mongoValFunc = (strVal, jrResulti) => {
-			var dateVal;
+			let dateVal;
 			// is it a pure number
 			if (strVal.match(/^[\d]+$/)) {
-				var num = Number(strVal);
+				let num = Number(strVal);
 				if (Number.isNaN(num)) {
 					jrResult.pushError("Search filter error: Not a valid number for date (days old) comparison: " + strVal);
 					num = undefined;
@@ -331,8 +331,8 @@ function convertReqQueryStringToAMongooseFindFilterNumeric(fkey, schemaType, que
  * @returns query object
  */
 function convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, querystr, subType, jrResult) {
-	var valPat;
-	var mongoValFunc;
+	let valPat;
+	let mongoValFunc;
 
 	// numeric mongo operators
 	const operators = {
@@ -347,7 +347,7 @@ function convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, qu
 	};
 
 	// eslint-disable-next-line no-useless-escape
-	var opChars = "=!";
+	const opChars = "=!";
 
 	// eslint-disable-next-line no-useless-escape
 	if (subType === "string") {
@@ -386,7 +386,7 @@ function convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, qu
  * @returns query object
  */
 function convertReqQueryStringToAMongooseFindFilterBoolean(fkey, schemaType, querystr, jrResult) {
-	var retv;
+	let retv;
 
 	if (querystr === "true" || querystr === "1") {
 		retv = {
@@ -420,13 +420,13 @@ function convertReqQueryStringToAMongooseFindFilterBoolean(fkey, schemaType, que
 function convertReqQueryStringToAMongooseFindFilterMongoStrCmp(strVal, jrResult) {
 	// help for string compare
 	// first let's see if its an explicit regex
-	var regex, regexMatch;
-	var retv;
+	let regex, regexMatch;
+	let retv;
 	regex = /^\/(.+)\/(.*)$/;
 	regexMatch = strVal.match(regex);
 	if (regexMatch) {
-		var regexMain = regexMatch[1];
-		var regexOptions = regexMatch[2];
+		const regexMain = regexMatch[1];
+		const regexOptions = regexMatch[2];
 		try {
 			retv = new RegExp(regexMain, regexOptions);
 		} catch (error) {
@@ -443,14 +443,14 @@ function convertReqQueryStringToAMongooseFindFilterMongoStrCmp(strVal, jrResult)
 	regexMatch = strVal.match(regex);
 	if (regexMatch) {
 		// EXACT string match
-		var exactString = regexMatch[1];
+		const exactString = regexMatch[1];
 		return exactString;
 	}
 
 	// otherwise we want a LIKE type string
 
 	// create a regex that allows wild characters on left or right, by ESCAPING string
-	var queryStrEscaped = jrhMisc.regexEscapeStr(strVal);
+	const queryStrEscaped = jrhMisc.regexEscapeStr(strVal);
 	try {
 		retv = new RegExp(queryStrEscaped, "im");
 	} catch (err) {
@@ -481,28 +481,28 @@ function convertReqQueryStringToAMongooseFindFilterMongoStrCmp(strVal, jrResult)
  * @returns an array of disjunctive queries (ors)
  */
 function convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaType, querystr, operators, opChars, valPat, mongoValFunc, standaloneOpString, jrResult) {
-	var opRegex = new RegExp("\\s*([" + opChars + "]+)\\s*(" + valPat + ")\\s*");
-	var valRegex = new RegExp("\\s*(" + valPat + ")\\s*");
-	// var nullRegex = /([!=]*)\s*\bnull\b/;
-	var nullRegex = /([!=]*)\s*\b(null|undefined)\b/;
+	const opRegex = new RegExp("\\s*([" + opChars + "]+)\\s*(" + valPat + ")\\s*");
+	const valRegex = new RegExp("\\s*(" + valPat + ")\\s*");
+	// let nullRegex = /([!=]*)\s*\bnull\b/;
+	const nullRegex = /([!=]*)\s*\b(null|undefined)\b/;
 	//
-	var mongoOp, opVal, opValm;
-	var oneCondition;
-	var orSet = [];
+	let mongoOp, opVal, opValm;
+	let oneCondition;
+	const orSet = [];
 
 	// first split into comma separated values -- these are ORs
-	var andSplit = /\s+and\s+/;
-	var orSplit = /\s+or\s+|,/;
+	const andSplit = /\s+and\s+/;
+	const orSplit = /\s+or\s+|,/;
 
-	var orParts = querystr.split(orSplit);
+	const orParts = querystr.split(orSplit);
 	orParts.forEach((orstr) => {
-		var andSet = [];
+		const andSet = [];
 
 		// ok now the set of unitary operator, or standalone items are combines as ANDS
 		// but we also allow separation of operators and standalones by && to be used as an AND
 		// which is useful for strings
 
-		var andParts = orstr.split(andSplit);
+		const andParts = orstr.split(andSplit);
 
 		andParts.forEach((str) => {
 			// operator expressions
@@ -510,7 +510,7 @@ function convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaT
 				str = str.replace(opRegex, (foundstr, g1, g2) => {
 					mongoOp = operators[g1];
 					if (mongoOp !== undefined) {
-						var obj = convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(fkey, g2, mongoOp, mongoValFunc, jrResult);
+						const obj = convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(fkey, g2, mongoOp, mongoValFunc, jrResult);
 						andSet.push(obj);
 					} else {
 						// operator not found, leave it alone
@@ -523,7 +523,7 @@ function convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaT
 
 			// special value: null
 			str = str.replace(nullRegex, (foundstr, g1) => {
-				var obj = {};
+				const obj = {};
 				oneCondition = {};
 				if (g1.indexOf("!") === -1) {
 					oneCondition.$eq = opValm;
@@ -539,7 +539,7 @@ function convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaT
 			// standalone values
 			str = str.replace(valRegex, (foundstr, g2) => {
 				mongoOp = standaloneOpString;
-				var obj = convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(fkey, g2, mongoOp, mongoValFunc, jrResult);
+				const obj = convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(fkey, g2, mongoOp, mongoValFunc, jrResult);
 				andSet.push(obj);
 				// return "" to replace it with empty
 				return "";
@@ -559,7 +559,7 @@ function convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaT
 		} else if (andSet.length === 1) {
 			orSet.push(andSet[0]);
 		} else {
-			var andObj = {
+			const andObj = {
 				$and: andSet,
 			};
 			orSet.push(andObj);
@@ -573,7 +573,7 @@ function convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaT
 		return orSet[0];
 	}
 
-	var orObj = {
+	const orObj = {
 		$or: orSet,
 	};
 	return orObj;
@@ -592,7 +592,7 @@ function convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaT
  * @returns an object, either simple value or operator and value for handling null/undefined cases
  */
 function convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(fkey, opVal, mongoOp, mongoValFunc, jrResult) {
-	var opValm;
+	let opValm;
 
 	// this is a bit messy, but we need to handle null carefully and weirdly
 	if (opVal === "null" || opVal === "undefined") {
@@ -625,9 +625,9 @@ function convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(fke
 		return undefined;
 	}
 	//
-	var obj = {};
+	const obj = {};
 	if (mongoOp) {
-		var oneCondition = {};
+		const oneCondition = {};
 		oneCondition[mongoOp] = opValm;
 		obj[fkey] = oneCondition;
 	} else {

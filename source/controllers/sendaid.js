@@ -77,7 +77,7 @@ class SendAid {
 
 
 	makeJrResultFromSendmailRetv(retv, mailobj) {
-		var msg;
+		let msg;
 		if (retv.rejected.length === 0) {
 			// success!
 			if (mailobj.revealEmail) {
@@ -125,7 +125,7 @@ class SendAid {
 
 		if (recipient.email) {
 			// there's an email address
-			var mailobj = {
+			const mailobj = {
 				revealEmail: true,
 				subject,
 				text: message,
@@ -157,15 +157,15 @@ class SendAid {
 
 		if (this.flagDebugMode) {
 			// don't actually mail, instead just log it to console and file
-			jrdebug.debug("Config flag mailer:DEBUG set, so mail to [" + mailobj.to + "] not actually sent (sending mail to debug log instead).");
+			jrdebug.debug("Config flag mailer:DEBUG set, so mail with subject \"" + mailobj.subject + "\" to \"" + mailobj.to + "\" not actually sent (sending mail to debug log instead).");
 			await arserver.logm(appdef.DefLogTypeDebug + ".mailer", "mailer:DEBUG option preventing mail from being sent", mailobj);
 			return JrResult.makeSuccess("Mail sent (but only to log because of mail debug flag).");
 		}
 
-		var result = await this.mailTransport.sendMail(mailobj);
+		const result = await this.mailTransport.sendMail(mailobj);
 		jrdebug.cdebugObj(result, "Result from sendMail.");
 
-		var jrResult = this.makeJrResultFromSendmailRetv(result, mailobj);
+		const jrResult = this.makeJrResultFromSendmailRetv(result, mailobj);
 		return jrResult;
 	}
 	//---------------------------------------------------------------------------

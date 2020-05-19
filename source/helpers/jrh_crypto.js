@@ -13,10 +13,10 @@
 
 // modules
 // for password hashing
-var crypto = require("crypto");
+const crypto = require("crypto");
 
 // bcrypt crypto helper
-var bcrypt = require("bcrypt");
+const bcrypt = require("bcrypt");
 
 
 // our helper modules
@@ -61,11 +61,11 @@ const DefHumanEasyCharacters = DefHumanEasyCharactersArray[0] + DefHumanEasyChar
  */
 async function hashPlaintextPasswordToObj(passwordPlaintext) {
 	// algorithm to use
-	var passwordAlgorithm = DefPasswordAlgorithm;
+	const passwordAlgorithm = DefPasswordAlgorithm;
 	// a salt of "" means to use a random salt and include it in the hash
-	var salt = "";
+	const salt = "";
 	// hash it
-	var passwordHashedObj = await createHashedObjectFromString(passwordPlaintext, passwordAlgorithm, salt, DefCryptSaltRounds, DefLatestPasswordVersion);
+	const passwordHashedObj = await createHashedObjectFromString(passwordPlaintext, passwordAlgorithm, salt, DefCryptSaltRounds, DefLatestPasswordVersion);
 	// return it -- an OBJECT with properties not just a string
 	return passwordHashedObj;
 }
@@ -90,23 +90,23 @@ async function testPlaintextPassword(passwordPlaintext, passwordHashedObj) {
 	}
 
 	// password obj properties
-	var passwordAlgorithm = passwordHashedObj.alg;
-	var passwordHashedStr = passwordHashedObj.hash;
-	var passwordVersion = passwordHashedObj.ver;
+	const passwordAlgorithm = passwordHashedObj.alg;
+	const passwordHashedStr = passwordHashedObj.hash;
+	const passwordVersion = passwordHashedObj.ver;
 
 	// ok compare
 	try {
 		if (passwordAlgorithm === "bcrypt") {
 			// bcrypt uses its own explicit compare function, that is meant to defeat timing attacks
 			// note that it will figure out the salt and saltrounds from the actual hash string
-			var bretv = bcrypt.compare(passwordPlaintext, passwordHashedStr);
+			const bretv = bcrypt.compare(passwordPlaintext, passwordHashedStr);
 			return bretv;
 		}
 		// for non-bcrypt, we essentially repeat the hash process with the previously used salt and then compare
-		var salt = passwordHashedObj.salt;
-		var saltRounds = passwordHashedObj.saltRounds;
+		const salt = passwordHashedObj.salt;
+		const saltRounds = passwordHashedObj.saltRounds;
 		//
-		var passwordHashedTest = await createHashedObjectFromString(passwordPlaintext, passwordAlgorithm, salt, saltRounds, passwordVersion);
+		const passwordHashedTest = await createHashedObjectFromString(passwordPlaintext, passwordAlgorithm, salt, saltRounds, passwordVersion);
 		// now is the hashed version of the new plaintext the same as the hashed version of the old stored one?
 		return (passwordHashedTest.passwordHashedStr === passwordHashedStr);
 	} catch (err) {
@@ -142,7 +142,7 @@ async function testPlaintextPassword(passwordPlaintext, passwordHashedObj) {
 async function createHashedObjectFromString(plaintextString, passwordAlgorithm, salt, saltRounds, passwordVersion) {
 	// function to hash plaintext password and return an object with hashed password properties
 
-	var hashedString;
+	let hashedString;
 	//
 	if (passwordAlgorithm === "plain") {
 		hashedString = plaintextString;
@@ -163,7 +163,7 @@ async function createHashedObjectFromString(plaintextString, passwordAlgorithm, 
 			salt = generateRandomSalt();
 		}
 		//
-		var hash = crypto.createHmac("sha512", salt);
+		const hash = crypto.createHmac("sha512", salt);
 		hash.update(plaintextString);
 		hashedString = hash.digest("hex");
 		// null these so we dont save them
@@ -173,7 +173,7 @@ async function createHashedObjectFromString(plaintextString, passwordAlgorithm, 
 	}
 
 	// build the passwordHashed and return it
-	var hashedObj = {
+	const hashedObj = {
 		hash: hashedString,
 		alg: passwordAlgorithm,
 		// version is a numeric value we can use in case we need to force upgrade everyone with an old password algorithm, etc.
@@ -235,10 +235,10 @@ function genRandomStringHumanEasy(length) {
 	// generate a string of letters and numbers that is hard for humans to mistake
 	// so all uppercase and avoid letters that could be duplicates
 	// see https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
-	var retstr = "";
-	var charlen = DefHumanEasyCharacters.length;
-	var charpos;
-	for (var i = 0; i < length; i++) {
+	let retstr = "";
+	const charlen = DefHumanEasyCharacters.length;
+	let charpos;
+	for (let i = 0; i < length; i++) {
 		charpos = Math.floor(Math.random() * charlen);
 		retstr += DefHumanEasyCharacters.charAt(charpos);
 	}
@@ -258,10 +258,10 @@ function genRandomStringHumanEasy(length) {
  * @returns random string consisting of only characters and digits found in DefHumanEasyCharacters
  */
 function genRandomStringHumanEasier(length) {
-	var retstr = "";
-	var charlen, charpos;
-	var group = 0;
-	for (var i = 0; i < length; i++) {
+	let retstr = "";
+	let charlen, charpos;
+	let group = 0;
+	for (let i = 0; i < length; i++) {
 		if (group > 1) {
 			// alternate
 			group = 0;
@@ -283,10 +283,10 @@ function genRandomStringHumanEasier(length) {
  * @returns the random string
  */
 function genRandomStringFromCharSet(charset, length) {
-	var charlen = charset.length;
-	var retstr = "";
-	var charpos;
-	for (var i = 0; i < length; i++) {
+	const charlen = charset.length;
+	let retstr = "";
+	let charpos;
+	for (let i = 0; i < length; i++) {
 		charpos = Math.floor(Math.random() * charlen);
 		retstr += charset.charAt(charpos);
 	}
@@ -312,9 +312,9 @@ function genRandomStringFromCharSet(charset, length) {
  * @returns hashed string
  */
 async function hashPlaintextStringInsecureButSearchable(plaintextString, salt) {
-	var hash = crypto.createHmac("sha512", salt);
+	const hash = crypto.createHmac("sha512", salt);
 	hash.update(plaintextString);
-	var hashedString = hash.digest("hex");
+	const hashedString = hash.digest("hex");
 	return hashedString;
 }
 //---------------------------------------------------------------------------

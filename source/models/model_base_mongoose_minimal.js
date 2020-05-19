@@ -69,10 +69,10 @@ class ModelBaseMongooseMinimal extends ModelBaseMongoose {
 	// Override to create minimal model
 	// create new obj -- used by classes which are super minimal (LogModel)
 	static createModel(inobj) {
-		var obj = {
+		const obj = {
 			...inobj,
 		};
-		var model = this.newMongooseModel(obj);
+		const model = this.newMongooseModel(obj);
 		return model;
 	}
 	//---------------------------------------------------------------------------

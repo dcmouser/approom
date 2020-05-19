@@ -148,7 +148,7 @@ function validateIntegerRange(jrResult, keyname, val, min, max, flagRequired) {
  * @returns a json object or sets error in jrResult
  */
 function validateJsonObjOrStringToObj(jrResult, keyname, val, flagRequired) {
-	var oval = val;
+	const oval = val;
 
 	if (val === "" || val === null || val === undefined) {
 		if (!flagRequired) {
@@ -178,7 +178,7 @@ function validateJsonObjOrStringToObj(jrResult, keyname, val, flagRequired) {
 	} else {
 		// it's not a string, so make it a json string to see if its valid
 		try {
-			var valAsString = JSON.stringify(val);
+			const valAsString = JSON.stringify(val);
 			// check that its not simple value
 			if (valAsString.length === 0 || valAsString[0] !== "{") {
 				jrResult.pushFieldError(keyname, keyname + " is not a valid json object (must start with { bracket).");

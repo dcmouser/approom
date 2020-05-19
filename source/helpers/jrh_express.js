@@ -44,7 +44,7 @@ const JrResult = require("./jrresult");
 async function asyncPasswordAuthenticate(authOptions, provider, providerNiceLabel, req, res, next, jrResult) {
 	// first we make a promise out of passport.authenticate then await on it
 
-	var userPassport;
+	let userPassport;
 
 	// create promise wrapper around passport.authenticate
 	const passportPromiseAuth = (ireq, ires, inext) => new Promise((resolve, reject) => {
@@ -139,7 +139,7 @@ async function asyncPasswordReqLogin(userPassport, errorMessage, req, jrResult) 
  * @returns port value (possibly provided as string), converted to an integer if possible
  */
 function normalizePort(portval) {
-	var port = parseInt(portval, 10);
+	const port = parseInt(portval, 10);
 	if (Number.isNaN(port)) {
 		// named pipe
 		return portval;
@@ -169,8 +169,8 @@ function normalizePort(portval) {
 function calcExpressMiddleWare(app) {
 	const jrdebug = require("./jrdebug");
 	//
-	var middlewareName, middlewareHint, extraDebugInfo;
-	var appStack = app._router.stack;
+	let middlewareName, middlewareHint, extraDebugInfo;
+	const appStack = app._router.stack;
 	return Array.prototype.map.call(appStack, (middleware, index) => {
 		middlewareName = middleware.handle.name;
 		middlewareHint = "";
@@ -181,8 +181,8 @@ function calcExpressMiddleWare(app) {
 			middlewareName += " " + middlewareHint;
 		}
 
-		var lineInfo = calcExpressMiddlewareGetFileLine(middleware.handle);
-		var retv = index + ". " + (middlewareName || "<anonymous function>");
+		const lineInfo = calcExpressMiddlewareGetFileLine(middleware.handle);
+		let retv = index + ". " + (middlewareName || "<anonymous function>");
 		if (false || (lineInfo && !lineInfo.startsWith("at Function.handle") && !lineInfo.startsWith("at serveStatic"))) {
 			retv += " " + lineInfo;
 		}
@@ -212,7 +212,7 @@ function calcExpressMiddlewareGetFileLine(handler) {
 		// trigger an ignorable exception (caught in arserver and ignored)
 		handler("IGNORE_EXCEPTION");
 	} catch (e) {
-		var retstr = e.stack.split("\n")[1];
+		let retstr = e.stack.split("\n")[1];
 		retstr = retstr.trim();
 		return retstr;
 	}
@@ -228,7 +228,7 @@ function calcExpressMiddlewareGetFileLine(handler) {
  */
 function calcExpressMiddlewareRouterHint(middleware) {
 	const jrhMisc = require("./jrh_misc");
-	var hintstr = "";
+	let hintstr = "";
 
 	// extra debug info?
 	if (middleware.handle.appRoomDebugInfo) {
@@ -236,7 +236,7 @@ function calcExpressMiddlewareRouterHint(middleware) {
 	}
 
 	if (middleware.regexp) {
-		var rhint;
+		let rhint;
 		if (middleware.regexp.source) {
 			rhint = middleware.regexp.source;
 		} else {
@@ -262,9 +262,9 @@ function calcExpressMiddlewareRouterHint(middleware) {
  * @returns object containing all routes (and whether they are get|post|all)
  */
 function calcExpressRoutePathData(expressApp) {
-	var siteRoutes = expressApp._router.stack;
+	const siteRoutes = expressApp._router.stack;
 
-	var routes = [];
+	const routes = [];
 	siteRoutes.forEach(calcExpressRoutePathDataRouteArray.bind(this, routes, []));
 	return routes;
 }
@@ -294,7 +294,7 @@ function calcExpressRoutePathDataRouteArray(routes, routepath, layer) {
 		routes.push("");
 		layer.handle.stack.forEach(calcExpressRoutePathDataRouteArray.bind(this, routes, routepath.concat(calcExpressRoutePathDataSplit(layer.regexp))));
 	} else if (layer.method) {
-		var pathstr = layer.method.toUpperCase() + " /" + routepath.concat(calcExpressRoutePathDataSplit(layer.regexp)).filter(Boolean).join("/");
+		const pathstr = layer.method.toUpperCase() + " /" + routepath.concat(calcExpressRoutePathDataSplit(layer.regexp)).filter(Boolean).join("/");
 		routes.push(pathstr);
 	}
 }
@@ -316,7 +316,7 @@ function calcExpressRoutePathDataSplit(thing) {
 	if (thing.fast_slash) {
 		return "";
 	}
-	var match = thing.toString().replace("\\/?", "").replace("(?=\\/|$)", "$").match(/^\/\^((?:\\[.*+?^${}()|[\]\\/]|[^.*+?^${}()|[\]\\/])*)\$\//);
+	const match = thing.toString().replace("\\/?", "").replace("(?=\\/|$)", "$").match(/^\/\^((?:\\[.*+?^${}()|[\]\\/]|[^.*+?^${}()|[\]\\/])*)\$\//);
 	return match ? match[1].replace(/\\(.)/g, "$1").split("/") : "<complex:" + thing.toString() + ">";
 }
 //---------------------------------------------------------------------------
@@ -357,7 +357,7 @@ function reqVal(req, key, defaultVal) {
  */
 function reqValAsInt(req, key, min, max, defaultVal) {
 	// get val as int and min and max it
-	var val = Number(reqVal(req, key, defaultVal));
+	let val = Number(reqVal(req, key, defaultVal));
 	if (min !== null) {
 		val = Math.max(val, min);
 	}
@@ -378,7 +378,7 @@ function reqValAsInt(req, key, min, max, defaultVal) {
  * @returns req.body[key] or req.query[key] as long as they are present in valueList, otherwise defaultVal
  */
 function reqValFromList(req, key, valueList, defaultVal) {
-	var val = reqVal(req, key, defaultVal);
+	const val = reqVal(req, key, defaultVal);
 	if (valueList.indexOf(val) > -1) {
 		return val;
 	}
@@ -396,9 +396,9 @@ function reqValFromList(req, key, valueList, defaultVal) {
  */
 function reqPrefixedValueArray(req, prefix, keyList) {
 	// look for ALL values for prefix+"_"+key and return an associative array of them
-	var valArray = {};
-	var fieldName;
-	var val;
+	const valArray = {};
+	let fieldName;
+	let val;
 	keyList.forEach((key) => {
 		fieldName = prefix + "_" + key;
 		val = reqVal(req, fieldName, undefined);
@@ -421,9 +421,9 @@ function reqPrefixedValueArray(req, prefix, keyList) {
  */
 function reqPrefixedCheckboxItemIds(reqbody, prefix) {
 	// look for ALL values for prefix+"_"+key and return an associative array of them
-	var valArray = [];
-	var id;
-	var keys = Object.keys(reqbody);
+	const valArray = [];
+	let id;
+	const keys = Object.keys(reqbody);
 	const prefixlen = prefix.length;
 	keys.forEach((keyname) => {
 		if (keyname.startsWith(prefix)) {
@@ -454,7 +454,7 @@ function forgetSessionVar(req, varName) {
 
 //---------------------------------------------------------------------------
 function getRequestLogString(req) {
-	var str = util.format("url='%s' userid='%s' ip='%s'", req.url, (req.user ? req.user.id : undefined), req.ip);
+	const str = util.format("url='%s' userid='%s' ip='%s'", req.url, (req.user ? req.user.id : undefined), req.ip);
 	return str;
 }
 //---------------------------------------------------------------------------
@@ -502,7 +502,7 @@ function reqOriginalUrl(req) {
  * @param {*} obj - other data to send in reply
  */
 function sendResJsonData(res, status, str, obj) {
-	var data;
+	let data;
 	if (str === null || str === undefined || str === "") {
 		data = {
 			...obj,
@@ -576,7 +576,7 @@ function sendResJsonJrResultTokenError(res, jrResult) {
  */
 function sendResJsonAclErorr(res, permission, permissionObjType, permissionObjId) {
 	const status = 403;
-	var errorMessage = "you do not have permission to " + permission;
+	let errorMessage = "you do not have permission to " + permission;
 	if (permissionObjType) {
 		errorMessage += " on " + permissionObjType;
 	}
@@ -599,7 +599,7 @@ function sendResJsonAclErorr(res, permission, permissionObjType, permissionObjId
  * Caller should check jrResult for any error
  *
  * @param {*} req - express request object
- * @param {*} keyName - name of the post var to get the data from
+ * @param {*} keyName - name of the post let to get the data from
  * @param {*} jrResult - errors are pushed into here.
  * @returns the json object encoded by the post var
  */
@@ -609,9 +609,9 @@ function parseReqGetJsonField(req, keyName, jrResult) {
 		return null;
 	}
 
-	var jsonVal;
+	let jsonVal;
 	try {
-		// var jsonStr = req.body[keyName];
+		// let jsonStr = req.body[keyName];
 		// It's already in json format(!)
 		// console.log("ATTN: debug trying to decode jsonstr:");
 		// console.log(jsonStr);

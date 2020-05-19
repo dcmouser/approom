@@ -11,7 +11,7 @@
 
 //---------------------------------------------------------------------------
 // module variables
-var pluginData = {
+const pluginData = {
 	label: "Test plugin",
 	author: "mouser@donationcoder.com",
 	version: "v1.0 (11/20/19)",

@@ -57,23 +57,23 @@ class AdminAid {
 	 */
 	async addTestAppsAndRooms(user, addCountApps, addCountRooms, addCountRoomDatas) {
 		// add some test apps and rooms
-		var successMessage;
-		var app, room, roomdata;
-		var appindexString, roomindexString, roomDataIndexString;
-		var appName, roomName, roomDataLabel;
-		var appid, roomid;
-		var appindexStart = 1;
-		var roomindexStart = 1;
-		var roomDataIndexStart = 1;
-		var appsAdded = 0;
-		var roomsAdded = 0;
-		var roomDatasAdded = 0;
-		var shortcode;
+		let successMessage;
+		let app, room, roomdata;
+		let appindexString, roomindexString, roomDataIndexString;
+		let appName, roomName, roomDataLabel;
+		let appid, roomid;
+		let appindexStart = 1;
+		let roomindexStart = 1;
+		const roomDataIndexStart = 1;
+		let appsAdded = 0;
+		let roomsAdded = 0;
+		let roomDatasAdded = 0;
+		let shortcode;
 		const maxTrysPerClash = 1000;
-		var foundone;
-		var clashTryCount;
+		let foundone;
+		let clashTryCount;
 
-		for (var appindex = 0; appindex < addCountApps; appindex += 1) {
+		for (let appindex = 0; appindex < addCountApps; appindex += 1) {
 
 			// create an app
 			clashTryCount = 0;
@@ -106,7 +106,7 @@ class AdminAid {
 			appid = app.getIdAsM();
 
 			// now create some rooms attached to the app
-			for (var roomindex = 0; roomindex < addCountRooms; roomindex += 1) {
+			for (let roomindex = 0; roomindex < addCountRooms; roomindex += 1) {
 
 				clashTryCount = 0;
 				do {
@@ -139,7 +139,7 @@ class AdminAid {
 				roomid = room.getIdAsM();
 
 				// roomdatas for each room
-				for (var roomdataindex = 0; roomdataindex < addCountRoomDatas; roomdataindex += 1) {
+				for (let roomdataindex = 0; roomdataindex < addCountRoomDatas; roomdataindex += 1) {
 					roomDataIndexString = (roomDataIndexStart + roomDatasAdded).toString();
 
 					roomDataLabel = "D" + roomDataIndexString + "R" + roomindexString + "A" + appindexString;
@@ -165,7 +165,7 @@ class AdminAid {
 
 		// success
 		// push message on session
-		var jrResult = JrResult.makeSuccess(successMessage);
+		const jrResult = JrResult.makeSuccess(successMessage);
 		// return success
 		return jrResult;
 	}

@@ -52,7 +52,7 @@ function calcAxiosOptions() {
  * @returns the response object
  */
 async function postCatchError(url, postData) {
-	var response;
+	let response;
 	try {
 		response = await axios.post(url, postData, calcAxiosOptions());
 	} catch (e) {
@@ -74,7 +74,7 @@ async function postCatchError(url, postData) {
  * @returns response
  */
 async function getCatchError(url) {
-	var response;
+	let response;
 	try {
 		response = axios.get(url, calcAxiosOptions());
 	} catch (e) {

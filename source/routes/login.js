@@ -97,7 +97,7 @@ async function routerPostIndex(req, res, next) {
 	// we use a custom errorCallback so that we can re-render the login form on error
 
 	// check required csrf token
-	var jrResult = arserver.testCsrfReturnJrResult(req, res);
+	const jrResult = arserver.testCsrfReturnJrResult(req, res);
 
 	if (!jrResult.isError()) {
 		// no error yet
@@ -140,24 +140,24 @@ async function routerGetEmail(req, res, next) {
 
 // process one-time login via email form
 async function routerPostEmail(req, res, next) {
-	var message;
+	let message;
 
 	// check required csrf token
-	var jrResult = arserver.testCsrfReturnJrResult(req, res);
+	let jrResult = arserver.testCsrfReturnJrResult(req, res);
 
 	if (!jrResult.isError()) {
 		// get email address provides
-		var usernameEmail = req.body.usernameEmail;
+		const usernameEmail = req.body.usernameEmail;
 
 		// lookup the user with this email address
-		var user = await UserModel.findUserByUsernameEmail(usernameEmail);
+		const user = await UserModel.findUserByUsernameEmail(usernameEmail);
 		if (!user) {
 			// set error and drop down to re-display email login form with error
 			jrResult = UserModel.makeJrResultErrorNoUserFromField("usernameEmail", usernameEmail);
 		} else {
-			var userId = user.getIdAsM();
-			var userEmail = user.email;
-			var flagRevealEmail = (userEmail === usernameEmail);
+			const userId = user.getIdAsM();
+			const userEmail = user.email;
+			const flagRevealEmail = (userEmail === usernameEmail);
 			jrResult = await VerificationModel.createVerificationOneTimeLoginTokenEmail(userEmail, userId, flagRevealEmail, null);
 			if (!jrResult.isError()) {
 				// success; redirect them to homepage and tell them to check their email for a login token (see the verify route for when they click the link to login)

@@ -32,9 +32,9 @@ const jrhMisc = require("./jrh_misc");
 
 //---------------------------------------------------------------------------
 // module variables
-var debugfunc;
-var serviceName;
-var debugEnabled = false;
+let debugfunc;
+let serviceName;
+let debugEnabled = false;
 //---------------------------------------------------------------------------
 
 
@@ -171,6 +171,23 @@ function debugObj(obj, msg) {
 		debug(jrhMisc.objToString(obj, false));
 	}
 }
+
+
+
+/**
+ * Dump an object with its properties, with an optional message
+ *
+ * @param {object} obj - object to dump
+ * @param {string} msg - message to show before dumping object (ignored if null/undefined)
+ */
+function debugObj2(obj, msg) {
+	// just helper log function
+	if (msg) {
+		debug(msg + ": " + jrhMisc.objToString2(obj, false));
+	} else {
+		debug(jrhMisc.objToString2(obj, false));
+	}
+}
 //---------------------------------------------------------------------------
 
 
@@ -254,6 +271,6 @@ module.exports = {
 
 	setDebugEnabled, getDebugEnabled,
 
-	debug, debugf, debugObj,
+	debug, debugf, debugObj, debugObj2,
 	cdebug, cdebugf, cdebugObj,
 };

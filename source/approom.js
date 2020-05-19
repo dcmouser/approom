@@ -141,7 +141,6 @@ function createYargsObj() {
 
 async function commandRunServer() {
 	// startup server and run it
-	var bretv = await arserver.startUp(true);
-	return bretv;
+	return await arserver.startUp(true);
 }
 //---------------------------------------------------------------------------

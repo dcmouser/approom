@@ -64,7 +64,7 @@ class JrResult {
 	 * @returns new JrResult object
 	 */
 	static makeError(msg) {
-		var jrResult = new JrResult();
+		const jrResult = new JrResult();
 		jrResult.pushError(msg);
 		return jrResult;
 	}
@@ -81,7 +81,7 @@ class JrResult {
 			// throw an error, or just do nothing, since lack of error means success
 			throw new Error("makeSuccessInJrResultCannotHaveBlankReason");
 		}
-		var jrResult = new JrResult();
+		const jrResult = new JrResult();
 		jrResult.pushSuccess(msg);
 		return jrResult;
 	}
@@ -93,7 +93,7 @@ class JrResult {
 	 * @returns new JrResult object
 	 */
 	static makeMessage(msg) {
-		var jrResult = new JrResult();
+		const jrResult = new JrResult();
 		jrResult.pushMessage(msg);
 		return jrResult;
 	}
@@ -108,7 +108,7 @@ class JrResult {
 	 */
 	static makeClone(source) {
 		// first we make a new JrResult object, then copy properties
-		var target = this.makeNew();
+		const target = this.makeNew();
 		target.copyFrom(source);
 		return target;
 	}
@@ -405,7 +405,7 @@ class JrResult {
 	mergeIn(source, flagMergeSourceToTop) {
 		// this is really an awkward function, i wonder if there isn't a better cleaner way to merge objects and arrays
 		// this function is specific to the JrResult class, and not generic
-		var key;
+		let key;
 
 		if (!source) {
 			return this;
@@ -575,7 +575,7 @@ class JrResult {
 			}
 		} else {
 			// merge it -- the problem is that the SESSION version is not a true jrresult object so we have to do it backwards
-			var sjrResult = req.session.jrResult;
+			const sjrResult = req.session.jrResult;
 			this.mergeIn(sjrResult, !flagAddToTop);
 			// sjrResult.mergeIn(this, flagAddToTop);
 			req.session.jrResult = this;
@@ -599,7 +599,7 @@ class JrResult {
 		}
 
 		// create new result
-		var jrResult = JrResult.makeNew();
+		const jrResult = JrResult.makeNew();
 
 		// load and ADD from session, then CLEAR session
 		if (req.session.jrResult) {
@@ -627,7 +627,7 @@ class JrResult {
 		// but if we just passed it in as a local template/view variable, it would OVERWRITE any session data, so we would like to
 		// combine them
 		// session result, if any (deleting it from session if found, like a flash message)
-		var jrResultSession = this.makeAndRemoveFromSession(req);
+		const jrResultSession = this.makeAndRemoveFromSession(req);
 
 		if (!jrResult) {
 			// empty jrResult, just return session version
@@ -692,10 +692,10 @@ class JrResult {
 	 */
 	static _unusedCodeExpressMiddlewareInjectSessionResult(options) {
 		options = options || {};
-		// var safe = (options.unsafe === undefined) ? true : !options.unsafe;
+		// let safe = (options.unsafe === undefined) ? true : !options.unsafe;
 		return (req, res, next) => {
 			// grab reference of render
-			var jRrender = res.render;
+			const jRrender = res.render;
 			// override logic
 			res.render = (view, roptions, fn) => {
 				// transfer any session jrResult into RESPONSE view available variable
@@ -720,7 +720,7 @@ class JrResult {
 		if (!this.items || !this.items.error || this.items.error.length <= 0) {
 			return "";
 		}
-		var str = this.items.error.join(";");
+		const str = this.items.error.join(";");
 		return str;
 	}
 
@@ -734,7 +734,7 @@ class JrResult {
 		if (!this.items || !this.items.success || this.items.success.length <= 0) {
 			return "";
 		}
-		var str = this.items.success.join(";");
+		const str = this.items.success.join(";");
 		return str;
 	}
 	//---------------------------------------------------------------------------

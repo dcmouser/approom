@@ -124,7 +124,7 @@ class RoomdataModel extends ModelBaseMongoose {
 	// crud helper for view
 	static async calcCrudViewHelperData(req, res, id, obj) {
 	// get nice label of the app it's attached to
-		var roomLabel;
+		let roomLabel;
 		const roomid = obj.roomid;
 		if (roomid) {
 			const RoomModel = jrequire("models/room");
@@ -150,7 +150,7 @@ class RoomdataModel extends ModelBaseMongoose {
 		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
 		// subclasses implement; by default we return empty array
 		// NOTE: this list can be generated dynamically based on logged in user
-		var reta = [];
+		let reta = [];
 		if (operationType === "crudAdd" || operationType === "crudEdit" || operationType === "add") {
 			reta = ["roomid", "label", "description", "disabled", "notes", "extraData"];
 		}
@@ -164,7 +164,7 @@ class RoomdataModel extends ModelBaseMongoose {
 	static async doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
-		var objdoc;
+		let objdoc;
 
 		// ATTN: not all of these file fields are currently validated correctly, because they should not be user-editable
 

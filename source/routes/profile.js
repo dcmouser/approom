@@ -17,6 +17,8 @@ const express = require("express");
 const JrResult = require("../helpers/jrresult");
 const jrlog = require("../helpers/jrlog");
 const jrhExpress = require("../helpers/jrh_express");
+const jrhMisc = require("../helpers/jrh_misc");
+const jrdebug = require("../helpers/jrdebug");
 
 // requirement service locator
 const jrequire = require("../helpers/jrequire");
@@ -38,7 +40,7 @@ const UserModel = jrequire("models/user");
 // module variables
 
 // others
-var viewFilePathEdit;
+let viewFilePathEdit;
 //---------------------------------------------------------------------------
 
 
@@ -79,7 +81,7 @@ function setupRouter(urlPath) {
 
 async function routerGetEdit(req, res, next) {
 	// require them to be logged in, or creates a redirect
-	var user = await arserver.getLoggedInUser(req);
+	const user = await arserver.getLoggedInUser(req);
 	if (!arserver.requireUserIsLoggedIn(req, res, user)) {
 		// all done
 		return;
@@ -88,8 +90,8 @@ async function routerGetEdit(req, res, next) {
 	arserver.forgetLoginDiversions(req);
 
 	// extra info
-	var userInfo = (req.session.passport) ? JSON.stringify(req.session.passport.user, null, "  ") : "not logged in";
-	var extraViewData = {
+	const userInfo = (req.session.passport) ? JSON.stringify(req.session.passport.user, null, "  ") : "not logged in";
+	const extraViewData = {
 		userInfo,
 	};
 
@@ -98,7 +100,7 @@ async function routerGetEdit(req, res, next) {
 	req.params.id = req.body._id;
 
 	// hand off work to crudAid
-	var bretv = await crudAid.handleEditGet(req, res, next, UserModel, "", viewFilePathEdit, extraViewData);
+	const bretv = await crudAid.handleEditGet(req, res, next, UserModel, "", viewFilePathEdit, extraViewData);
 }
 
 
@@ -106,7 +108,7 @@ async function routerGetEdit(req, res, next) {
 // ATTN: it's not clear to me why we have this code here, except as a demonstration of how you can use crudAid functions OUTSIDE the normal crud system
 async function routerPostEdit(req, res, next) {
 	// require them to be logged in, or creates a redirect
-	var user = await arserver.getLoggedInUser(req);
+	const user = await arserver.getLoggedInUser(req);
 	if (!arserver.requireUserIsLoggedIn(req, res, user)) {
 		// all done
 		return;
@@ -115,8 +117,8 @@ async function routerPostEdit(req, res, next) {
 	arserver.forgetLoginDiversions(req);
 
 	// extra info
-	var userInfo = (req.session.passport) ? JSON.stringify(req.session.passport.user, null, "  ") : "not logged in";
-	var extraViewData = {
+	const userInfo = (req.session.passport) ? JSON.stringify(req.session.passport.user, null, "  ") : "not logged in";
+	const extraViewData = {
 		userInfo,
 	};
 
@@ -125,7 +127,7 @@ async function routerPostEdit(req, res, next) {
 	req.params.id = req.body._id;
 
 	// hand off work to crudAid
-	var bretv = await crudAid.handleEditPost(req, res, next, UserModel, "", viewFilePathEdit, extraViewData);
+	const bretv = await crudAid.handleEditPost(req, res, next, UserModel, "", viewFilePathEdit, extraViewData);
 	if (!bretv) {
 		// just send them back to profile edit
 		res.redirect(jrhExpress.reqOriginalUrl(req));
@@ -137,7 +139,7 @@ async function routerPostEdit(req, res, next) {
 async function routerGetIndex(req, res, next) {
 
 	// require them to be logged in, or creates a redirect
-	var user = await arserver.getLoggedInUser(req);
+	const user = await arserver.getLoggedInUser(req);
 	if (!arserver.requireUserIsLoggedIn(req, res, user)) {
 		// all done
 		return;
@@ -145,10 +147,17 @@ async function routerGetIndex(req, res, next) {
 	// ignore any previous login diversions
 	arserver.forgetLoginDiversions(req);
 
+	// load user roles
+	// ATTTN: See user model for more, but basically the user roles will be INVISIBLE if we console log or stringify,
+	// thanks to javascript and mongoose "magic".  welcome to hell.
+	await user.loadRolesForUserIfNeeded();
+
 	// extra info
-	var userInfo = (req.session.passport) ? JSON.stringify(req.session.passport.user, null, "  ") : "not logged in";
-	var extraViewData = {
+	const userInfo = (req.session.passport) ? req.session.passport.user : "not logged in";
+	const extraViewData = {
 		userInfo,
+		user,
+		UserExtRoles: user.getExtRoles(),
 	};
 
 	if (false) {
@@ -159,7 +168,7 @@ async function routerGetIndex(req, res, next) {
 		// hand off work to crudAid
 		// ATTN: this will fail if user does not have high level permission to access crud
 		// as such, it is not suitable for this current way of using it
-		var bretv = await crudAid.handleViewGet(req, res, next, UserModel, "", viewFilePathEdit, extraViewData);
+		const bretv = await crudAid.handleViewGet(req, res, next, UserModel, "", viewFilePathEdit, extraViewData);
 	} else {
 		res.render("user/profile", {
 			jrResult: JrResult.getMergeSessionResultAndClear(req, res),

@@ -133,7 +133,7 @@ class LoginModel extends ModelBaseMongoose {
 			return null;
 		}
 		//
-		var login;
+		let login;
 		if (flagUpdateLoginDate) {
 			login = await this.findOneAndUpdateExec({ provider, providerUserId }, { $set: { loginDate: new Date() } });
 		} else {
@@ -157,11 +157,11 @@ class LoginModel extends ModelBaseMongoose {
 		// if existingUserId is null then create a new user and connect them to the new bridged login
 		// if existingUserId is not null, then connect the new bridge to the existing (already logged in user)
 		// return the user
-		var user;
+		let user;
 		// potential result to return with extra messages
-		var jrResult = JrResult.makeNew();
-		var eventAddedNewUser = false;
-		var eventNewlyLinked = false;
+		const jrResult = JrResult.makeNew();
+		let eventAddedNewUser = false;
+		let eventNewlyLinked = false;
 
 
 		// ATTN: we have a choice to make when someone performs a bridged login, we can EITHER create a real User object now,
@@ -175,12 +175,12 @@ class LoginModel extends ModelBaseMongoose {
 		// is there already a user logged into this section? if so we will bridge the new login bridge to the existing logged in user
 		const arserver = jrequire("arserver");
 
-		var existingUserId = arserver.getLoggedInLocalUserIdFromSession(req);
+		const existingUserId = arserver.getLoggedInLocalUserIdFromSession(req);
 
 		// ok first let's see if we can find an existing bridged login
 		jrdebug.cdebugObj(bridgedLoginObj, "Looking for existing bridged login.");
 		// find it and ALSO atomically at same time update date of login
-		var login = await this.findLoginByProviderInfo(bridgedLoginObj.provider, bridgedLoginObj.providerUserId, true);
+		let login = await this.findLoginByProviderInfo(bridgedLoginObj.provider, bridgedLoginObj.providerUserId, true);
 		if (login !== null) {
 			// we found the bridged login, so just grab the associated user and return them
 			jrdebug.cdebugObj(login, "Found a matching login.");
@@ -222,12 +222,12 @@ class LoginModel extends ModelBaseMongoose {
 			}
 		}
 
-		var userId = user.getIdAsM();
+		const userId = user.getIdAsM();
 
 		// create Login if it's not been created yet; saving userId with it
 		if (!login) {
 			// now we have a userId so we can create our bridged login entry
-			var loginObj = {
+			const loginObj = {
 				provider: bridgedLoginObj.provider,
 				providerUserId: bridgedLoginObj.providerUserId,
 				userId,
@@ -240,7 +240,7 @@ class LoginModel extends ModelBaseMongoose {
 			eventNewlyLinked = true;
 		} else {
 			// login already existed -- but did it have the right userId already?
-			if (userId && !jrhMongo.mongoIdEqual(login.getUserIdAsM(), userId)) {
+			if (userId && !jrhMongo.equalIds(login.getUserIdAsM(), userId)) {
 				// ok we need to update login data to point to the new user
 				// ATTN: We expect this case to happen when login.userId is empty;
 				// but is it possible for us to get here with login.userId with a real user?
@@ -277,8 +277,8 @@ class LoginModel extends ModelBaseMongoose {
 			return null;
 		}
 
-		var user;
-		var login;
+		let user;
+		let login;
 
 		// shortcuts for calling with already resolved user
 		if (existingUserId instanceof UserModel) {
@@ -305,7 +305,7 @@ class LoginModel extends ModelBaseMongoose {
 		// connect them!
 		login.userId = user.getIdAsM();
 		await login.dbSave();
-		var jrResult = JrResult.makeSuccess("Connected your " + login.provider + " login with this user account.");
+		const jrResult = JrResult.makeSuccess("Connected your " + login.provider + " login with this user account.");
 		return jrResult;
 	}
 

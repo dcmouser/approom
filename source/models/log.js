@@ -73,6 +73,13 @@ class LogModel extends ModelBaseMongooseMinimal {
 		return {
 			...(this.getBaseSchemaDefinition()),
 			//
+			pid: {
+				label: "PID",
+				readOnly: ["edit"],
+				mongoose: {
+					type: Number,
+				},
+			},
 			creationDate: {
 				label: "Date created",
 				readOnly: ["edit"],
@@ -138,8 +145,9 @@ class LogModel extends ModelBaseMongooseMinimal {
 	// Override to create minimal model
 	// create new obj -- used by classes which are super minimal (LogModel)
 	static createModel(inobj) {
-		var model = super.createModel(inobj);
+		const model = super.createModel(inobj);
 		model.creationDate = new Date();
+		model.pid = process.pid;
 		return model;
 	}
 	//---------------------------------------------------------------------------
@@ -176,7 +184,7 @@ class LogModel extends ModelBaseMongooseMinimal {
 	// create a new log model object (suitable for saving) from standard log data
 	// this could throw exception on failure to save to database, etc.
 	static async createLogDbModelInstanceFromLogDataAndSave(type, message, extraData, mergeData) {
-		var logObj;
+		let logObj;
 
 		if (message && !(typeof message === "string")) {
 			// unusual case where the message is an object; for db we should json stringify as message
@@ -212,7 +220,7 @@ class LogModel extends ModelBaseMongooseMinimal {
 
 		// save it to db
 		// ATTN: 5/12/20 - we are having a hard time catching exception on fatal error shutdown here
-		var retv = await logModel.dbSave();
+		const retv = await logModel.dbSave();
 		return retv;
 	}
 	//---------------------------------------------------------------------------

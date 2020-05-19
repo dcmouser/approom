@@ -67,9 +67,9 @@ async function routerGetCode(req, res, next) {
 
 async function routerPostCode(req, res, next) {
 	// check required csrf token
-	var jrResult = arserver.testCsrfReturnJrResult(req, res);
+	const jrResult = arserver.testCsrfReturnJrResult(req, res);
 
-	var code = req.body.code;
+	const code = req.body.code;
 	await handleVerifyCode(code, jrResult, req, res, next);
 }
 
@@ -92,10 +92,10 @@ async function routerGetIndex(req, res, next) {
 
 // this is an agnostic function that might handle all kinds of verifications (change of email, new account email, mobile text, onetime login code, multi-factor login, etc.)
 async function handleVerifyCode(code, jrResult, req, res, next) {
-	var successRedirectTo;
+	let successRedirectTo;
 
 	// so we can check if verifying this code logs someone in
-	var previouslyLoggedInUserId = arserver.getLoggedInLocalUserIdFromSession(req);
+	const previouslyLoggedInUserId = arserver.getLoggedInLocalUserIdFromSession(req);
 
 	if (jrResult && jrResult.isError()) {
 		// just drop down, it's an error from the start (caller errore
@@ -120,7 +120,7 @@ async function handleVerifyCode(code, jrResult, req, res, next) {
 	jrResult.addToSession(req);
 
 	// if they are NOW logged in (and weren't before the verify code check), then check if they were waiting to go to another page
-	var newlyLoggedInUserId = arserver.getLoggedInLocalUserIdFromSession(req);
+	const newlyLoggedInUserId = arserver.getLoggedInLocalUserIdFromSession(req);
 	if (newlyLoggedInUserId && (previouslyLoggedInUserId !== newlyLoggedInUserId)) {
 		if (arserver.userLogsInCheckDiverted(req, res)) {
 			return;

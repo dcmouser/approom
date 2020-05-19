@@ -43,10 +43,10 @@ const jrlog = require("./jrlog");
 // constants
 
 // what environmental variables to grab out of OS environment and put into config data
-var envList = ["NODE_ENV"];
+let envList = ["NODE_ENV"];
 
 // default files we always look for -- note that earlier dominates later in this list
-var configFileEarlySet = [];
+const configFileEarlySet = [];
 const configFilesNormal = ["%SERVERPREFIX%_private", "%SERVERPREFIX%_public", "site_private", "site_public", "private", "public"];
 const configFilesSource = ["default_private", "default_public"];
 //---------------------------------------------------------------------------
@@ -54,18 +54,18 @@ const configFilesSource = ["default_private", "default_public"];
 
 //---------------------------------------------------------------------------
 // module variables
-// var configDirPath;
-var sourceConfigDir, normalConfigDir;
+// let configDirPath;
+let sourceConfigDir, normalConfigDir;
 //
-var serverFilenamePrefix;
-var yargsObj;
-var configFileCount = 0;
-var didParse = false;
+let serverFilenamePrefix;
+let yargsObj;
+let configFileCount = 0;
+let didParse = false;
 //
-var defaultOptions = {};
-var overrideOptions = {};
-var queuedCommands = [];
-var configFiles = [];
+let defaultOptions = {};
+let overrideOptions = {};
+const queuedCommands = [];
+const configFiles = [];
 //---------------------------------------------------------------------------
 
 
@@ -179,7 +179,7 @@ function popQueuedCommand() {
 	if (queuedCommands.length === 0) {
 		return undefined;
 	}
-	var retv = queuedCommands[0];
+	const retv = queuedCommands[0];
 	queuedCommands.splice(0, 1);
 	return retv;
 }
@@ -195,11 +195,11 @@ function popQueuedCommand() {
  */
 function findQueuedCommand(cmd, flagPop) {
 	// find the command cmd in the queued list and return it
-	var len = queuedCommands.length;
-	for (var i = 0; i < len; i++) {
+	const len = queuedCommands.length;
+	for (let i = 0; i < len; i++) {
 		if (queuedCommands[i].command === cmd) {
 			// found it
-			var retv = queuedCommands[i];
+			const retv = queuedCommands[i];
 			if (flagPop) {
 				queuedCommands.splice(i, 1);
 			}
@@ -247,12 +247,12 @@ function discoverConfigFiles() {
 	configFileEarlySet.forEach((earlyName) => {
 		// each early name in set means we try a bunch in normal user local dir
 		configFilesNormal.forEach((setBaseName) => {
-			var filepath = setBaseName + "_" + earlyName;
+			const filepath = setBaseName + "_" + earlyName;
 			addConfigFile(normalConfigDir, filepath, false, false);
 		});
 		// and some in default source config dir
 		configFilesSource.forEach((setBaseName) => {
-			var filepath = setBaseName + "_" + earlyName;
+			const filepath = setBaseName + "_" + earlyName;
 			addConfigFile(sourceConfigDir, filepath, false, false);
 		});
 	});
@@ -276,15 +276,15 @@ function discoverConfigFiles() {
  */
 function addConfigFilesCli() {
 	// find any config files requested on the commandline
-	var configFileStr, configFileStrs;
+	let configFileStr, configFileStrs;
 
 	configFileStr = nconf.get("config");
 	if (configFileStr) {
 		// split list of config files by commas
 		configFileStrs = configFileStr.split(",");
 		configFileStrs.forEach((filepath) => {
-			var bretv1 = addConfigFile(normalConfigDir, filepath, false, false);
-			var bretv2 = addConfigFile(sourceConfigDir, filepath, false, false);
+			const bretv1 = addConfigFile(normalConfigDir, filepath, false, false);
+			const bretv2 = addConfigFile(sourceConfigDir, filepath, false, false);
 			if (!bretv1 && !bretv2) {
 				// error not found
 				throw (new Error("Could not locate commandline specified config file (in local or source config dirs): " + filepath));
@@ -382,8 +382,8 @@ function setYargs(val) {
  */
 function addConfigFile(baseDir, filepath, flagErrorOnFileNotExist, flagInsertAtBeginning) {
 	// queue a config file to load
-	var foundFlag = true;
-	var filepathFixed = fixConfigFilePathName(baseDir, filepath);
+	let foundFlag = true;
+	const filepathFixed = fixConfigFilePathName(baseDir, filepath);
 
 	if (!fs.existsSync(filepathFixed)) {
 		if (flagErrorOnFileNotExist) {
@@ -397,7 +397,7 @@ function addConfigFile(baseDir, filepath, flagErrorOnFileNotExist, flagInsertAtB
 	}
 
 	// add it
-	var fval = {
+	const fval = {
 		path: filepathFixed,
 		found: foundFlag,
 	};
@@ -440,7 +440,7 @@ function nconfMergeConfigFile(filepath, flagErrorOnFileNotExist) {
 	// note that these options are still available merged when we call get() but when loaded they must have unique rootTag
 	// I gather this is so we can CHANGE all under a key by reloading
 	configFileCount += 1;
-	var rootTag = "jrConfigFile_" + (configFileCount).toString();
+	const rootTag = "jrConfigFile_" + (configFileCount).toString();
 	// merge in file options, under rootTag
 	doNconfFile(rootTag, filepath);
 	return true;
@@ -455,7 +455,7 @@ function nconfMergeConfigFile(filepath, flagErrorOnFileNotExist) {
  * @param {*} filepath filepath for nconf
  */
 function doNconfFile(rootTag, filepath) {
-	var retv;
+	let retv;
 
 	if (filepath.indexOf(".yaml") !== -1 || filepath.indexOf(".yml") !== -1) {
 		// ok its a yaml file
@@ -530,7 +530,7 @@ function getVal(...args) {
 		throw new Error("Request for config getVal but no variable key name was passed.");
 	}
 
-	var val = nconf.get(...args);
+	const val = nconf.get(...args);
 	if (val === undefined) {
 		throw new Error("Request for config getVal of a non-existent variable (" + args[0] + ")");
 	}
@@ -547,7 +547,7 @@ function getVal(...args) {
  * @returns the config value for variable specified, or defaultVal if not found
  */
 function getValDefault(arg, defaultVal) {
-	var val = nconf.get(arg);
+	const val = nconf.get(arg);
 	if (val === undefined) {
 		return defaultVal;
 	}
@@ -624,16 +624,16 @@ function getDebugOptions() {
 	// it is necesary to be so ridiculous because nconf does not store a merged set of keyvalues as you might expect if you were sane, but instead
 	// it keeps all values and does a full lookup each time you query.
 	// This is why we need to get rid of nconf asap
-	var nconfDataMerged = {};
-	var astore;
-	var storekeys = Object.keys(nconf.stores);
+	let nconfDataMerged = {};
+	let astore;
+	const storekeys = Object.keys(nconf.stores);
 	storekeys.reverse();
 	storekeys.forEach((key) => {
 		astore = nconf.stores[key].store;
 		nconfDataMerged = mergeDeep(nconfDataMerged, astore);
 	});
 
-	var debugObj = {
+	const debugObj = {
 		options: nconfDataMerged,
 	};
 	return debugObj;
@@ -649,7 +649,7 @@ function getDebugOptions() {
 function getDebugFiles() {
 	// for debug introspection
 
-	var debugObj = {
+	const debugObj = {
 		configFiles,
 	};
 	return debugObj;
@@ -667,7 +667,7 @@ function getDebugFiles() {
 function getDebugHierarchy() {
 	// for debug introspection
 
-	var debugObj = {
+	const debugObj = {
 		nconf_stores: nconf.stores,
 	};
 	return debugObj;

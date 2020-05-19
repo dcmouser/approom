@@ -103,10 +103,10 @@ async function routerPostMakeappsrooms(req, res, next) {
 	}
 
 	// get logged in user (note we've already checked they are logged in with permission)
-	var user = await arserver.getLoggedInUser(req);
+	const user = await arserver.getLoggedInUser(req);
 
 	// do it using adminaid
-	var jrResult = JrResult.makeNew();
+	let jrResult = JrResult.makeNew();
 	const addCountApps = 5;
 	const addCountRooms = 3;
 	const addCountRoomDatas = 3;
@@ -142,15 +142,15 @@ async function routerPostTestEmergencyAlerts(req, res, next) {
 		return;
 	}
 
-	var jrResult = JrResult.makeNew();
+	let jrResult = JrResult.makeNew();
 
 	// send emergency alerts
-	var subject = "Test of emergency alert system";
-	var message = "This is a test of the emergency alert system.\nThis will send out an email to a list of email address configured to receive emergency alerts.";
-	var extraData = {};
-	var flagAlsoSendToSecondaries = true;
-	var numToSend = 1;
-	var numSent = 0;
+	const subject = "Test of emergency alert system";
+	const message = "This is a test of the emergency alert system.\nThis will send out an email to a list of email address configured to receive emergency alerts.";
+	const extraData = {};
+	const flagAlsoSendToSecondaries = true;
+	const numToSend = 1;
+	let numSent = 0;
 	for (let i = 0; i < numToSend; ++i) {
 		extraData.info = util.format("Message %d of %d", i + 1, numToSend);
 		numSent += await arserver.emergencyAlert("test", subject, message, req, extraData, flagAlsoSendToSecondaries, false);
@@ -239,15 +239,15 @@ async function routerPostRateLimit(req, res, next) {
 	}
 
 	const rateLimiter = arserver.getRateLimiterTest();
-	var jrResult = JrResult.makeSuccess("rateLimiterTest info:" + jrhRateLimiter.getRateLimiterInfo(rateLimiter));
+	const jrResult = JrResult.makeSuccess("rateLimiterTest info:" + jrhRateLimiter.getRateLimiterInfo(rateLimiter));
 
 	// ATTN: with rateLimiterKey == "" it means that we share a single rate limter for all emergencyAlerts
 	const rateLimiterKey = "";
 
-	var message = "";
+	let message = "";
 	const numToTest = 36;
-	var sleepPerTest = 100;
-	for (var i = 0; i < numToTest; ++i) {
+	const sleepPerTest = 100;
+	for (let i = 0; i < numToTest; ++i) {
 		message = "Rate limiter test " + i.toString() + " at " + jrhMisc.getPreciseNowString();
 		jrResult.pushSuccess(message);
 		try {

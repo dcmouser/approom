@@ -76,7 +76,7 @@ arserver.setup(["testing"]);
 describe("client", function test() {
 	// we need to change timeout for this test
 	this.timeout(10000);
-	var client;
+	let client;
 
 	// connect to db at start, and tear down at end
 	before(async () => {
@@ -107,12 +107,12 @@ describe("client", function test() {
 
 
 	// find an application id
-	var app;
+	let app;
 	it("Invoke simple app lookup", async () => {
-		var query = {
+		const query = {
 			appShortcode: "A1",
 		};
-		var reply = await client.invoke("/api/app/lookup", query);
+		const reply = await client.invoke("/api/app/lookup", query);
 		assertNoErrorInReply(reply, "Invoking app lookup");
 		app = reply.app;
 		jrdebug.cdebug("Reply from app lookup:");
@@ -122,12 +122,12 @@ describe("client", function test() {
 	// create a new room
 	it("Invoke room add", async () => {
 		assert(app, "Missing app from previous lookup");
-		var query = {
+		const query = {
 			appid: app._id,
 			shortcode: "$RND",
 			label: "mocha test room",
 		};
-		var reply = await client.invoke("/api/room/add", query);
+		const reply = await client.invoke("/api/room/add", query);
 		assertNoErrorInReply(reply, "Invoking room add");
 		jrdebug.cdebug("Reply from room add:");
 		jrdebug.cdebugObj(reply);
@@ -135,13 +135,13 @@ describe("client", function test() {
 
 
 	// room lookup
-	var room;
+	let room;
 	it("Invoke simple room lookup", async () => {
-		var query = {
+		const query = {
 			appShortcode: "A1",
 			roomShortcode: "R1A1",
 		};
-		var reply = await client.invoke("/api/room/lookup", query);
+		const reply = await client.invoke("/api/room/lookup", query);
 		assertNoErrorInReply(reply, "Invoking room lookup");
 		room = reply.room;
 		jrdebug.cdebug("Reply from room lookup:");
@@ -151,10 +151,10 @@ describe("client", function test() {
 	// get roomdata in the room
 	it("Invoke roomdata lookup", async () => {
 		assert(room, "Missing room from previous lookup");
-		var query = {
+		const query = {
 			roomId: room._id,
 		};
-		var reply = await client.invoke("/api/roomdata/list", query);
+		const reply = await client.invoke("/api/roomdata/list", query);
 		assertNoErrorInReply(reply, "Invoking room lookup");
 		jrdebug.debug("Finished roomdata lookup, got " + reply.roomData.length + " items.");
 		jrdebug.cdebug("Reply from roomdata lookup:");
@@ -164,17 +164,17 @@ describe("client", function test() {
 	// get roomdata in the room via shortcode
 	it("Invoke roomdata lookup via shortcode directly", async () => {
 		assert(room, "Missing room from previous lookup");
-		var query = {
+		const query = {
 			roomShortcode: "R1A1",
 		};
-		var reply = await client.invoke("/api/roomdata/list", query);
+		const reply = await client.invoke("/api/roomdata/list", query);
 		assertNoErrorInReply(reply, "Invoking room lookup via shortcode");
 	});
 
 	// add a roomdata
 	it("Invoke roomdata add", async () => {
 		assert(room, "Missing room from previous lookup");
-		var query = {
+		const query = {
 			roomid: room._id,
 			label: "mocha test item",
 			extraData: {
@@ -183,7 +183,7 @@ describe("client", function test() {
 				e3: [1, 2, 3],
 			},
 		};
-		var reply = await client.invoke("/api/roomdata/add", query);
+		const reply = await client.invoke("/api/roomdata/add", query);
 		assertNoErrorInReply(reply, "Invoking roomdata add");
 		jrdebug.cdebug("Reply from roomdata add:");
 		jrdebug.cdebugObj(reply);
@@ -209,7 +209,7 @@ describe("client", function test() {
 //---------------------------------------------------------------------------
 function createTestClient() {
 	// create new client
-	var client = arclient.makeNewAppRoomClient();
+	const client = arclient.makeNewAppRoomClient();
 
 	// client options
 	const clientOptions = {
@@ -227,7 +227,7 @@ function createTestClient() {
 
 async function handleGetCredentialsCallbackFunction(clientp, hintMessage) {
 	jrdebug.cdebug("DEBUG - in client callback - handleGetCredentialsFunction: " + hintMessage);
-	var credentials = {
+	const credentials = {
 		usernameEmail: arserver.getConfigVal(appdef.DefConfigKeyTestingClientUsernameEmail),
 		password: arserver.getConfigVal(appdef.DefConfigKeyTestingClientPassword),
 	};

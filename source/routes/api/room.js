@@ -77,8 +77,8 @@ function setupRouter(urlPath) {
 //---------------------------------------------------------------------------
 async function routerLookup(req, res, next) {
 	// consume access token
-	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "access");
+	const jrResult = JrResult.makeNew();
+	const [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "access");
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResultTokenError(res, jrResult);
 		return;
@@ -87,29 +87,29 @@ async function routerLookup(req, res, next) {
 	// the api roomdata list function is for retrieving a list of (matching) roomdata items
 	// for a specific appid, and roomid, with optional filters (on data)
 	jrResult.clear();
-	var query = jrhExpress.parseReqGetJsonField(req, "query", jrResult);
+	const query = jrhExpress.parseReqGetJsonField(req, "query", jrResult);
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
 		return;
 	}
 
 	// now we expect to find appid, and room shortcode; error if missing
-	var appShortcode = jrhMisc.getNonNullValueFromObject(query, "appShortcode", jrResult, "application shortcode hosting the room");
-	var roomShortcode = jrhMisc.getNonNullValueFromObject(query, "roomShortcode", jrResult, "room shortcode");
+	const appShortcode = jrhMisc.getNonNullValueFromObject(query, "appShortcode", jrResult, "application shortcode hosting the room");
+	const roomShortcode = jrhMisc.getNonNullValueFromObject(query, "roomShortcode", jrResult, "room shortcode");
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
 		return;
 	}
 
 	// look up app id
-	var app = await AppModel.findOneByShortcode(appShortcode);
+	const app = await AppModel.findOneByShortcode(appShortcode);
 	if (!app) {
 		jrResult.pushError("Specified application shortcode [" + appShortcode + "] could not be found.");
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
 		return;
 	}
 	// look up the room
-	var room = await RoomModel.findOneByAppIdAndRoomShortcode(app.id, roomShortcode);
+	const room = await RoomModel.findOneByAppIdAndRoomShortcode(app.id, roomShortcode);
 	if (!room) {
 		jrResult.pushError("Could not find specified room with shortcode [" + roomShortcode + "] in specified app [" + appShortcode + "].");
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
@@ -127,7 +127,7 @@ async function routerLookup(req, res, next) {
 	}
 
 	// success
-	var result = {
+	const result = {
 		room,
 		// oringinalQuery: query,
 	};
@@ -143,8 +143,8 @@ async function routerLookup(req, res, next) {
 //---------------------------------------------------------------------------
 async function routerAdd(req, res, next) {
 	// consume access token
-	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "access");
+	const jrResult = JrResult.makeNew();
+	const [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "access");
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResultTokenError(res, jrResult);
 		return;
@@ -152,7 +152,7 @@ async function routerAdd(req, res, next) {
 
 	// get query
 	jrResult.clear();
-	var query = jrhExpress.parseReqGetJsonField(req, "query", jrResult);
+	const query = jrhExpress.parseReqGetJsonField(req, "query", jrResult);
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
 		return;
@@ -160,12 +160,12 @@ async function routerAdd(req, res, next) {
 
 	// allow lookup by app shortcode instead of id
 	if (!query.appId && query.appShortcode) {
-		var queryApp = await AppModel.findOneByShortcode(query.appShortcode);
+		const queryApp = await AppModel.findOneByShortcode(query.appShortcode);
 		query.appId = !queryApp ? null : queryApp.getIdAsString();
 	}
 
 	// now let's ask if user is actually ALLOWED to add a room to this app
-	var appId = query.appId;
+	const appId = query.appId;
 	const permission = appdef.DefAclActionAddData;
 	const permissionObjType = AppModel.getAclName();
 	const permissionObjId = appId;
@@ -176,17 +176,17 @@ async function routerAdd(req, res, next) {
 	}
 
 	// create the item
-	var room = RoomModel.createModel();
+	const room = RoomModel.createModel();
 	// force some values
 	room.creator = user.getIdAsM();
 
 	// validate and save the fields passed
-	var saveFields = RoomModel.getSaveFields("add");
-	var preValidatedFields = [];
+	const saveFields = RoomModel.getSaveFields("add");
+	const preValidatedFields = [];
 	// form fields that we dont complain about finding even though they arent for the form object
-	var ignoreFields = [];
+	const ignoreFields = [];
 
-	var roomdoc = await RoomModel.validateSave(jrResult, {}, true, user, query, saveFields, preValidatedFields, ignoreFields, room, RoomModel.getShouldBeOwned());
+	const roomdoc = await RoomModel.validateSave(jrResult, {}, true, user, query, saveFields, preValidatedFields, ignoreFields, room, RoomModel.getShouldBeOwned());
 
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
@@ -195,7 +195,7 @@ async function routerAdd(req, res, next) {
 
 
 	// success
-	var result = {
+	const result = {
 		room: roomdoc,
 	};
 

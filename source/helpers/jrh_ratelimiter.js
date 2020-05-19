@@ -24,7 +24,7 @@ const jrhMisc = require("./jrh_misc");
 
 //---------------------------------------------------------------------------
 // module global
-var rateLimiters = {};
+const rateLimiters = {};
 //---------------------------------------------------------------------------
 
 
@@ -34,7 +34,7 @@ function setupRateLimiter(name, options) {
 	assert(name);
 
 	// make it
-	var rlimiter = new ratelimiter.RateLimiterMemory({
+	const rlimiter = new ratelimiter.RateLimiterMemory({
 		keyPrefix: "rlflx_" + name,
 		...options,
 	});
@@ -46,7 +46,7 @@ function setupRateLimiter(name, options) {
 
 function getRateLimiter(name) {
 	if (!rateLimiters[name]) {
-		throw Error("In getRateLimiter, could not find rate limiter under index '" + name + "'."); 
+		throw Error("In getRateLimiter, could not find rate limiter under index '" + name + "'.");
 	}
 	return rateLimiters[name];
 }

@@ -31,7 +31,7 @@ const jrequire = require("./jrequire");
  */
 async function jrGridList(req, listHelperData) {
 	//
-	var rethtml = "";
+	let rethtml = "";
 	const flagShowDebugInfo = false;
 	const flagShowTopPager = false;
 
@@ -46,17 +46,18 @@ async function jrGridList(req, listHelperData) {
 		`;
 
 	// insert data object for the table
-	var gridListDataJson = JSON.stringify(queryUrlData);
+	const gridListDataJson = JSON.stringify(queryUrlData);
+	// ATTN: 5/18/20 - IMPORTANT -- must use "var jrGridListData_" instead of "let jrGridListData_" or we get js error in browser
 	rethtml += `<script>
 			var jrGridListData_${tableid} = ${gridListDataJson};
 		</script>
 		`;
 
-	var pagerHtml = jrGridListPager(queryUrlData);
+	const pagerHtml = jrGridListPager(queryUrlData);
 
 	// link to ADD a new item
-	var addUrl = queryUrlData.baseUrl + "/add";
-	var addLabel = listHelperData.modelClass.getNiceName();
+	const addUrl = queryUrlData.baseUrl + "/add";
+	const addLabel = listHelperData.modelClass.getNiceName();
 	rethtml += `
 			<div class="float-right"><h4><a href="${addUrl}">Add ${addLabel}</a></h4></div>
 		`;
@@ -67,7 +68,7 @@ async function jrGridList(req, listHelperData) {
 	}
 
 	// show result count
-	var resultCount = queryUrlData.resultCount;
+	const resultCount = queryUrlData.resultCount;
 	rethtml += "<div><strong>Total items:" + resultCount.toString() + "</strong></div>";
 
 	// build table
@@ -85,7 +86,7 @@ async function jrGridList(req, listHelperData) {
 	// debug info
 	if (flagShowDebugInfo) {
 		rethtml += "<br/><hr/>";
-		var debugHtml = "<pre>listHelperData: " + JSON.stringify(listHelperData, null, "  ") + "</pre>";
+		const debugHtml = "<pre>listHelperData: " + JSON.stringify(listHelperData, null, "  ") + "</pre>";
 		rethtml += debugHtml;
 	}
 
@@ -132,7 +133,7 @@ async function jrGridList(req, listHelperData) {
  * @returns raw html string
  */
 async function jrGridListTable(req, listHelperData, queryUrlData) {
-	var rethtml = "";
+	let rethtml = "";
 
 	// beginning stuff
 	rethtml += `
@@ -166,7 +167,7 @@ async function jrGridListTable(req, listHelperData, queryUrlData) {
  * @returns raw html string
  */
 async function jrGridListTableData(req, listHelperData, queryUrlData) {
-	var rethtml = "";
+	let rethtml = "";
 
 	// data body start
 	rethtml += `
@@ -174,17 +175,17 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 		`;
 
 	// data content
-	var gridSchema = listHelperData.gridSchema;
-	var headerKeys = calcHeaderKeysNicely(gridSchema);
+	const gridSchema = listHelperData.gridSchema;
+	const headerKeys = calcHeaderKeysNicely(gridSchema);
 	const gridItems = listHelperData.gridItems;
 
 	//
-	var filterOptions = listHelperData.filterOptions;
-	var protectedFields = filterOptions.protectedFields;
-	var hiddenFields = filterOptions.hiddenFields;
+	const filterOptions = listHelperData.filterOptions;
+	const protectedFields = filterOptions.protectedFields;
+	const hiddenFields = filterOptions.hiddenFields;
 
 	// cache extra info for each header column
-	var extraInfo = {};
+	const extraInfo = {};
 	headerKeys.forEach((key) => {
 		extraInfo[key] = {
 			valformat: listHelperData.modelClass.getSchemaFieldVal(key, "format"),
@@ -194,11 +195,11 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 		};
 	});
 
-	var val, valtype, valfunc, valformat, valDisplay, valchoices, crudLink;
-	var extraInfoKey;
-	var item;
-	var numItems = gridItems.length;
-	for (var i = 0; i < numItems; i += 1) {
+	let val, valtype, valfunc, valformat, valDisplay, valchoices, crudLink;
+	let extraInfoKey;
+	let item;
+	const numItems = gridItems.length;
+	for (let i = 0; i < numItems; i += 1) {
 		item = gridItems[i];
 		// start
 		rethtml += `
@@ -221,15 +222,15 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 				// action column
 				rethtml += "<td scope=\"col\">";
 				// edit
-				var urlEdit = queryUrlData.baseUrl + "/edit/" + item._id;
+				const urlEdit = queryUrlData.baseUrl + "/edit/" + item._id;
 				rethtml += `<a href="${urlEdit}" title="edit">&#9998;</a> `;
 				// undelete
 				if (("disabled" in item) && item.disabled === 2) {
-					var urlUnDelete = queryUrlData.baseUrl + "/undelete/" + item._id;
+					const urlUnDelete = queryUrlData.baseUrl + "/undelete/" + item._id;
 					rethtml += ` <a href="${urlUnDelete}" title="undelete">&#9852;</a> `;
 				} else {
 					// delete
-					var urlDelete = queryUrlData.baseUrl + "/delete/" + item._id;
+					const urlDelete = queryUrlData.baseUrl + "/delete/" + item._id;
 					rethtml += ` <a href="${urlDelete}" title="delete">&#10008;</a> `;
 				}
 				rethtml += "</td>";
@@ -274,7 +275,7 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 				}
 				//
 				if (key === "_id") {
-					var url = queryUrlData.baseUrl + "/view/" + val;
+					const url = queryUrlData.baseUrl + "/view/" + val;
 					rethtml += `
 							<td scope="col"> <a href="${url}">${valDisplay}</a> </td>
 						`;
@@ -316,7 +317,7 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
  * @param {object} queryUrlData
  */
 async function jrGridListBulkActions(req, listHelperData, queryUrlData, tableid) {
-	var rethtml = "";
+	let rethtml = "";
 
 	// beginning
 	rethtml += "<div>With all checked: ";
@@ -363,20 +364,20 @@ async function jrGridListBulkActions(req, listHelperData, queryUrlData, tableid)
  */
 function jrGridListPager(queryUrlData) {
 	// see https://www.tutorialrepublic.com/twitter-bootstrap-tutorial/bootstrap-pagination.php
-	var rethtml = "";
+	let rethtml = "";
 
-	var pageNum = queryUrlData.pageNum;
-	var resultCount = queryUrlData.resultCount;
-	var pageSize = queryUrlData.pageSize;
+	const pageNum = queryUrlData.pageNum;
+	const resultCount = queryUrlData.resultCount;
+	const pageSize = queryUrlData.pageSize;
 	//
-	var pageCount = Math.ceil(resultCount / pageSize);
-	var pageSurroundCount = 3;
+	const pageCount = Math.ceil(resultCount / pageSize);
+	const pageSurroundCount = 3;
 	//
-	var pageStart = Math.max(1, pageNum - pageSurroundCount);
-	var pageEnd = Math.min(pageCount, pageNum + pageSurroundCount);
-	var pageUp = Math.max(1, pageNum - ((pageSurroundCount * 2) + 1));
-	var pageDown = Math.min(pageCount, pageNum + ((pageSurroundCount * 2) + 1));
-	var flagActive;
+	const pageStart = Math.max(1, pageNum - pageSurroundCount);
+	const pageEnd = Math.min(pageCount, pageNum + pageSurroundCount);
+	const pageUp = Math.max(1, pageNum - ((pageSurroundCount * 2) + 1));
+	const pageDown = Math.min(pageCount, pageNum + ((pageSurroundCount * 2) + 1));
+	let flagActive;
 	//
 	// we want like:  FIRST | PREVIOUS | ... | 4 | 5 | 6 | 7 | 8 | ... | NEXT | LAST
 
@@ -390,7 +391,7 @@ function jrGridListPager(queryUrlData) {
 	rethtml += jrGridListPagerItem("Previous", pageNum - 1, (pageNum > 1), false, queryUrlData);
 	rethtml += jrGridListPagerItem("...", pageUp, (pageUp < pageNum), false, queryUrlData);
 	// surrounding numbers around current page
-	for (var i = pageStart; i <= pageEnd; i += 1) {
+	for (let i = pageStart; i <= pageEnd; i += 1) {
 		if (i === pageNum) {
 			flagActive = true;
 		} else {
@@ -444,18 +445,18 @@ function jrGridListPager(queryUrlData) {
  */
 function jrGridListPagerItem(label, pageIndex, flagLink, flagActive, queryUrlData) {
 	// make an item for pager
-	var liclass = "";
+	let liclass = "";
 	if (flagActive) {
 		liclass += " active";
 	}
 	if (!flagLink) {
 		liclass += " disabled";
 	}
-	var url = "#";
-	var updateObjString = "{pageNum: '" + pageIndex.toString() + "'}";
-	var onclick = "requestGridUpdate('" + queryUrlData.tableId + "', " + updateObjString + ", false);return false;";
+	const url = "#";
+	const updateObjString = "{pageNum: '" + pageIndex.toString() + "'}";
+	const onclick = "requestGridUpdate('" + queryUrlData.tableId + "', " + updateObjString + ", false);return false;";
 
-	var rethtml = `
+	const rethtml = `
 		<li class="page-item${liclass}">
 			<a href="${url}" onclick="${onclick}" class="page-link">${label}</a>
 		</li>
@@ -481,8 +482,8 @@ function jrGridListPagerItemPerPage(label, newPageSize, currentPageSize, flagLin
 	if (label === null) {
 		label = newPageSize.toString();
 	}
-	var flagActive = (newPageSize === currentPageSize);
-	var liclass = "";
+	const flagActive = (newPageSize === currentPageSize);
+	let liclass = "";
 	if (flagActive) {
 		liclass += " active";
 	}
@@ -490,11 +491,11 @@ function jrGridListPagerItemPerPage(label, newPageSize, currentPageSize, flagLin
 		liclass += " disabled";
 	}
 
-	var url = "#"; // queryUrlData.baseUrl + "?pageSize=" + newPageSize.toString();
-	var updateObjString = "{pageSize: '" + newPageSize.toString() + "'}";
-	var onclick = "requestGridUpdate('" + queryUrlData.tableId + "', " + updateObjString + ", true);return false;";
+	const url = "#"; // queryUrlData.baseUrl + "?pageSize=" + newPageSize.toString();
+	const updateObjString = "{pageSize: '" + newPageSize.toString() + "'}";
+	const onclick = "requestGridUpdate('" + queryUrlData.tableId + "', " + updateObjString + ", true);return false;";
 
-	var rethtml = `
+	const rethtml = `
 		<li class="page-item${liclass}">
 			<a href="${url}" onclick="${onclick}" class="page-link">${label}</a>
 		</li>
@@ -517,7 +518,7 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 	const flagUseLabel = true;
 
 	// header start
-	var rethtml = "";
+	let rethtml = "";
 	rethtml += `
 			<thead>
 		`;
@@ -528,13 +529,13 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 		`;
 
 	// data content
-	var gridSchema = listHelperData.gridSchema;
-	var headerKeys = calcHeaderKeysNicely(gridSchema);
-	var filterOptions = listHelperData.filterOptions;
-	var protectedFields = filterOptions.protectedFields;
-	var hiddenFields = filterOptions.hiddenFields;
+	const gridSchema = listHelperData.gridSchema;
+	const headerKeys = calcHeaderKeysNicely(gridSchema);
+	const filterOptions = listHelperData.filterOptions;
+	const protectedFields = filterOptions.protectedFields;
+	const hiddenFields = filterOptions.hiddenFields;
 
-	var onclick;
+	let onclick;
 	headerKeys.forEach((key) => {
 		if (jrhMisc.isInAnyArray(key, hiddenFields)) {
 			return;
@@ -556,17 +557,17 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 					<th scope="col">${key}</th>
 				`;
 		} else {
-			var sortDir = jrGridListTableHeaderSortDir(key, queryUrlData);
-			var extraLabel = "";
-			var updateObjString;
-			var title;
-			var keyLabel;
+			const sortDir = jrGridListTableHeaderSortDir(key, queryUrlData);
+			let extraLabel = "";
+			let updateObjString;
+			let title;
+			let keyLabel;
 			if (sortDir) {
 				if (sortDir === "asc") {
-					extraLabel = " &#9660;";
+					extraLabel = " &#9650;";
 					updateObjString = "{sortDir: 'desc'}";
 				} else {
-					extraLabel = " &#9650;";
+					extraLabel = " &#9660;";
 					updateObjString = "{sortDir: 'asc'}";
 				}
 				title = "change sort direction";
@@ -620,14 +621,14 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 					<th scope="col">&nbsp;</th>
 				`;
 		} else {
-			var val = queryUrlData.fieldFilters[key];
+			let val = queryUrlData.fieldFilters[key];
 			if (val === undefined) {
 				val = "";
 			} else {
 				val = jrhMisc.makeSafeForFormInput(val);
 			}
-			var onkeydown = "jrGridGenericOnEnterRefresh(event, '" + queryUrlData.tableId + "', this, true)";
-			var size = listHelperData.modelClass.getSchemaFieldVal(key, "filterSize", defaultFilterInputSize);
+			const onkeydown = "jrGridGenericOnEnterRefresh(event, '" + queryUrlData.tableId + "', this, true)";
+			const size = listHelperData.modelClass.getSchemaFieldVal(key, "filterSize", defaultFilterInputSize);
 			if (!size) {
 				rethtml += `
 						<th scope="col"> &nbsp; </th>
@@ -675,7 +676,7 @@ function jrGridListTableHeaderSortDir(key, queryUrlData) {
  * @returns raw html string
  */
 function calcHeaderKeysNicely(gridSchema) {
-	var headerKeys = Object.keys(gridSchema);
+	const headerKeys = Object.keys(gridSchema);
 
 	// add checkbox
 	headerKeys.unshift("_checkbox");
@@ -708,13 +709,13 @@ function jrGridListShowHiddenOptions(req, listHelperData, queryUrlData) {
 	const tableid = queryUrlData.tableId;
 	const appdef = jrequire("appdef");
 
-	var rethtml = "";
+	let rethtml = "";
 
 	if (false) {
 		// start stuff
 		rethtml += "<hr/><div>";
 		// build form input
-		var selectedid = "all";
+		const selectedid = "all";
 		rethtml += "Show: " + jrhText.jrHtmlFormOptionListSelect("showdisabled", appdef.DefShowStateModeLabels, selectedid, false);
 	}
 

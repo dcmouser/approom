@@ -55,7 +55,7 @@ function mergeArraysDedupe(array1, array2) {
  * @returns true if val is found in any of the arrays
  */
 function isInAnyArray(val, ...arrays) {
-	for (var ar of arrays) {
+	for (const ar of arrays) {
 		if (ar && ar.indexOf(val) !== -1) {
 			return true;
 		}
@@ -73,7 +73,7 @@ function isInAnyArray(val, ...arrays) {
  * @param {object} source
  */
 function copyMissingValues(target, source) {
-	for (var key in source) {
+	for (const key in source) {
 		if (!(key in target)) {
 			target[key] = source[key];
 		}
@@ -109,7 +109,7 @@ async function asyncAwaitForEachFunctionCall(array, func) {
  * @param {function} func
  */
 async function asyncAwaitForEachObjectKeyFunctionCall(obj, func) {
-	for (var key in obj) {
+	for (const key in obj) {
 		await func(key, obj[key]);
 	}
 }
@@ -168,7 +168,7 @@ function firstCoercedTrueValue(...args) {
 	if (!args || args.length === 0) {
 		return undefined;
 	}
-	for (var arg of args) {
+	for (const arg of args) {
 		if (arg) {
 			return arg;
 		}
@@ -208,7 +208,7 @@ function isObjectEmpty(obj) {
  * @returns Date
  */
 function DateNowPlusMinutes(expirationMinutes) {
-	var expirationDate = new Date();
+	const expirationDate = new Date();
 	expirationDate.setMinutes(expirationDate.getMinutes() + expirationMinutes);
 	return expirationDate;
 }
@@ -233,8 +233,8 @@ function DateNowPlusMinutes(expirationMinutes) {
  */
 function shallowCopy(source) {
 	// just a simple wrapper to make code easier to understand
-	// var obj = Object.assign({}, source);
-	var obj = { ...source };
+	// let obj = Object.assign({}, source);
+	const obj = { ...source };
 	return obj;
 }
 
@@ -248,8 +248,8 @@ function shallowCopy(source) {
  * @returns new object deep copy of the source
  */
 function deepIterationCopy(src) {
-	var target = {};
-	for (var prop in src) {
+	const target = {};
+	for (const prop in src) {
 		if (Object.prototype.hasOwnProperty.call(src, prop)) {
 			if (isSimpleObject(src[prop])) {
 				// it's a nested property
@@ -327,7 +327,7 @@ function getCompactNowString() {
 }
 
 function jrZeroPadInt(intval, padding) {
-	var str = intval.toString();
+	let str = intval.toString();
 	while (str.length < padding) {
 		str = "0" + str;
 	}
@@ -387,7 +387,7 @@ function makeSafeForFormInput(str) {
  */
 function isSimpleObject(maybeObj) {
 	// return (maybeObj !== undefined && maybeObj !== null && maybeObj.constructor === Object);
-	var type = typeof maybeObj;
+	const type = typeof maybeObj;
 	return type === "object" && !!maybeObj;
 }
 
@@ -400,7 +400,7 @@ function isSimpleObject(maybeObj) {
  */
 function isObjectHashMappableType(maybeObj) {
 	// return (maybeObj !== undefined && maybeObj !== null && maybeObj.constructor === Object);
-	var type = typeof maybeObj;
+	const type = typeof maybeObj;
 	return type === "object" && !!maybeObj;
 }
 
@@ -435,7 +435,7 @@ function createObjectFromJsonParse(str, defaultVal) {
 	if (!str) {
 		return defaultVal;
 	}
-	var parsedObj = JSON.parse(str);
+	const parsedObj = JSON.parse(str);
 	return parsedObj;
 }
 //---------------------------------------------------------------------------
@@ -454,25 +454,25 @@ function createObjectFromJsonParse(str, defaultVal) {
  * @returns string representation of ip address
  */
 function getServerIpAddress() {
-	var os = require("os");
+	const os = require("os");
 
-	var ifaces = os.networkInterfaces();
-	var ifacesKeys = Object.keys(ifaces);
-	var iface, ifname, ifaceset;
-	var bestip;
-	var alias = 0;
+	const ifaces = os.networkInterfaces();
+	const ifacesKeys = Object.keys(ifaces);
+	let iface, ifname, ifaceset;
+	let bestip;
+	let alias = 0;
 
 	// jrdebug.debugObj(ifaces, "ifaces");
 	// jrdebug.debugObj(ifacesKeys, "ifacesKeys");
 
-	for (var j = 0; j < ifacesKeys.length; ++j) {
+	for (let j = 0; j < ifacesKeys.length; ++j) {
 		ifname = ifacesKeys[j];
 
 		ifaceset = ifaces[ifname];
 		// jrdebug.debugObj(ifaceset, "ifaceset");
 
 		alias = 0;
-		for (var i = 0; i < ifaceset.length; ++i) {
+		for (let i = 0; i < ifaceset.length; ++i) {
 			iface = ifaceset[i];
 			// jrdebug.debugObj(iface, "iface[" + ifname + "]");
 			if (iface.family !== "IPv4" || iface.internal !== false) {
@@ -510,14 +510,14 @@ function getServerIpAddress() {
  * @param {string} separatorStr
  */
 function findLongestPrefixAndRemainder(longstr, haystack, separatorStr) {
-	var longestLen = 0;
-	var longestStr = "";
+	let longestLen = 0;
+	let longestStr = "";
 	const separatorStrLength = separatorStr.length;
 	const longstrLength = longstr.length;
-	var candidateLength;
-	var candidate;
+	let candidateLength;
+	let candidate;
 	// walk array of strings
-	for (var i = 0; i < haystack.length; ++i) {
+	for (let i = 0; i < haystack.length; ++i) {
 		candidate = haystack[i];
 		candidateLength = candidate.length;
 		if (candidateLength > longstrLength) {
@@ -566,11 +566,13 @@ function findLongestPrefixAndRemainder(longstr, haystack, separatorStr) {
  */
 function objToString(obj, flagCompact) {
 	// return util.inspect(obj, false, null, true /* enable colors */);
-	var options = {};
+	let options = {};
 	if (flagCompact) {
 		options = {
 			showHidden: false,
-			depth: 2,
+			depth: 5,
+			// showHidden: true,
+			// depth: 10,
 			colors: false,
 			compact: true,
 			breakLength: Infinity,
@@ -578,13 +580,30 @@ function objToString(obj, flagCompact) {
 	} else {
 		options = {
 			showHidden: false,
-			depth: 2,
+			depth: 5,
+			// showHidden: true,
+			// depth: 10,
 			colors: false,
 			compact: false,
 			breakLength: 80,
 		};
 	}
 	return util.inspect(obj, options);
+}
+
+
+/**
+ * Stringify2 an object nicely for display on console
+ * ##### Notes
+ *  * See <a href="https://stackoverflow.com/questions/10729276/how-can-i-get-the-full-object-in-node-jss-console-log-rather-than-object">stackoverflow</a>
+ *  * See <a href="https://nodejs.org/api/util.html#util_util_inspect_object_options">nodejs docs</a>
+ *
+ * @param {*} obj - the object to stringify
+ * @param {*} flagCompact - if true then we use a compact single line output format
+ * @returns string suitable for debug/diagnostic display
+ */
+function objToString2(obj, flagCompact) {
+	return JSON.stringify(obj, null, "  ");
 }
 //---------------------------------------------------------------------------
 
@@ -695,7 +714,6 @@ function resolvePossiblyRelativeDirectory(dirpath, basedir) {
  * see https://stackoverflow.com/questions/14249506/how-can-i-wait-in-node-js-javascript-l-need-to-pause-for-a-period-of-time
  *
  * @param {*} ms
- * @returns
  */
 function usleep(ms) {
 	return new Promise((resolve) => {
@@ -744,6 +762,7 @@ module.exports = {
 	findLongestPrefixAndRemainder,
 
 	objToString,
+	objToString2,
 
 	asyncNextTick,
 

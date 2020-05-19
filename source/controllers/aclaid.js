@@ -128,7 +128,7 @@ class AclAid {
 	async createDefaultAclCrudGrantsForAllModelResources() {
 		// loop all models and call this.createAclEditViewGrantsForResource on them
 		const arserver = jrequire("arserver");
-		var aclObjName;
+		let aclObjName;
 
 		await jrhMisc.asyncAwaitForEachObjectKeyFunctionCall(arserver.getModels(), async (key, val) => {
 			aclObjName = val.getAclName();
@@ -187,7 +187,7 @@ class AclAid {
 
 
 
-
+	//---------------------------------------------------------------------------
 	/**
 	 * Test whether any of the passed roles imply a permission to perform an action (on an optional target)
 	 *
@@ -201,8 +201,8 @@ class AclAid {
 		// return true if any of the specified roles (array) have permission
 		// jrdebug.cdebug("In anyRolesImplyPermission with action = " + action + ", target = " + target);
 		// jrdebug.cdebugObj(roles, "roles");
-		for (var key in roles) {
-			if (await this.roleImpliesPermission(roles[key], action, target) === true) {
+		for (let i = 0; i < roles.length; i++) {
+			if (await this.roleImpliesPermission(roles[i], action, target) === true) {
 				// yes!
 				// jrdebug.cdebug("anyRolesImplyPermission, role check returning: YES, has permission [due to role " + roles[key] + "].");
 				return true;
@@ -230,8 +230,8 @@ class AclAid {
 		jrdebug.cdebug("In roleImpliesPermission with action = " + action + ", target = " + target + ", role = " + role);
 
 		try {
-			var permission = await this.roleAcl.can(role).execute(action).on(target);
-			var granted = (permission.granted === true);
+			const permission = await this.roleAcl.can(role).execute(action).on(target);
+			const granted = (permission.granted === true);
 			jrdebug.cdebug("RoleImpliesPermission, role check returning: " + granted);
 			return granted;
 		} catch (err) {
@@ -257,7 +257,7 @@ class AclAid {
 	 */
 	calcAclStructure() {
 		// return an object with all acl info for debugging
-		var aclStructure = {};
+		const aclStructure = {};
 		aclStructure.grants = this.roleAcl.getGrants();
 		return aclStructure;
 	}
@@ -266,38 +266,61 @@ class AclAid {
 
 
 
-	//---------------------------------------------------------------------------
-	/**
-	 * Takes an array of user roles (see definition below) and build a nice html list to display
-	 *
-	 * @param {array} roles - an array of object with fields .uname (username), .uid (userid), .r (role string), .t (target acl trype string)
-	 * @returns html string
-	 * @memberof AclAid
-	 */
-	buildHtmlOfFullUserRoleArray(roles) {
-		if (!roles) {
-			return "";
-		}
 
-		// build a nice table list of roles
-		var userhtml, rolehtml, objecthtml;
-		var rethtml = "<ul>\n";
 
-		roles.forEach((role) => {
-			userhtml = role.uname + "(#" + role.uid + ")";
-			rolehtml = role.r;
-			if (role.i === appdef.DefAclObjectIdAll) {
-				objecthtml = "all " + role.t + "s";
-			} else {
-				objecthtml = role.t + " #" + role.i;
-			}
-			rethtml += "<li>" + userhtml + " has role [" + rolehtml + "] on [" + objecthtml + "]</li>";
-		});
 
-		rethtml += "</ul>";
-		return rethtml;
-	}
-	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -317,7 +340,7 @@ class AclAid {
 	 * @returns JrResult object
 	 * @memberof AclAid
 	// example roleChange object:
-	var roleChange = {
+	let roleChange = {
 		operation: "add", // can be "add" or "remove"
 		role: req.body.role,
 		object: {
@@ -334,24 +357,24 @@ class AclAid {
 	};
 	 */
 	async performRoleChange(roleChange) {
-		var jrResult = JrResult.makeNew();
+		const jrResult = JrResult.makeNew();
 
 		// first step is lookup key roleChange fields, and throw any errors
-		var rcobj = await this.roleChangeParse(roleChange, jrResult);
-		var petitioner = rcobj.petitioner;
-		var recipient = rcobj.recipient;
+		const rcobj = await this.roleChangeParse(roleChange, jrResult);
+		const petitioner = rcobj.petitioner;
+		const recipient = rcobj.recipient;
 
 		// next step is to see if petitioner is ALLOWED to make this role change (has sufficient permission to do so)
 		// perhaps for Any given role R, we can ask if the petitioner has role "operation.R"..
 		// we need to be careful about missing object ids, which can mean permission for all objects
 		if (!jrResult.isError()) {
 			// requiredAction will be something like "add.moderator"
-			var petitionerAclAction = rcobj.operation + "." + rcobj.role;
+			const petitionerAclAction = rcobj.operation + "." + rcobj.role;
 			// jrdebug.debugObj(rcobj, "RCOBJ");
 			// now ask if petitioner has permission to perform petitionerAclAction on object
-			var hasPermission;
+			let hasPermission;
 			if (rcobj.object) {
-				var rcobjModelClass = rcobj.object.getModelClass();
+				const rcobjModelClass = rcobj.object.getModelClass();
 				hasPermission = await petitioner.aclHasPermission(petitionerAclAction, rcobjModelClass.getAclName(), rcobj.object.getIdAsString());
 				if (!hasPermission) {
 					jrResult.pushError("petitioner (" + petitioner.getIdAsString() + ") does not have permission to grant [" + petitionerAclAction + "] to recipient " + recipient.getIdAsString() + " on " + rcobjModelClass.getNiceName() + " #" + rcobj.object.getIdAsString());
@@ -366,15 +389,16 @@ class AclAid {
 
 		// next step is to perform the role change (add or delete)
 		if (!jrResult.isError()) {
-			recipient.makeRoleAclChange(rcobj.operation, rcobj.role, rcobj.object, jrResult);
+			await recipient.makeRoleAclChange(rcobj.operation, rcobj.role, rcobj.object, jrResult);
 		}
 
 		// save any changes
 		if (!jrResult.isError()) {
 			await recipient.dbSave(jrResult);
 			// log what we just did?
-			// ATTN: TO DO log change
-			jrResult.pushSuccess("Role changed successfully.");
+			// ATTN: TODO log change
+			// ATTN: TODO improve this message with details
+			jrResult.pushSuccess("Role change successful.");
 		}
 
 
@@ -394,7 +418,7 @@ class AclAid {
 	 * @returns object
 	 */
 	async roleChangeParse(roleChange, jrResult) {
-		var roleChangeParsed = {};
+		const roleChangeParsed = {};
 
 		// first operation, which must be add or delete
 		// role object, which cannot be blank
@@ -489,8 +513,8 @@ class AclAid {
 			return objDef.object;
 		}
 		// parse it from model and id
-		var modelClass = objDef.model;
-		var doc = await modelClass.findOneById(objDef.id);
+		const modelClass = objDef.model;
+		const doc = await modelClass.findOneById(objDef.id);
 		if (doc) {
 			return doc;
 		}
@@ -524,7 +548,7 @@ class AclAid {
 		}
 		if (objDef.usernameEmailId) {
 			// parse it from username / id
-			var user = await UserModel.findUserByUsernameEmailOrId(objDef.usernameEmailId);
+			const user = await UserModel.findUserByUsernameEmailOrId(objDef.usernameEmailId);
 			if (user) {
 				return user;
 			}

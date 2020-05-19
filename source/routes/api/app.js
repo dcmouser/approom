@@ -76,8 +76,8 @@ function setupRouter(urlPath) {
 //---------------------------------------------------------------------------
 async function routerLookup(req, res, next) {
 	// consume access token
-	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "access");
+	const jrResult = JrResult.makeNew();
+	const [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "access");
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResultTokenError(res, jrResult);
 		return;
@@ -86,21 +86,21 @@ async function routerLookup(req, res, next) {
 	// the api roomdata list function is for retrieving a list of (matching) roomdata items
 	// for a specific appid, and roomid, with optional filters (on data)
 	jrResult.clear();
-	var query = jrhExpress.parseReqGetJsonField(req, "query", jrResult);
+	const query = jrhExpress.parseReqGetJsonField(req, "query", jrResult);
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
 		return;
 	}
 
 	// now we expect to find appid, and room shortcode; error if missing
-	var appShortcode = jrhMisc.getNonNullValueFromObject(query, "appShortcode", jrResult, "application shortcode");
+	const appShortcode = jrhMisc.getNonNullValueFromObject(query, "appShortcode", jrResult, "application shortcode");
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
 		return;
 	}
 
 	// look up app id
-	var app = await AppModel.findOneByShortcode(appShortcode);
+	const app = await AppModel.findOneByShortcode(appShortcode);
 	if (!app) {
 		jrResult.pushError("Specified application shortcode [" + appShortcode + "] could not be found.");
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
@@ -118,7 +118,7 @@ async function routerLookup(req, res, next) {
 	}
 
 	// success
-	var result = {
+	const result = {
 		app,
 		// oringinalQuery: query,
 	};

@@ -28,6 +28,9 @@ arGlobals.setupDefaultModulePaths();
 // requirement service locator
 const jrequire = require("../helpers/jrequire");
 
+// constants
+const appdef = jrequire("appdef");
+
 // dynamic dependency requires
 const arserver = jrequire("arserver");
 const UserModel = jrequire("models/user");
@@ -115,20 +118,6 @@ describe("user", function test() {
 		await arserver.shutDown();
 	});
 
-
-
-	it("Checking admin password is still set to default", async () => {
-		// get admin user
-		var user = await UserModel.findUserByUsername("admin");
-		assert(user, "User with 'admin' username not found");
-
-		// test password see if its default
-		var plaintextPassword = UserModel.getPasswordAdminPlaintextDefault();
-		var bretv = await user.testPlaintextPassword(plaintextPassword);
-
-		assert(bretv, "Admin user password is not set to default value");
-	});
-
 });
 //---------------------------------------------------------------------------
 
@@ -160,26 +149,24 @@ describe("fetch", function test() {
 
 	it("Fetching about page from http server", async () => {
 		// fetch about page
-		var url, responseData, data;
 
 		// test http server by getting about page
-		url = arserver.getBaseServerIpHttp() + "/help/about";
+		const url = arserver.getBaseServerIpHttp() + "/help/about";
 		jrdebug.cdebug("Fetching from url: " + url);
-		responseData = await jrhAxios.getCatchError(url);
-		data = responseData.data;
+		const responseData = await jrhAxios.getCatchError(url);
+		const data = responseData.data;
 		assert((data && data.success === "about"), "Failed to fetch About info from http server.");
 	});
 
 
 	it("Fetching about page from https server", async () => {
 		// fetch about page
-		var url, responseData, data;
 
 		// test https server by getting about page
-		url = arserver.getBaseServerIpHttps() + "/help/about";
+		const url = arserver.getBaseServerIpHttps() + "/help/about";
 		jrdebug.cdebug("Fetching from url: " + url);
-		responseData = await jrhAxios.getCatchError(url);
-		data = responseData.data;
+		const responseData = await jrhAxios.getCatchError(url);
+		const data = responseData.data;
 		assert((data && data.success === "about"), "Failed to fetch About info from https server.");
 	});
 

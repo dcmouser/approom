@@ -87,7 +87,8 @@ exports.DefAclObjectTypeApp = "app";
 exports.DefAclObjectTypeRoom = "room";
 
 // special objectId meaning all objectid
-exports.DefAclObjectIdAll = "ALL";
+// ATTN: we no longer use this, we use NULL for objectId when we mean ALL
+exports.DefAclObjectIdAll = null;
 
 // actions
 exports.DefAclActionAdminister = "administer";
@@ -228,9 +229,8 @@ exports.DefConfigKeyLogFileBaseName = "logging:FILENAME_BASE";
 exports.DefConfigLoggingAnnouncement = "logging:ANNOUNCEMENT";
 //
 exports.DefConfigKeyExitOnFatalError = "general:EXIT_ON_FATAL_ERROR";
+//
+exports.DefConfigKeySetupUserArray = "setup:users";
 //---------------------------------------------------------------------------
 
 
-//---------------------------------------------------------------------------
-exports.DefDbShutdownSleepMs = 1000;
-//---------------------------------------------------------------------------

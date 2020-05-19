@@ -79,8 +79,8 @@ function setupRouter(urlPath) {
 //---------------------------------------------------------------------------
 async function routerList(req, res, next) {
 	// consume access token
-	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "access");
+	const jrResult = JrResult.makeNew();
+	const [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "access");
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResultTokenError(res, jrResult);
 		return;
@@ -89,7 +89,7 @@ async function routerList(req, res, next) {
 	// the api roomdata list function is for retrieving a list of (matching) roomdata items
 	// for a specific appid, and roomid, with optional filters (on data)
 	jrResult.clear();
-	var query = jrhExpress.parseReqGetJsonField(req, "query", jrResult);
+	const query = jrhExpress.parseReqGetJsonField(req, "query", jrResult);
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
 		return;
@@ -97,12 +97,12 @@ async function routerList(req, res, next) {
 
 	// allow lookup by app shortcode instead of id
 	if (!query.roomId && query.roomShortcode) {
-		var queryRoom = await RoomModel.findOneByShortcode(query.roomShortcode);
+		const queryRoom = await RoomModel.findOneByShortcode(query.roomShortcode);
 		query.roomId = !queryRoom ? null : queryRoom.getIdAsString();
 	}
 
 	// get roomdata items for room
-	var roomId = jrhMisc.getNonNullValueFromObject(query, "roomId", jrResult, "room id");
+	const roomId = jrhMisc.getNonNullValueFromObject(query, "roomId", jrResult, "room id");
 	if (roomId && !jrhMongo.isValidMongooseObjectId(roomId)) {
 		jrResult.pushFieldError("roomId", "Bad syntax for rooomId: " + roomId);
 	}
@@ -123,15 +123,15 @@ async function routerList(req, res, next) {
 
 	// get all room data
 	const RoomDataModel = jrequire("models/roomdata");
-	var findArgs = {
+	const findArgs = {
 		roomid: roomId,
 	};
-	var roomData = await RoomDataModel.findAllExec(findArgs);
+	const roomData = await RoomDataModel.findAllExec(findArgs);
 
 
 
 	// success
-	var result = {
+	const result = {
 		roomData,
 		// oringinalQuery: query,
 	};
@@ -149,8 +149,8 @@ async function routerGet(req, res, next) {
 
 async function routerAdd(req, res, next) {
 	// consume access token
-	var jrResult = JrResult.makeNew();
-	var [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "access");
+	const jrResult = JrResult.makeNew();
+	const [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "access");
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResultTokenError(res, jrResult);
 		return;
@@ -158,7 +158,7 @@ async function routerAdd(req, res, next) {
 
 	// get query
 	jrResult.clear();
-	var query = jrhExpress.parseReqGetJsonField(req, "query", jrResult);
+	const query = jrhExpress.parseReqGetJsonField(req, "query", jrResult);
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
 		return;
@@ -166,12 +166,12 @@ async function routerAdd(req, res, next) {
 
 	// allow lookup by app shortcode instead of id
 	if (!query.roomId && query.roomShortcode) {
-		var queryRoom = await RoomModel.findOneByShortcode(query.roomShortcode);
+		const queryRoom = await RoomModel.findOneByShortcode(query.roomShortcode);
 		query.roomId = !queryRoom ? null : queryRoom.getIdAsString();
 	}
 
 	// now let's ask if user is actually ALLOWED to look at the data in this room
-	var roomId = query.roomId;
+	const roomId = query.roomId;
 	const permission = appdef.DefAclActionAddData;
 	const permissionObjType = RoomModel.getAclName();
 	const permissionObjId = roomId;
@@ -183,24 +183,24 @@ async function routerAdd(req, res, next) {
 
 	// create the item
 	const RoomDataModel = jrequire("models/roomdata");
-	var roomdata = RoomDataModel.createModel();
+	const roomdata = RoomDataModel.createModel();
 	// force some values
 	roomdata.creator = user.getIdAsM();
 
 	// validate and save the fields passed
-	var saveFields = RoomDataModel.getSaveFields("add");
-	var preValidatedFields = [];
+	const saveFields = RoomDataModel.getSaveFields("add");
+	const preValidatedFields = [];
 	// form fields that we dont complain about finding even though they arent for the form object
-	var ignoreFields = [];
+	const ignoreFields = [];
 
-	var roomdatadoc = await RoomDataModel.validateSave(jrResult, {}, true, user, query, saveFields, preValidatedFields, ignoreFields, roomdata, RoomModel.getShouldBeOwned());
+	const roomdatadoc = await RoomDataModel.validateSave(jrResult, {}, true, user, query, saveFields, preValidatedFields, ignoreFields, roomdata, RoomModel.getShouldBeOwned());
 	if (jrResult.isError()) {
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
 		return;
 	}
 
 	// success
-	var result = {
+	const result = {
 		roomData: roomdatadoc,
 	};
 

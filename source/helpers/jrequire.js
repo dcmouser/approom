@@ -31,7 +31,7 @@ const requirePaths = {};
 const plugins = {};
 
 // we normally used deferred loading, which is better if we might replace a path before it's needed; this can be overridden with call to setDeferredLoading(boolean)
-var flagDeferredLoading = true;
+let flagDeferredLoading = true;
 //---------------------------------------------------------------------------
 
 
@@ -175,7 +175,7 @@ function jrequire(name) {
 	}
 
 	// not found
-	var emsg = "In jrequire: The following module was requested to be loaded but was not registered with jrequire: " + name;
+	let emsg = "In jrequire: The following module was requested to be loaded but was not registered with jrequire: " + name;
 	if (Object.keys(requires).length === 0 && Object.keys(requirePaths).length === 0) {
 		emsg += ".  ATTENTION: No modules were registered with jrequire -- did you forget to register your module paths?";
 	}
