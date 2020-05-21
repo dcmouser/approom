@@ -80,7 +80,7 @@ class RoomdataModel extends ModelBaseMongoose {
 				label: "Room Id",
 				valueFunction: this.makeModelValueFunctionCrudObjectIdFromList(RoomModel, "roomid", "roomLabel", "roomlist"),
 				// alternative generic way to have crud pages link to this val
-				// crudLink: AppModel.getCrudUrlBase(),
+				// refModelClass: AppModel,
 				mongoose: {
 					type: mongoose.Schema.ObjectId,
 					required: true,
@@ -128,7 +128,7 @@ class RoomdataModel extends ModelBaseMongoose {
 		const roomid = obj.roomid;
 		if (roomid) {
 			const RoomModel = jrequire("models/room");
-			const room = await RoomModel.findOneById(roomid);
+			const room = await RoomModel.mFindOneById(roomid);
 			if (room) {
 				roomLabel = room.shortcode + " - " + room.label;
 			}

@@ -70,7 +70,7 @@ class SubscriptionModel extends ModelBaseMongoose {
 			//
 			userId: {
 				label: "User",
-				readOnly: ["edit"],
+				readOnly: true,
 				valueFunction: this.makeModelValueFunctionObjectId(UserModel),
 				mongoose: {
 					type: mongoose.Schema.ObjectId,

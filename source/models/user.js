@@ -119,7 +119,7 @@ class UserModel extends ModelBaseMongoose {
 			_id: {},
 			avatar: {
 				label: "Avatar",
-				valueFunction: async (viewType, fieldName, req, obj, helperData) => { return arserver.calcAvatarHtmlImgForUser(obj); },
+				valueFunction: async (viewType, fieldName, req, obj, editData, helperData) => { return arserver.calcAvatarHtmlImgForUser(obj); },
 				filterSize: 0,
 			},
 			//
@@ -147,10 +147,13 @@ class UserModel extends ModelBaseMongoose {
 			},
 			emailBypassVerify: {
 				label: "Bypass change verification email?",
-				// hide: ["view", "list"],
 				format: "checkbox",
-				visibleFunction: async (viewType, fieldName, req, obj, helperData) => {
-					if (viewType === "edit") {
+				visibleFunction: async (viewType, fieldName, req, obj, editData, helperData) => {
+					if (editData && fieldName in editData) {
+						// they are editing this field on a crud form, return the current editing value (not any previous val of object)
+						return editData[fieldName];
+					}
+					if (viewType === "add" || viewType === "edit") {
 						const bretv = await arserver.isLoggedInUserSiteAdmin(req);
 						return bretv;
 					}
@@ -168,7 +171,7 @@ class UserModel extends ModelBaseMongoose {
 			},
 			loginDate: {
 				label: "Date of last login",
-				hide: ["edit"],
+				hide: true,
 				mongoose: {
 					type: Date,
 				},
@@ -181,8 +184,8 @@ class UserModel extends ModelBaseMongoose {
 			},
 			roles: {
 				label: "Roles",
-				readOnly: ["edit"],
-				valueFunction: async (viewType, fieldName, req, obj, helperData) => { return await this.roleDisplayValueFunction(viewType, fieldName, req, obj, helperData); },
+				readOnly: true,
+				valueFunction: async (viewType, fieldName, req, obj, editData, helperData) => { return await this.roleDisplayValueFunction(viewType, fieldName, req, obj, editData, helperData); },
 				filterSize: 0,
 			},
 			// additional fields we may add dynamically for in-memory use, but not saved to db
@@ -299,7 +302,7 @@ class UserModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static async findUserByUsernameEmailOrId(usernameEmailId) {
+	static async mFindUserByUsernameEmailOrId(usernameEmailId) {
 		// find a user by their username and return the matching model
 		// return null if not found
 		// ATTN: Note that it is very important that our syntax forbids anyone having a username formatted like an email, or an email formatted like a username, otherwise
@@ -316,17 +319,17 @@ class UserModel extends ModelBaseMongoose {
 			if (!jrhMongo.isValidMongooseObjectId(uid)) {
 				user = null;
 			} else {
-				user = await this.findOneById(uid);
+				user = await this.mFindOneById(uid);
 			}
 		} else {
-			user = await this.findUserByUsernameEmail(usernameEmailId);
+			user = await this.mFindUserByUsernameEmail(usernameEmailId);
 		}
 
 		return user;
 	}
 
 
-	static async findUserByUsernameEmail(usernameEmail) {
+	static async mFindUserByUsernameEmail(usernameEmail) {
 		// find a user by their username and return the matching model
 		// return null if not found
 		// ATTN: Note that it is very important that our syntax forbids anyone having a username formatted like an email, or an email formatted like a username, otherwise
@@ -334,7 +337,7 @@ class UserModel extends ModelBaseMongoose {
 		if (!usernameEmail) {
 			return null;
 		}
-		const user = await this.findOneExec({
+		const user = await this.mFindOne({
 			$or: [
 				{ username: usernameEmail },
 				{ email: usernameEmail },
@@ -346,37 +349,37 @@ class UserModel extends ModelBaseMongoose {
 
 
 	// lookup user by their username
-	static async findUserByUsername(username) {
+	static async mFindUserByUsername(username) {
 		// find a user by their username and return the matching model
 		// return null if not found
 		if (!username) {
 			return null;
 		}
-		const user = await this.findOneExec({ username });
+		const user = await this.mFindOne({ username });
 		jrdebug.cdebugObj(user, "in findUserByUsername");
 		return user;
 	}
 
 	// lookup user by their id
-	static async findUserByIdAndUpdateLoginDate(id) {
+	static async mFindUserByIdAndUpdateLoginDate(id) {
 		// return null if not found
 		if (!id) {
 			return null;
 		}
 		//
-		const user = await this.findOneAndUpdateExec({ _id: id }, { $set: { loginDate: new Date() } });
+		const user = await this.mFindOneAndUpdate({ _id: id }, { $set: { loginDate: new Date() } });
 		//
 		return user;
 	}
 
 	// fine user by email
-	static async findUserByEmail(email) {
+	static async mFindUserByEmail(email) {
 		if (!email) {
 			return null;
 		}
 		// ask user model to find user by email
 		// return null if not found
-		const user = await this.findOneExec({ email });
+		const user = await this.mFindOne({ email });
 		return user;
 	}
 	//---------------------------------------------------------------------------
@@ -407,7 +410,7 @@ class UserModel extends ModelBaseMongoose {
 
 		// check if used by someone already
 		if (flagMustBeUnique) {
-			const user = await this.findUserByEmail(email);
+			const user = await this.mFindUserByEmail(email);
 			if (user && (!existingUser || existingUser.id !== user.id)) {
 				jrResult.pushFieldError("email", "Email already in use (" + email + ").");
 				return undefined;
@@ -449,7 +452,7 @@ class UserModel extends ModelBaseMongoose {
 
 		// check if used by someone already
 		if (flagMustBeUnique) {
-			const user = await this.findUserByUsername(username);
+			const user = await this.mFindUserByUsername(username);
 			if (user && (!existingUser || existingUser.id !== user.id)) {
 				jrResult.pushFieldError("username", "Username already in use.");
 				return undefined;
@@ -1081,9 +1084,9 @@ class UserModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	static async setupCreateUser(userObj) {
-		let doc = await this.findOneExec({ username: userObj.username });
+		let doc = await this.mFindOne({ username: userObj.username });
 		if (!doc && userObj.email) {
-			doc = await this.findOneExec({ email: userObj.email });
+			doc = await this.mFindOne({ email: userObj.email });
 		}
 		if (doc) {
 			// user already exists
@@ -1187,13 +1190,15 @@ class UserModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static async roleDisplayValueFunction(viewType, fieldName, req, obj, helperData) {
-		if (obj === undefined) {
-			return "n/a";
+	static async roleDisplayValueFunction(viewType, fieldName, req, obj, editData, helperData) {
+		if (editData && fieldName in editData) {
+			// no way to edit this
 		}
 
-		// OLD: original built in roles
-		// return this.stringifyUserRoles(obj.roles);
+		// can't get roles?
+		if (!obj || (!obj.getAllRolesOnThisObject && !obj._id)) {
+			return "n/a";
+		}
 
 		// get roles
 		const RoleModel = jrequire("models/role");
@@ -1201,7 +1206,7 @@ class UserModel extends ModelBaseMongoose {
 		if (obj.loadRolesForUserIfNeeded) {
 			// obj is a full user model obj
 			roles = await obj.loadRolesForUserIfNeeded();
-		} else {
+		} else if (obj._id) {
 			// obj is a simple json object we need to look up roles by id
 			roles = await RoleModel.loadRolesForUserById(obj._id);
 		}

@@ -88,7 +88,7 @@ class RoomModel extends ModelBaseMongoose {
 				label: "App Id",
 				valueFunction: this.makeModelValueFunctionCrudObjectIdFromList(AppModel, "appid", "appLabel", "applist"),
 				// alternative generic way to have crud pages link to this val
-				// crudLink: AppModel.getCrudUrlBase(),
+				// refModelClass: AppModel,
 				mongoose: {
 					type: mongoose.Schema.ObjectId,
 					required: true,
@@ -126,7 +126,7 @@ class RoomModel extends ModelBaseMongoose {
 			},
 			roles: {
 				label: "Roles",
-				readOnly: ["edit"],
+				readOnly: true,
 				filterSize: 0,
 				valueFunction: this.makeModelValueFunctionRoleOnObjectList(RoomModel),
 			},
@@ -216,7 +216,7 @@ class RoomModel extends ModelBaseMongoose {
 		const appid = obj.appid;
 		if (appid) {
 			const AppModel = jrequire("models/app");
-			const app = await AppModel.findOneById(appid);
+			const app = await AppModel.mFindOneById(appid);
 			if (app) {
 				appLabel = app.shortcode + " - " + app.label;
 			}
@@ -237,7 +237,7 @@ class RoomModel extends ModelBaseMongoose {
 
 	// see http://thecodebarbarian.com/whats-new-in-mongoose-53-async-iterators.html
 	static async buildSimpleRoomList(user) {
-		const docs = await this.findAllAndSelect("_id shortcode label");
+		const docs = await this.mFindAllAndSelect(null, "_id shortcode label");
 		const roomlist = [];
 		for (const doc of docs) {
 			roomlist[doc._id] = doc.shortcode + " - " + doc.label;
@@ -260,14 +260,14 @@ class RoomModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static async findOneByAppIdAndRoomShortcode(appId, roomShortcode) {
+	static async mFindOneByAppIdAndRoomShortcode(appId, roomShortcode) {
 		// first we need to find the app id from the appShortcode
 		// now find the room by its appid and shortcode
 		const args = {
 			appid: appId,
 			shortcode: roomShortcode,
 		};
-		const retv = await this.findOneExec(args);
+		const retv = await this.mFindOne(args);
 		return retv;
 	}
 	//---------------------------------------------------------------------------
@@ -315,7 +315,7 @@ class RoomModel extends ModelBaseMongoose {
 		// get a list (array) of all room ids that are attached to this app
 
 		const RoomDataModel = jrequire("models/roomdata");
-		const roomDataObjs = await RoomDataModel.findAllExec({ roomid }, "_id");
+		const roomDataObjs = await RoomDataModel.mFindAllAndSelect({ roomid }, "_id");
 
 		// convert array of objects with _id fields to simple id array
 		const roomDataIds = jrhMongo.convertArrayOfObjectIdsToIdArray(roomDataObjs);

@@ -29,7 +29,7 @@ const jrequire = require("./jrequire");
  * @param {obj} listHelperData - data to put in the grid
  * @returns raw html string
  */
-async function jrGridList(req, listHelperData) {
+async function jrGridList(req, listHelperData, csrfToken) {
 	//
 	let rethtml = "";
 	const flagShowDebugInfo = false;
@@ -88,6 +88,13 @@ async function jrGridList(req, listHelperData) {
 		rethtml += "<br/><hr/>";
 		const debugHtml = "<pre>listHelperData: " + JSON.stringify(listHelperData, null, "  ") + "</pre>";
 		rethtml += debugHtml;
+	}
+
+	// add csrf
+	if (csrfToken) {
+		rethtml += `
+			<input type="hidden" name="_csrf" value="${csrfToken}">
+		`;
 	}
 
 	// form wrapper start
@@ -189,36 +196,40 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 	headerKeys.forEach((key) => {
 		extraInfo[key] = {
 			valformat: listHelperData.modelClass.getSchemaFieldVal(key, "format"),
-			valfunc: listHelperData.modelClass.getSchemaFieldVal(key, "valueFunction"),
-			crudlink: listHelperData.modelClass.getSchemaFieldVal(key, "crudlink"),
+			valueFunction: listHelperData.modelClass.getSchemaFieldVal(key, "valueFunction"),
+			refModelClass: listHelperData.modelClass.getSchemaFieldVal(key, "refModelClass"),
 			valchoices: listHelperData.modelClass.getSchemaFieldVal(key, "choices"),
 		};
 	});
 
-	let val, valtype, valfunc, valformat, valDisplay, valchoices, crudLink;
+	let val, valtype, valueFunction, valformat, valDisplay, valchoices, refModelClass;
 	let extraInfoKey;
 	let item;
+	let url;
 	const numItems = gridItems.length;
+
 	for (let i = 0; i < numItems; i += 1) {
 		item = gridItems[i];
 		// start
 		rethtml += `
 				<tr>
 				`;
+
 		// item row
 		await jrhMisc.asyncAwaitForEachFunctionCall(headerKeys, async (key) => {
 			if (jrhMisc.isInAnyArray(key, hiddenFields)) {
 				return;
 			}
 
-			extraInfoKey = extraInfo[key];
-
-			if (key === "_checkbox") {
+			// SPECIAL COLUMNS
+			if (key === "_batch_checkbox") {
 				// checkbox for batch actions
 				rethtml += `
 						<td scope="col"> <input type="checkbox" name="checkboxid_${item._id}"> </td>
-					`;
-			} else if (key === "_actions") {
+				`;
+				return;
+			}
+			if (key === "_actions") {
 				// action column
 				rethtml += "<td scope=\"col\">";
 				// edit
@@ -234,59 +245,74 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 					rethtml += ` <a href="${urlDelete}" title="delete">&#10008;</a> `;
 				}
 				rethtml += "</td>";
-			} else {
-				val = item[key];
-				valformat = extraInfoKey.valformat;
-				valfunc = extraInfoKey.valfunc;
-				valchoices = extraInfoKey.valchoices;
-				if (valfunc) {
-					// use custom value resolving callback function
-					valDisplay = await valfunc("list", key, req, item, listHelperData);
-				} else {
-					if (valformat === "checkbox") {
-						if (val) {
-							valDisplay = "true";
-						} else {
-							valDisplay = "false";
-						}
-					} else if (valformat === "choices") {
-						// choices can be tricky.. because we'd like to show the nice choice option, but we also want to show underlying values so user can filter (esp. if it's numerical
-						valDisplay = jrhText.formatChoiceValueForGridDisplay(val, valchoices);
-					} else if (val === undefined) {
-						valDisplay = "";
-					} else if (val === null) {
-						valDisplay = "null";
-					} else {
-						if (valformat === "textarea") {
-							// change \n to br/
-							valDisplay = val.replace(/\n/g, "<br/>\n");
-						} else if (valformat === "date") {
-							// format as compact date
-							valDisplay = val.toLocaleString();
-						} else {
-							valDisplay = val.toString();
-						}
-					}
-					//
-					crudLink = extraInfoKey.crudlink;
-					if (crudLink) {
-						valDisplay = `<a href="${crudLink}/view/${val}">${valDisplay}</a>`;
-					}
-				}
-				//
-				if (key === "_id") {
-					const url = queryUrlData.baseUrl + "/view/" + val;
-					rethtml += `
-							<td scope="col"> <a href="${url}">${valDisplay}</a> </td>
-						`;
-				} else {
-					rethtml += `
-							<td scope="col"> ${valDisplay} </td>
-						`;
+				return;
+			}
+
+
+			// ATTN:TODO -- split this off into a standalone function we can reuse elsewhere
+			// and perhaps reuse it for crudaid
+			// let valHtml = modelClass.renderFieldValueHtml(req, obj, reqbody, fieldName, crudSubType, helperData);
+
+			extraInfoKey = extraInfo[key];
+
+			val = item[key];
+
+			// put value as href link?
+			url = undefined;
+			// ids are internal special columns we know how to link
+			if (key === "_id" && val) {
+				url = queryUrlData.baseUrl + "/view/" + val;
+			}
+
+			// set url from schema info
+			if (!url && val) {
+				refModelClass = extraInfoKey.refModelClass;
+				if (refModelClass) {
+					url = refModelClass.getCrudUrlBase("view", val);
 				}
 			}
+
+
+			// extra scheme info
+			valformat = extraInfoKey.valformat;
+			valueFunction = extraInfoKey.valueFunction;
+			valchoices = extraInfoKey.valchoices;
+
+			// format it
+			if (valueFunction) {
+				// use custom value resolving callback function
+				valDisplay = await valueFunction("list", key, req, item, null, listHelperData);
+			} else {
+				if (valformat === "checkbox") {
+					if (val) {
+						valDisplay = "true";
+					} else {
+						valDisplay = "false";
+					}
+				} else if (valformat === "choices") {
+					// choices can be tricky.. because we'd like to show the nice choice option, but we also want to show underlying values so user can filter (esp. if it's numerical)
+					valDisplay = jrhText.jrHtmlNiceOptionFromList(valchoices, val);
+				} else if (valformat === "textarea") {
+					valDisplay = jrhText.sanitizeUnsafeText(val, true, true);
+				} else if (valformat === "date") {
+					// format as compact date
+					valDisplay = jrhText.formatDateNicely(val, true);
+				} else {
+					// default coerce to string
+					valDisplay = jrhText.sanitizeUnsafeText(jrhText.coerceToString(val, true), true, false);
+				}
+			}
+
+			// wrap in href url?
+			if (url) {
+				valDisplay = `<a href="${url}">${valDisplay}</a>`;
+			}
+
+			// add cell value
+			rethtml += `<td scope="col"> ${valDisplay} </td>`;
 		});
-		// end
+
+		// end row
 		rethtml += `
 				</tr>
 				`;
@@ -327,23 +353,35 @@ async function jrGridListBulkActions(req, listHelperData, queryUrlData, tableid)
 		<option value=""></option>
 	`;
 
-	if (listHelperData.modelClass.getDefaultDeleteDisableModeIsVirtual()) {
+
+	// enable and disable
+	rethtml += `
+		<option value="enable">Enable All</option>
+		<option value="disable">Disable All</option>
+	`;
+
+	// virtual delete/undelete
+	if (listHelperData.modelClass.supportsVirtualDelete()) {
 		rethtml += `
-			<option value="delete">Delete All</option>
+			<option value="delete">Delete All (virtually)</option>
+			<option value="undelete">Un-delete All (virtually)</option>
 		`;
 	}
 
+	// permanently delete
 	rethtml += `
-	<option value="undelete">Un-delete All</option>
 		<option value="permdelete">Permanently Delete All (!)</option>
-		</select>`;
+
+	`;
+
+	// end of choices
+	rethtml += "</select>";
 
 	// go button
 	rethtml += "<input name=\"bulkactiongo\" type=\"button\" value =\"GO\" onclick=\"requestGridBulkAction('" + tableid + "'); return false;\"></input>";
 
 	// end
 	rethtml += "</div><br/>";
-
 	return rethtml;
 }
 //---------------------------------------------------------------------------
@@ -541,11 +579,11 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 			return;
 		}
 		//
-		if (key === "_checkbox") {
+		if (key === "_batch_checkbox") {
 			// toggle check all button
 			onclick = "jrGridToggleCheckboxes('" + queryUrlData.tableId + "');return false;";
 			rethtml += `
-					<th scope="col"> <input type="checkbox" name="_checkbox_all" onclick="${onclick}" title="toggle all checkboxes"> </th>
+					<th scope="col"> <input type="checkbox" name="_batch_checkbox_all" onclick="${onclick}" title="toggle all checkboxes"> </th>
 				`;
 		} else if (key === "_actions") {
 			// actions column for edit/delete buttons
@@ -606,7 +644,7 @@ function jrGridListTableHeader(listHelperData, queryUrlData) {
 		if (jrhMisc.isInAnyArray(key, hiddenFields)) {
 			return;
 		}
-		if (key === "_checkbox") {
+		if (key === "_batch_checkbox") {
 			onclick = "jrGridClearFilters('" + queryUrlData.tableId + "'); requestGridUpdate('" + queryUrlData.tableId + "', {}, true); return false;";
 			rethtml += `
 					<th scope="col"> <a href="#" onclick="${onclick}" title="clear all filters"> &#x2717; </a> </th>
@@ -679,7 +717,7 @@ function calcHeaderKeysNicely(gridSchema) {
 	const headerKeys = Object.keys(gridSchema);
 
 	// add checkbox
-	headerKeys.unshift("_checkbox");
+	headerKeys.unshift("_batch_checkbox");
 
 	// add column for actions at end
 	headerKeys.push("_actions");

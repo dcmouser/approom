@@ -119,7 +119,7 @@ class AppModel extends ModelBaseMongoose {
 			},
 			roles: {
 				label: "Roles",
-				readOnly: ["edit"],
+				readOnly: true,
 				filterSize: 0,
 				valueFunction: this.makeModelValueFunctionRoleOnObjectList(AppModel),
 			},
@@ -196,7 +196,7 @@ class AppModel extends ModelBaseMongoose {
 
 	// see http://thecodebarbarian.com/whats-new-in-mongoose-53-async-iterators.html
 	static async buildSimpleAppList(user) {
-		const docs = await this.findAllAndSelect("_id shortcode label");
+		const docs = await this.mFindAllAndSelect(null, "_id shortcode label");
 		const applist = [];
 		for (const doc of docs) {
 			applist[doc._id] = doc.shortcode + " - " + doc.label;
@@ -260,7 +260,7 @@ class AppModel extends ModelBaseMongoose {
 		// get a list (array) of all room ids that are attached to this app
 
 		const RoomModel = jrequire("models/room");
-		const roomObjs = await RoomModel.findAllExec({ appid }, "_id");
+		const roomObjs = await RoomModel.mFindAllAndSelect({ appid }, "_id");
 
 		// convert array of objects with _id fields to simple id array
 		const roomIds = jrhMongo.convertArrayOfObjectIdsToIdArray(roomObjs);

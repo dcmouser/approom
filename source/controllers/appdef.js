@@ -102,6 +102,8 @@ exports.DefAclActionAddData = "addData";
 exports.DefAclActionDelete = "delete";
 exports.DefAclActionPermDelete = "permDelete";
 exports.DefAclActionUnDelete = "unDelete";
+exports.DefAclActionEnable = "enable";
+exports.DefAclActionDisable = "disable";
 exports.DefAclActionStats = "stats";
 //
 exports.DefAclActionSeeVdeletes = "seeVDel";

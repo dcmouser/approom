@@ -147,9 +147,9 @@ class AclAid {
 	 */
 	createDefaultAclCrudGrantsForResource(resourceName) {
 		// permission groups
-		const permAll = [appdef.DefAclActionAdd, appdef.DefAclActionEdit, appdef.DefAclActionView, appdef.DefAclActionViewData, appdef.DefAclActionAddData, appdef.DefAclActionList, appdef.DefAclActionDelete, appdef.DefAclActionPermDelete];
+		const permAll = [appdef.DefAclActionAdd, appdef.DefAclActionEdit, appdef.DefAclActionView, appdef.DefAclActionViewData, appdef.DefAclActionAddData, appdef.DefAclActionList, appdef.DefAclActionDisable, appdef.DefAclActionDelete, appdef.DefAclActionPermDelete];
 		const permReadOnly = [appdef.DefAclActionView, appdef.DefAclActionViewData, appdef.DefAclActionList];
-		const permExtraAdminMods = [appdef.DefAclActionUnDelete, appdef.DefAclActionSeeVdeletes];
+		const permExtraAdminMods = [appdef.DefAclActionEnable, appdef.DefAclActionUnDelete, appdef.DefAclActionSeeVdeletes];
 		const permManageOwners = [appdef.DefAclActionAddOwner, appdef.DefAclActionRemoveOwner];
 		const permManageModerators = [appdef.DefAclActionAddModerator, appdef.DefAclActionRemoveModerator];
 		const permManageMembers = [appdef.DefAclActionAddMember, appdef.DefAclActionRemoveMember];
@@ -514,7 +514,7 @@ class AclAid {
 		}
 		// parse it from model and id
 		const modelClass = objDef.model;
-		const doc = await modelClass.findOneById(objDef.id);
+		const doc = await modelClass.mFindOneById(objDef.id);
 		if (doc) {
 			return doc;
 		}
@@ -548,7 +548,7 @@ class AclAid {
 		}
 		if (objDef.usernameEmailId) {
 			// parse it from username / id
-			const user = await UserModel.findUserByUsernameEmailOrId(objDef.usernameEmailId);
+			const user = await UserModel.mFindUserByUsernameEmailOrId(objDef.usernameEmailId);
 			if (user) {
 				return user;
 			}

@@ -9,15 +9,15 @@
 		{{else}}
 		<nav>
 			<ul class="pagination">
-				<li class="page-item"><a href="{{baseCrudUrl}}/view/{{reqbody._id}}" class="page-link">View</a></li>
+				<li class="page-item"><a href="{{baseCrudUrl}}/view/{{id}}" class="page-link">View</a></li>
 				{{#if flagOfferDelete}}
-				<li class="page-item"><a href="{{baseCrudUrl}}/delete/{{reqbody._id}}" class="page-link">Delete</a></li>
+				<li class="page-item"><a href="{{baseCrudUrl}}/delete/{{id}}" class="page-link">Delete</a></li>
 				{{/if}}
 				{{#if flagOfferUnDelete}}
-				<li class="page-item"><a href="{{baseCrudUrl}}/undelete/{{reqbody._id}}" class="page-link">Un-delete</a></li>
+				<li class="page-item"><a href="{{baseCrudUrl}}/undelete/{{id}}" class="page-link">Un-delete</a></li>
 				{{/if}}
 				{{#if flagOfferPermDelete}}
-				<li class="page-item"><a href="{{baseCrudUrl}}/permdelete/{{reqbody._id}}" class="page-link">Permanently Delete</a></li>
+				<li class="page-item"><a href="{{baseCrudUrl}}/permdelete/{{id}}" class="page-link">Permanently Delete</a></li>
 				{{/if}}
 				<li class="page-item"><a href="{{baseCrudUrl}}" class="page-link">List All</a></li>
 			</ul>
@@ -31,7 +31,6 @@
 			<input action="action" onclick="window.location.href = '{{cancelUrl}}'; return false;" type="button" value="CANCEL" />
     	</div>
 
-    	<input type="hidden" name="_id" value="{{reqbody._id}}">
     	<input type="hidden" name="_csrf" value="{{csrfToken}}">
 
     </form>

@@ -102,14 +102,14 @@ async function routerLookup(req, res, next) {
 	}
 
 	// look up app id
-	const app = await AppModel.findOneByShortcode(appShortcode);
+	const app = await AppModel.mFindOneByShortcode(appShortcode);
 	if (!app) {
 		jrResult.pushError("Specified application shortcode [" + appShortcode + "] could not be found.");
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
 		return;
 	}
 	// look up the room
-	const room = await RoomModel.findOneByAppIdAndRoomShortcode(app.id, roomShortcode);
+	const room = await RoomModel.mFindOneByAppIdAndRoomShortcode(app.id, roomShortcode);
 	if (!room) {
 		jrResult.pushError("Could not find specified room with shortcode [" + roomShortcode + "] in specified app [" + appShortcode + "].");
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
@@ -160,7 +160,7 @@ async function routerAdd(req, res, next) {
 
 	// allow lookup by app shortcode instead of id
 	if (!query.appId && query.appShortcode) {
-		const queryApp = await AppModel.findOneByShortcode(query.appShortcode);
+		const queryApp = await AppModel.mFindOneByShortcode(query.appShortcode);
 		query.appId = !queryApp ? null : queryApp.getIdAsString();
 	}
 

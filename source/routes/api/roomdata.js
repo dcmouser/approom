@@ -97,7 +97,7 @@ async function routerList(req, res, next) {
 
 	// allow lookup by app shortcode instead of id
 	if (!query.roomId && query.roomShortcode) {
-		const queryRoom = await RoomModel.findOneByShortcode(query.roomShortcode);
+		const queryRoom = await RoomModel.mFindOneByShortcode(query.roomShortcode);
 		query.roomId = !queryRoom ? null : queryRoom.getIdAsString();
 	}
 
@@ -126,7 +126,7 @@ async function routerList(req, res, next) {
 	const findArgs = {
 		roomid: roomId,
 	};
-	const roomData = await RoomDataModel.findAllExec(findArgs);
+	const roomData = await RoomDataModel.mFindAll(findArgs);
 
 
 
@@ -166,7 +166,7 @@ async function routerAdd(req, res, next) {
 
 	// allow lookup by app shortcode instead of id
 	if (!query.roomId && query.roomShortcode) {
-		const queryRoom = await RoomModel.findOneByShortcode(query.roomShortcode);
+		const queryRoom = await RoomModel.mFindOneByShortcode(query.roomShortcode);
 		query.roomId = !queryRoom ? null : queryRoom.getIdAsString();
 	}
 

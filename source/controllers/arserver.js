@@ -936,7 +936,7 @@ class AppRoomServer {
 				let jrResult;
 				jrdebug.cdebugf("In passport local strategy test with username=%s and password=%s", usernameEmail, password);
 
-				const user = await this.UserModel.findUserByUsernameEmail(usernameEmail);
+				const user = await this.UserModel.mFindUserByUsernameEmail(usernameEmail);
 				if (!user) {
 					// not found
 					jrResult = JrResult.makeNew().pushFieldError("usernameEmail", "Username/Email-address not found");
@@ -1255,7 +1255,7 @@ class AppRoomServer {
 		if (!userId) {
 			user = null;
 		} else {
-			user = await this.UserModel.findOneById(userId);
+			user = await this.UserModel.mFindOneById(userId);
 		}
 		// cache it
 		req.arCachedUser = user;
@@ -1274,7 +1274,7 @@ class AppRoomServer {
 		if (!loginId) {
 			login = null;
 		} else {
-			login = await this.LoginModel.findOneById(loginId);
+			login = await this.LoginModel.mFindOneById(loginId);
 		}
 		// cache it
 		req.arCachedLogin = login;
@@ -1302,7 +1302,7 @@ class AppRoomServer {
 		if (!verificationId) {
 			verification = null;
 		} else {
-			verification = await this.VerificationModel.findOneById(verificationId);
+			verification = await this.VerificationModel.mFindOneById(verificationId);
 			if (verification) {
 				// add back the plaintext unique code that we saved in session into the object
 				// in this way, we make it possible to re-process this verification code, and find it in the database, as if user was providing it
@@ -1423,7 +1423,7 @@ class AppRoomServer {
 			return null;
 		}
 
-		const user = await this.UserModel.findOneById(userId);
+		const user = await this.UserModel.mFindOneById(userId);
 		if (!user) {
 			jrResult.pushError("Invalid access token; error code 4 (user not found in database).");
 		}

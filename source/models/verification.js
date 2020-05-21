@@ -149,7 +149,7 @@ class VerificationModel extends ModelBaseMongoose {
 			},
 			userId: {
 				label: "User Id",
-				crudLink: UserModel.getCrudUrlBase(),
+				refModelClass: UserModel,
 				valueFunction: this.makeModelValueFunctionObjectId(UserModel),
 				mongoose: {
 					type: mongoose.Schema.ObjectId,
@@ -157,7 +157,7 @@ class VerificationModel extends ModelBaseMongoose {
 			},
 			loginId: {
 				label: "Login Id",
-				crudLink: LoginModel.getCrudUrlBase(),
+				refModelClass: LoginModel,
 				mongoose: {
 					type: mongoose.Schema.ObjectId,
 				},
@@ -167,14 +167,14 @@ class VerificationModel extends ModelBaseMongoose {
 				mongoose: {
 					type: Date,
 				},
-				readOnly: ["edit"],
+				readOnly: true,
 			},
 			expirationDate: {
 				label: "Date expired",
 				mongoose: {
 					type: Date,
 				},
-				readOnly: ["edit"],
+				readOnly: true,
 			},
 		};
 	}
@@ -455,12 +455,12 @@ If this request was not made by you, please ignore this email.
 
 
 	//---------------------------------------------------------------------------
-	static async findVerificationByCode(verificationCode) {
+	static async mFindVerificationByCode(verificationCode) {
 		// find it and return it
 		// hash code (predictable hash)
 		const verificationCodeHashed = await this.calcHashOfVerificationCode(verificationCode);
 		// find it
-		const verification = await this.findVerificationByCodeHashed(verificationCodeHashed);
+		const verification = await this.mFindVerificationByCodeHashed(verificationCodeHashed);
 		// NOW we save in it the plaintext code, in case caller wants to refer to it (it will NOT be saved in db)
 		if (verification) {
 			verification.uniqueCode = verificationCode;
@@ -469,9 +469,9 @@ If this request was not made by you, please ignore this email.
 	}
 
 
-	static async findVerificationByCodeHashed(verificationCodeHashed) {
+	static async mFindVerificationByCodeHashed(verificationCodeHashed) {
 		// find it and return it
-		const verification = this.findOneExec({ uniqueCodeHashed: verificationCodeHashed });
+		const verification = this.mFindOne({ uniqueCodeHashed: verificationCodeHashed });
 		return verification;
 	}
 	//---------------------------------------------------------------------------
@@ -508,7 +508,7 @@ If this request was not made by you, please ignore this email.
 	// this is called by verify route
 	static async verifiyCode(code, extraValues, req, res) {
 
-		const verification = await this.findVerificationByCode(code);
+		const verification = await this.mFindVerificationByCode(code);
 		if (!verification) {
 			// not found
 			return {
@@ -530,7 +530,7 @@ If this request was not made by you, please ignore this email.
 		const userId = verification.getUserIdAsM();
 		let user;
 		if (userId) {
-			user = await UserModel.findUserByIdAndUpdateLoginDate(userId);
+			user = await UserModel.mFindUserByIdAndUpdateLoginDate(userId);
 			if (!user) {
 				return {
 					jrResult: JrResult.makeError("The user associated with this verification code could not be found."),
@@ -768,7 +768,7 @@ If this request was not made by you, please ignore this email.
 		const passwordHashed = this.getExtraDataField("passwordHashed");
 
 		// first step, let's check if the email has alread been used by someone, if so then we can just redirect them to try to sign up again and cancel this verification
-		const existingUserWithEmail = await UserModel.findUserByUsernameEmail(email);
+		const existingUserWithEmail = await UserModel.mFindUserByUsernameEmail(email);
 		if (existingUserWithEmail) {
 			// error, a user with this email already exist; but they just confirmed that THEY own the email which means that
 			// first they signed up when the email wasn't in use, and then later confirmed it through another different verification, and then tried to access via this verification
@@ -905,7 +905,7 @@ If this request was not made by you, please ignore this email.
 	//---------------------------------------------------------------------------
 	static async cancelVerifications(findObj) {
 		// delete any extant verifications that match findObj; this is called when sending new ones that should override old
-		await VerificationModel.findAndDeleteMany(findObj);
+		await VerificationModel.mFindAndDeleteMany(findObj);
 	}
 	//---------------------------------------------------------------------------
 

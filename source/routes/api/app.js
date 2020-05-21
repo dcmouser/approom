@@ -100,7 +100,7 @@ async function routerLookup(req, res, next) {
 	}
 
 	// look up app id
-	const app = await AppModel.findOneByShortcode(appShortcode);
+	const app = await AppModel.mFindOneByShortcode(appShortcode);
 	if (!app) {
 		jrResult.pushError("Specified application shortcode [" + appShortcode + "] could not be found.");
 		jrhExpress.sendResJsonJrResult(res, 400, jrResult);

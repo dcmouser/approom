@@ -4,6 +4,7 @@
  * @copyright 5/1/19
  * @description
  * The main base class we use to derive all database model objects
+ * NOTE: Always be on the lookout for find queries that use the "lean" option to not instantiate full objects when querying database
  */
 
 "use strict";
@@ -85,10 +86,6 @@ class ModelBaseMongoose {
 		// subclass overriding function that returns class instance (each subclass MUST implement this)
 		// useful when we want to invoke a static function from instance.
 		return ModelBaseMongoose;
-
-		// old automatic method which is recommended online doesn't work if you need to access "this" from the static function
-		// FUCKED JS &%(*#(*&(*&^()*&^()*&))))
-		// return this.constructor;
 	}
 	//---------------------------------------------------------------------------
 
@@ -103,7 +100,7 @@ class ModelBaseMongoose {
 		return {
 			_id: {
 				label: "Id",
-				readOnly: ["edit"],
+				readOnly: true,
 				filterSize: 25,
 				mongoose: {
 					type: mongoose.Schema.ObjectId,
@@ -112,7 +109,7 @@ class ModelBaseMongoose {
 			},
 			version: {
 				label: "Ver.",
-				readOnly: ["edit"],
+				readOnly: true,
 				filterSize: 5,
 				mongoose: {
 					type: Number,
@@ -120,7 +117,7 @@ class ModelBaseMongoose {
 			},
 			creator: {
 				label: "Creator",
-				hide: ["edit"],
+				hide: true,
 				valueFunction: this.makeModelValueFunctionObjectId(UserModel),
 				mongoose: {
 					type: mongoose.Schema.ObjectId,
@@ -128,7 +125,8 @@ class ModelBaseMongoose {
 			},
 			creationDate: {
 				label: "Date created",
-				hide: ["edit"],
+				// hide: true,
+				readOnly: true,
 				format: "date",
 				mongoose: {
 					type: Date,
@@ -136,7 +134,7 @@ class ModelBaseMongoose {
 			},
 			modificationDate: {
 				label: "Date modified",
-				readOnly: ["edit"],
+				readOnly: true,
 				format: "date",
 				mongoose: {
 					type: Date,
@@ -157,13 +155,13 @@ class ModelBaseMongoose {
 				label: "Extra data",
 				valueFunction: this.makeModelValueFunctionExtraData(),
 				filterSize: 0,
-				// readOnly: ["edit"],
 				mongoose: {
 					type: mongoose.Mixed,
 				},
 			},
 			notes: {
 				label: "Notes",
+				format: "textarea",
 				mongoose: {
 					type: String,
 				},
@@ -321,7 +319,7 @@ class ModelBaseMongoose {
 		return defaultVal;
 	}
 
-	static async getSchemaKeysMatchingViewType(viewType, req) {
+	static async calcHiddenSchemaKeysForView(viewType, req) {
 		const retKeys = [];
 		const modelSchemaDefinition = this.getSchemaDefinition();
 		const keys = Object.keys(modelSchemaDefinition);
@@ -330,7 +328,7 @@ class ModelBaseMongoose {
 
 		await jrhMisc.asyncAwaitForEachFunctionCall(keys, async (key) => {
 			keyHideArray = modelSchemaDefinition[key].hide;
-			if (jrhMisc.isInAnyArray(viewType, keyHideArray)) {
+			if ((keyHideArray === true) || (jrhMisc.isInAnyArray(viewType, keyHideArray))) {
 				retKeys.push(key);
 			} else {
 				visfunc = modelSchemaDefinition[key].visibleFunction;
@@ -381,6 +379,12 @@ class ModelBaseMongoose {
 
 	static getCrudUrlBase(suburl, id) {
 		// return url for crud access, adding suburl and id
+
+		if (id && !jrhMongo.isValidMongooseObjectId(id)) {
+			// invalid id
+			return "";
+		}
+
 		let url = this.crudBaseUrl;
 		if (suburl) {
 			url += "/" + suburl;
@@ -463,6 +467,7 @@ class ModelBaseMongoose {
 		// see https://mongoosejs.com/docs/advanced_schemas.html
 		// this idea is that this transfers the functions and properties from the model class to the schema
 		// This lets us do things like load a user document, and then call methods on the document returned (see user password checking)
+		// We can pass lean option in queries to bypass this on a case-by-case-basis
 		await this.modelSchema.loadClass(this);
 
 		// create the mongoose model
@@ -625,7 +630,7 @@ class ModelBaseMongoose {
 
 	// ATTN: this function typically does not have to run async so its cpu inefficient to make it async but rather than have 2 copies of this function to maintain, we use just async one
 	// ATTN: TODO in future make a version of this that is sync; or find some better way to handle it
-	static async validateMergeAsync(jrResult, fieldNameSource, fieldNameTarget, source, saveFields, preValidatedFields, obj, flagRequired, valFunc) {
+	static async validateMergeAsync(jrResult, fieldNameSource, fieldNameTarget, source, saveFields, preValidatedFields, obj, flagRequired, valueFunction) {
 		//
 		// source and target field names might be different (for example, password is plaintext hashed into a different target fieldname)
 		if (fieldNameTarget === "") {
@@ -677,14 +682,14 @@ class ModelBaseMongoose {
 
 		// now resolve it if its not yet resolved
 		if (validatedVal === undefined) {
-			validatedVal = await valFunc(jrResult, fieldNameSource, unvalidatedVal, flagRequired);
+			validatedVal = await valueFunction(jrResult, fieldNameSource, unvalidatedVal, flagRequired);
 			// if its an error, for example during validation, we are done
 			if (jrResult.isError()) {
 				return undefined;
 			}
 		}
 
-		// secondary check for missing value, after we run the valFunc function
+		// secondary check for missing value, after we run the valueFunction function
 		if (validatedVal === undefined) {
 			// if undefined is returned, we do NOT save the value
 			if (flagRequired && obj[fieldNameTarget] === undefined) {
@@ -772,7 +777,7 @@ class ModelBaseMongoose {
 		// return {id, existingModel}
 
 		// get id from form
-		const id = req.body._id;
+		const id = req.body._editId;
 
 		// add form should not have shortcode specified
 		if (formTypeStr === "add") {
@@ -795,7 +800,7 @@ class ModelBaseMongoose {
 		}
 
 		// now try to look it up
-		const existingModel = await this.findOneById(id);
+		const existingModel = await this.mFindOneById(id);
 		if (!existingModel) {
 			jrResult.pushError("Lookup of " + this.getNiceName() + " not found for id specified.");
 			return {};
@@ -851,7 +856,7 @@ class ModelBaseMongoose {
 			};
 		}
 
-		const clashObj = await this.findOneExec(criteria);
+		const clashObj = await this.mFindOne(criteria);
 		if (clashObj) {
 			// error
 			jrResult.pushFieldError(key, "Duplicate " + key + " entry found for another " + this.getNiceName());
@@ -928,7 +933,7 @@ class ModelBaseMongoose {
 
 
 	static async isShortcodeInUse(criteria) {
-		const clashObj = await this.findOneExec(criteria);
+		const clashObj = await this.mFindOne(criteria);
 		if (clashObj) {
 			return true;
 		}
@@ -986,11 +991,11 @@ class ModelBaseMongoose {
 		const AppModel = jrequire("models/app");
 		const appIds = await AppModel.buildSimpleAppIdListUserTargetable(user);
 		if (val === "") {
-			jrResult.pushFieldError(key, "The App ID may not be blank.");
+			jrResult.pushFieldError(key, "app id may not be blank.");
 			return null;
 		}
 		if (!appIds || appIds.indexOf(val) === -1) {
-			jrResult.pushFieldError(key, "The specified App ID is inaccessible.");
+			jrResult.pushFieldError(key, "specified app id is inaccessible.");
 			console.log("ATTN:DEBUG APPIDS");
 			console.log(appIds);
 			return null;
@@ -1003,11 +1008,11 @@ class ModelBaseMongoose {
 		const RoomModel = jrequire("models/room");
 		const roomIds = await RoomModel.buildSimpleRoomIdListUserTargetable(user);
 		if (val === "") {
-			jrResult.pushFieldError(key, "The Room ID may not be blank.");
+			jrResult.pushFieldError(key, "room id may not be blank.");
 			return null;
 		}
 		if (!roomIds || roomIds.indexOf(val) === -1) {
-			jrResult.pushFieldError(key, "The specified Room ID is inaccessible.");
+			jrResult.pushFieldError(key, "specified room id is inaccessible.");
 			return null;
 		}
 		// valid
@@ -1147,32 +1152,49 @@ class ModelBaseMongoose {
 
 
 
+
+
+
+
+
+
+
+
+
+
 	//---------------------------------------------------------------------------
 	// rather than letting different models call mongoose directly, we try to put a thin wrapper of our own
 
 
-	static async findOneExec(...args) {
-		// actually call mongooseModel findOne
+	static async mFindOne(...args) {
+		// actually call mongooseModel mFindOne
 		const retv = await this.mongooseModel.findOne(...args).exec();
 		return retv;
 	}
 
 
-	static async findOneAndUpdateExec(criteria, setObject) {
-		// actually call mongooseModel findOneAndUpdateExec
+	static async mFindOneAndUpdate(criteria, setObject) {
 		const retv = await this.mongooseModel.findOneAndUpdate(criteria, setObject).exec();
 		return retv;
 	}
 
 
-	static async findAllAndSelect(...args) {
-		const retv = await this.mongooseModel.find().select(...args);
+	static async mFindAll(criteria) {
+		const retv = await this.mongooseModel.find(criteria).exec();
 		return retv;
 	}
 
 
-	static async findAllExec(...args) {
-		// actually call mongooseModel findOneAndUpdateExec
+	static async mFindAllAndSelect(criteria, projection) {
+		// pass null as criteria to get full set
+		// ATTN: we dont exec when we select?
+		const retv = await this.mongooseModel.find(criteria).select(projection);
+		return retv;
+	}
+
+
+	static async mFindMongoose(...args) {
+		// just pass through to mongoose find
 		const retv = await this.mongooseModel.find(...args).exec();
 		return retv;
 	}
@@ -1196,10 +1218,18 @@ class ModelBaseMongoose {
 	 * @returns a tuble [items, fullQueryResultCount] - where fullQueryResultCount may be larger than items.length if pagination is only bringing us some of the reulst
 	 * @memberof ModelBaseMongoose
 	 */
-	static async findSomeByQuery(query, queryOptions, jrResult) {
+
+	static async mFindAllByQuery(query, queryOptions, flagDoLeanRequestNotFullClasses, jrResult) {
 		// fetch the array of items to be displayed in grid
 		// see https://thecodebarbarian.com/how-find-works-in-mongoose
-		const queryProjection = "";
+
+		// ATTN: IMPORTANT -- when this is set, we don't instantiate full model classes when retrieving
+		// we force caller to specify this explicitly instead of embedding it in queryOptions so that it sticks out more like a sore thumb since it can have important ramifications
+		if (flagDoLeanRequestNotFullClasses) {
+			queryOptions.lean = true;
+		}
+
+		const queryProjection = null;
 		try {
 			const items = await this.mongooseModel.find(query, queryProjection, queryOptions).exec();
 
@@ -1223,7 +1253,7 @@ class ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static async findAndDeleteMany(criteria) {
+	static async mFindAndDeleteMany(criteria) {
 		await this.getMongooseModel().deleteMany(criteria).exec();
 	}
 	//---------------------------------------------------------------------------
@@ -1241,30 +1271,42 @@ class ModelBaseMongoose {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 	//---------------------------------------------------------------------------
 	// shortcuts that call above
 
-	static async findOneByShortcode(shortcodeval) {
+	static async mFindOneByShortcode(shortcodeval) {
 		// return null if not found
 		if (!shortcodeval) {
 			return null;
 		}
-		return await this.findOneExec({ shortcode: shortcodeval });
+		return await this.mFindOne({ shortcode: shortcodeval });
 	}
 
 
 	// lookup user by their id
-	static async findOneById(id) {
+	static async mFindOneById(id) {
 		// return null if not found
 		if (!id) {
 			return null;
 		}
-		return await this.findOneExec({ _id: id });
+		return await this.mFindOne({ _id: id });
 	}
 
 
-	static async findOneByKeyValue(key, val) {
-		return await this.findOneExec({ [key]: val });
+	static async mFindOneByKeyValue(key, val) {
+		return await this.mFindOne({ [key]: val });
 	}
 	//---------------------------------------------------------------------------
 
@@ -1425,21 +1467,23 @@ class ModelBaseMongoose {
 		const jrhMongoFilter = require("../helpers/jrh_mongo_filter");
 		const { query, queryOptions, queryUrlData } = jrhMongoFilter.buildMongooseQueryFromReq(filterOptions, gridSchema, req, jrResult);
 
+
+
+		// ATTN: IMPORTANT! 5/20/20
 		// Force the lean option to speed up retrieving of results, since we only need for read-only display here; see https://mongoosejs.com/docs/tutorials/lean.html
 		// Note that if we wanted to call methods on the model class we couldn't do this, as it returns results as plain generic objects
-		queryOptions.lean = true;
+		const flagDoLeanRequestNotFullClasses = false;
 
-		// test
-		// jrdebug.debugObj(query, "111 Test query in calcCrudListHelperData.");
+
+
 
 		// add filter to not show vdeletes if appropriate
 		await this.addUserDisabledVisibilityToQuery(user, query);
 
-		// test
-		// jrdebug.debugObj(query, "222 Test query in calcCrudListHelperData.");
+
 
 		// get the items using query
-		const [gridItems, resultcount] = await this.findSomeByQuery(query, queryOptions, jrResult);
+		const [gridItems, resultcount] = await this.mFindAllByQuery(query, queryOptions, flagDoLeanRequestNotFullClasses, jrResult);
 		queryUrlData.resultCount = resultcount;
 
 		// store other stuff in queryUrl data to aid in making urls for pager and grid links, etc.
@@ -1535,7 +1579,7 @@ class ModelBaseMongoose {
 			}
 			// permission was granted
 			// get object being edited
-			obj = await this.findOneById(id);
+			obj = await this.mFindOneById(id);
 			if (!obj) {
 				jrResult.pushError("Could not find " + this.getNiceName() + " with that Id.");
 			}
@@ -1581,8 +1625,16 @@ class ModelBaseMongoose {
 	 */
 	static makeModelValueFunctionPasswordAdminEyesOnly(flagRequired) {
 		// a value function usable by model definitions
-		return async (viewType, fieldName, req, obj, helperData) => {
+		return async (viewType, fieldName, req, obj, editData, helperData) => {
 			let retv;
+			const flagExistingIsNonBlank = (obj && (obj.passwordHashed !== undefined && obj.passwordHashed !== null && obj.password !== ""));
+
+			if (editData && fieldName in editData) {
+				// they are editing this field on a crud form, return the current editing value (not any previous val of object)
+				retv = jrhText.jrHtmlFormInputPassword("password", editData, flagRequired, flagExistingIsNonBlank);
+				return retv;
+			}
+
 			const isLoggedInUserSiteAdmin = await arserver.isLoggedInUserSiteAdmin(req);
 			if (viewType === "view" && obj !== undefined) {
 				if (isLoggedInUserSiteAdmin) {
@@ -1592,8 +1644,7 @@ class ModelBaseMongoose {
 					// safe
 					retv = this.safeDisplayPasswordInfoFromPasswordHashed(obj.passwordHashed);
 				}
-			} else if (viewType === "edit") {
-				const flagExistingIsNonBlank = (obj && (obj.passwordHashed !== undefined && obj.passwordHashed !== null && obj.password !== ""));
+			} else if (viewType === "add" || viewType === "edit") {
 				retv = jrhText.jrHtmlFormInputPassword("password", obj, flagRequired, flagExistingIsNonBlank);
 			} else if (viewType === "list" && obj !== undefined) {
 				if (isLoggedInUserSiteAdmin) {
@@ -1622,9 +1673,13 @@ class ModelBaseMongoose {
 	 */
 	static makeModelValueFunctionExtraData() {
 		// a value function usable by model definitions
-		return async (viewType, fieldName, req, obj, helperData) => {
+		return async (viewType, fieldName, req, obj, editData, helperData) => {
 			let str;
-			if (obj !== undefined && obj.extraData) {
+
+			if (editData && fieldName in editData) {
+				// they are editing this field on a crud form, return the current editing value (not any previous val of object)
+				str = editData[fieldName];
+			} else if (obj && obj.extraData) {
 				if (typeof obj.extraData === "string") {
 					// already a string -- this is used when form error being reshown..
 					str = obj.extraData;
@@ -1632,14 +1687,21 @@ class ModelBaseMongoose {
 					str = JSON.stringify(obj.extraData, null, " ");
 				}
 			} else {
-				str = "";
+				// str will be undefined, which is handled in sanitizeUnsafeText
 			}
+
 			// let them edit the json string
-			if (viewType === "edit") {
+			if (viewType === "add" || viewType === "edit") {
+				// sanitize html
+				str = jrhText.sanitizeUnsafeText(str, false, false);
+				// wrap in input textarea
 				str = `<textarea name="${fieldName}" rows="4" cols="80">${str}</textarea>`;
 			} else {
-				str = str.replace(/\n/g, "<br/>\n");
+				// just for display sanitize html
+				str = jrhText.sanitizeUnsafeText(str, true, true);
 			}
+
+			// return it
 			return str;
 		};
 	}
@@ -1658,7 +1720,11 @@ class ModelBaseMongoose {
 	 * @memberof ModelBaseMongoose
 	 */
 	static makeModelValueFunctionObjectId(modelClass) {
-		return async (viewType, fieldName, req, obj, helperData) => {
+		return async (viewType, fieldName, req, obj, editData, helperData) => {
+			if (editData && fieldName in editData) {
+				// no way to edit this
+			}
+
 			if (obj !== undefined) {
 				const objid = obj[fieldName];
 				if (objid) {
@@ -1684,15 +1750,23 @@ class ModelBaseMongoose {
 	 * @memberof ModelBaseMongoose
 	 */
 	static makeModelValueFunctionCrudObjectIdFromList(modelClass, fieldId, fieldLabel, fieldList) {
-		return async (viewType, fieldName, req, obj, helperData) => {
+		return async (viewType, fieldName, req, obj, editData, helperData) => {
 			let viewUrl, oLabel, rethtml, oid;
+
+			if (editData && editData[fieldId]) {
+				// they are editing this field on a crud form, return the current editing value (not any previous val of object)
+				oid = editData[fieldId];
+				rethtml = jrhText.jrHtmlFormOptionListSelect(fieldId, helperData[fieldList], oid, true);
+				return rethtml;
+			}
+
 			if (viewType === "view" && obj !== undefined) {
 				viewUrl = modelClass.getCrudUrlBase("view", obj[fieldId]);
 				oLabel = helperData[fieldLabel];
 				rethtml = `${oLabel} (<a href="${viewUrl}">#${obj[fieldId]}</a>)`;
 				return rethtml;
 			}
-			if (viewType === "edit") {
+			if (viewType === "add" || viewType === "edit") {
 				oid = obj ? obj[fieldId] : null;
 				rethtml = jrhText.jrHtmlFormOptionListSelect(fieldId, helperData[fieldList], oid, true);
 				return rethtml;
@@ -1720,16 +1794,21 @@ class ModelBaseMongoose {
 	 */
 	static makeModelValueFunctionRoleOnObjectList(modelClass) {
 		const RoleModel = jrequire("models/role");
-		return async (viewType, fieldName, req, obj, helperData) => {
-			//
+		return async (viewType, fieldName, req, obj, editData, helperData) => {
+			if (editData && fieldName in editData) {
+				// no way to edit this
+			}
+
+			// can't get roles?
+			if (!obj || (!obj.getAllRolesOnThisObject && !obj._id)) {
+				return "n/a";
+			}
+
 			if (false && viewType === "list") {
 				// too heavy to retrieve in this mode
 				return "...";
 			}
-			if (obj === undefined) {
-				// no object, no roles
-				return "";
-			}
+
 			//
 			if (obj.getAllRolesOnThisObject) {
 				// it's a full object so we can resolve it
@@ -1739,11 +1818,13 @@ class ModelBaseMongoose {
 			}
 
 			// a thin json object, but we still know how to do this
-			const roles = await this.getAllRolesOnObjectById(obj._id);
-			return RoleModel.stringifyRoles(roles, true, false);
+			if (obj._id) {
+				const roles = await this.getAllRolesOnObjectById(obj._id);
+				return RoleModel.stringifyRoles(roles, true, false);
+			}
 
-			// its not a full object we wont show this info (though we could
-			// return "n/a";
+			// should never be able to get here
+			return "n/a";
 		};
 
 	}
@@ -1918,10 +1999,159 @@ class ModelBaseMongoose {
 			objectId: objectIdString,
 		};
 		const RoleModel = jrequire("models/role");
-		const roles = await RoleModel.findRolesByCondition(cond);
+		const roles = await RoleModel.mFindRolesByCondition(cond);
 		return roles;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// ATTN: first stab at extracting a function to do what crudaid does
+	static async renderFieldValueHtml(req, obj, editData, fieldName, crudSubType, helperData) {
+		let isReadOnly = false;
+		let val, valHtml;
+
+		// editing or read only?
+		if (crudSubType === "view" || crudSubType === "list") {
+			isReadOnly = true;
+		} else {
+			// might be editable
+			const readOnlyList = this.getSchemaFieldVal(fieldName, "readOnly", undefined);
+			isReadOnly = ((readOnlyList === true) || jrhMisc.isInAnyArray(crudSubType, readOnlyList));
+		}
+
+		// now compute value
+
+		// is there a custom value function? if so use that to grab value
+		const valueFunction = this.getSchemaFieldVal(fieldName, "valueFunction");
+		if (valueFunction) {
+			// ok we have a custom function to call to get html to show for value (only pass in potential editData if not readOnly)
+			valHtml = await valueFunction(crudSubType, fieldName, req, obj, isReadOnly ? null : editData, helperData);
+		}
+
+		// if we havent yet set a value using valueFunctions (or if that returns undefined) then use default value
+		if (valHtml === undefined) {
+			let choices;
+			let extra;
+			let url;
+
+			const format = this.getSchemaFieldVal(fieldName, "format", undefined);
+			// compact view mode?
+			const isCompact = (crudSubType === "list");
+
+			// get the raw value we are going to use
+			if (isReadOnly) {
+				// read only just use obj value (ignore editData)
+				if (obj && fieldName in obj) {
+					val = obj[fieldName];
+				}
+			} else {
+				// it's editable, check for value in reqbody
+				if (editData && fieldName in editData) {
+					// value set in editData
+					val = editData[fieldName];
+				} else if (obj && fieldName in obj) {
+					// value not set in editData, fall back on obj value if available
+					val = obj[fieldName];
+				} else {
+					// not found in obj or editData (perhaps new object so obj is null)
+					val = this.getSchemaFieldVal(fieldName, "defaultValue", undefined);
+				}
+			}
+
+			// we have the raw value, now we need to format it nicely depending on format, etc.
+
+			// is it multiple choice type?
+			if (!isReadOnly) {
+				// try to get editing choices
+				choices = this.getSchemaFieldVal(fieldName, "choicesEdit", null);
+				// if not found, drop down and fall back on choices
+			}
+			if (!choices) {
+				choices = this.getSchemaFieldVal(fieldName, "choices", null);
+			}
+
+			// how we format will depend on whether its read only or editable input
+			if (isReadOnly) {
+				// read only value
+				if (choices) {
+					if (isCompact) {
+						valHtml = jrhText.jrHtmlDisplayOptionListChoice(val, choices);
+					} else {
+						valHtml = jrhText.jrHtmlNiceOptionFromList(choices, val);
+					}
+				} else if (format === "textarea") {
+					valHtml = jrhText.sanitizeUnsafeText(val, true, true);
+				} else if (format === "checkbox") {
+					// checkbox (note that we display null and undefined as false here)
+					if (val) {
+						valHtml = "true";
+					} else {
+						valHtml = "false";
+					}
+				} else if (format === "date") {
+					// format as compact date?
+					valHtml = jrhText.formatDateNicely(val, isCompact);
+				}
+
+				// fallback default
+				if (valHtml === undefined) {
+					// just coerce to a string for display
+					valHtml = jrhText.sanitizeUnsafeText(jrhText.coerceToString(val, true), true, false);
+				}
+
+				// can we link to another object crud page for this field?
+				if (!url && val) {
+					// this field refers to another model so we can link to it
+					const refModelClass = this.getSchemaFieldVal(fieldName, "refModelClass");
+					if (refModelClass) {
+						url = refModelClass.getCrudUrlBase("view", val);
+					}
+				}
+				// wrap in url?
+				if (url) {
+					valHtml = `<a href="${url}">${valHtml}</a>`;
+				}
+			} else {
+				// not read only, editable
+				if (choices) {
+					const flagShowBlank = true;
+					valHtml = jrhText.jrHtmlFormOptionListSelect(fieldName, choices, val, flagShowBlank);
+				} else if (format === "textarea") {
+					// textview block (note in this case we pass false, false to sanitize, so that we edit "" if its undefined)
+					val = jrhText.sanitizeUnsafeText(val, false, false);
+					valHtml = `<textarea name="${fieldName}" rows="4" cols="80">${val}</textarea>`;
+				} else if (format === "checkbox") {
+					// checkbox
+					if (val) {
+						extra = "checked";
+					} else {
+						extra = "";
+					}
+					valHtml = `<input type="checkbox" name="${fieldName}" ${extra}>`;
+					// add a hidden var to handle the cases where unchecked checkbox is not sent, stupid html form processing of checkboxes
+					valHtml += `<input type="hidden" name="${fieldName}_checkbox" value="true">`;
+				}
+				// fallback default - simple text input
+				if (valHtml === undefined) {
+					// just show text in input (note in this case we pass false, false to sanitize, so that we edit "" if its undefined)
+					val = jrhText.sanitizeUnsafeText(jrhText.coerceToString(val, true), false, false);
+					valHtml = `<input type="text" name="${fieldName}" value="${val}" size="80"/>`;
+				}
+			}
+		}
+
+		return valHtml;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
 
 
 

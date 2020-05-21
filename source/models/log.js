@@ -75,14 +75,14 @@ class LogModel extends ModelBaseMongooseMinimal {
 			//
 			pid: {
 				label: "PID",
-				readOnly: ["edit"],
+				readOnly: true,
 				mongoose: {
 					type: Number,
 				},
 			},
 			creationDate: {
 				label: "Date created",
-				readOnly: ["edit"],
+				readOnly: true,
 				format: "date",
 				mongoose: {
 					type: Date,
@@ -103,7 +103,7 @@ class LogModel extends ModelBaseMongooseMinimal {
 			},
 			userid: {
 				label: "User",
-				readOnly: ["edit"],
+				readOnly: true,
 				valueFunction: this.makeModelValueFunctionObjectId(UserModel),
 				mongoose: {
 					type: mongoose.Schema.ObjectId,
@@ -111,7 +111,7 @@ class LogModel extends ModelBaseMongooseMinimal {
 			},
 			ip: {
 				label: "IP",
-				readOnly: ["edit"],
+				readOnly: true,
 				mongoose: {
 					type: String,
 				},

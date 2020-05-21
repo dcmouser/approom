@@ -48,7 +48,7 @@ class SessionModel extends ModelBaseMongooseMinimal {
 		return {
 			_id: {
 				label: "Id",
-				readOnly: ["edit"],
+				readOnly: true,
 				mongoose: {
 					type: String,
 					// auto: true,
@@ -64,14 +64,14 @@ class SessionModel extends ModelBaseMongooseMinimal {
 			//
 			expires: {
 				label: "Date expires",
-				readOnly: ["edit"],
+				readOnly: true,
 				mongoose: {
 					type: Date,
 				},
 			},
 			session: {
 				label: "Session data",
-				readOnly: ["edit"],
+				readOnly: true,
 				mongoose: {
 					type: String,
 				},
@@ -107,29 +107,7 @@ class SessionModel extends ModelBaseMongooseMinimal {
 	//---------------------------------------------------------------------------
 
 
-	/*
-	//---------------------------------------------------------------------------
-	static calcSchemaDefinition() {
-		return {
-			...(this.getBaseSchemaDefinition()),
-			//
-			expires: {
-				label: "Date expires",
-				mongoose: {
-					type: Date,
-				},
-			},
-			session: {
-				label: "Session data",
-				readOnly: ["edit"],
-				mongoose: {
-					type: String,
-				},
-			},
-		};
-	}
-	//---------------------------------------------------------------------------
-	*/
+
 
 
 	//---------------------------------------------------------------------------

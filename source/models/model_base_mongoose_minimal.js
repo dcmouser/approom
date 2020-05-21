@@ -53,7 +53,7 @@ class ModelBaseMongooseMinimal extends ModelBaseMongoose {
 		return {
 			_id: {
 				label: "Id",
-				readOnly: ["edit"],
+				readOnly: true,
 				mongoose: {
 					type: mongoose.Schema.ObjectId,
 					auto: true,

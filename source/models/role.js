@@ -172,7 +172,7 @@ class RoleModel extends ModelBaseMongooseMinimal {
 			// ATTN: should we log this as a problem?
 			return [];
 		}
-		const roleList = await this.findAllExec({ userId: userIdM });
+		const roleList = await this.mFindRolesByCondition({ userId: userIdM });
 		return roleList;
 	}
 	//---------------------------------------------------------------------------
@@ -180,15 +180,15 @@ class RoleModel extends ModelBaseMongooseMinimal {
 
 	//---------------------------------------------------------------------------
 	static async deleteRolesByCondition(user, cond) {
-		await this.findAndDeleteMany(cond);
+		await this.mFindAndDeleteMany(cond);
 		await this.logChangedAcl(user, "deteleRole", cond);
 	}
 	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
-	static async findRolesByCondition(cond) {
-		return await this.findAllExec(cond);
+	static async mFindRolesByCondition(cond) {
+		return await this.mFindAll(cond);
 	}
 	//---------------------------------------------------------------------------
 

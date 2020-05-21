@@ -153,7 +153,8 @@ function validateJsonObjOrStringToObj(jrResult, keyname, val, flagRequired) {
 	if (val === "" || val === null || val === undefined) {
 		if (!flagRequired) {
 			if (val === "") {
-				return undefined;
+				// we need to return null not undefined
+				return null;
 			}
 			return undefined;
 		}

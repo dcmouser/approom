@@ -150,7 +150,7 @@ async function routerPostEmail(req, res, next) {
 		const usernameEmail = req.body.usernameEmail;
 
 		// lookup the user with this email address
-		const user = await UserModel.findUserByUsernameEmail(usernameEmail);
+		const user = await UserModel.mFindUserByUsernameEmail(usernameEmail);
 		if (!user) {
 			// set error and drop down to re-display email login form with error
 			jrResult = UserModel.makeJrResultErrorNoUserFromField("usernameEmail", usernameEmail);

@@ -9,6 +9,9 @@
 
 "use strict";
 
+// modules
+// see https://github.com/component/escape-html
+const escapeHtml = require("escape-html");
 
 
 
@@ -71,12 +74,12 @@ function jrPluralize(number, singular, plural) {
  * Create an html input select (drop down) list.
  *
  * @param {string} name of the select input
- * @param {array} pairlist - list of id -> description pairs
- * @param {*} selectedid - id of currently select id (if any)
+ * @param {array} choices - list of id -> description pairs
+ * @param {*} id - id of currently select id (if any)
  * @returns html for inclusion in form
  */
-function jrHtmlFormOptionListSelect(selectName, pairlist, selectedid, flagShowBlank) {
-	const appHtmlList = jrHtmlFormOptionList(pairlist, selectedid, flagShowBlank);
+function jrHtmlFormOptionListSelect(selectName, choices, id, flagShowBlank) {
+	const appHtmlList = jrHtmlFormOptionList(choices, id, flagShowBlank);
 	const rethtml = `
 		<select name="${selectName}">
 			${appHtmlList}
@@ -89,60 +92,58 @@ function jrHtmlFormOptionListSelect(selectName, pairlist, selectedid, flagShowBl
  *
  * Create an html string containing <option value="val">description</option> values
  *
- * @param {array} pairlist - list of id -> description pairs
- * @param {*} selectedid - id of currently select id (if any)
+ * @param {array} choices - list of id -> description pairs
+ * @param {*} id - id of currently select id (if any)
  * @returns html for inclusion in form (inside a select form object usually)
  */
-function jrHtmlFormOptionList(pairlist, selectedid, flagShowBlank) {
+function jrHtmlFormOptionList(choices, id, flagShowBlank) {
 	let rethtml = "";
 	let foundId = false;
 	// cast id to a string
-	selectedid = (selectedid === null || selectedid === undefined) ? "" : selectedid.toString();
+	id = (id === null || id === undefined) ? "" : id.toString();
 
 	if (flagShowBlank) {
 		rethtml += "<option value=\"\" > </option>\n";
 	}
 
 	// now find it in list
-	if (pairlist) {
+	if (choices) {
 		let seltext;
-		for (const key in pairlist) {
-			if (key === selectedid) {
+		for (const key in choices) {
+			if (key === id) {
 				seltext = " selected";
 				foundId = true;
 			} else {
 				seltext = "";
 			}
-			rethtml += "<option value=\"" + key + "\"" + seltext + ">" + pairlist[key] + "</option>\n";
+			rethtml += "<option value=\"" + key + "\"" + seltext + ">" + choices[key] + "</option>\n";
 		}
 	}
-	if (selectedid && !foundId) {
+	if (id && !foundId) {
 		// since we couldn't find an item for selected one, and an id was specifiedi, we add a new option at top and select it
-		rethtml = "<option value=\"" + selectedid + "\" selected> UNKNOWN VALUE (#" + selectedid + ")</option>\n" + rethtml;
+		rethtml = "<option value=\"" + id + "\" selected> UNKNOWN VALUE (#" + id + ")</option>\n" + rethtml;
 	}
 	return rethtml;
 }
 
 
+
+
+
 /**
  * Given a pairlist of form id=>optionlabel, return the optionlabel corresponding to specified id
- *
- * @param {array} pairlist - list of id -> description pairs
- * @param {*} selectedid - id of currently select id (if any)
- * @param {*} defaultVal - value to return if not found in list
- * @returns the description/label associated with the id, or defaultVal if not found
+ * @param {object} choices
+ * @param {*} id
  */
-function jrHtmlNiceOptionFromList(pairlist, selectedid, defaultVal) {
-	// blank, nothing we can do
-	if (selectedid === null || selectedid === undefined || selectedid === "") {
-		return defaultVal;
+function jrHtmlNiceOptionFromList(choices, id) {
+	if (id === undefined) {
+		return "[not set]";
 	}
-	const label = pairlist[selectedid];
-	if (label === undefined) {
-		return defaultVal;
+	if (id === null) {
+		return "null";
 	}
 
-	return label;
+	return ((id in choices) ? choices[id] : "unknown") + " (" + id.toString() + ")";
 }
 //---------------------------------------------------------------------------
 
@@ -233,27 +234,6 @@ function jrHtmlFormInputPassword(fieldName, obj, flagRequired, flagExistingIsNon
 
 
 
-//---------------------------------------------------------------------------
-/**
- * Format a value for a grid, when given an associated choice map
- * valchoices are like {0: "Enabled", 1: "Disabled", 2: "Deleted"}
- * @param {*} val
- * @param {object} valchoices
- */
-function formatChoiceValueForGridDisplay(val, valchoices) {
-	if (val === undefined) {
-		return "";
-	}
-	if (val === null) {
-		return "null";
-	}
-
-	return ((val in valchoices) ? valchoices[val] : "unknown") + " (" + val.toString() + ")";
-}
-//---------------------------------------------------------------------------
-
-
-
 
 //---------------------------------------------------------------------------
 /**
@@ -268,6 +248,75 @@ function capitalizeFirstLetter(str) {
 //---------------------------------------------------------------------------
 
 
+//---------------------------------------------------------------------------
+function sanitizeUnsafeText(str, flagShowNullUndefined, flagAddConvertNewlinesToBrs) {
+	if (flagShowNullUndefined) {
+		if (str === null) {
+			return "[null]";
+		}
+		if (str === undefined) {
+			return "[undefined]";
+		}
+	} else {
+		if (str === null || str === undefined) {
+			str = "";
+		}
+	}
+	// escape it
+	let retstr = escapeHtml(str);
+	if (flagAddConvertNewlinesToBrs) {
+		// change \n to br/
+		retstr = retstr.replace(/\n/g, "<br/>\n");
+	}
+	// return it
+	return retstr;
+}
+
+
+function coerceToString(val, flagKeepNullUndefined) {
+	// ATTN:TODO catch toString conversion error
+	// conver val to str (but leave as undefined or null if flag set)
+	if (val === undefined || val === null) {
+		if (flagKeepNullUndefined) {
+			return val;
+		}
+		if (val === undefined) {
+			return "[undefined]";
+		}
+		if (val === null) {
+			return "[null]";
+		}
+	}
+	if (typeof val === "string") {
+		return val;
+	}
+	return val.toString();
+}
+//---------------------------------------------------------------------------
+
+
+
+//---------------------------------------------------------------------------
+function formatDateNicely(dateVal, flagCompact) {
+	// ATTN: TO DO -- some sanity check to make sure we are passed a valid date (or null/undefined)
+	if (!dateVal) {
+		return "[not set]";
+	}
+	if (flagCompact) {
+		return dateVal.toLocaleString();
+	}
+	return dateVal.toString();
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
 
 
 module.exports = {
@@ -279,7 +328,10 @@ module.exports = {
 	jrBootstrapCollapseBox,
 	jrHtmlStrigifyObject,
 	jrHtmlFormInputPassword,
-	formatChoiceValueForGridDisplay,
 	capitalizeFirstLetter,
+
+	sanitizeUnsafeText,
+	coerceToString,
+	formatDateNicely,
 };
 

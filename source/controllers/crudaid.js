@@ -126,11 +126,6 @@ class CrudAid {
 		//---------------------------------------------------------------------------
 
 
-		//---------------------------------------------------------------------------
-		// stats
-		const viewFilePathStats = this.calcViewFile("stats", modelClass);
-		router.get("/stats", async (req, res, next) => await this.handleStatsGet(req, res, next, modelClass, baseCrudUrl, viewFilePathStats, extraViewData));
-		//---------------------------------------------------------------------------
 	}
 	//---------------------------------------------------------------------------
 
@@ -194,16 +189,19 @@ class CrudAid {
 		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appdef.DefAclActionList)) {
 			return true;
 		}
+		// check required csrf token
+		let jrResult = arserver.testCsrfReturnJrResult(req, res);
+		if (!jrResult.isError()) {
+			// get bulk action options
+			const formbody = req.body;
+			const bulkAction = formbody.bulkaction;
+			// get all checked checkboxes
+			const checkboxIdList = jrhExpress.reqPrefixedCheckboxItemIds(formbody, "checkboxid_");
 
-		// get bulk action options
-		const formbody = req.body;
-		const bulkAction = formbody.bulkaction;
-		// get all checked checkboxes
-		const checkboxIdList = jrhExpress.reqPrefixedCheckboxItemIds(formbody, "checkboxid_");
-		// jrdebug.debugObj(checkboxIdList, "Bulk action " + bulkAction);
-
-		// do the bulk action and add result to session
-		const jrResult = await this.doBulkAction(user, modelClass, bulkAction, checkboxIdList);
+			// do the bulk action and add result to session
+			jrResult = await this.doBulkAction(user, modelClass, bulkAction, checkboxIdList);
+		}
+		// add result (error or result of bulk action) to session
 		jrResult.addToSession(req);
 
 		// present the list
@@ -239,7 +237,7 @@ class CrudAid {
 		const { viewFile, isGeneric } = viewFileSet;
 
 		// hidden fields for list view
-		const hiddenFiledsSchema = await modelClass.getSchemaKeysMatchingViewType("list", req);
+		const hiddenFiledsSchema = await modelClass.calcHiddenSchemaKeysForView("list", req);
 		hiddenFields = jrhMisc.mergeArraysDedupe(hiddenFields, hiddenFiledsSchema);
 
 		// make helper data
@@ -248,7 +246,8 @@ class CrudAid {
 		// generic main html for page (add form)
 		let genericMainHtml;
 		if (isGeneric) {
-			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, req.body, jrResult, "list", helperData);
+			genericMainHtml = await this.buildGenericMainHtmlList(modelClass, req, res, helperData, jrResult);
+			genericMainHtml = new hbs.SafeString(genericMainHtml);
 		}
 
 		// render
@@ -320,12 +319,13 @@ class CrudAid {
 					return true;
 				}
 				// get object being edited
-				const obj = await modelClass.findOneById(id);
+				const obj = await modelClass.mFindOneById(id);
 				if (!obj) {
 					jrResult.pushError("Could not find " + modelClass.getNiceName() + " with that Id.");
 				} else {
 					// found one, copy data into reqbody let for view form
-					reqbody = obj.modelObjPropertyCopy(false);
+					// ATTN: 5/20/20 testing commenting out
+					// reqbody = obj.modelObjPropertyCopy(false);
 				}
 			}
 		}
@@ -373,7 +373,7 @@ class CrudAid {
 		let jrResult = JrResult.makeNew();
 		// load existing object by id if provided, throw errors if id missing (or provided to add formtype)
 		// in the ADD case, this should just return a new blank object or complain if user specified an id
-		const obj = await modelClass.validateAddEditFormIdMakeObj(jrResult, req, res, formTypeStr);
+		let obj = await modelClass.validateAddEditFormIdMakeObj(jrResult, req, res, formTypeStr);
 		// add creator
 		obj.creator = user.getIdAsString();
 
@@ -439,6 +439,10 @@ class CrudAid {
 			}
 		}
 
+		if (jrResult.isError()) {
+			// error, so we need to fetch object for edit refinement..
+		}
+
 		// re-present form
 		await this.doPresentAddForm(req, reqbody, jrResult, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
 		return true;
@@ -469,7 +473,9 @@ class CrudAid {
 		// generic main html for page (add form)
 		let genericMainHtml;
 		if (isGeneric) {
-			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, reqbody, jrResult, "add", helperData);
+			const obj = null;
+			genericMainHtml = await this.buildGenericMainHtmlAddEditView(null, "add", modelClass, req, res, obj, reqbody, helperData, jrResult);
+			genericMainHtml = new hbs.SafeString(genericMainHtml);
 		}
 
 		// cancel button goes where?
@@ -487,6 +493,7 @@ class CrudAid {
 			cancelUrl,
 			crudAdd: true,
 			extraViewData,
+			id: null,
 		});
 
 	}
@@ -525,7 +532,9 @@ class CrudAid {
 		}
 
 		// put object fields in body, for view form
-		const reqbody = obj.modelObjPropertyCopy(true);
+		// ATTN: 5/20/20 testing commenting out
+		// const reqbody = obj.modelObjPropertyCopy(true);
+		const reqbody = null;
 
 
 		// present form
@@ -560,7 +569,7 @@ class CrudAid {
 
 
 		// get id from post, ignore url param
-		const id = req.body._id;
+		const id = req.body._editId;
 		const ignoreFields = this.getCrudEditFormIgnoreFields();
 
 		// acl test
@@ -571,7 +580,7 @@ class CrudAid {
 
 		// load existing object by id if provided, throw errors if id missing (or provided to add formtype)
 		let jrResult = JrResult.makeNew();
-		const obj = await modelClass.validateAddEditFormIdMakeObj(jrResult, req, res, formTypeStr);
+		let obj = await modelClass.validateAddEditFormIdMakeObj(jrResult, req, res, formTypeStr);
 
 		if (!jrResult.isError()) {
 			// check required csrf token
@@ -600,7 +609,9 @@ class CrudAid {
 
 				if (flagRepresentAfterSuccess) {
 					// fill form data with object properties and drop down to let user re-edit
-					reqbody = savedobj.modelObjPropertyCopy(true);
+					// ATTN: 5/20/20 testing commenting out
+					// reqbody = savedobj.modelObjPropertyCopy(true);
+					reqbody = null;
 					flagFilledObjPropertiesInReqData = true;
 				} else {
 					jrResult.addToSession(req);
@@ -610,11 +621,22 @@ class CrudAid {
 			}
 		}
 
+		// ATTN: im not sure we need to do this any more -- i think obj = assignment above handles it..
+		if (false && jrResult.isError()) {
+			// error, so we need to re-fetch object for edit refinement
+			var jrResult2 = JrResult.makeNew();
+			obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult2, user, req, res, id, appdef.DefAclActionEdit);
+			if (jrResult2.isError()) {
+				return false;
+			}
+		}
+
 		if (!flagFilledObjPropertiesInReqData) {
 			// ATTN: this was added recently -- to fix a problem -- but 5/12/20 creates a new one where errors on submission are wiping out form values we want to re-present
 			// what we need is for the object data to only be used to replace values that are NOT already present in req.body
 			// fill form data with object properties and drop down to let user re-edit
-			jrhMisc.copyMissingValues(reqbody, obj.modelObjPropertyCopy(true));
+			// ATTN: 5/20/20 testing commenting out
+			//jrhMisc.copyMissingValues(reqbody, obj.modelObjPropertyCopy(true));
 		}
 
 		// re-present form
@@ -649,7 +671,8 @@ class CrudAid {
 		// generic main html for page (edit form)
 		let genericMainHtml;
 		if (isGeneric) {
-			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, reqbody, jrResult, "edit", helperData);
+			genericMainHtml = await this.buildGenericMainHtmlAddEditView(id, "edit", modelClass, req, res, obj, reqbody, helperData, jrResult);
+			genericMainHtml = new hbs.SafeString(genericMainHtml);
 		}
 
 		//
@@ -675,6 +698,7 @@ class CrudAid {
 			flagOfferDelete,
 			flagOfferPermDelete,
 			flagOfferUnDelete,
+			id,
 		});
 
 		return true;
@@ -726,7 +750,9 @@ class CrudAid {
 		// generic main html for page (view form)
 		let genericMainHtml;
 		if (isGeneric) {
-			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, obj, jrResult, "view", helperData);
+			const reqbody = null;
+			genericMainHtml = await this.buildGenericMainHtmlAddEditView(id, "view", modelClass, req, res, obj, reqbody, helperData, jrResult);
+			genericMainHtml = new hbs.SafeString(genericMainHtml);
 		}
 
 		const flagOfferDelete = modelClass.getDefaultDeleteDisableModeIsVirtual() && (obj.disabled === 0 || (obj.disabled !== appdef.DefMdbVirtDelete));
@@ -874,7 +900,7 @@ class CrudAid {
 		const user = await arserver.getLoggedInUser(req);
 
 		// get id from post, ignore url param
-		const id = req.body._id;
+		const id = req.body._editId;
 		let obj;
 
 		// ATTN: change this to drop down re-present rather than error
@@ -951,7 +977,9 @@ class CrudAid {
 		// generic main html for page (delete form)
 		let genericMainHtml;
 		if (isGeneric) {
-			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, obj, jrResult, reqmode, helperData);
+			const reqbody = null;
+			genericMainHtml = await this.buildGenericMainHtmlAddEditView(id, "view", modelClass, req, res, obj, reqbody, helperData, jrResult);
+			genericMainHtml = new hbs.SafeString(genericMainHtml);
 		}
 
 		// cancel button goes where?
@@ -1000,59 +1028,6 @@ class CrudAid {
 
 
 
-	//---------------------------------------------------------------------------
-	/**
-	 * Simple stats view for a model class
-	 *
-	 * @param {*} req
-	 * @param {*} res
-	 * @param {*} next
-	 * @param {*} modelClass
-	 * @param {*} baseCrudUrl
-	 * @param {*} viewFileSet
-	 * @param {*} extraViewData
-	 * @returns true on handled
-	 * @memberof CrudAid
-	 */
-	async handleStatsGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
-		// get logged in user
-		const user = await arserver.getLoggedInUser(req);
-
-		// acl test
-		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appdef.DefAclActionStats)) {
-			return true;
-		}
-
-		// any helper data
-		const helperData = await modelClass.calcCrudStatsHelperData(req, res);
-
-		const { viewFile, isGeneric } = viewFileSet;
-
-		// generic main html for page (delete form)
-		let genericMainHtml;
-		if (isGeneric) {
-			genericMainHtml = await this.buildGenericMainHtml(modelClass, req, null, null, "stats", helperData);
-		}
-
-		// render
-		res.render(viewFile, {
-			headline: modelClass.getNiceName() + " Stats",
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-			csrfToken: arserver.makeCsrf(req, res),
-			helperData,
-			genericMainHtml,
-			baseCrudUrl,
-			extraViewData,
-		});
-
-		return true;
-	}
-	//---------------------------------------------------------------------------
-
-
-
-
-
 
 	//---------------------------------------------------------------------------
 	/**
@@ -1062,7 +1037,7 @@ class CrudAid {
 	 * @memberof CrudAid
 	 */
 	getCrudEditFormIgnoreFields() {
-		return ["_csrf", "_id", "emailBypassVerify"];
+		return ["_csrf", "_editId", "emailBypassVerify"];
 	}
 	//---------------------------------------------------------------------------
 
@@ -1106,56 +1081,36 @@ class CrudAid {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	//---------------------------------------------------------------------------
 	/**
-	 * Generate the main html for different crudSubType views
+	 * NEW
+	 * Generate the main html for add/edit/view crudSubType view
 	 *
+	 * @param {*} crudSubType
 	 * @param {*} modelClass
 	 * @param {*} req
 	 * @param {*} obj
-	 * @param {*} jrResult
-	 * @param {*} crudSubType
 	 * @param {*} helperData
+	 * @param {*} jrResult
 	 * @returns html string
 	 * @memberof CrudAid
 	 */
-	async buildGenericMainHtml(modelClass, req, obj, jrResult, crudSubType, helperData) {
-		let rethtml;
-
-		if (crudSubType === "add" || crudSubType === "edit") {
-			// build form html for adding or editing
-			rethtml = await this.buildGenericMainHtmlAddEdit(modelClass, req, obj, helperData, jrResult);
-		} else if (crudSubType === "delete" || crudSubType === "permdelete" || crudSubType === "undelete" || crudSubType === "view") {
-			// build form html for viewing
-			rethtml = await this.buildGenericMainHtmlView(modelClass, req, obj, helperData, jrResult);
-		} else if (crudSubType === "stats") {
-			// show stats
-			rethtml = await this.buildGenericMainHtmlStats(modelClass, req, obj, helperData, jrResult);
-		} else if (crudSubType === "list") {
-			// show stats
-			rethtml = await this.buildGenericMainHtmlList(modelClass, req, obj, helperData, jrResult);
-		} else {
-			throw (new Error("Illegal subtype (" + crudSubType + ") in buildGenericMainHtml."));
-		}
-
-		// we need to wrap return as hbs.SafeString in order to include raw html
-		return new hbs.SafeString(rethtml);
-	}
-
-
-	/**
-	 * Generate the main html for add/edit crudSubType view
-	 *
-	 * @param {*} modelClass
-	 * @param {*} req
-	 * @param {*} obj
-	 * @param {*} jrResult
-	 * @param {*} crudSubType
-	 * @param {*} helperData
-	 * @returns html string
-	 * @memberof CrudAid
-	 */
-	async buildGenericMainHtmlAddEdit(modelClass, req, obj, helperData, jrResult) {
+	async buildGenericMainHtmlAddEditView(id, crudSubType, modelClass, req, res, obj, editData, helperData, jrResult) {
 		let rethtml = "";
 
 		// start table
@@ -1164,14 +1119,20 @@ class CrudAid {
 		<table class="table table-striped w-auto table-bordered">
 		`;
 
+		// add id
+		if (id) {
+			rethtml += `<input type="hidden" id="_editId" name="_editId" value="${id}">`;
+		}
+
 		// schema for obj
 		const modelSchema = modelClass.getSchemaDefinition();
 		const schemaKeys = Object.keys(modelSchema);
 		let schemaType;
-		let val, valHtml, label, valfunc, hideList, readOnlyList, choices;
+		let val, valHtml, label, valueFunction, hideList, readOnlyList, choices;
 		let visfunc, isVisible, isReadOnly;
 		let extra;
 		let err;
+
 		await jrhMisc.asyncAwaitForEachFunctionCall(schemaKeys, async (fieldName) => {
 
 			// type of this field
@@ -1179,95 +1140,33 @@ class CrudAid {
 
 			// hidden?
 			hideList = modelClass.getSchemaFieldVal(fieldName, "hide", undefined);
-			if (jrhMisc.isInAnyArray("edit", hideList)) {
+			if ((hideList === true) || jrhMisc.isInAnyArray(crudSubType, hideList)) {
 				return;
 			}
-
-			// read only?
-			readOnlyList = modelClass.getSchemaFieldVal(fieldName, "readOnly", undefined);
-			isReadOnly = jrhMisc.isInAnyArray("edit", readOnlyList);
+			// dynamic visibility function
+			visfunc = modelClass.getSchemaFieldVal(fieldName, "visibleFunction");
+			if (visfunc) {
+				// ok we have a custom function to call
+				isVisible = await visfunc(crudSubType, fieldName, req, obj, helperData);
+				if (!isVisible) {
+					return;
+				}
+			}
 
 			// label
 			label = modelClass.getSchemaFieldVal(fieldName, "label", fieldName);
-			// error
+
+			// html value to display (may be an input element if in edit crudSubType)
+			valHtml = await modelClass.renderFieldValueHtml(req, obj, editData, fieldName, crudSubType, helperData);
+
+			// add any error
 			if (jrResult && jrResult.errorFields && jrResult.errorFields[fieldName]) {
 				err = jrResult.errorFields[fieldName];
 			} else {
 				err = "";
 			}
 
-			// now value
-			valHtml = undefined;
-			valfunc = modelClass.getSchemaFieldVal(fieldName, "valueFunction");
-			if (valfunc) {
-				// ok we have a custom function to call to get html to show for value
-				valHtml = await valfunc("edit", fieldName, req, obj, helperData);
-			}
-			const format = modelClass.getSchemaFieldVal(fieldName, "format", undefined);
-
-			// dynamic visibility function
-			visfunc = modelClass.getSchemaFieldVal(fieldName, "visibleFunction");
-			if (obj && visfunc) {
-				// ok we have a custom function to call
-				isVisible = await visfunc("edit", fieldName, req, obj, helperData);
-				if (!isVisible) {
-					return;
-				}
-			}
-
-			// if we havent yet set a value using valueFunctions (or if that returns undefined) then use default value
-			if (valHtml === undefined) {
-				if (!obj || obj[fieldName] === null || obj[fieldName] === undefined) {
-					// default value
-					val = modelClass.getSchemaFieldVal(fieldName, "defaultValue", "");
-				} else {
-					val = obj[fieldName];
-				}
-
-				// is it multiple choice type?
-				choices = modelClass.getSchemaFieldVal(fieldName, "choicesEdit", null);
-				if (!choices) {
-					choices = modelClass.getSchemaFieldVal(fieldName, "choices", null);
-				}
-
-				if (isReadOnly) {
-					// read only value
-					if (choices) {
-						valHtml = jrhText.jrHtmlNiceOptionFromList(choices, val, "[NOT SET]");
-					} else {
-						if (format === "checkbox") {
-							// checkbox
-							if (val) {
-								valHtml = "true";
-							} else {
-								valHtml = "false";
-							}
-						} else {
-							valHtml = val.toString();
-						}
-					}
-				} else if (choices) {
-					const flagShowBlank = true;
-					valHtml = jrhText.jrHtmlFormOptionListSelect(fieldName, choices, val, flagShowBlank);
-				} else if (format === "textarea") {
-					// textview block
-					valHtml = `<textarea name="${fieldName}" rows="4" cols="80">${val}</textarea>`;
-				} else if (format === "checkbox") {
-					// checkbox
-					if (val) {
-						extra = "checked";
-					} else {
-						extra = "";
-					}
-					valHtml = `<input type="checkbox" name="${fieldName}" ${extra}>`;
-					// add a hidden let to handle the cases where unchecked checkbox is not sent, stupid html form processing of checkboxes
-					valHtml += `<input type="hidden" name="${fieldName}_checkbox" value="true">`;
-				} else {
-					// default is simple text input
-					valHtml = `<input type="text" name="${fieldName}" value="${val}" size="80"/>`;
-				}
-			}
-
+			// render it
 			rethtml += `
 			<tr>
         		<td><strong>${label}</strong></td>
@@ -1284,10 +1183,15 @@ class CrudAid {
 
 		return rethtml;
 	}
+	//---------------------------------------------------------------------------
 
 
+
+
+
+	//---------------------------------------------------------------------------
 	/**
-	 * Generate the main html for main view crudSubType view
+	 * Generate the main html for LIST view crudSubType view
 	 *
 	 * @param {*} modelClass
 	 * @param {*} req
@@ -1298,147 +1202,9 @@ class CrudAid {
 	 * @returns html string
 	 * @memberof CrudAid
 	 */
-	async buildGenericMainHtmlView(modelClass, req, obj, helperData, jrResult) {
-		let rethtml = "";
-
-		// start table
-		rethtml += `
-		<div class="table-responsive">
-		<table class="table table-striped w-auto table-bordered">
-		`;
-
-		// schema for obj
-		const modelSchema = modelClass.getSchemaDefinition();
-		let schemaType;
-		const schemaKeys = Object.keys(modelSchema);
-		let val, valHtml, label, valfunc, hideList, choices;
-		let visfunc, isVisible;
-		let crudLink;
-
-		await jrhMisc.asyncAwaitForEachFunctionCall(schemaKeys, async (fieldName) => {
-
-			// type of this field
-			schemaType = modelClass.getBaseSchemaType(fieldName);
-
-			// hidden?
-			hideList = modelClass.getSchemaFieldVal(fieldName, "hide", undefined);
-			if (jrhMisc.isInAnyArray("view", hideList)) {
-				return;
-			}
-
-			// label
-			label = modelClass.getSchemaFieldVal(fieldName, "label", fieldName);
-
-			// now value
-			valHtml = undefined;
-			valfunc = modelClass.getSchemaFieldVal(fieldName, "valueFunction");
-			if (valfunc) {
-				// ok we have a custom function to call to get html to show for value
-				valHtml = await valfunc("view", fieldName, req, obj, helperData);
-			}
-			const format = modelClass.getSchemaFieldVal(fieldName, "format", undefined);
-
-			// dynamic visibility function
-			visfunc = modelClass.getSchemaFieldVal(fieldName, "visibleFunction");
-			if (visfunc) {
-				// ok we have a custom function to call to get html to show for value
-				isVisible = await visfunc("view", fieldName, req, obj, helperData);
-				if (!isVisible) {
-					return;
-				}
-			}
-
-			// if we havent yet set a value using valueFunctions (or if that returns undefined) then use default value
-			if (valHtml === undefined) {
-				if (!obj) {
-					val = "";
-				} else {
-					if (obj[fieldName] === null || obj[fieldName] === undefined) {
-						val = "";
-					} else {
-						val = obj[fieldName];
-					}
-				}
-				//
-				// is it a crud link?
-				crudLink = modelClass.getSchemaFieldVal(fieldName, "crudLink");
-				if (crudLink) {
-					// is it crud link?
-					valHtml = `<a href="${crudLink}/view/${val}">${val}</a>`;
-				}
-				if (valHtml === undefined) {
-					// is it multiple choice type?
-					choices = modelClass.getSchemaFieldVal(fieldName, "choices", null);
-					if (choices) {
-						valHtml = jrhText.jrHtmlNiceOptionFromList(choices, val, "[NOT SET]");
-					} else if (format === "checkbox") {
-						// checkbox
-						if (val) {
-							valHtml = "true";
-						} else {
-							valHtml = "false";
-						}
-					} else if (format === "textarea") {
-						// change \n to br/
-						valHtml = val.replace(/\n/g, "<br/>\n");
-					}
-				}
-				if (valHtml === undefined) {
-					// default is just the value
-					valHtml = val.toString();
-				}
-			}
-
-			rethtml += `
-			<tr>
-        		<td><strong>${label}</strong></td>
-   	   			<td>${valHtml}</td>
-     			</tr>
-			`;
-		});
-
-		// end table
-		rethtml += `
-		</table>
-		</div>
-		`;
-
-		return rethtml;
-	}
-
-
-	/**
-	 * Generate the main html for main stats crudSubType view
-	 *
-	 * @param {*} modelClass
-	 * @param {*} req
-	 * @param {*} obj
-	 * @param {*} jrResult
-	 * @param {*} crudSubType
-	 * @param {*} helperData
-	 * @returns html string
-	 * @memberof CrudAid
-	 */
-	async buildGenericMainHtmlStats(modelClass, req, obj, helperData, jrResult) {
-		const rethtml = "<div>stats</div>";
-		return rethtml;
-	}
-
-
-	/**
-	 * Generate the main html for stats view crudSubType view
-	 *
-	 * @param {*} modelClass
-	 * @param {*} req
-	 * @param {*} obj
-	 * @param {*} jrResult
-	 * @param {*} crudSubType
-	 * @param {*} helperData
-	 * @returns html string
-	 * @memberof CrudAid
-	 */
-	async buildGenericMainHtmlList(modelClass, req, obj, helperData, jrResult) {
-		const rehtml = await jrhGrid.jrGridList(req, helperData);
+	async buildGenericMainHtmlList(modelClass, req, res, helperData, jrResult) {
+		const csrfToken = arserver.makeCsrf(req, res);
+		const rehtml = await jrhGrid.jrGridList(req, helperData, csrfToken);
 		return rehtml;
 	}
 	//---------------------------------------------------------------------------
@@ -1465,6 +1231,40 @@ class CrudAid {
 	 */
 	async doBulkAction(user, modelClass, bulkAction, idList) {
 		const jrResult = JrResult.makeNew();
+
+
+		if (bulkAction === "disable") {
+			// do they have permission to delete all in the list
+			const permission = appdef.DefAclActionDisable;
+			const objectType = modelClass.getAclName();
+			if (!await user.aclHasPermissionOnAll(permission, objectType, idList)) {
+				return JrResult.makeError("Permission denied; you do not have permission to " + bulkAction + " these items.");
+			}
+
+			// they have permission!
+
+			// what kind of delete should we do? real or virtual?
+			const mode = appdef.DefMdbDisable;
+			await modelClass.doChangeModeByIdList(idList, mode, jrResult, false);
+			return jrResult;
+		}
+
+		if (bulkAction === "enable") {
+			// do they have permission to delete all in the list
+			const permission = appdef.DefAclActionEnable;
+			const objectType = modelClass.getAclName();
+			if (!await user.aclHasPermissionOnAll(permission, objectType, idList)) {
+				return JrResult.makeError("Permission denied; you do not have permission to " + bulkAction + " these items.");
+			}
+
+			// they have permission!
+
+			// what kind of delete should we do? real or virtual?
+			const mode = appdef.DefMdbEnable;
+			await modelClass.doChangeModeByIdList(idList, mode, jrResult, false);
+			return jrResult;
+		}
+
 
 		if (bulkAction === "delete") {
 			// do they have permission to delete all in the list

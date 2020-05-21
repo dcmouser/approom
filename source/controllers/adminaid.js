@@ -80,7 +80,7 @@ class AdminAid {
 			do {
 				appindexString = (appindexStart + appsAdded).toString();
 				shortcode = "A" + appindexString;
-				foundone = await AppModel.findOneByShortcode(shortcode);
+				foundone = await AppModel.mFindOneByShortcode(shortcode);
 				if (foundone) {
 					++clashTryCount;
 					++appindexStart;
@@ -112,7 +112,7 @@ class AdminAid {
 				do {
 					roomindexString = (roomindexStart + roomsAdded).toString();
 					shortcode = "R" + roomindexString + "A" + appindexString;
-					foundone = await RoomModel.findOneByShortcode(shortcode);
+					foundone = await RoomModel.mFindOneByShortcode(shortcode);
 					if (foundone) {
 						++clashTryCount;
 						++roomindexStart;
