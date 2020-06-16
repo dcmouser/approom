@@ -26,11 +26,15 @@ const jrhMisc = require("./jrh_misc");
  *
  * @returns an object which options for Axios get/post
  */
-function calcAxiosOptions() {
+function calcAxiosOptions(options) {
+	if (true && options === undefined) {
+		options = {};
+	}
 	// ignore cert expired
 	// see https://github.com/axios/axios/issues/535
 	return {
 		httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+		...options,
 	};
 }
 //---------------------------------------------------------------------------
@@ -51,10 +55,10 @@ function calcAxiosOptions() {
  * @param {object} postData - data to post
  * @returns the response object
  */
-async function postCatchError(url, postData) {
+async function postAxiosCatchError(url, postData, options) {
 	let response;
 	try {
-		response = await axios.post(url, postData, calcAxiosOptions());
+		response = await axios.post(url, postData, calcAxiosOptions(options));
 	} catch (e) {
 		response = e.response;
 		if (!response.data.error) {
@@ -73,10 +77,10 @@ async function postCatchError(url, postData) {
  * @param {string} url
  * @returns response
  */
-async function getCatchError(url) {
+async function getCatchError(url, options) {
 	let response;
 	try {
-		response = axios.get(url, calcAxiosOptions());
+		response = axios.get(url, calcAxiosOptions(options));
 	} catch (e) {
 		response = e.response;
 		if (!response.data.error) {
@@ -97,6 +101,6 @@ async function getCatchError(url) {
 // export the class as the sole export
 module.exports = {
 	calcAxiosOptions,
-	postCatchError,
+	postAxiosCatchError,
 	getCatchError,
 };

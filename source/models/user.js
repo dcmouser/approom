@@ -18,6 +18,8 @@ const jrequire = require("../helpers/jrequire");
 
 // models
 const ModelBaseMongoose = jrequire("models/model_base_mongoose");
+// const VerificationModel = jrequire("models/verification");
+
 
 // our helper modules
 const jrhMisc = require("../helpers/jrh_misc");
@@ -26,6 +28,7 @@ const jrhCrypto = require("../helpers/jrh_crypto");
 const JrResult = require("../helpers/jrresult");
 const jrhValidate = require("../helpers/jrh_validate");
 const jrhMongo = require("../helpers/jrh_mongo");
+const jrhText = require("../helpers/jrh_text");
 
 // controllers
 const arserver = jrequire("arserver");
@@ -119,7 +122,7 @@ class UserModel extends ModelBaseMongoose {
 			_id: {},
 			avatar: {
 				label: "Avatar",
-				valueFunction: async (viewType, fieldName, req, obj, editData, helperData) => { return arserver.calcAvatarHtmlImgForUser(obj); },
+				valueFunction: async (jrContext, viewType, fieldName, obj, editData, helperData) => { return arserver.calcAvatarHtmlImgForUser(obj); },
 				filterSize: 0,
 			},
 			//
@@ -148,17 +151,21 @@ class UserModel extends ModelBaseMongoose {
 			emailBypassVerify: {
 				label: "Bypass change verification email?",
 				format: "checkbox",
-				visibleFunction: async (viewType, fieldName, req, obj, editData, helperData) => {
-					if (editData && fieldName in editData) {
-						// they are editing this field on a crud form, return the current editing value (not any previous val of object)
-						return editData[fieldName];
-					}
+				visibleFunction: async (jrContext, viewType, fieldName, obj, editData, helperData) => {
 					if (viewType === "add" || viewType === "edit") {
-						const bretv = await arserver.isLoggedInUserSiteAdmin(req);
+						const bretv = await arserver.isLoggedInUserSiteAdmin(jrContext);
 						return bretv;
 					}
 					return false;
 				},
+				// this is not a model field, but crud editor will remember whatever edit value is
+			},
+			emailPending: {
+				// readonly display of pending change to email
+				label: "Pending email change",
+				readOnly: true,
+				filterSize: 0,
+				valueFunction: async (jrContext, viewType, fieldName, obj, editData, helperData) => { if (!obj) return undefined; return await obj.calcPendingEmailChange(jrContext); },
 			},
 			passwordHashed: {
 				label: "Password",
@@ -167,13 +174,6 @@ class UserModel extends ModelBaseMongoose {
 				filterSize: 0,
 				mongoose: {
 					type: String,
-				},
-			},
-			loginDate: {
-				label: "Date of last login",
-				hide: true,
-				mongoose: {
-					type: Date,
 				},
 			},
 			apiCode: {
@@ -185,9 +185,41 @@ class UserModel extends ModelBaseMongoose {
 			roles: {
 				label: "Roles",
 				readOnly: true,
-				valueFunction: async (viewType, fieldName, req, obj, editData, helperData) => { return await this.roleDisplayValueFunction(viewType, fieldName, req, obj, editData, helperData); },
+				valueFunction: async (jrContext, viewType, fieldName, obj, editData, helperData) => { return await this.roleDisplayValueFunction(jrContext, viewType, fieldName, obj, editData, helperData); },
 				filterSize: 0,
 			},
+
+			//
+			lastLoginDate: {
+				label: "Date of last login",
+				readOnly: true,
+				mongoose: {
+					type: Date,
+				},
+			},
+			lastLoginIp: {
+				label: "IP of last login",
+				readOnly: true,
+				mongoose: {
+					type: String,
+				},
+			},
+			lastAccessDate: {
+				label: "Date of last access",
+				readOnly: true,
+				mongoose: {
+					type: Date,
+				},
+			},
+			lastAccessIp: {
+				label: "IP of last access",
+				readOnly: true,
+				mongoose: {
+					type: String,
+				},
+			},
+
+
 			// additional fields we may add dynamically for in-memory use, but not saved to db
 			// loginId : { type: ObjectId },
 		};
@@ -241,17 +273,6 @@ class UserModel extends ModelBaseMongoose {
 	getUsername() {
 		return this.username;
 	}
-
-	updateloginDate() {
-		// update login date
-		this.loginDate = new Date();
-	}
-
-	async updateloginDateAndSave(jrResult) {
-		this.updateloginDate();
-		await this.dbSave(jrResult);
-	}
-
 
 	getExtRoles() {
 		return this.extRoles;
@@ -361,13 +382,13 @@ class UserModel extends ModelBaseMongoose {
 	}
 
 	// lookup user by their id
-	static async mFindUserByIdAndUpdateLoginDate(id) {
+	static async mFindUserByIdAndUpdateLastLoginDate(id) {
 		// return null if not found
 		if (!id) {
 			return null;
 		}
 		//
-		const user = await this.mFindOneAndUpdate({ _id: id }, { $set: { loginDate: new Date() } });
+		const user = await this.mFindOneAndUpdate({ _id: id }, { $set: { lastLoginDate: new Date() } });
 		//
 		return user;
 	}
@@ -550,7 +571,7 @@ class UserModel extends ModelBaseMongoose {
 		const profile = {
 			// any time we are getting passport profile from a USER, it is local
 			provider,
-			id: this.id,
+			userId: this.id,
 			username: this.username,
 			loginId: this.loginId,
 		};
@@ -561,7 +582,7 @@ class UserModel extends ModelBaseMongoose {
 
 
 	// create a unique user based on bridged login info
-	static async createUniqueUserFromBridgedLogin(bridgedLoginObj, flagUpdateLoginDate) {
+	static async createUniqueUserFromBridgedLogin(bridgedLoginObj, flagUpdateLastLoginDate) {
 		// this could be tricky because we may have collisions in our desired username, email, etc.
 		const userObj = {
 			username: jrhMisc.getNonFalseValueOrDefault(bridgedLoginObj.getExtraDataField("username"), undefined),
@@ -574,8 +595,8 @@ class UserModel extends ModelBaseMongoose {
 		// now create model (this will also add default properties to it)
 		const user = UserModel.createModel(userObj);
 		// set login date to now?
-		if (flagUpdateLoginDate) {
-			user.loginDate = new Date();
+		if (flagUpdateLastLoginDate) {
+			user.lastLoginDate = new Date();
 		}
 		// and save it
 		await user.dbSave();
@@ -726,7 +747,7 @@ class UserModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// error helper
-	static makeJrResultErrorNoUserFromField(key, value) {
+	static addErrorNoUserFromField(jrContext, key, value) {
 		let msgShort, msgLong;
 		const keylabel = (key === "usernameEmail") ? "username or email" : key;
 		if (!value) {
@@ -736,9 +757,7 @@ class UserModel extends ModelBaseMongoose {
 			msgShort = "User not found.";
 			msgLong = "No user found with user " + keylabel + " matching " + value + ".";
 		}
-		const jrResult = JrResult.makeNew();
-		jrResult.pushBiFieldError(key, msgShort, msgLong);
-		return jrResult;
+		jrContext.pushBiFieldError(key, msgShort, msgLong);
 	}
 	//---------------------------------------------------------------------------
 
@@ -781,7 +800,7 @@ class UserModel extends ModelBaseMongoose {
 
 
 	// crud add/edit
-	static async doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
+	static async doValidateAndSave(jrContext, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 		// ATTN: TODO there is duplication with code in registrationaid.js currently, because we are trying to decide where best to do these things - ELIMINATE
@@ -790,7 +809,7 @@ class UserModel extends ModelBaseMongoose {
 		let flagCheckDisallowedUsername = true;
 		let flagTrustEmailChange = false;
 		const flagRrequiredEmail = false;
-		const flagUserIsSiteAdmin = user && (await user.isSiteAdmin());
+		const flagUserIsSiteAdmin = user && (await user.isSiteAdmin(jrContext));
 		const flagIsNew = obj.getIsNew();
 
 		// super users can do some things others cannot
@@ -802,35 +821,35 @@ class UserModel extends ModelBaseMongoose {
 		const emailAddressOld = obj.email;
 
 		// set fields from form and validate
-		await this.validateMergeAsync(jrResult, "username", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await UserModel.validateUsername(jrr, inVal, true, flagRequired, flagCheckDisallowedUsername, obj));
+		await this.validateMergeAsync(jrContext, "username", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await UserModel.validateUsername(jrr, inVal, true, flagRequired, flagCheckDisallowedUsername, obj));
 
 		// note that when validate password, we ALLOW it to be provided blank, BUT we tell validateMergeAsync that it is required field FOR THE OBJECT; normally flagRequired is passed from validateMergeAsync to form validate function, but in this case it's different since we don't want user to be able to REMOVE password
-		await this.validateMergeAsync(jrResult, "password", "passwordHashed", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await UserModel.validatePlaintextPasswordConvertToHash(jrr, inVal, false, true));
+		await this.validateMergeAsync(jrContext, "password", "passwordHashed", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await UserModel.validatePlaintextPasswordConvertToHash(jrr, inVal, false, true));
 
-		await this.validateMergeAsync(jrResult, "realName", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateRealName(jrr, keyname, inVal, flagRequired));
-		await this.validateMergeAsync(jrResult, "email", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => this.validateEmail(jrr, inVal, true, flagRrequiredEmail, obj));
-		await this.validateMergeAsync(jrResult, "apiCode", "", source, saveFields, preValidatedFields, obj, false, async (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrContext, "realName", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateRealName(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrContext, "email", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => this.validateEmail(jrr, inVal, true, flagRrequiredEmail, obj));
+		await this.validateMergeAsync(jrContext, "apiCode", "", source, saveFields, preValidatedFields, obj, false, async (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
 
 		// base fields shared between all? (notes, etc.)
-		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, source, saveFields, preValidatedFields, obj);
+		await this.validateMergeAsyncBaseFields(jrContext, options, flagSave, source, saveFields, preValidatedFields, obj);
 
 		// complain about fields in source that we aren't allowed to save
-		await this.validateComplainExtraFields(jrResult, options, source, saveFields, preValidatedFields, ignoreFields);
+		await this.validateComplainExtraFields(jrContext, options, source, saveFields, preValidatedFields, ignoreFields);
 
 		// can we trust them to bypass verification email
 		if (options.flagTrustEmailChange) {
 			flagTrustEmailChange = true;
 		} else if (flagUserIsSiteAdmin) {
 			const keynameEmailBypass = "emailBypassVerify";
-			flagTrustEmailChange = jrhValidate.validateTrueFalse(jrResult, keynameEmailBypass, source[keynameEmailBypass], false);
+			flagTrustEmailChange = jrhValidate.validateTrueFalse(jrContext.result, keynameEmailBypass, source[keynameEmailBypass], false);
 		}
 
 		if (flagIsNew && !flagTrustEmailChange) {
-			jrResult.pushError("When creating a new user object directly, you *must* bypass the email verification setting.");
+			jrContext.pushError("When creating a new user object directly, you *must* bypass the email verification setting.");
 		}
 
 		// any validation errors?
-		if (jrResult.isError()) {
+		if (jrContext.isError()) {
 			return null;
 		}
 
@@ -843,15 +862,15 @@ class UserModel extends ModelBaseMongoose {
 			// nothing special to do, drop down to save new object with new email address
 		} else {
 			// we do NOT auto merge in an email change, instead send them a change of email address
-			if (!jrResult.isError() && emailAddressNew !== emailAddressOld) {
+			if (!jrContext.isError() && emailAddressNew !== emailAddressOld) {
 				// they want to change their email address, dont do it yet; instead put it back to what it was
 				obj.email = emailAddressOld;
 				// send them a change of email verification
-				await obj.createAndSendVerificationEmailChange(emailAddressNew);
+				await obj.createAndSendVerificationEmailChange(jrContext, emailAddressNew);
 				if (user && obj.getIdAsM() === user.getIdAsM()) {
-					jrResult.pushSuccess(`Your new E-mail address is pending.  Please check ${emailAddressNew} for a verification link.  Your new email address will only take effect after you confirm it.`);
+					jrContext.pushSuccess(`Your new email address is pending.  Please check ${emailAddressNew} for a verification link.  Your new email address will only take effect after you confirm it.`);
 				} else {
-					jrResult.pushSuccess(`The E-mail address for user ${obj.username} will need to be verified before it is accepted.  The user should check ${emailAddressNew} for a verification link.`);
+					jrContext.pushSuccess(`The email address for user ${obj.username} will need to be verified before it is accepted; the user should check ${emailAddressNew} for a verification link.`);
 				}
 			}
 		}
@@ -861,15 +880,15 @@ class UserModel extends ModelBaseMongoose {
 		// ATTN: duslicateive code found in registrationaid and related files
 
 		// any errors saving?
-		if (jrResult.isError()) {
+		if (jrContext.isError()) {
 			return null;
 		}
 
 		// validated successfully
 
 		if (flagSave) {
-			// save it (success message will be pushed onto jrResult)
-			objdoc = await obj.dbSave(jrResult);
+			// save it
+			objdoc = await obj.dbSave(jrContext);
 		}
 
 		// return the saved object
@@ -882,11 +901,11 @@ class UserModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	async createAndSendVerificationEmailChange(emailAddressNew) {
+	async createAndSendVerificationEmailChange(jrContext, emailAddressNew) {
 		const VerificationModel = jrequire("models/verification");
 		const emailAddressOld = this.email;
 		const userId = this.getIdAsM();
-		return await VerificationModel.createAndSendVerificationEmailChange(emailAddressOld, emailAddressNew, userId);
+		return await VerificationModel.createAndSendVerificationEmailChange(jrContext, emailAddressOld, emailAddressNew, userId);
 	}
 	//---------------------------------------------------------------------------
 
@@ -972,11 +991,13 @@ class UserModel extends ModelBaseMongoose {
 	 * @param {string} [objectId=null]
 	 * @returns true if they have permission
 	 */
-	async aclHasPermission(permission, objectType = null, objectId = null) {
+	async aclHasPermission(jrContext, permission, objectType = null, objectId = null) {
 		// ATTN: TODO -- 11/20/19 - CACHE this answers to this function (with short duration), to save computation time (though it currently does not require db access)
 		// return true if user has permission on (optional) objectId
 		// permissions are derived from roles
 		// by checking nonObjectSpecificRoles it means if the user is a GlobalModerator with no specific object, we will check permissions for that role too
+
+		// ATTN:TODO we might also check if the arserver.getLoggedInPassportUsrToken(req) restricts access to this user..
 
 		// get roles held on the object in question (optional)
 		const flagAddNoneRole = true;
@@ -985,7 +1006,7 @@ class UserModel extends ModelBaseMongoose {
 		jrdebug.cdebugObj(objectRoles, "ObjectRoles for user on object type " + objectType);
 
 		// now ask if any of these rules imply the permission
-		return await aclAid.anyRolesImplyPermission(objectRoles, permission, objectType);
+		return await aclAid.anyRolesImplyPermission(jrContext, objectRoles, permission, objectType);
 	}
 	//---------------------------------------------------------------------------
 
@@ -1004,11 +1025,11 @@ class UserModel extends ModelBaseMongoose {
 	 * @param {array} objectIdList
 	 * @returns true if they have permission
 	 */
-	async aclHasPermissionOnAll(permission, objectType, objectIdList) {
-		if (!this.aclHasPermission(permission, objectType, appdef.DefAclObjectIdAll)) {
+	async aclHasPermissionOnAll(jrContext, permission, objectType, objectIdList) {
+		if (!this.aclHasPermission(jrContext, permission, objectType, appdef.DefAclObjectIdAll)) {
 			// they don't have blanket permission, so we have to check each one
 			for (let i = 0; i < objectIdList.length; ++i) {
-				if (!this.aclHasPermission(permission, objectType, objectIdList[i])) {
+				if (!this.aclHasPermission(jrContext, permission, objectType, objectIdList[i])) {
 					return false;
 				}
 			}
@@ -1025,8 +1046,8 @@ class UserModel extends ModelBaseMongoose {
 	 * @param {*} modelClass
 	 * @returns true if they have permission
 	 */
-	async aclHasPermissionSeeVDeletes(modelClass) {
-		return await this.aclHasPermission(appdef.DefAclActionSeeVdeletes, modelClass.getAclName(), null);
+	async aclHasPermissionSeeVDeletes(jrContext, modelClass) {
+		return await this.aclHasPermission(jrContext, appdef.DefAclActionSeeVdeletes, modelClass.getAclName(), null);
 	}
 
 
@@ -1040,9 +1061,9 @@ class UserModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	async isSiteAdmin() {
+	async isSiteAdmin(jrContext) {
 		// just check if user has permission to admin the site
-		return await this.aclHasPermission(appdef.DefAclActionAdminister, "site");
+		return await this.aclHasPermission(jrContext, appdef.DefAclActionAdminister, "site");
 	}
 	//---------------------------------------------------------------------------
 
@@ -1070,20 +1091,20 @@ class UserModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	async addOwnerCreatorRolesForNewObject(obj, flagSaveUser, jrResult) {
+	async addOwnerCreatorRolesForNewObject(jrContext, obj, flagSaveUser) {
 		// add owner role
-		await this.addRole(appdef.DefAclRoleOwner, obj.getModelClass().getAclName(), obj.getIdAsString());
-		await this.addRole(appdef.DefAclRoleCreator, obj.getModelClass().getAclName(), obj.getIdAsString());
+		await this.addRole(jrContext, appdef.DefAclRoleOwner, obj.getModelClass().getAclName(), obj.getIdAsString());
+		await this.addRole(jrContext, appdef.DefAclRoleCreator, obj.getModelClass().getAclName(), obj.getIdAsString());
 		// save user
 		if (flagSaveUser) {
-			await this.dbSave(jrResult);
+			await this.dbSave(jrContext);
 		}
 	}
 	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
-	static async setupCreateUser(userObj) {
+	static async setupCreateUser(jrContext, userObj) {
 		let doc = await this.mFindOne({ username: userObj.username });
 		if (!doc && userObj.email) {
 			doc = await this.mFindOne({ email: userObj.email });
@@ -1112,7 +1133,7 @@ class UserModel extends ModelBaseMongoose {
 		// add acl roles, if any
 		if (userObj.setupRoles) {
 			for (const role of userObj.setupRoles) {
-				await user.addRole(role.role, role.objectType, role.objectId);
+				await user.addRole(jrContext, role.role, role.objectType, role.objectId);
 			}
 		}
 
@@ -1131,22 +1152,22 @@ class UserModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	async makeRoleAclChange(operation, role, object, jrResult) {
+	async makeRoleAclChange(jrContext, operation, role, object) {
 		// make a role change; the permissions have already been checked to make sure this is legal
 		if (operation === "add") {
 			if (!object) {
-				await this.addRole(role);
+				await this.addRole(jrContext, role);
 			} else {
-				await this.addRole(role, object.getModelClass().getAclName(), object.getIdAsString());
+				await this.addRole(jrContext, role, object.getModelClass().getAclName(), object.getIdAsString());
 			}
 		} else if (operation === "remove") {
 			if (!object) {
-				await this.deleteRole(role);
+				await this.deleteRole(jrContext, role);
 			} else {
-				await this.deleteRole(role, object.getModelClass().getAclName(), object.getIdAsString());
+				await this.deleteRole(jrContext, role, object.getModelClass().getAclName(), object.getIdAsString());
 			}
 		} else {
-			jrResult.pushFieldError("operation", "makeRoleAclChange operation must be from 'add' or 'remove'");
+			jrContext.pushFieldError("operation", "makeRoleAclChange operation must be from 'add' or 'remove'");
 		}
 	}
 	//---------------------------------------------------------------------------
@@ -1190,7 +1211,7 @@ class UserModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static async roleDisplayValueFunction(viewType, fieldName, req, obj, editData, helperData) {
+	static async roleDisplayValueFunction(jrContext, viewType, fieldName, obj, editData, helperData) {
 		if (editData && fieldName in editData) {
 			// no way to edit this
 		}
@@ -1350,7 +1371,7 @@ class UserModel extends ModelBaseMongoose {
 	}
 
 
-	async addRole(role, objectType = null, objectId = null) {
+	async addRole(jrContext, role, objectType = null, objectId = null) {
 		// add that the user has role on objectId
 
 		// first check if it already exists
@@ -1361,11 +1382,11 @@ class UserModel extends ModelBaseMongoose {
 
 		// add it
 		const RoleModel = jrequire("models/role");
-		await RoleModel.addRole(this, role, objectType, objectId);
+		await RoleModel.addRole(jrContext, this, role, objectType, objectId);
 	}
 
 
-	async deleteRole(role, objectType = null, objectId = null) {
+	async deleteRole(jrContext, role, objectType = null, objectId = null) {
 		// remove any record that user has role on objectId
 
 		const cond = {
@@ -1376,7 +1397,42 @@ class UserModel extends ModelBaseMongoose {
 		};
 
 		const RoleModel = jrequire("models/role");
-		await RoleModel.deleteRolesByCondition(this, cond);
+		await RoleModel.deleteRolesForUserByCondition(jrContext, this, cond);
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+	//---------------------------------------------------------------------------
+	async updateLastLoginDate(jrContext, flagDoSave) {
+		// update login date
+		this.lastLoginDate = new Date();
+		this.lastLoginIp = jrContext.getReqIpClean();
+		// Always update access date when loggging in
+		await this.updateLastAccessDate(jrContext, false);
+		// Save changes (we might be passed 'false' if we plan to save later in request)
+		if (flagDoSave) {
+			await this.dbSave(jrContext);
+		}
+	}
+
+
+	async updateLastAccessDateOccasionally(jrContext) {
+		// the idea here would be to only do this one every X minutes
+		if (!this.lastAccessDate || (Date.now() - this.lastAccessDate > arserver.getUpdateAccessDateFrequencyInMs())) {
+			await this.updateLastAccessDate(jrContext, true);
+		}
+	}
+
+
+	async updateLastAccessDate(jrContext, flagDoSave) {
+		// update login date
+		this.lastAccessDate = new Date();
+		this.lastAccessIp = jrContext.getReqIpClean();
+		if (flagDoSave) {
+			await this.dbSave(jrContext);
+		}
 	}
 	//---------------------------------------------------------------------------
 
@@ -1385,10 +1441,26 @@ class UserModel extends ModelBaseMongoose {
 
 
 
+	//---------------------------------------------------------------------------
+	async calcPendingEmailChange(jrContext) {
+		// look for a (still valid pending email change for user)
+		const VerificationModel = jrequire("models/verification");
+		const verifications = await VerificationModel.findAllVerificationsChangeEmail(jrContext, true, this.getIdAsM());
+		if (!verifications) {
+			return undefined;
+		}
 
-
-
-
+		// found some!
+		let str = "";
+		for (const verification of verifications) {
+			if (str) {
+				str += "\n<br/>";
+			}
+			str += verification.getValEnsureKey("email") + " (requested " + jrhText.formatDateNicely(verification.getCreationDate(), true) + ")";
+		}
+		return str;
+	}
+	//---------------------------------------------------------------------------
 
 
 

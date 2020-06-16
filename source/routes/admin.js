@@ -17,6 +17,7 @@ const express = require("express");
 const jrequire = require("../helpers/jrequire");
 
 // helpers
+const JrContext = require("../helpers/jrcontext");
 const JrResult = require("../helpers/jrresult");
 const jrdebug = require("../helpers/jrdebug");
 
@@ -66,13 +67,14 @@ function setupRouter(urlPath) {
 
 
 async function routerGetIndex(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
+	const jrContext = JrContext.makeNew(req, res, next);
+	if (!await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		// all done
 		return;
 	}
 
 	res.render("admin/index", {
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		jrResult: jrContext.mergeSessionMessages(),
 	});
 }
 //---------------------------------------------------------------------------

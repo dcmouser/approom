@@ -22,6 +22,7 @@ const jrequire = require("../../helpers/jrequire");
 const arserver = jrequire("arserver");
 
 // helpers
+const JrContext = require("../../helpers/jrcontext");
 const JrResult = require("../../helpers/jrresult");
 const jrhExpress = require("../../helpers/jrh_express");
 const jrhMisc = require("../../helpers/jrh_misc");
@@ -75,35 +76,39 @@ function setupRouter(urlPath) {
 
 //---------------------------------------------------------------------------
 async function routerLookup(req, res, next) {
-	// consume access token
-	const jrResult = JrResult.makeNew();
-	const [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "access");
-	if (jrResult.isError()) {
-		jrhExpress.sendResJsonJrResultTokenError(res, jrResult);
+	const jrContext = JrContext.makeNew(req, res, next);
+
+	// new
+	const user = await arserver.lookupLoggedInUser(jrContext);
+	if (!user) {
+		jrContext.pushError("Failed to authenticate user for request; missing access token?");
+	}
+	if (jrContext.isError()) {
+		jrhExpress.sendJsonErrorAuthToken(jrContext);
 		return;
 	}
 
+
 	// the api roomdata list function is for retrieving a list of (matching) roomdata items
 	// for a specific appid, and roomid, with optional filters (on data)
-	jrResult.clear();
-	const query = jrhExpress.parseReqGetJsonField(req, "query", jrResult);
-	if (jrResult.isError()) {
-		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
+	const query = jrhExpress.parseReqGetJsonField(jrContext, "query");
+	if (jrContext.isError()) {
+		jrhExpress.sendJsonResult(jrContext, 400);
 		return;
 	}
 
 	// now we expect to find appid, and room shortcode; error if missing
-	const appShortcode = jrhMisc.getNonNullValueFromObject(query, "appShortcode", jrResult, "application shortcode");
-	if (jrResult.isError()) {
-		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
+	const appShortcode = jrhMisc.getNonNullValueFromObject(jrContext, query, "appShortcode", "application shortcode");
+	if (jrContext.isError()) {
+		jrhExpress.sendJsonResult(jrContext, 400);
 		return;
 	}
 
 	// look up app id
 	const app = await AppModel.mFindOneByShortcode(appShortcode);
 	if (!app) {
-		jrResult.pushError("Specified application shortcode [" + appShortcode + "] could not be found.");
-		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
+		jrContext.pushError("Specified application shortcode [" + appShortcode + "] could not be found.");
+		jrhExpress.sendJsonResult(jrContext, 400);
 		return;
 	}
 
@@ -111,18 +116,18 @@ async function routerLookup(req, res, next) {
 	const permission = appdef.DefAclActionView;
 	const permissionObjType = AppModel.getAclName();
 	const permissionObjId = app.getIdAsString();
-	const hasPermission = await user.aclHasPermission(permission, permissionObjType, permissionObjId);
+	const hasPermission = await user.aclHasPermission(jrContext, permission, permissionObjType, permissionObjId);
 	if (!hasPermission) {
-		jrhExpress.sendResJsonAclErorr(res, permission, permissionObjType, permissionObjId);
+		jrhExpress.sendJsonErorrAcl(jrContext, permission, permissionObjType, permissionObjId);
 		return;
 	}
 
 	// success
-	const result = {
+	const returnData = {
 		app,
 		// oringinalQuery: query,
 	};
-	jrhExpress.sendResJsonData(res, 200, "app", result);
+	jrhExpress.sendJsonDataSuccess(jrContext, "app", returnData);
 }
 //---------------------------------------------------------------------------
 

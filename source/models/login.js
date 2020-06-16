@@ -92,10 +92,16 @@ class LoginModel extends ModelBaseMongoose {
 					type: mongoose.Schema.ObjectId,
 				},
 			},
-			loginDate: {
-				label: "Date of last login",
+			lastUseDate: {
+				label: "Date of last use",
 				mongoose: {
 					type: Date,
+				},
+			},
+			lastUseIp: {
+				label: "IP of last use",
+				mongoose: {
+					type: String,
 				},
 			},
 		};
@@ -128,15 +134,15 @@ class LoginModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// lookup user by their id
-	static async mFindLoginByProviderInfo(provider, providerUserId, flagUpdateLoginDate) {
+	static async mFindLoginByProviderInfo(jrContext, provider, providerUserId, flagUpdateLastUse) {
 		// return null if not found
 		if (!providerUserId) {
 			return null;
 		}
 		//
 		let login;
-		if (flagUpdateLoginDate) {
-			login = await this.mFindOneAndUpdate({ provider, providerUserId }, { $set: { loginDate: new Date() } });
+		if (flagUpdateLastUse) {
+			login = await this.mFindOneAndUpdate({ provider, providerUserId }, { $set: { lastUseDate: new Date(), lastUseIp: jrContext.getReqIpClean() } });
 		} else {
 			login = await this.mFindOne({ provider, providerUserId });
 		}
@@ -147,9 +153,13 @@ class LoginModel extends ModelBaseMongoose {
 
 
 
-	static async processBridgedLoginGetOrCreateUserOrProxy(bridgedLoginObj, req) {
+
+	//---------------------------------------------------------------------------
+	static async processBridgedLoginGetOrCreateUserOrProxy(jrContext, bridgedLoginObj) {
 		// a successful bridged login has happened.
 		// bridgedLoginObj has properties: provider, id
+		//
+		// ATTN: NOTE: jrContext only has a valid value for .req because of the way passport works
 		//
 		// we should first lookup the bridged login; if found, load that user and return it; they will be logged in.
 		// if none is found, create a new bridged login
@@ -160,7 +170,6 @@ class LoginModel extends ModelBaseMongoose {
 		// return the user
 		let user;
 		// potential result to return with extra messages
-		const jrResult = JrResult.makeNew();
 		let eventAddedNewUser = false;
 		let eventNewlyLinked = false;
 
@@ -176,18 +185,18 @@ class LoginModel extends ModelBaseMongoose {
 		// is there already a user logged into this section? if so we will bridge the new login bridge to the existing logged in user
 		const arserver = jrequire("arserver");
 
-		const existingUserId = arserver.getLoggedInLocalUserIdFromSession(req);
+		const existingUserId = arserver.getUntrustedLoggedInUserIdFromSession(jrContext);
 
 		// ok first let's see if we can find an existing bridged login
 		jrdebug.cdebugObj(bridgedLoginObj, "Looking for existing bridged login.");
 		// find it and ALSO atomically at same time update date of login
-		let login = await this.mFindLoginByProviderInfo(bridgedLoginObj.provider, bridgedLoginObj.providerUserId, true);
+		let login = await this.mFindLoginByProviderInfo(jrContext, bridgedLoginObj.provider, bridgedLoginObj.providerUserId, true);
 		if (login !== null) {
 			// we found the bridged login, so just grab the associated user and return them
 			jrdebug.cdebugObj(login, "Found a matching login.");
 			//
 			if (login.userId) {
-				user = await UserModel.mFindUserByIdAndUpdateLoginDate(login.userId);
+				user = await UserModel.mFindUserByIdAndUpdateLastLoginDate(login.userId);
 				if (user) {
 					jrdebug.cdebugObj(user, "Found a matching user.");
 				} else {
@@ -202,7 +211,7 @@ class LoginModel extends ModelBaseMongoose {
 			// but first, let's ask -- is there a user already logged in that we want to connect? if not, we should create one
 			if (existingUserId != null) {
 				// there is already a user logged in, so just load this user
-				user = await UserModel.mFindUserByIdAndUpdateLoginDate(existingUserId);
+				user = await UserModel.mFindUserByIdAndUpdateLastLoginDate(existingUserId);
 			}
 
 			if (!user) {
@@ -212,7 +221,7 @@ class LoginModel extends ModelBaseMongoose {
 					user = await UserModel.createUniqueUserFromBridgedLogin(bridgedLoginObj, true);
 					if (user) {
 						eventAddedNewUser = true;
-						jrResult.pushSuccess("A new user account has been created and assoicated with this " + bridgedLoginObj.provider + " login.");
+						jrContext.pushSuccess("A new user account has been created and assoicated with this " + bridgedLoginObj.provider + " login.");
 					}
 				} else {
 					// create a proxy empty user object which is not saved to db
@@ -233,7 +242,7 @@ class LoginModel extends ModelBaseMongoose {
 				providerUserId: bridgedLoginObj.providerUserId,
 				userId,
 				extraData: bridgedLoginObj.extraData,
-				loginDate: new Date(),
+				lastUseDate: new Date(),
 			};
 			// create model (this will also add default properties to it)
 			login = this.createModel(loginObj);
@@ -254,7 +263,7 @@ class LoginModel extends ModelBaseMongoose {
 
 		if (eventNewlyLinked && !eventAddedNewUser && userId) {
 			// an existing user was either NEWLY linked to this existing login object, or with a newly created login object
-			jrResult.pushSuccess("The " + bridgedLoginObj.provider + " login has been linked with your existing user account.");
+			jrContext.pushSuccess("The " + bridgedLoginObj.provider + " login has been linked with your existing user account.");
 		}
 
 
@@ -264,15 +273,12 @@ class LoginModel extends ModelBaseMongoose {
 		user.loginId = login.getIdAsM();
 
 		// now return the associated user we found (or created above)
-		return {
-			user,
-			jrResult: jrResult.undefinedIfBlank(),
-		};
+		return user;
 	}
 
 
 
-	static async connectUserToLogin(existingUserId, existingLoginId, flagConnectEvenIfLoginHasUser) {
+	static async connectUserToLogin(jrContext, existingUserId, existingLoginId, flagConnectEvenIfLoginHasUser) {
 		// potentially set the userId of a login object -- useful if user logs in when they are already logged in with a Login objjet
 		if (!existingUserId || !existingLoginId) {
 			return null;
@@ -306,8 +312,10 @@ class LoginModel extends ModelBaseMongoose {
 		// connect them!
 		login.userId = user.getIdAsM();
 		await login.dbSave();
-		const jrResult = JrResult.makeSuccess("Connected your " + login.provider + " login with this user account.");
-		return jrResult;
+		jrContext.pushSuccess("Connected your " + login.provider + " login with this user account.");
+
+		// return the login
+		return login;
 	}
 
 

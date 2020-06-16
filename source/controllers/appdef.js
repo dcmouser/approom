@@ -203,8 +203,6 @@ exports.DefConfigKeyMailerUsername = "mailer:USERNAME";
 exports.DefConfigKeyMailerPassword = "mailer:PASSWORD";
 exports.DefConfigKeyMailerFrom = "mailer:FROM";
 //
-exports.DefConfigKeyPlugins = "plugins";
-//
 exports.DefConfigKeySessionIdName = "session:SESSIONIDNAME";
 exports.DefConfigKeySessionSecret = "session:SESSIONSECRET";
 //
@@ -233,6 +231,13 @@ exports.DefConfigLoggingAnnouncement = "logging:ANNOUNCEMENT";
 exports.DefConfigKeyExitOnFatalError = "general:EXIT_ON_FATAL_ERROR";
 //
 exports.DefConfigKeySetupUserArray = "setup:users";
+//
+exports.DefConfigKeyLastAccessUpdateFrequencyMs = "general:LAST_ACCESS_UPDATE_FREQUENCY_MS";
+//
+exports.DefConfigKeyCollections = {
+	plugins: "plugins",
+	appFrameworks: "appFrameworks",
+};
 //---------------------------------------------------------------------------
 
 

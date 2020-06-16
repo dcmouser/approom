@@ -25,6 +25,15 @@ const JrResult = require("./jrresult");
 
 
 
+
+
+
+
+
+
+
+
+
 //---------------------------------------------------------------------------
 /**
  * Async Wrapper around the express/passport passport.authenticate function
@@ -41,38 +50,35 @@ const JrResult = require("./jrresult");
  * @param {*} jrResult - our JrResult class with info about success or errors; pass in a valid instance and it is updated
  * @returns a simple object with passport user data
  */
-async function asyncPasswordAuthenticate(authOptions, provider, providerNiceLabel, req, res, next, jrResult) {
+async function asyncPassportAuthenticate(jrContext, authOptions, provider, providerNiceLabel) {
 	// first we make a promise out of passport.authenticate then await on it
 
 	let userPassport;
 
 	// create promise wrapper around passport.authenticate
-	const passportPromiseAuth = (ireq, ires, inext) => new Promise((resolve, reject) => {
+	const passportPromiseAuth = (req, res, next) => new Promise((resolve, reject) => {
 		passport.authenticate(provider, authOptions, async (err, inuserPassport, info) => {
 			if (err || !inuserPassport) {
 				// add error
-				jrResult.pushError("error authenticating " + providerNiceLabel + ": " + JrResult.passportOrJrResultErrorAsString(info) + ".");
-				// run next on error in chain
-				if (false && err) {
-					inext(err);
-				}
-				resolve(jrResult);
+				const msg = err || info;
+				jrContext.pushError("error authenticating " + providerNiceLabel + ": " + JrResult.passportOrJrResultErrorAsString(msg) + ".");
+				resolve();
 			}
 			// success
 			userPassport = inuserPassport;
 			// success resolve
-			resolve(jrResult);
-		})(ireq, ires, inext);
+			resolve();
+		})(req, res, next);
 	});
 
 
 	// wait for promise resolution
 	try {
 		// now wait for the passport authenticate promise to run; note there is no case where it rejects; we could do this differently and catch an error
-		await passportPromiseAuth(req, res, next);
+		await passportPromiseAuth(jrContext.req, jrContext.res, jrContext.next);
 	} catch (err) {
 		// unexpected error
-		jrResult.pushError(err.message);
+		jrContext.pushError(err.message);
 	}
 
 	// return userPassport data object
@@ -95,33 +101,48 @@ async function asyncPasswordAuthenticate(authOptions, provider, providerNiceLabe
  * @param {*} req - express request
  * @param {*} jrResult - our JrResult class with info about success or errors; pass in a valid instance and it is updated
  */
-async function asyncPasswordReqLogin(userPassport, errorMessage, req, jrResult) {
+async function asyncPassportReqLogin(jrContext, loginOptions, userPassport, errorMessage) {
 	// first we make a promise out of req.logIn then await on it
 
 	// again create promise for passport req.login
-	const passportPromiseReqLogin = (ireq) => new Promise((resolve, reject) => {
+	const passportPromiseReqLogin = (ijrContext) => new Promise((resolve, reject) => {
 		// actually login the user
-		ireq.logIn(userPassport, async (ierr) => {
+		ijrContext.req.logIn(userPassport, loginOptions, async (ierr) => {
 			if (ierr) {
 				// error (exception) logging them in
-				jrResult.pushError(errorMessage + ": " + JrResult.passportOrJrResultErrorAsString(ierr));
-				resolve(jrResult);
+				ijrContext.pushError(errorMessage + ": " + JrResult.passportOrJrResultErrorAsString(ierr));
+				resolve(ijrContext);
 			}
-			// success
 			// success resolve
-			resolve(jrResult);
-		})(ireq);
+			resolve(ijrContext);
+		})(ijrContext);
 	});
 
 	try {
 		// now wait for the passport req login promise to run; note there is no case where it rejects; we could do this differently and catch an error
-		await passportPromiseReqLogin(req);
+		await passportPromiseReqLogin(jrContext);
 	} catch (err) {
 		// unexpected error
-		jrResult.pushError(err.message);
+		jrContext.pushError(err.message);
 	}
 }
 //---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -443,9 +464,9 @@ function reqPrefixedCheckboxItemIds(reqbody, prefix) {
  * @param {obj} req
  * @param {string} varName
  */
-function forgetSessionVar(req, varName) {
-	if (req.session && req.session[varName] !== undefined) {
-		delete req.session[varName];
+function forgetSessionVar(jrContext, varName) {
+	if (jrContext.req.session && jrContext.req.session[varName] !== undefined) {
+		delete jrContext.req.session[varName];
 	}
 }
 //---------------------------------------------------------------------------
@@ -453,8 +474,9 @@ function forgetSessionVar(req, varName) {
 
 
 //---------------------------------------------------------------------------
-function getRequestLogString(req) {
-	const str = util.format("url='%s' userid='%s' ip='%s'", req.url, (req.user ? req.user.id : undefined), req.ip);
+function getRequestLogString(jrContext) {
+	// ATTN: should this be req user id?
+	const str = util.format("url='%s' userid='%s' ip='%s'", jrContext.req.url, this.getReqPassportUsrid(jrContext), jrContext.req.ip);
 	return str;
 }
 //---------------------------------------------------------------------------
@@ -493,102 +515,9 @@ function reqOriginalUrl(req) {
 
 
 
-/**
- * Send a json reply to the express Response object
- *
- * @param {*} res - the express response object
- * @param {int} status - status code to send
- * @param {string} str - success string (send as value of success key)
- * @param {*} obj - other data to send in reply
- */
-function sendResJsonData(res, status, str, obj) {
-	let data;
-	if (str === null || str === undefined || str === "") {
-		data = {
-			...obj,
-		};
-	} else {
-		data = {
-			success: str,
-			...obj,
-		};
-	}
-	//
-	res.status(status).send(data);
-}
-
-/**
- * Send a json reply to the response, which is an error
- *
- * @param {*} res - the express response object
- * @param {int} status - the http status code (error)
- * @param {*} errorStr - the value for the error key
- */
-function sendResJsonError(res, status, errorStr) {
-	const data = {
-		error: errorStr,
-	};
-	res.status(status).send(data);
-}
 
 
-/**
- * Send a JrResult as a reply, either as an error or success, depending on jrResult data
- *
- * @param {*} res - the express repsonse object
- * @param {int} status - the http status code
- * @param {*} jrResult - the jrResult object to send
- */
-function sendResJsonJrResult(res, status, jrResult) {
-	// is it error?
-	if (jrResult.isError()) {
-		sendResJsonError(res, status, jrResult.getErrorsAsString());
-		return;
-	}
-	// it's a success
-	sendResJsonData(res, status, jrResult.getSuccessAsString(), undefined);
-}
 
-
-/**
- * Send a json result that indicates an api token error, with status 403
- *
- * @param {*} res
- * @param {*} jrResult - the details of the error
- */
-function sendResJsonJrResultTokenError(res, jrResult) {
-	const status = 403;
-	const data = {
-		error: jrResult.getErrorsAsString(),
-		tokenError: true,
-	};
-	res.status(status).send(data);
-}
-
-
-/**
- * Send a json result that indicates an ACL error, with status 403
- *
- * @param {*} res
- * @param {string} permission - permission that the user is denied
- * @param {string} permissionObjType - type of permission to complain about
- * @param {string} permissionObjId - actual object id to complain about
- */
-function sendResJsonAclErorr(res, permission, permissionObjType, permissionObjId) {
-	const status = 403;
-	let errorMessage = "you do not have permission to " + permission;
-	if (permissionObjType) {
-		errorMessage += " on " + permissionObjType;
-	}
-	if (permissionObjId) {
-		errorMessage += " #" + permissionObjId;
-	}
-	const data = {
-		error: errorMessage,
-	};
-	res.status(status).send(data);
-}
-//---------------------------------------------------------------------------
 
 
 
@@ -603,22 +532,17 @@ function sendResJsonAclErorr(res, permission, permissionObjType, permissionObjId
  * @param {*} jrResult - errors are pushed into here.
  * @returns the json object encoded by the post var
  */
-function parseReqGetJsonField(req, keyName, jrResult) {
-	if (!req.body[keyName]) {
-		jrResult.pushError("Missing json data, expected in post variable " + keyName + ".");
+function parseReqGetJsonField(jrContext, keyName) {
+	if (!jrContext.req.body[keyName]) {
+		jrContext.pushError("Missing json data, expected in post variable " + keyName + ".");
 		return null;
 	}
 
 	let jsonVal;
 	try {
-		// let jsonStr = req.body[keyName];
-		// It's already in json format(!)
-		// console.log("ATTN: debug trying to decode jsonstr:");
-		// console.log(jsonStr);
-		// jsonVal = JSON.parse(jsonStr);
-		jsonVal = req.body[keyName];
+		jsonVal = jrContext.req.body[keyName];
 	} catch (e) {
-		jrResult.pushException("Invalid json data in field " + keyName, e);
+		jrContext.pushException("Invalid json data in field " + keyName, e);
 		return null;
 	}
 
@@ -629,13 +553,168 @@ function parseReqGetJsonField(req, keyName, jrResult) {
 
 
 
+//---------------------------------------------------------------------------
+function getReqPassportUsr(jrContext) {
+	// see 	http://toon.io/understanding-passportjs-authentication-flow/
+	// NOTE: this says not to call req.session.passport.user directly? https://stackoverflow.com/questions/27055744/express-passport-js-req-user-versus-req-session-passport-user
+	// old code: return (req.session && req.session.passport) ? req.session.passport.user : defaultVal;
+	return (jrContext.req && jrContext.req.user) ? jrContext.req.user : undefined;
+}
+
+
+function getReqPassportUsrStringified(jrContext, defaultVal) {
+	const reqUser = getReqPassportUsr(jrContext);
+	return (reqUser) ? JSON.stringify(jrContext.req.user, null, "  ") : defaultVal;
+}
+
+
+function getReqPassportUsrId(jrContext, defaultVal) {
+	// ATTN: should we be checking .id or .userId?
+	const reqUser = getReqPassportUsr(jrContext);
+	return (reqUser) ? reqUser.id : undefined;
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//---------------------------------------------------------------------------
+/**
+ * Send a json reply to the express Response object
+ *
+ * @param {*} res - the express response object
+ * @param {int} status - status code to send
+ * @param {string} str - success string (send as value of success key)
+ * @param {*} obj - other data to send in reply
+ */
+function sendJsonDataSuccess(jrContext, successStr, obj) {
+	// success status code
+	const status = 200;
+	//
+	const msg = successStr || true;
+	// if no success string is provided, return success = true
+	const data = {
+		success: msg,
+		...obj,
+	};
+	//
+	jrContext.res.status(status).send(data);
+}
+
+
+/**
+ * Send a JrResult as a reply, either as an error or success, depending on jrResult data
+ *
+ * @param {*} res - the express repsonse object
+ * @param {int} status - the http status code
+ * @param {*} jrResult - the jrResult object to send
+ */
+function sendJsonResult(jrContext, status) {
+	// send an error or a success
+	// is it error?
+	if (jrContext.isError()) {
+		sendJsonError(jrContext, status, jrContext.getErrorsAsString(), undefined);
+		return;
+	}
+	// it's a success
+	sendJsonDataSuccess(jrContext, jrContext.getSuccessAsString(), undefined);
+}
+
+
+/**
+ * Send a json reply to the response, which is an error
+ *
+ * @param {*} res - the express response object
+ * @param {int} status - the http status code (error)
+ * @param {string} errorStr - the value for the error key
+ * @param {string} errorType - the value for the error key (OPTIONAL)
+ */
+function sendJsonError(jrContext, status, errorStr, errorType) {
+	// error message passed to us, or just "true" if for some reason there is no error in context
+	const emsg = errorStr || true;
+	const data = {
+		error: emsg,
+		errorType,
+	};
+	//
+	jrContext.res.status(status).send(data);
+}
+
+
+/**
+ * Send a json result that indicates an api token error, with status 403
+ *
+ * @param {*} jrContext - with the details of the error
+ */
+function sendJsonErrorAuthToken(jrContext) {
+	// token status code error
+	const status = 403;
+	// error message as described in jrContext, or just "true" if for some reason there is no error in context
+	const emsg = jrContext.getErrorsAsString() || true;
+	//
+	sendJsonError(jrContext, status, emsg, "authToken");
+}
+
+
+/**
+ * Send a json result that indicates an ACL error, with status 403
+ *
+ * @param {*} jrContext
+ * @param {string} permission - permission that the user is denied
+ * @param {string} permissionObjType - type of permission to complain about
+ * @param {string} permissionObjId - actual object id to complain about
+ */
+function sendJsonErorrAcl(jrContext, permission, permissionObjType, permissionObjId) {
+	// acl status code error
+	const status = 403;
+	//
+	let errorMessage = "you do not have permission to " + permission;
+	if (permissionObjType) {
+		errorMessage += " on " + permissionObjType;
+	}
+	if (permissionObjId) {
+		errorMessage += " #" + permissionObjId;
+	}
+	//
+	sendJsonError(jrContext, status, errorMessage, "acl");
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 // export the class as the sole export
 module.exports = {
-	asyncPasswordAuthenticate,
-	asyncPasswordReqLogin,
+	asyncPassportAuthenticate,
+	asyncPassportReqLogin,
 
 	normalizePort,
 
@@ -654,11 +733,15 @@ module.exports = {
 	reqUrlWithPath,
 	reqOriginalUrl,
 
-	sendResJsonData,
-	sendResJsonError,
-	sendResJsonJrResult,
-	sendResJsonJrResultTokenError,
-	sendResJsonAclErorr,
-
 	parseReqGetJsonField,
+
+	getReqPassportUsr,
+	getReqPassportUsrStringified,
+	getReqPassportUsrId,
+
+	sendJsonDataSuccess,
+	sendJsonResult,
+	sendJsonError,
+	sendJsonErrorAuthToken,
+	sendJsonErorrAcl,
 };

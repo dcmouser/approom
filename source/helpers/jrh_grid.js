@@ -29,7 +29,7 @@ const jrequire = require("./jrequire");
  * @param {obj} listHelperData - data to put in the grid
  * @returns raw html string
  */
-async function jrGridList(req, listHelperData, csrfToken) {
+async function jrGridList(jrContext, listHelperData, csrfToken) {
 	//
 	let rethtml = "";
 	const flagShowDebugInfo = false;
@@ -72,13 +72,13 @@ async function jrGridList(req, listHelperData, csrfToken) {
 	rethtml += "<div><strong>Total items:" + resultCount.toString() + "</strong></div>";
 
 	// build table
-	rethtml += await jrGridListTable(req, listHelperData, queryUrlData);
+	rethtml += await jrGridListTable(jrContext, listHelperData, queryUrlData);
 
 	// show deleted/hidden options
-	rethtml += await jrGridListShowHiddenOptions(req, listHelperData, queryUrlData);
+	rethtml += await jrGridListShowHiddenOptions(jrContext, listHelperData, queryUrlData);
 
 	// build "with all checked" input
-	rethtml += await jrGridListBulkActions(req, listHelperData, queryUrlData, tableid);
+	rethtml += await jrGridListBulkActions(jrContext, listHelperData, queryUrlData, tableid);
 
 	// add pager at bottom
 	rethtml += pagerHtml;
@@ -139,7 +139,7 @@ async function jrGridList(req, listHelperData, csrfToken) {
  * @param {object} queryUrlData
  * @returns raw html string
  */
-async function jrGridListTable(req, listHelperData, queryUrlData) {
+async function jrGridListTable(jrContext, listHelperData, queryUrlData) {
 	let rethtml = "";
 
 	// beginning stuff
@@ -152,7 +152,7 @@ async function jrGridListTable(req, listHelperData, queryUrlData) {
 	rethtml += jrGridListTableHeader(listHelperData, queryUrlData);
 
 	// data
-	rethtml += await jrGridListTableData(req, listHelperData, queryUrlData);
+	rethtml += await jrGridListTableData(jrContext, listHelperData, queryUrlData);
 
 	// ending stuff
 	rethtml += `
@@ -173,7 +173,7 @@ async function jrGridListTable(req, listHelperData, queryUrlData) {
  * @param {object} queryUrlData
  * @returns raw html string
  */
-async function jrGridListTableData(req, listHelperData, queryUrlData) {
+async function jrGridListTableData(jrContext, listHelperData, queryUrlData) {
 	let rethtml = "";
 
 	// data body start
@@ -281,7 +281,7 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
 			// format it
 			if (valueFunction) {
 				// use custom value resolving callback function
-				valDisplay = await valueFunction("list", key, req, item, null, listHelperData);
+				valDisplay = await valueFunction(jrContext, "list", key, item, null, listHelperData);
 			} else {
 				if (valformat === "checkbox") {
 					if (val) {
@@ -342,7 +342,7 @@ async function jrGridListTableData(req, listHelperData, queryUrlData) {
  * @param {object} listHelperData
  * @param {object} queryUrlData
  */
-async function jrGridListBulkActions(req, listHelperData, queryUrlData, tableid) {
+async function jrGridListBulkActions(jrContext, listHelperData, queryUrlData, tableid) {
 	let rethtml = "";
 
 	// beginning
@@ -741,7 +741,7 @@ function calcHeaderKeysNicely(gridSchema) {
  * @param {*} queryUrlData
  * @returns html to add to the input form
  */
-function jrGridListShowHiddenOptions(req, listHelperData, queryUrlData) {
+function jrGridListShowHiddenOptions(jrContext, listHelperData, queryUrlData) {
 	// show a drop down with hidden options
 	// what we show may depend on user acl permissions
 	const tableid = queryUrlData.tableId;

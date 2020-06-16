@@ -14,6 +14,7 @@ const jrequire = require("../helpers/jrequire");
 
 // our helper modules
 const jrhMisc = require("../helpers/jrh_misc");
+const JrContext = require("../helpers/jrcontext");
 const JrResult = require("../helpers/jrresult");
 const jrdebug = require("../helpers/jrdebug");
 const jrhCrypto = require("../helpers/jrh_crypto");
@@ -49,11 +50,14 @@ class SetupAid {
 	async createDefaultUsers() {
 		jrdebug.cdebug("Inside setup aid createDefaultUsers()");
 
+		// dummy jrContext since we don't know any other way to get req/res
+		const jrContext = JrContext.makeNew();
+
 		let bretv = true;
 		const userArray = arserver.getConfigValDefault(appdef.DefConfigKeySetupUserArray, null);
 		if (userArray) {
 			for (const userObj of userArray) {
-				bretv = bretv && await UserModel.setupCreateUser(userObj);
+				bretv = bretv && await UserModel.setupCreateUser(jrContext, userObj);
 			}
 		}
 		return bretv;

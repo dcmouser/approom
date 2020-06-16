@@ -20,6 +20,7 @@ const jrequire = require("../helpers/jrequire");
 const arserver = jrequire("arserver");
 
 // helpers
+const JrContext = require("../helpers/jrcontext");
 const JrResult = require("../helpers/jrresult");
 
 
@@ -53,14 +54,15 @@ function setupRouter(urlPath) {
 
 // homepage
 async function routerGetIndex(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
 
 	// ignore any previous login diversions
 	// NOTE: we have to be careful about this to make sure nothing like the email token onetime login redirects here after login token sent, or we will forget diverted url info
-	arserver.forgetLoginDiversions(req);
+	arserver.clearLastSessionedDivertedUrl(jrContext);
 
 	// render view
 	res.render("index", {
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		jrResult: jrContext.mergeSessionMessages(),
 		title: "AppRoom",
 	});
 }

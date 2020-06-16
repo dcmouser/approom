@@ -157,36 +157,36 @@ class RoomModel extends ModelBaseMongoose {
 
 
 	// crud add/edit
-	static async doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
+	static async doValidateAndSave(jrContext, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 		let objdoc;
 		const UserModel = jrequire("models/user");
 
 		// set fields from form and validate
-		await this.validateMergeAsync(jrResult, "appid", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => this.validateModelFieldAppId(jrr, keyname, inVal, user));
-		await this.validateMergeAsync(jrResult, "shortcode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await this.validateRoomShortcodeUnique(jrr, keyname, inVal, obj, source.appid));
-		await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
-		await this.validateMergeAsync(jrResult, "description", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrContext, "appid", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => this.validateModelFieldAppId(jrr, keyname, inVal, user));
+		await this.validateMergeAsync(jrContext, "shortcode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await this.validateRoomShortcodeUnique(jrr, keyname, inVal, obj, source.appid));
+		await this.validateMergeAsync(jrContext, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrContext, "description", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
 		// note that password is not required
-		await this.validateMergeAsync(jrResult, "password", "passwordHashed", source, saveFields, preValidatedFields, obj, false, async (jrr, keyname, inVal, flagRequired) => await UserModel.validatePlaintextPasswordConvertToHash(jrr, inVal, flagRequired, true));
+		await this.validateMergeAsync(jrContext, "password", "passwordHashed", source, saveFields, preValidatedFields, obj, false, async (jrr, keyname, inVal, flagRequired) => await UserModel.validatePlaintextPasswordConvertToHash(jrr, inVal, flagRequired, true));
 
 		// base fields shared between all? (notes, etc.)
-		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, source, saveFields, preValidatedFields, obj);
+		await this.validateMergeAsyncBaseFields(jrContext, options, flagSave, source, saveFields, preValidatedFields, obj);
 
 		// complain about fields in source that we aren't allowed to save
-		await this.validateComplainExtraFields(jrResult, options, source, saveFields, preValidatedFields, ignoreFields);
+		await this.validateComplainExtraFields(jrContext, options, source, saveFields, preValidatedFields, ignoreFields);
 
 		// any validation errors?
-		if (jrResult.isError()) {
+		if (jrContext.isError()) {
 			return null;
 		}
 
 		// validated successfully
 
 		if (flagSave) {
-			// save it (success message will be pushed onto jrResult)
-			objdoc = await obj.dbSave(jrResult);
+			// save it
+			objdoc = await obj.dbSave(jrContext);
 		}
 
 		// return the saved object
@@ -210,7 +210,7 @@ class RoomModel extends ModelBaseMongoose {
 	}
 
 	// crud helper for view
-	static async calcCrudViewHelperData(req, res, id, obj) {
+	static async calcCrudViewHelperData(jrContext, id, obj) {
 	// get nice label of the app it's attached to
 		let appLabel;
 		const appid = obj.appid;
@@ -278,9 +278,9 @@ class RoomModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// delete any ancillary deletions AFTER the normal delete
-	static async auxChangeModeById(id, mode, jrResult) {
+	static async auxChangeModeById(jrContext, id, mode) {
 		// call super callss
-		super.auxChangeModeById(id, mode, jrResult);
+		super.auxChangeModeById(jrContext, id, mode);
 
 		// if we are enabling or disabling, then we don't touch rooms
 		if (mode === appdef.DefMdbEnable || mode === appdef.DefMdbDisable) {
@@ -291,8 +291,8 @@ class RoomModel extends ModelBaseMongoose {
 		// this is a virtual delete or real delete
 
 		// for app model, this means deleting associated rooms
-		const roomDataIdList = await this.getAssociatedRoomDatasByRoomId(id, jrResult);
-		if (jrResult.isError()) {
+		const roomDataIdList = await this.getAssociatedRoomDatasByRoomId(jrContext, id);
+		if (jrContext.isError()) {
 			return;
 		}
 
@@ -302,16 +302,16 @@ class RoomModel extends ModelBaseMongoose {
 
 		// delete them
 		const RoomDataModel = jrequire("models/roomdata");
-		await RoomDataModel.doChangeModeByIdList(roomDataIdList, mode, jrResult, true);
-		if (!jrResult.isError()) {
+		await RoomDataModel.doChangeModeByIdList(jrContext, roomDataIdList, mode, true);
+		if (!jrContext.isError()) {
 			const modeLabel = jrhText.capitalizeFirstLetter(appdef.DefStateModeLabels[mode]);
-			jrResult.pushSuccess(modeLabel + " " + RoomDataModel.getNiceNamePluralized(roomDataIdList.length) + " attached to " + this.getNiceName() + " #" + id + ".");
+			jrContext.pushSuccess(modeLabel + " " + RoomDataModel.getNiceNamePluralized(roomDataIdList.length) + " attached to " + this.getNiceName() + " #" + id + ".");
 		}
 	}
 
 
 
-	static async getAssociatedRoomDatasByRoomId(roomid, jrResult) {
+	static async getAssociatedRoomDatasByRoomId(jrContext, roomid) {
 		// get a list (array) of all room ids that are attached to this app
 
 		const RoomDataModel = jrequire("models/roomdata");

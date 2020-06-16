@@ -13,6 +13,7 @@
 const express = require("express");
 
 // helpers
+const JrContext = require("../helpers/jrcontext");
 const JrResult = require("../helpers/jrresult");
 
 // requirement service locator
@@ -54,8 +55,9 @@ function setupRouter(urlPath) {
 // router functions
 
 async function routerGetIndex(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
 	res.render("room/index", {
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		jrResult: jrContext.mergeSessionMessages(),
 		title: "Room Route",
 	});
 }
@@ -69,9 +71,11 @@ async function routerGetIndex(req, res, next) {
 
 //---------------------------------------------------------------------------
 async function routerGetInvite(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
+
 	// require them to be logged in, or creates a redirect
-	const user = await arserver.getLoggedInUser(req);
-	if (!arserver.requireUserIsLoggedIn(req, res, user)) {
+	const user = await arserver.lookupLoggedInUser(jrContext);
+	if (!arserver.requireUserIsLoggedInRenderErrorPageOrRedirect(jrContext, user)) {
 		// all done
 		return;
 	}
@@ -83,17 +87,19 @@ async function routerGetInvite(req, res, next) {
 
 
 async function routerPostInvite(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
+
 	// require them to be logged in, or creates a redirect
-	const user = await arserver.getLoggedInUser(req);
-	if (!arserver.requireUserIsLoggedIn(req, res, user)) {
+	const user = await arserver.lookupLoggedInUser(jrContext);
+	if (!arserver.requireUserIsLoggedInRenderErrorPageOrRedirect(jrContext, user)) {
 		// all done
 		return;
 	}
 
 	// test csrf token
-	let jrResult = arserver.testCsrfReturnJrResult(req, res);
+	arserver.testCsrf(jrContext);
 
-	if (!jrResult.isError()) {
+	if (!jrContext.isError()) {
 		// variables from form
 		const roleChange = {
 			operation: "add",
@@ -111,23 +117,23 @@ async function routerPostInvite(req, res, next) {
 		};
 
 		// run the acl change
-		jrResult = await aclAid.performRoleChange(roleChange);
+		await aclAid.performRoleChange(jrContext, roleChange);
 	}
 
 	// error in form, re-present the form
-	presentFormInvite(req, res, jrResult);
+	presentFormInvite(jrContext);
 }
 //---------------------------------------------------------------------------
 
 
 
 //---------------------------------------------------------------------------
-function presentFormInvite(req, res, jrResult) {
-	res.render("room/inviteform", {
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
+function presentFormInvite(jrContext) {
+	jrContext.res.render("room/inviteform", {
+		jrResult: jrContext.mergeSessionMessages(),
 		title: "Invite to Room",
-		csrfToken: arserver.makeCsrf(req, res),
-		reqBody: req.body,
+		csrfToken: arserver.makeCsrf(jrContext),
+		reqBody: jrContext.req.body,
 	});
 }
 //---------------------------------------------------------------------------

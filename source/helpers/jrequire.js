@@ -29,6 +29,8 @@
 const requires = {};
 const requirePaths = {};
 const plugins = {};
+const addonModules = {};
+const addonModuleCategories = {};
 
 // we normally used deferred loading, which is better if we might replace a path before it's needed; this can be overridden with call to setDeferredLoading(boolean)
 let flagDeferredLoading = true;
@@ -54,9 +56,6 @@ function registerPath(name, requirePath) {
 
 	// save the path for this name
 	requirePaths[name] = requirePath;
-
-	// console.log("In registerPath: " + name);
-	// console.log("In registerPath: " + name + " at path " + requirePath);
 
 	if (require[name]) {
 		// already exists, so it is being replaced for subsequent jrequire(name)
@@ -91,63 +90,122 @@ function registerRequire(name, requireResult) {
 
 
 
-/**
- * Register a new plugin
- * This function could be called directly from code, but is normally called by the discoverPlugins() function that uses config file to add new plugins
- *
- * @param {string} pluginCategory - category like a tag, a simple string that might be checked when running plugins
- * @param {string} pluginName - name of plugin for debuggin purposes
- * @param {string} pluginPath - file path to plugin
- */
-function registerPlugin(pluginCategory, pluginName, pluginPath) {
-	// register a new plugin
 
-	// console.log("in registerPlugin with name = " + pluginName + " from category '" + pluginCategory + "' at path " + pluginPath);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//---------------------------------------------------------------------------
+function registerAddonModule(collectionName, name, obj) {
+	// register a new generic thing
+
+	// console.log("in registerAddonModule with collection = " + collectionName + ", name = " + pluginName + " from category '" + pluginCategory + "' at path " + pluginPath);
 
 	// add it to our registerPath normal registry
-	const pluginNameRegistered = calcPluginRegisteredName(pluginName);
-	registerPath(pluginNameRegistered, fixRequirePath(pluginPath));
+	const addonNameRegistered = calcAddonRegisteredName(collectionName, name);
+	registerPath(addonNameRegistered, fixRequirePath(obj.path));
 
+	// add it to our array of addons by collectionName
 	// create category if it doesn't exist
-	if (!plugins[pluginCategory]) {
-		plugins[pluginCategory] = {};
+	if (!addonModules[collectionName]) {
+		addonModules[collectionName] = {};
 	}
-
-	// add it to our array of plugins
-	plugins[pluginCategory][pluginName] = {
-		path: pluginPath,
+	addonModules[collectionName][name] = {
+		...obj,
 	};
+
+	// and now we also store it in category tree under the collectionName
+	let objCat = obj.category;
+	if (!objCat) {
+		objCat = "_UNCATEGORIZED_";
+	}
+	if (objCat) {
+		if (!addonModuleCategories[collectionName]) {
+			addonModuleCategories[collectionName] = {};
+		}
+		if (!addonModuleCategories[collectionName][objCat]) {
+			addonModuleCategories[collectionName][objCat] = {};
+		}
+		addonModuleCategories[collectionName][objCat][name] = {
+			...obj,
+		};
+	}
 }
 
-/**
- * Returns all plugins of the specified category
- *
- * @param {string} pluginCategory
- * @returns an array of plugins in the specified category
- */
-function getPluginsForCategory(pluginCategory) {
-	return plugins[pluginCategory];
+
+function getAllAddonModulesForCollectionName(collectionName) {
+	return addonModules[collectionName];
 }
 
-/**
- * Get list of all plugins
- *
- * @returns an array of all plugin objects
- */
-function getAllPlugins() {
-	return plugins;
+
+function getAllAddonCategoriesForCollectionName(collectionName) {
+	const catObjs = addonModuleCategories[collectionName];
+	if (catObjs) {
+		return catObjs;
+	}
+	return {};
 }
 
-/**
- * Just makes a safe name for the plugin require entry, by adding a "_plugin/" prefix to the plugin name
- *
- * @param {string} name
- * @returns the regsitered require name of the plugin by adding a prefix to it
- */
-function calcPluginRegisteredName(name) {
-	return "_plugin/" + name;
+
+function getAllAddonModulesInCategoryForCollectionName(collectionName, category) {
+	const catObjs = addonModuleCategories[collectionName];
+	if (catObjs[category]) {
+		return catObjs[category];
+	}
+	return {};
+}
+
+
+function requireAddonModule(collectionName, name) {
+	const addonNameRegistered = calcAddonRegisteredName(collectionName, name);
+	return jrequire(addonNameRegistered);
+}
+
+
+function calcAddonRegisteredName(collectionName, name) {
+	return collectionName + "/" + name;
 }
 //---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -161,16 +219,19 @@ function calcPluginRegisteredName(name) {
  * @returns result of previous require statement
  */
 function jrequire(name) {
+	// console.log("In requires for " + name);
 	if (requires[name]) {
+		// console.log("Returning cached1");
 		return requires[name];
 	}
 	if (requirePaths[name]) {
 		// deferred, so require it now
 		// console.log("Deferred loading of module: " + name);
-		requires[name] = require(fixRequirePath(requirePaths[name]));
-		// return it if it succeeded
-		if (requires[name]) {
-			return requires[name];
+		const obj = require(fixRequirePath(requirePaths[name]));
+		// console.log("Returning cached2");
+		if (obj) {
+			requires[name] = obj;
+			return obj;
 		}
 	}
 
@@ -180,17 +241,6 @@ function jrequire(name) {
 		emsg += ".  ATTENTION: No modules were registered with jrequire -- did you forget to register your module paths?";
 	}
 	throw new Error(emsg);
-}
-
-
-/**
- * Substitute for the normal cached require() statement, but for plugins, which are entered into our system with modified names
- *
- * @param {string} name - name used to register previously
- * @returns result of previous require statement
- */
-function plugin(name) {
-	return jrequire(calcPluginRegisteredName(name));
 }
 
 
@@ -240,18 +290,59 @@ function setDeferredLoading(val) {
 
 
 
+
+
+
+
+
+
+//---------------------------------------------------------------------------
+function checkCircularRequireFailures() {
+	// ATTN: THIS DOES NOT WORK
+	// walk all names and see if any are empty
+	console.log("IN checkCircularRequireFailures.");
+	let obj;
+	for (const rname in requires) {
+		console.log("CHECKING VALIDITY OF REQUIRES NAME: " + rname + " TYPE = " + typeof requires[rname]);
+		obj = requires[rname];
+		if (typeof obj === "object") {
+			if (!obj || (Object.entries(obj).length === 0 && obj.constructor === Object)) {
+				console.log("LOOKS BAD.");
+			} else {
+				console.log("LEN = " + Object.entries(obj).length);
+			}
+		}
+	}
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
 //---------------------------------------------------------------------------
 // set these on top of the main function for access to them
 // this is an unusual nodejs pattern that makes it easy to run the main function, and possible to call others
 // in this way we can export just the one main function (jrequire), but the other functions can be invoked by doing jrequire.registerPath etc...
 jrequire.registerPath = registerPath;
 jrequire.registerRequire = registerRequire;
-jrequire.registerPlugin = registerPlugin;
 jrequire.calcDebugInfo = calcDebugInfo;
 jrequire.setDeferredLoading = setDeferredLoading;
-jrequire.getPluginsForCategory = getPluginsForCategory;
-jrequire.getAllPlugins = getAllPlugins;
-jrequire.plugin = plugin;
+//
+jrequire.registerAddonModule = registerAddonModule;
+jrequire.getAllAddonModulesForCollectionName = getAllAddonModulesForCollectionName;
+jrequire.getAllAddonCategoriesForCollectionName = getAllAddonCategoriesForCollectionName;
+jrequire.getAllAddonModulesInCategoryForCollectionName = getAllAddonModulesInCategoryForCollectionName;
+//
+jrequire.requireAddonModule = requireAddonModule;
+//
+jrequire.checkCircularRequireFailures = checkCircularRequireFailures;
 //---------------------------------------------------------------------------
 
 

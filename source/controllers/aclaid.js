@@ -197,12 +197,12 @@ class AclAid {
 	 * @returns true if action permission is implied by any of the roles
 	 * @memberof AclAid
 	 */
-	async anyRolesImplyPermission(roles, action, target) {
+	async anyRolesImplyPermission(jrContext, roles, action, target) {
 		// return true if any of the specified roles (array) have permission
 		// jrdebug.cdebug("In anyRolesImplyPermission with action = " + action + ", target = " + target);
 		// jrdebug.cdebugObj(roles, "roles");
 		for (let i = 0; i < roles.length; i++) {
-			if (await this.roleImpliesPermission(roles[i], action, target) === true) {
+			if (await this.roleImpliesPermission(jrContext, roles[i], action, target) === true) {
 				// yes!
 				// jrdebug.cdebug("anyRolesImplyPermission, role check returning: YES, has permission [due to role " + roles[key] + "].");
 				return true;
@@ -225,7 +225,7 @@ class AclAid {
 	 * @returns true if action permission is implied by the role
 	 * @memberof AclAid
 	 */
-	async roleImpliesPermission(role, action, target) {
+	async roleImpliesPermission(jrContext, role, action, target) {
 		// return true if the role implies the action
 		jrdebug.cdebug("In roleImpliesPermission with action = " + action + ", target = " + target + ", role = " + role);
 
@@ -240,7 +240,7 @@ class AclAid {
 			const arserver = jrequire("arserver");
 			const errmsg = "Acl permission check threw error while asking about roleAcl.can(" + role + ").execute(" + action + ").on(" + target + "): " + err.message;
 			jrdebug.cdebug("RoleImpliesPermission, role check threw exception: " + errmsg);
-			await arserver.logm(appdef.DefLogTypeErrorCriticalAcl, errmsg, err);
+			await arserver.logr(jrContext, appdef.DefLogTypeErrorCriticalAcl, errmsg, err);
 			// return permission denied
 			return false;
 		}
@@ -356,18 +356,18 @@ class AclAid {
 		},
 	};
 	 */
-	async performRoleChange(roleChange) {
-		const jrResult = JrResult.makeNew();
+
+	async performRoleChange(jrContext, roleChange) {
 
 		// first step is lookup key roleChange fields, and throw any errors
-		const rcobj = await this.roleChangeParse(roleChange, jrResult);
+		const rcobj = await this.roleChangeParse(jrContext, roleChange);
 		const petitioner = rcobj.petitioner;
 		const recipient = rcobj.recipient;
 
 		// next step is to see if petitioner is ALLOWED to make this role change (has sufficient permission to do so)
 		// perhaps for Any given role R, we can ask if the petitioner has role "operation.R"..
 		// we need to be careful about missing object ids, which can mean permission for all objects
-		if (!jrResult.isError()) {
+		if (!jrContext.isError()) {
 			// requiredAction will be something like "add.moderator"
 			const petitionerAclAction = rcobj.operation + "." + rcobj.role;
 			// jrdebug.debugObj(rcobj, "RCOBJ");
@@ -375,34 +375,33 @@ class AclAid {
 			let hasPermission;
 			if (rcobj.object) {
 				const rcobjModelClass = rcobj.object.getModelClass();
-				hasPermission = await petitioner.aclHasPermission(petitionerAclAction, rcobjModelClass.getAclName(), rcobj.object.getIdAsString());
+				hasPermission = await petitioner.aclHasPermission(jrContext, petitionerAclAction, rcobjModelClass.getAclName(), rcobj.object.getIdAsString());
 				if (!hasPermission) {
-					jrResult.pushError("petitioner (" + petitioner.getIdAsString() + ") does not have permission to grant [" + petitionerAclAction + "] to recipient " + recipient.getIdAsString() + " on " + rcobjModelClass.getNiceName() + " #" + rcobj.object.getIdAsString());
+					jrContext.pushError("petitioner (" + petitioner.getIdAsString() + ") does not have permission to grant [" + petitionerAclAction + "] to recipient " + recipient.getIdAsString() + " on " + rcobjModelClass.getNiceName() + " #" + rcobj.object.getIdAsString());
 				}
 			} else {
-				hasPermission = await petitioner.aclHasPermission(petitionerAclAction);
+				hasPermission = await petitioner.aclHasPermission(jrContext, petitionerAclAction);
 				if (!hasPermission) {
-					jrResult.pushError("petitioner (" + petitioner.getIdAsString() + ") does not have permission to grant [" + petitionerAclAction + "] to recipient " + recipient.getIdAsString());
+					jrContext.pushError("petitioner (" + petitioner.getIdAsString() + ") does not have permission to grant [" + petitionerAclAction + "] to recipient " + recipient.getIdAsString());
 				}
 			}
 		}
 
 		// next step is to perform the role change (add or delete)
-		if (!jrResult.isError()) {
-			await recipient.makeRoleAclChange(rcobj.operation, rcobj.role, rcobj.object, jrResult);
+		if (!jrContext.isError()) {
+			await recipient.makeRoleAclChange(jrContext, rcobj.operation, rcobj.role, rcobj.object);
 		}
 
 		// save any changes
-		if (!jrResult.isError()) {
-			await recipient.dbSave(jrResult);
+		if (!jrContext.isError()) {
+			await recipient.dbSave(jrContext);
 			// log what we just did?
 			// ATTN: TODO log change
 			// ATTN: TODO improve this message with details
-			jrResult.pushSuccess("Role change successful.");
+			if (!jrContext.isError()) {
+				jrContext.pushSuccess("Role change successful.");
+			}
 		}
-
-
-		return jrResult;
 	}
 	//---------------------------------------------------------------------------
 
@@ -417,24 +416,24 @@ class AclAid {
 	 * @memberof AclAid
 	 * @returns object
 	 */
-	async roleChangeParse(roleChange, jrResult) {
+	async roleChangeParse(jrContext, roleChange) {
 		const roleChangeParsed = {};
 
 		// first operation, which must be add or delete
 		// role object, which cannot be blank
-		roleChangeParsed.operation = this.roleChangeParseOperation(roleChange.operation, jrResult);
+		roleChangeParsed.operation = this.roleChangeParseOperation(jrContext, roleChange.operation);
 
 		// role object, which cannot be blank
-		roleChangeParsed.role = this.roleChangeParseRole(roleChange.role, jrResult);
+		roleChangeParsed.role = this.roleChangeParseRole(jrContext, roleChange.role);
 
 		// now object, which can be blank
-		roleChangeParsed.object = await this.flexibleParseObjectIdentity(roleChange.object, "object", jrResult);
+		roleChangeParsed.object = await this.flexibleParseObjectIdentity(jrContext, roleChange.object, "object");
 
 		// now petitioner
-		roleChangeParsed.petitioner = await this.flexibleParseUser(roleChange.petitioner, "petitioner", jrResult);
+		roleChangeParsed.petitioner = await this.flexibleParseUser(jrContext, roleChange.petitioner, "petitioner");
 
 		// now recipient
-		roleChangeParsed.recipient = await this.flexibleParseUser(roleChange.recipient, "recipient", jrResult);
+		roleChangeParsed.recipient = await this.flexibleParseUser(jrContext, roleChange.recipient, "recipient");
 
 		return roleChangeParsed;
 	}
@@ -449,9 +448,9 @@ class AclAid {
 	 * @returns validated operation or null on error
 	 * @memberof AclAid
 	 */
-	roleChangeParseOperation(operation, jrResult) {
+	roleChangeParseOperation(jrContext, operation) {
 		if (operation !== "add" && operation !== "remove") {
-			jrResult.pushFieldError("operation", "Operation must be one of 'add' or 'remove'");
+			jrContext.pushFieldError("operation", "Operation must be one of 'add' or 'remove'");
 			return null;
 		}
 		return operation;
@@ -465,10 +464,10 @@ class AclAid {
 	 * @returns validated role or null on error
 	 * @memberof AclAid
 	 */
-	roleChangeParseRole(role, jrResult) {
+	roleChangeParseRole(jrContext, role) {
 		// now role, which should be a non-empty string
 		if (!this.isValidRole(role)) {
-			jrResult.pushFieldError("role", "Role must be a valid role string");
+			jrContext.pushFieldError("role", "Role must be a valid role string");
 			return null;
 		}
 		return role;
@@ -503,7 +502,7 @@ class AclAid {
 	 * @returns the model object or null if not specified or found
 	 * @memberof AclAid
 	 */
-	async flexibleParseObjectIdentity(objDef, fieldLabel, jrResult) {
+	async flexibleParseObjectIdentity(jrContext, objDef, fieldLabel) {
 		if (!objDef) {
 			// no object specified -- this is allowed
 			return undefined;
@@ -519,7 +518,7 @@ class AclAid {
 			return doc;
 		}
 		// ATTN: unfinished
-		jrResult.pushFieldError(fieldLabel, "Not a valid object (" + fieldLabel + ")");
+		jrContext.pushFieldError(fieldLabel, "Not a valid object (" + fieldLabel + ")");
 		return null;
 	}
 
@@ -534,12 +533,12 @@ class AclAid {
 	 * @returns user indicated
 	 * @memberof AclAid
 	 */
-	async flexibleParseUser(objDef, fieldLabel, jrResult) {
+	async flexibleParseUser(jrContext, objDef, fieldLabel) {
 		const UserModel = jrequire("models/user");
 
 		if (!objDef) {
 			// no user specified -- this is an error
-			jrResult.pushFieldError(fieldLabel, "A valid " + fieldLabel + " user must be specified");
+			jrContext.pushFieldError(fieldLabel, "A valid " + fieldLabel + " user must be specified");
 			return undefined;
 		}
 		if (objDef.user) {
@@ -555,7 +554,7 @@ class AclAid {
 		}
 
 		// ATTN: unfinished
-		jrResult.pushFieldError(fieldLabel, "Not a valid " + fieldLabel + " user");
+		jrContext.pushFieldError(fieldLabel, "Not a valid " + fieldLabel + " user");
 		return null;
 	}
 	//---------------------------------------------------------------------------

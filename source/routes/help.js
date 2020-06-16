@@ -18,6 +18,7 @@ const util = require("util");
 const jrequire = require("../helpers/jrequire");
 
 // helpers
+const JrContext = require("../helpers/jrcontext");
 const JrResult = require("../helpers/jrresult");
 const jrdebug = require("../helpers/jrdebug");
 const jrhExpress = require("../helpers/jrh_express");
@@ -59,8 +60,9 @@ function setupRouter(urlPath) {
 
 
 async function routerGetIndex(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
 	res.render("help/index", {
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		jrResult: jrContext.mergeSessionMessages(),
 	});
 }
 //---------------------------------------------------------------------------
@@ -69,7 +71,8 @@ async function routerGetIndex(req, res, next) {
 
 //---------------------------------------------------------------------------
 async function routerAbout(req, res, next) {
-	jrhExpress.sendResJsonData(res, 200, "about", arserver.getAboutInfo());
+	const jrContext = JrContext.makeNew(req, res, next);
+	jrhExpress.sendJsonDataSuccess(jrContext, "about", arserver.getAboutInfo());
 }
 //---------------------------------------------------------------------------
 

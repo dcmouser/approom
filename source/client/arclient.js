@@ -414,7 +414,7 @@ class AppRoomClient {
 		const postData = {
 			token: this.getAccessTokenVal(),
 		};
-		const response = await jrhAxios.postCatchError(url, postData);
+		const response = await this.postCatchError(url, postData, false);
 
 		// extract data, check for error, set succsss status, last error, etc.
 		const data = await this.extractDataTriggerError(response, url, "validateAccessToken", null);
@@ -473,7 +473,7 @@ class AppRoomClient {
 		const postData = {
 			token: this.getRefreshTokenVal(),
 		};
-		const responseData = await jrhAxios.postCatchError(url, postData);
+		const responseData = await this.postCatchError(url, postData, false);
 
 		// extract data, check for error, set last error on error, etc.
 		const data = await this.extractDataTriggerError(responseData, url, "retrieveAccessTokenFromRefreshToken", "token");
@@ -512,7 +512,7 @@ class AppRoomClient {
 			usernameEmail: credentials.usernameEmail,
 			password: credentials.password,
 		};
-		const responseData = await jrhAxios.postCatchError(url, postData);
+		const responseData = await this.postCatchError(url, postData, false);
 
 		// extract data, check for error, set succsss status, last error, etc.
 		const data = await this.extractDataTriggerError(responseData, url, "retrieveRefreshTokenUsingCredentials", "token");
@@ -694,25 +694,23 @@ class AppRoomClient {
 			if (!this.getValidApiAccess()) {
 				// try to reconnect and then try again
 				if (!await this.connect(true)) {
-					// failed to connect; make error object and return it
+					// failed to connect; make our OWN error object and return it
 					data = {
 						error: this.getLastError(),
-						tokenError: true,
+						errorType: "authToken",
 					};
 					return data;
 				}
 			}
 
-			// set token (which may be newly gotten from our connect attempt above
-			postData.token = this.getAccessTokenVal();
-
 			// post and get response
-			responseData = await jrhAxios.postCatchError(url, postData);
+			responseData = await this.postCatchError(url, postData, true);
 			// extract data, check for error, set succsss status, last error, etc.
 			data = await this.extractDataTriggerError(responseData, url, "invoking " + urlEndpoint, null);
 
 			// IFF we dont get a tokenError then we can break and return the error
-			if (!data.tokenError) {
+			// ATTN: TODO - check for an access denied error which may also be an error related to our token even if it doesnt generate valid json reply?
+			if (data.errorType !== "authToken") {
 				break;
 			}
 
@@ -727,6 +725,29 @@ class AppRoomClient {
 	}
 	//---------------------------------------------------------------------------
 
+
+
+	//---------------------------------------------------------------------------
+	async postCatchError(url, postData, flagWithAccessToken) {
+
+		const accessToken = this.getAccessTokenVal();
+
+		let overideOptions;
+		if (flagWithAccessToken && accessToken) {
+			// but access token in auth header bearer
+			overideOptions = {
+				headers: {
+					// "Access-Control-Allow-Origin": "*",
+					// "Content-type": "Application/json",
+					Authorization: "Bearer " + accessToken,
+				},
+			};
+		}
+
+		const responseData = await jrhAxios.postAxiosCatchError(url, postData, overideOptions);
+		return responseData;
+	}
+	//---------------------------------------------------------------------------
 
 
 

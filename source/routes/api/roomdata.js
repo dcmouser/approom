@@ -23,6 +23,7 @@ const arserver = jrequire("arserver");
 const aclAid = jrequire("aclaid");
 
 // helpers
+const JrContext = require("../../helpers/jrcontext");
 const JrResult = require("../../helpers/jrresult");
 const jrhExpress = require("../../helpers/jrh_express");
 const jrhMisc = require("../../helpers/jrh_misc");
@@ -79,19 +80,23 @@ function setupRouter(urlPath) {
 //---------------------------------------------------------------------------
 async function routerList(req, res, next) {
 	// consume access token
-	const jrResult = JrResult.makeNew();
-	const [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "access");
-	if (jrResult.isError()) {
-		jrhExpress.sendResJsonJrResultTokenError(res, jrResult);
+	const jrContext = JrContext.makeNew(req, res, next);
+
+	// new
+	const user = await arserver.lookupLoggedInUser(jrContext);
+	if (!user) {
+		jrContext.pushError("Failed to authenticate user for request; missing access token?");
+	}
+	if (jrContext.isError()) {
+		jrhExpress.sendJsonErrorAuthToken(jrContext);
 		return;
 	}
 
 	// the api roomdata list function is for retrieving a list of (matching) roomdata items
 	// for a specific appid, and roomid, with optional filters (on data)
-	jrResult.clear();
-	const query = jrhExpress.parseReqGetJsonField(req, "query", jrResult);
-	if (jrResult.isError()) {
-		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
+	const query = jrhExpress.parseReqGetJsonField(jrContext, "query");
+	if (jrContext.isError()) {
+		jrhExpress.sendJsonResult(jrContext, 400);
 		return;
 	}
 
@@ -102,12 +107,12 @@ async function routerList(req, res, next) {
 	}
 
 	// get roomdata items for room
-	const roomId = jrhMisc.getNonNullValueFromObject(query, "roomId", jrResult, "room id");
+	const roomId = jrhMisc.getNonNullValueFromObject(jrContext, query, "roomId", "room id");
 	if (roomId && !jrhMongo.isValidMongooseObjectId(roomId)) {
-		jrResult.pushFieldError("roomId", "Bad syntax for rooomId: " + roomId);
+		jrContext.pushFieldError("roomId", "Bad syntax for rooomId: " + roomId);
 	}
-	if (jrResult.isError()) {
-		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
+	if (jrContext.isError()) {
+		jrhExpress.sendJsonResult(jrContext, 400);
 		return;
 	}
 
@@ -115,9 +120,9 @@ async function routerList(req, res, next) {
 	const permission = appdef.DefAclActionViewData;
 	const permissionObjType = RoomModel.getAclName();
 	const permissionObjId = roomId;
-	const hasPermission = await user.aclHasPermission(permission, permissionObjType, permissionObjId);
+	const hasPermission = await user.aclHasPermission(jrContext, permission, permissionObjType, permissionObjId);
 	if (!hasPermission) {
-		jrhExpress.sendResJsonAclErorr(res, permission, permissionObjType, permissionObjId);
+		jrhExpress.sendJsonErorrAcl(jrContext, permission, permissionObjType, permissionObjId);
 		return;
 	}
 
@@ -131,36 +136,40 @@ async function routerList(req, res, next) {
 
 
 	// success
-	const result = {
+	const returnData = {
 		roomData,
 		// oringinalQuery: query,
 	};
 
 	// provide it
-	jrhExpress.sendResJsonData(res, 200, "roomdata", result);
+	jrhExpress.sendJsonDataSuccess(jrContext, "roomdata", returnData);
 }
 
 
 
 async function routerGet(req, res, next) {
-	jrhExpress.sendResJsonError(res, 400, "not implemented yet");
+	const jrContext = JrContext.makeNew(req, res, next);
+	jrhExpress.sendJsonError(jrContext, 400, "not implemented yet", "internal");
 }
 
 
 async function routerAdd(req, res, next) {
-	// consume access token
-	const jrResult = JrResult.makeNew();
-	const [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "access");
-	if (jrResult.isError()) {
-		jrhExpress.sendResJsonJrResultTokenError(res, jrResult);
+	const jrContext = JrContext.makeNew(req, res, next);
+
+	// new
+	const user = await arserver.lookupLoggedInUser(jrContext);
+	if (!user) {
+		jrContext.pushError("Failed to authenticate user for request; missing access token?");
+	}
+	if (jrContext.isError()) {
+		jrhExpress.sendJsonErrorAuthToken(jrContext);
 		return;
 	}
 
 	// get query
-	jrResult.clear();
-	const query = jrhExpress.parseReqGetJsonField(req, "query", jrResult);
-	if (jrResult.isError()) {
-		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
+	const query = jrhExpress.parseReqGetJsonField(jrContext, "query");
+	if (jrContext.isError()) {
+		jrhExpress.sendJsonResult(jrContext, 400);
 		return;
 	}
 
@@ -175,9 +184,9 @@ async function routerAdd(req, res, next) {
 	const permission = appdef.DefAclActionAddData;
 	const permissionObjType = RoomModel.getAclName();
 	const permissionObjId = roomId;
-	const hasPermission = await user.aclHasPermission(permission, permissionObjType, permissionObjId);
+	const hasPermission = await user.aclHasPermission(jrContext, permission, permissionObjType, permissionObjId);
 	if (!hasPermission) {
-		jrhExpress.sendResJsonAclErorr(res, permission, permissionObjType, permissionObjId);
+		jrhExpress.sendJsonErorrAcl(jrContext, permission, permissionObjType, permissionObjId);
 		return;
 	}
 
@@ -193,19 +202,19 @@ async function routerAdd(req, res, next) {
 	// form fields that we dont complain about finding even though they arent for the form object
 	const ignoreFields = [];
 
-	const roomdatadoc = await RoomDataModel.validateSave(jrResult, {}, true, user, query, saveFields, preValidatedFields, ignoreFields, roomdata, RoomModel.getShouldBeOwned());
-	if (jrResult.isError()) {
-		jrhExpress.sendResJsonJrResult(res, 400, jrResult);
+	const roomdatadoc = await RoomDataModel.validateSave(jrContext, {}, true, user, query, saveFields, preValidatedFields, ignoreFields, roomdata, RoomModel.getShouldBeOwned());
+	if (jrContext.isError()) {
+		jrhExpress.sendJsonResult(jrContext, 400);
 		return;
 	}
 
 	// success
-	const result = {
+	const returnData = {
 		roomData: roomdatadoc,
 	};
 
 	// provide it
-	jrhExpress.sendResJsonData(res, 200, "roomdata", result);
+	jrhExpress.sendJsonDataSuccess(jrContext, "roomdata", returnData);
 }
 //---------------------------------------------------------------------------
 

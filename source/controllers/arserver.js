@@ -58,10 +58,12 @@ const jrhExpress = require("../helpers/jrh_express");
 const jrlog = require("../helpers/jrlog");
 const jrdebug = require("../helpers/jrdebug");
 const jrconfig = require("../helpers/jrconfig");
+const JrContext = require("../helpers/jrcontext");
 const JrResult = require("../helpers/jrresult");
 const jrhHandlebars = require("../helpers/jrh_handlebars");
 const jrhText = require("../helpers/jrh_text");
 const jrhRateLimiter = require("../helpers/jrh_ratelimiter");
+
 
 // constants
 const appdef = jrequire("appdef");
@@ -413,9 +415,11 @@ class AppRoomServer {
 		// enable debugging based on DEBUG field
 		jrdebug.setDebugEnabled(this.getOptionDebugEnabled());
 
-		// discover plugins, must be done after processing config file
-		this.discoverPlugins();
-		this.initializePlugins();
+		// discover addon plugins, must be done after processing config file
+		this.discoverAndInitializeAddonPlugins();
+
+		// discover addon appFrameworks
+		this.discoverAndInitializeAddonAppFrameworks();
 	}
 
 
@@ -461,36 +465,115 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	//---------------------------------------------------------------------------
-	discoverPlugins() {
+	discoverAddonCollection(collectionName) {
 		// get the plugin config object
-		const pluginConfig = this.getConfigVal(appdef.DefConfigKeyPlugins);
+		const configKey = this.getCollectionConfigKey(collectionName);
+		const allObjs = this.getConfigVal(configKey);
 		// now iterate over it and register the plugins
-		let pluginObj;
-		Object.keys(pluginConfig).forEach((name) => {
-			pluginObj = pluginConfig[name];
-			if (pluginObj.enabled !== false) {
-				jrequire.registerPlugin(pluginObj.category, name, pluginObj.path);
+		let obj;
+		Object.keys(allObjs).forEach((name) => {
+			obj = allObjs[name];
+			if (obj.enabled !== false) {
+				jrequire.registerAddonModule(collectionName, name, obj);
 			}
 		});
 	}
 
 
-	initializePlugins() {
-		// get list of all registered plugins
-		let category, pluginmodule;
-		const plugins = jrequire.getAllPlugins();
-		// iterate all categories
-		Object.keys(plugins).forEach((categoryKey) => {
-			// iterate all modules in this category
-			category = plugins[categoryKey];
-			Object.keys(category).forEach((name) => {
-				pluginmodule = jrequire.plugin(name);
-				pluginmodule.initialize(this);
+	initializeAddonCollection(collectionName) {
+		// initialize a configuration collection
+		let addonModule;
+		const AllAddons = jrequire.getAllAddonModulesForCollectionName(collectionName);
+		if (AllAddons) {
+			Object.keys(AllAddons).forEach((name) => {
+				addonModule = jrequire.requireAddonModule(collectionName, name);
+				if (addonModule && addonModule.initialize) {
+					addonModule.initialize(this);
+				}
 			});
-		});
+		}
 	}
 	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	discoverAndInitializeAddonPlugins() {
+		const collectionName = this.getAddonCollectionNamePlugins();
+		this.discoverAddonCollection(collectionName);
+		this.initializeAddonCollection(collectionName);
+	}
+
+	discoverAndInitializeAddonAppFrameworks() {
+		const collectionName = this.getAddonCollectionNameAppFrameworks();
+		this.discoverAddonCollection(collectionName);
+		this.initializeAddonCollection(collectionName);
+	}
+
+	getAddonCollectionNamePlugins() {
+		return "plugins";
+	}
+
+	getAddonCollectionNameAppFrameworks() {
+		return "appFrameworks";
+	}
+
+	getCollectionConfigKey(collectionName) {
+		return appdef.DefConfigKeyCollections[collectionName];
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	getAppFrameworkChoices() {
+		if (this.cachedAppFrameworkChoices === undefined) {
+			// calc and cache them
+			let label;
+			this.cachedAppFrameworkChoices = {};
+			const allObjs = jrequire.getAllAddonModulesForCollectionName(this.getAddonCollectionNameAppFrameworks());
+			Object.keys(allObjs).forEach((name) => {
+				label = allObjs[name].label ? allObjs[name].label : name;
+				this.cachedAppFrameworkChoices[name] = label;
+			});
+		}
+
+		// return it
+		return this.cachedAppFrameworkChoices;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 	//---------------------------------------------------------------------------
@@ -505,6 +588,7 @@ class AppRoomServer {
 	setupLateRequires() {
 		// controllers
 		this.crudAid = jrequire("crudaid");
+
 		this.aclAid = jrequire("aclaid");
 		this.sendAid = jrequire("sendaid");
 		this.setupAid = jrequire("setupaid");
@@ -641,7 +725,6 @@ class AppRoomServer {
 
 
 	setupExpressSessionCookieStuff(expressApp) {
-
 		// ATTN: 4/8/20 - cookie stuff locks server listener so we dont exit cleanly??
 
 		// cookie support
@@ -729,6 +812,16 @@ class AppRoomServer {
 		// expressApp.use(JrResult.expressMiddlewareInjectSessionResult());
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -882,19 +975,18 @@ class AppRoomServer {
 		});
 
 		// provide callback function to help passport deserialize a user
-		passport.deserializeUser((user, done) => {
+		passport.deserializeUser((profile, done) => {
 			// we are now called with user being the minimum USER object we passed to passport earlier, which was saved in user's session data
-			// we should now find this user in the database and return the full user model?
+			// should we now find this user in the database and return the full user model? if so we will be fetching user database model on every request.
 			// the idea here is that our session data contains only the minimalist data returned by serializeUser()
 			// and this function gives us a chance to fully load a full user object on each page load, which passport will stick into req.user
 			// but we may not want to actually use this function to help passport load up a full user object from the db, because of the overhead and cost of doing
 			// that when it's not needed.  So we are converting from the SESSION userdata to possibly FULLER userdata
 			// however, remember that we might want to check that the user is STILL allowed into our site, etc.
-			jrdebug.cdebugObj(user, "deserializeUser user");
-			// build full user ?
-			const userFull = user;
+			jrdebug.cdebugObj(profile, "deserializeUser user");
+			const userProfileObj = profile;
 			// call passport callback
-			done(null, userFull);
+			done(null, userProfileObj);
 		});
 
 		// setup passport strategies
@@ -933,30 +1025,36 @@ class AppRoomServer {
 				// this is the function called when user tries to login
 				// so we check their username and password and return either FALSE or the user
 				// first, find the user via their password
-				let jrResult;
+
+				// make jrContext with only req since we don't have access to the others
+				const jrContext = JrContext.makeNew(req, null, null);
 				jrdebug.cdebugf("In passport local strategy test with username=%s and password=%s", usernameEmail, password);
 
 				const user = await this.UserModel.mFindUserByUsernameEmail(usernameEmail);
 				if (!user) {
 					// not found
-					jrResult = JrResult.makeNew().pushFieldError("usernameEmail", "Username/Email-address not found");
-					return done(null, false, jrResult);
+					jrContext.pushFieldError("usernameEmail", "Username/Email-address not found");
+					return done(null, false, jrContext.result);
 				}
 				// ok we found the user, now check their password
 				const bretv = await user.testPlaintextPassword(password);
 				if (!bretv) {
 					// password doesn't match
-					jrResult = JrResult.makeNew().pushFieldError("password", "Password does not match");
-					return done(null, false, jrResult);
+					jrContext.pushFieldError("password", "Password does not match");
+					return done(null, false, jrContext.result);
 				}
 				// password matches!
 				// update last login time
-				jrResult = JrResult.makeNew();
-				await user.updateloginDateAndSave(jrResult);
+				await user.updateLastLoginDate(jrContext, true);
+				// set cached user so we don't have to reload them
+				this.setCachedLoggedInUserManually(jrContext, user);
 				// return the minimal user info needed
 				// IMP NOTE: the profile object we return here is precisely what gets passed to the serializeUser function above
 				const userProfile = user.getMinimalPassportProfile();
-				return done(null, userProfile, jrResult);
+				// set virtual token of profile so observers can see HOW (and when) the user logged in
+				userProfile.token = this.makeVirtualLoginToken("usernamePassword");
+				// return it
+				return done(null, userProfile, jrContext.result);
 			},
 		));
 	}
@@ -966,14 +1064,28 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	setupPassportJwt() {
-		// see http://www.passportjs.org/packages/passport-facebook/
+		// here we actually register 2 nearly identical jwt token passport strategies
+		// the first ("jwtHeader") is the real one used to access resources, by passing an access token in the auth header of a request
+		// the second ("jwtManualBody") is used when we want to parse a token passed as a field in a form, for processing (for example when user wants to ask us to create a new access token from a refresh token)
+		const ExtractJwt = passportJwt.ExtractJwt;
+		this.setupPassportJwtNamedWithExtractors("jwtHeader", [ExtractJwt.fromAuthHeaderAsBearerToken()], (jrResult, tokenObj) => { return this.validateSecureTokenAccess(jrResult, tokenObj); });
+		this.setupPassportJwtNamedWithExtractors("jwtManualBody", [ExtractJwt.fromUrlQueryParameter("token"), ExtractJwt.fromBodyField("token")], null);
+	}
+
+
+
+	setupPassportJwtNamedWithExtractors(jwtStrategyName, extractorList, tokenValidationFunction) {
+		// see http://www.passportjs.org/packages/passport-jwt/
+		// for passport named strategies see: https://github.com/jaredhanson/passport/issues/412
+
 		const Strategy = passportJwt.Strategy;
 		const ExtractJwt = passportJwt.ExtractJwt;
 
 		const strategyOptions = {
 			secretOrKey: this.getConfigVal(appdef.DefConfigKeyTokenCryptoKey),
-			// get jwt from URL or from post body if not in url
-			jwtFromRequest: ExtractJwt.fromExtractors([ExtractJwt.fromUrlQueryParameter("token"), ExtractJwt.fromBodyField("token")]),
+			// get jwt from URL or from post body if not in url, and fallback lastly on getting it from ath header
+			// see http://www.passportjs.org/packages/passport-jwt/#extracting-the-jwt-from-the-request
+			jwtFromRequest: ExtractJwt.fromExtractors(extractorList),
 			// we ignore expiration auto handling; we will check it ourselves
 			ignoreExpiration: true,
 		};
@@ -981,26 +1093,31 @@ class AppRoomServer {
 		// debug info
 		jrdebug.cdebugObj(strategyOptions, "setupPassportJwt strategyOptions");
 
-		passport.use(new Strategy(
+		passport.use(jwtStrategyName, new Strategy(
 			strategyOptions,
 			async (payload, done) => {
+				// ATTN: TODO - verify the payload token more details (type, expiration, etc.)
 				// get the user payload from the token
 				// jrlog.debugObj(payload, "API TOKEN PAYLOAD DEBUG");
-				const userProfile = payload.user;
+				// we make a shallow copy for the userProfile we are going to return so that we don't get circular reference when we add token data
+				if (tokenValidationFunction) {
+					// validate the token
+					const jrResult = JrResult.makeNew();
+					tokenValidationFunction(jrResult, payload);
+					if (jrResult.isError()) {
+						const errorstr = "Error with authorization token: " + jrResult.getErrorsAsString();
+						return done(errorstr);
+					}
+				}
+				const userProfile = jrhMisc.shallowCopy(payload.user);
 				if (!userProfile) {
 					const errorstr = "Error decoding user data from access token";
 					return done(errorstr);
 				}
-				// BUT we'd really like to pass on some extra token info.. so we add it to user profile object
-				userProfile.token = {
-					// see createSecureToken() for fields found here
-					type: payload.type,
-					scope: payload.scope,
-					apiCode: payload.apiCode,
-					iat: payload.iat,
-					iss: payload.iss,
-					exp: payload.exp,
-				};
+				// BUT we'd really like to pass on some extra token info.. so we add full token to user profile object
+				userProfile.token = payload;
+				// Add some stuff to the auth token like date of the token use?
+				this.decorateAuthLoginToken(userProfile.token);
 				// return success
 				return done(null, userProfile);
 			},
@@ -1040,7 +1157,7 @@ class AppRoomServer {
 					},
 				};
 				// make or connect account to bridge
-				return await this.setupPassportStrategyFromBridge(req, bridgedLoginObj, done);
+				return await this.lookupOrCreateBridgedLoginForPassport(req, bridgedLoginObj, done);
 			},
 		));
 	}
@@ -1077,7 +1194,7 @@ class AppRoomServer {
 					},
 				};
 				// make or connect account to bridge
-				return await this.setupPassportStrategyFromBridge(req, bridgedLoginObj, done);
+				return await this.lookupOrCreateBridgedLoginForPassport(req, bridgedLoginObj, done);
 			},
 		));
 	}
@@ -1115,7 +1232,7 @@ class AppRoomServer {
 					},
 				};
 				// make or connect account to bridge
-				return await this.setupPassportStrategyFromBridge(req, bridgedLoginObj, done);
+				return await this.lookupOrCreateBridgedLoginForPassport(req, bridgedLoginObj, done);
 			},
 		));
 	}
@@ -1127,22 +1244,32 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	// bridge helper for facebook, twitter, etc.
-	async setupPassportStrategyFromBridge(req, bridgedLoginObj, done) {
-		// created bridged user
-		const { user, jrResult } = await this.LoginModel.processBridgedLoginGetOrCreateUserOrProxy(bridgedLoginObj, req);
-		// if user could not be created, it's an error
-		// add jrResult to session in case we did extra stuff and info to show the user
-		if (jrResult) {
-			jrResult.addToSession(req);
+	async lookupOrCreateBridgedLoginForPassport(req, bridgedLoginObj, done) {
+		// ersatz jrContext
+		const jrContext = JrContext.makeNew(req); // NOTE NOTE THE NORMAL JrContext.makeNew(req, res, next)
+		// lookup bridged user if this already exists, or create user (or proxy user) for the bridge; if user could not be created, it's an error
+		const user = await this.LoginModel.processBridgedLoginGetOrCreateUserOrProxy(jrContext, bridgedLoginObj);
+		// add jrResult to session (error OR success), in case we did extra stuff and info to show the user
+		if (!jrContext.isResultEmpty()) {
+			jrContext.addToThisSession();
 		}
 		// otherwise log in the user -- either with a REAL user account, OR if user is a just a namless proxy for the bridged login, with that
 		let userProfile;
 		if (user) {
 			userProfile = user.getMinimalPassportProfile();
+			// ATTN: NOTE - that this may be a proxy user not yet saved to database..
+			if (user.isRealObjectInDatabase()) {
+				// add virtual token to passport userProfile?
+				userProfile.token = this.makeVirtualLoginToken("bridged." + bridgedLoginObj.provider);
+				// update login date and save it
+				await user.updateLastLoginDate(jrContext, true);
+				// set cached user so we don't have to reload them?
+				this.setCachedLoggedInUserManually(jrContext, user);
+			}
 		} else {
 			userProfile = null;
 		}
-		// return success
+		// return calling done of the passport strategy
 		return done(null, userProfile);
 	}
 	//---------------------------------------------------------------------------
@@ -1221,70 +1348,194 @@ class AppRoomServer {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	//---------------------------------------------------------------------------
-	getLoggedInPassportUserOfProvider(req, provider) {
-		const passportUser = this.getLoggedInPassportUser(req);
-		if (!passportUser) {
-			return undefined;
-		}
-		if (provider === "localUser") {
-			return passportUser.id;
-		}
-		if (provider === "localLogin") {
-			return passportUser.loginId;
-		}
-
-		throw (new Error("Unknown provider requested in getLoggedInPassportUserOfProvider"));
+	// the core minimal passport function that the below functions rely on ultimately
+	getLoggedInPassportUsr(jrContext) {
+		// this should not be called until we check for auth token log in
+		return jrhExpress.getReqPassportUsr(jrContext);
 	}
 
-	getLoggedInPassportUser(req) {
-		if (!req.session || !req.session.passport || !req.session.passport.user) {
-			return undefined;
+	getLoggedInPassportUsrToken(jrContext) {
+		const passportUsr = this.getLoggedInPassportUsr(jrContext);
+		if (passportUsr && passportUsr.token) {
+			return passportUsr.token;
 		}
-		return req.session.passport.user;
+		return undefined;
 	}
+	//---------------------------------------------------------------------------
 
-	async getLoggedInUser(req) {
+
+
+	//---------------------------------------------------------------------------
+	async lookupLoggedInUser(jrContext) {
+		// get the userid in the session cookie, OR referenced by valid auth header JWT token
+		// and use it to look up the logged in user -- and LOAD the user data AND cache it
+		// ATTN: TODO return errors on token error or user lookup error
+
 		// first check if we've CACHED this info in the req
-		if (req.arCachedUser !== undefined) {
-			return req.arCachedUser;
+		let user = this.getCachedLoggedInUser(jrContext);
+		if (user) {
+			return user;
 		}
-		// not cached
-		let user;
-		const userId = this.getLoggedInLocalUserIdFromSession(req);
-		if (!userId) {
+
+		// not cached, fetch it
+
+		// new, first grab any auth token user and log them into session
+		// ATTN: NOTE this will actually overwrite any existing info found in session if auth token found
+		await this.autoLoginUserViaAuthHeaderToken(jrContext);
+		if (jrContext.isError()) {
+			// error getting user from auth header, means NO user logged in
 			user = null;
 		} else {
-			user = await this.UserModel.mFindOneById(userId);
+			// get the userid from session cookie -- note that we don't yet know if this user has been banned or still exists, etc.
+			const userId = this.getUntrustedLoggedInUserIdFromSession(jrContext);
+			if (!userId) {
+				user = null;
+			} else {
+				// now we get the real user
+				user = await this.UserModel.mFindOneById(userId);
+				// ATTN: TODO: this is where we could check if they were banned, deleted, etc.
+			}
 		}
+
+		// update last access occasionally -- this is as good a place as any
+		if (user) {
+			// occasionally update (and save) user access date
+			await user.updateLastAccessDateOccasionally(jrContext);
+		}
+
 		// cache it
-		req.arCachedUser = user;
+		this.setCachedLoggedInUser(jrContext, user);
+
 		// return it
 		return user;
 	}
+	//---------------------------------------------------------------------------
 
-	async getLoggedInLogin(req) {
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	getLoggedInPassportUsrField(jrContext, providerField) {
+		const PassportUsr = this.getLoggedInPassportUsr(jrContext);
+		if (!PassportUsr) {
+			return undefined;
+		}
+		if (providerField === "localUserId") {
+			return PassportUsr.userId;
+		}
+		if (providerField === "localLoginId") {
+			return PassportUsr.loginId;
+		}
+
+		throw (new Error("Unknown providerField (" + providerField + ") requested in getLoggedInPassportUsrField"));
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	async getSessionedBridgedLogin(jrContext) {
 		// first check if we've CACHED this info in the req
-		if (req.arCachedLogin !== undefined) {
-			return req.arCachedLogin;
+		let login = this.getCachedBridgeLogin(jrContext);
+		if (login !== undefined) {
+			return login;
 		}
 		// not cached
-		let login;
-		const loginId = this.getLoggedInLocalLoginIdFromSession(req);
+		const loginId = this.getSessionedBridgedLoginId(jrContext);
 		if (!loginId) {
 			login = null;
 		} else {
 			login = await this.LoginModel.mFindOneById(loginId);
 		}
 		// cache it
-		req.arCachedLogin = login;
+		this.setCachedBridgeLogin(jrContext, login);
 		// return it
 		return login;
 	}
 
 
+	// helper function to get logged in local Login model id
+	getSessionedBridgedLoginId(jrContext) {
+		return this.getLoggedInPassportUsrField(jrContext, "localLoginId");
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
 	// just shortcuts to verifcationModel statics
-	async getLastSessionedVerification(req) {
+	async getLastSessionedVerification(jrContext) {
 		// The idea here is that:
 		// 1. A user may hit the registration page (for example), providing a plaintext verification code (to confirm their newly provided email address)
 		// 2. At which point, rather than CONSUMING the verification code, we want to ask them for additional information before we create their account
@@ -1293,12 +1544,13 @@ class AppRoomServer {
 		// 4. Or pass it along with the follow up form...
 
 		// first check if we've CACHED this info in the req
-		if (req.arCachedLastVerification !== undefined) {
-			return req.arCachedLastVerification;
+		let verification = this.getCachedVerification(jrContext);
+		if (verification !== undefined) {
+			return verification;
 		}
+
 		// not cached
-		let verification;
-		const verificationId = this.getLastSessionedVerificationId(req);
+		const verificationId = this.getLastSessionedVerificationId(jrContext);
 		if (!verificationId) {
 			verification = null;
 		} else {
@@ -1307,42 +1559,269 @@ class AppRoomServer {
 				// add back the plaintext unique code that we saved in session into the object
 				// in this way, we make it possible to re-process this verification code, and find it in the database, as if user was providing it
 				// ATTN:TODO - this seems wasteful; obviously if we have it in session we shouldnt need to "find" it again.
-				verification.setUniqueCode(this.getLastSessionedVerificationCodePlaintext(req));
+				verification.setUniqueCode(this.getLastSessionedVerificationCodePlaintext(jrContext));
 			}
 		}
+
 		// cache it
-		req.arCachedLastVerification = verification;
+		this.setCachedVerification(jrContext, verification);
+
 		// return it
 		return verification;
 	}
+	//---------------------------------------------------------------------------
 
 
-	// helper function to get logged in local User model id
-	getLoggedInLocalUserIdFromSession(req) {
-		return this.getLoggedInPassportUserOfProvider(req, "localUser");
-	}
 
-	// helper function to get logged in local Login model id
-	getLoggedInLocalLoginIdFromSession(req) {
-		return this.getLoggedInPassportUserOfProvider(req, "localLogin");
-	}
 
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
 	// helper function to get last verification id
 	// see VerificationModel code for where this is set
-	getLastSessionedVerificationId(req) {
-		return req.session.lastVerificationId;
+	// see VerificationModel code for where this is set
+	getCachedVerification(jrContext) {
+		return jrContext.arCachedLastVerification;
 	}
 
-	getLastSessionedVerificationCodePlaintext(req) {
-		return req.session.lastVerificationCodePlaintext;
+	setCachedVerification(jrContext, verification) {
+		jrContext.arCachedLastVerification = verification;
 	}
 
-	forgetLastSessionVerification(req) {
-		jrhExpress.forgetSessionVar(req, "lastVerificationId");
-		jrhExpress.forgetSessionVar(req, "lastVerificationCodePlaintext");
-		jrhExpress.forgetSessionVar(req, "lastVerificationDate");
+	clearCachedVerification(jrContext) {
+		delete jrContext.arCachedLastVerification;
+	}
+
+
+	getCachedBridgeLogin(jrContext) {
+		return jrContext.arCachedLogin;
+	}
+
+	setCachedBridgeLogin(jrContext, bridgedLogin) {
+		jrContext.arCachedLogin = bridgedLogin;
+	}
+
+	clearCachedBridgeLogin(jrContext) {
+		delete jrContext.arCachedLogin;
+	}
+
+
+	setCachedLoggedInUser(jrContext, user) {
+		// note that user COULD be null/undefined
+		// cache it for subsequent call
+		jrContext.arCachedUser = user;
+	}
+
+	setCachedLoggedInUserManually(jrContext, user) {
+		// this is called by login helpers so we can avoid re-looking up users
+		// ATTN: but we need to be careful that we check them for banning, etc.
+		if (user && user.isRealObjectInDatabase()) {
+			this.setCachedLoggedInUser(jrContext, user);
+		} else {
+			// ATTN:TODO clear it?
+		}
+	}
+
+	getCachedLoggedInUser(jrContext) {
+		return jrContext.arCachedUser;
+	}
+
+	clearCachedLoggedInUser(jrContext) {
+		delete jrContext.arCachedUser;
+	}
+
+
+	getCachedFlagAuthHeaderChecked(jrContext) {
+		return jrContext.arCachedFlagAuthHeaderChecked;
+	}
+
+	setCachedFlagAuthHeaderChecked(jrContext, val) {
+		jrContext.arCachedFlagAuthHeaderChecked = val;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	setLastSessionedVerificationId(jrContext, verifcationId) {
+		jrContext.req.session.arLastVerificationId = verifcationId;
+	}
+
+	getLastSessionedVerificationId(jrContext) {
+		return jrContext.req.session.arLastVerificationId;
+	}
+
+	clearLastSessionedVerificationId(jrContext) {
+		delete jrContext.req.session.arLastVerificationId;
+	}
+
+
+	setLastSessionedVerificationCodePlaintext(jrContext, verificationCodePlaintext) {
+		jrContext.req.session.arLastVerificationCodePlaintext = verificationCodePlaintext;
+	}
+
+	getLastSessionedVerificationCodePlaintext(jrContext) {
+		return jrContext.req.session.arLastVerificationCodePlaintext;
+	}
+
+	clearLastSessionedVerificationCodePlaintext(jrContext) {
+		delete jrContext.req.session.arLastVerificationCodePlaintext;
+	}
+
+
+	setLastSessionedVerificationDate(jrContext, verificationDate) {
+		jrContext.req.session.arLastVerificationDate = verificationDate;
+	}
+
+	getLastSessionedVerificationDate(jrContext) {
+		return jrContext.req.session.arLastVerificationDate;
+	}
+
+	clearLastSessionedVerificationDate(jrContext) {
+		delete jrContext.req.session.arLastVerificationDate;
+	}
+
+	clearLastSessionVerificationAll(jrContext) {
+		this.clearLastSessionedVerificationId(jrContext);
+		this.clearLastSessionedVerificationCodePlaintext(jrContext);
+		this.clearLastSessionedVerificationDate(jrContext);
+		/*
+		jrhExpress.forgetSessionVar(jrContext, "lastVerificationId");
+		jrhExpress.forgetSessionVar(jrContext, "lastVerificationCodePlaintext");
+		jrhExpress.forgetSessionVar(jrContext, "lastVerificationDate");
+		*/
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	setLastSessionedDivertedUrl(jrContext, divertedUrl) {
+		jrContext.req.session.arLastDivertedUrl = divertedUrl;
+	}
+
+	getLastSessionedDivertedUrl(jrContext) {
+		return jrContext.req.session.arLastDivertedUrl;
+	}
+
+	clearLastSessionedDivertedUrl(jrContext) {
+		delete jrContext.req.session.arLastDivertedUrl;
+	}
+
+	setLastSessionedCsrfSecret(jrContext, csrfSecret) {
+		jrContext.req.session.arLastCsrfSecret = csrfSecret;
+	}
+
+	getLastSessionedCsrfSecret(jrContext) {
+		return jrContext.req.session.arLastCsrfSecret;
+	}
+
+	clearLastSessionedCsrfSecret(jrContext) {
+		delete jrContext.req.session.arLastCsrfSecret;
+		// in this case, force save of session right away, so that if app crashes, it's still consumed
+		jrContext.req.session.save();
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	clearSessionDataForUserOnLogout(jrContext, flagClearAll) {
+		// logout the user from passport
+		jrContext.req.logout();
+
+		if (flagClearAll) {
+			// forcefully forget EVERYTHING?
+			jrContext.req.session.destroy();
+		} else {
+			// ignore any previous login diversions
+			this.clearLastSessionedDivertedUrl(jrContext);
+			// forget remembered verification codes, etc.
+			this.clearLastSessionVerificationAll(jrContext);
+			// csrf?
+			this.clearLastSessionedCsrfSecret(jrContext);
+		}
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	// ATTN: For another session variable we use see JrResult.setSessionedJrResult
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// helper function to get logged in local User model id
+	// ATTN: this function is called quite a bit from different places, and I'm not sure that is smart.. It's not a trustworthy value since it just session saved user id.. we haven't yet fetched the user to make sure its still good (not banned, etc.)
+	getUntrustedLoggedInUserIdFromSession(jrContext) {
+		return this.getLoggedInPassportUsrField(jrContext, "localUserId");
+	}
+
+
+	clearSessionedUser(jrContext) {
+		if (jrContext.req) {
+			delete jrContext.req.user;
+			if (jrContext.req.session && jrContext.req.session.passport) {
+				delete jrContext.req.session.passport.user;
+			}
+		}
+		// caches
+		this.clearCachedVerification(jrContext);
+		this.clearCachedBridgeLogin(jrContext);
+		this.clearCachedLoggedInUser(jrContext);
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	isSessionLoggedIn(jrContext) {
+		// just return true if they are logged in user
+		// NOTE: this will not be true for a user who has provided an AUTH token with non session login
+		if (this.getLoggedInPassportUsr(jrContext)) {
+			return true;
+		}
+		return false;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1353,53 +1832,50 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	// jwt token access for api access; credential passed in via access token
 	// 3 ways to call depending on which data you want
+	// see also setupPassportJwt() where the jwt stuff is set up
+	// NOTE that these nonSession functions do NOT log in the user or set req.user -- they are ways to test the authentication WITHOUT doing so
 
-	async asyncRoutePassportAuthenticateFromTokenNonSessionGetMinimalPassportUserData(req, res, next, jrResult, requiredTokenType) {
+	async asyncPassportManualNonSessionAuthenticateFromTokenGetMinimalPassportUsrData(jrContext, next, requiredTokenType) {
 		// force passport authentication from request, looking for jwt token
 
-		const [userMinimalProfile, dummyNullUser] = await this.asyncRoutePassportAuthenticateNonSessionGetUserTuple("jwt", "using jwt", req, res, next, jrResult, false);
-
-		if (!jrResult.isError()) {
+		// generic call to passport, with jwt type
+		// note we ask the function to not lookup full user since we dont need it (last false parameter)
+		const passportUsrData = await this.asyncPassportManualNonSessionAuthenticateGetMinimalPassportUsrData(jrContext, "jwtManualBody", "using jwt", next);
+		if (!jrContext.isError()) {
 			// let's check token validity (expiration, etc.); this may push an error into jrResult
-
-			// it's a token, but is it the right type?
-			const tokenType = userMinimalProfile.token.type;
-			if (requiredTokenType && tokenType !== requiredTokenType) {
-				jrResult.pushErrorOnTop("Incorrect api token type (" + tokenType + "); expected '" + requiredTokenType + "' token");
-			} else {
-				// ATTN: TODO - This does NOT check user.apiCode, which can be used to revoke api keys
-				// BUT this should be done after we load the users full profile, which the CALLER of our function does (see asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser);
-				// I believe this function is never called EXCEPT inside that one, so it will always be performed
-				// jrlog.debugObj(userMinimalProfile.token, "access token pre validate.");
-				this.validateSecureTokenGeneric(userMinimalProfile.token, jrResult);
-			}
+			// ATTN: TODO - This does NOT check user.apiCode, which can be used to revoke api keys
+			// BUT this should be done after we load the users full profile, which the CALLER of our function does (see asyncPassportManualNonSessionAuthenticateFromTokenGetPassportProfileAndUser);
+			// I believe this function is never called EXCEPT inside that one, so it will always be performed
+			// jrlog.debugObj(passportUsrData.token, "access token pre validate.");
+			this.validateSecureToken(jrContext.result, passportUsrData.token, requiredTokenType);
 		} else {
 			// change error code from generic to token specific or add?
-			jrResult.pushErrorOnTop("Invalid access token");
+			jrContext.pushErrorOnTop("Invalid access token");
+			jrContext.setExtraData("tokenError", true);
 		}
 
 		// return fale or null
-		return userMinimalProfile;
+		return passportUsrData;
 	}
 
 
-	async asyncRoutePassportAuthenticateFromTokenNonSessionGetFullUserObject(req, res, next, jrResult, requiredTokenType) {
-		const [userMinimalProfile, user] = this.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, requiredTokenType);
+	async asyncPassportManualNonSessionAuthenticateFromTokenGetFullUserObject(jrContext, next, requiredTokenType) {
+		const [userMinimalProfile, user] = await this.asyncPassportManualNonSessionAuthenticateFromTokenGetPassportProfileAndUser(jrContext, next, requiredTokenType);
 		return user;
 	}
 
 
-	async asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, requiredTokenType) {
+	async asyncPassportManualNonSessionAuthenticateFromTokenGetPassportProfileAndUser(jrContext, next, requiredTokenType) {
 		// force passport authentication from request, looking for jwt token
-		const userMinimalProfile = await this.asyncRoutePassportAuthenticateFromTokenNonSessionGetMinimalPassportUserData(req, res, next, jrResult, requiredTokenType);
+		const userMinimalProfile = await this.asyncPassportManualNonSessionAuthenticateFromTokenGetMinimalPassportUsrData(jrContext, next, requiredTokenType);
 
-		if (jrResult.isError()) {
+		if (jrContext.isError()) {
 			return [userMinimalProfile, null];
 		}
 
 		// load full profile from minimal -- this should check apicode because of the final true parameter for flagCheckAccessCode
 		// in this way we will record an error if the token has been revoked (apicode does not match)
-		const user = await this.loadUserFromMinimalPassportUserData(userMinimalProfile, jrResult, true);
+		const user = await this.loadUserFromMinimalPassportUsrData(jrContext, userMinimalProfile, true);
 		return [userMinimalProfile, user];
 	}
 	//---------------------------------------------------------------------------
@@ -1408,32 +1884,45 @@ class AppRoomServer {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 	//---------------------------------------------------------------------------
-	async loadUserFromMinimalPassportUserData(userMinimalPassportProfile, jrResult, flagCheckAccessCode) {
+	async loadUserFromMinimalPassportUsrData(jrContext, userMinimalPassportProfile, flagCheckAccessCode) {
 
 		// load full user model given a minimal (passport) profile with just the id field
 		if (!userMinimalPassportProfile) {
-			jrResult.pushError("Invalid access token; error code 2.");
+			jrContext.pushError("Invalid login; error code 2.");
 			return null;
 		}
 
-		const userId = userMinimalPassportProfile.id;
+		const userId = userMinimalPassportProfile.userId;
 		if (!userId) {
-			jrResult.pushError("Invalid access token; error code 3.");
+			jrContext.pushError("Invalid login; error code 3.");
 			return null;
 		}
 
 		const user = await this.UserModel.mFindOneById(userId);
 		if (!user) {
-			jrResult.pushError("Invalid access token; error code 4 (user not found in database).");
+			jrContext.pushError("Invalid login; error code 4 (user not found in database).");
 		}
 
 		if (flagCheckAccessCode) {
 			if (!userMinimalPassportProfile.token) {
-				jrResult.pushError("Invalid access token; error code 5b (missing accesstoken data).");
+				jrContext.pushError("Invalid login; error code 5b (missing accesstoken data).");
 			}
 			if (!user.verifyApiCode(userMinimalPassportProfile.token.apiCode)) {
-				jrResult.pushError("Invalid access token; error code 5 (found user and access token is valid but apiCode revision has been revoked).");
+				jrContext.pushError("Invalid login; error code 5 (found user and access token is valid but apiCode revision has been revoked).");
 			}
 		}
 
@@ -1548,84 +2037,93 @@ class AppRoomServer {
 	//  where jrinfo is the JrResult style error message created from the passport error;
 	//  normally you would use this to RE-RENDER a form from a post submission, overriding the
 	//  default behavior to redirect to the login page with flash error message
-	async asyncRoutePassportAuthenticate(provider, providerNiceLabel, req, res, next, jrResult, flagAutoRedirectSuccess, flagAutoRedirectError) {
+	async asyncRoutePassportAuthenticate(jrContext, provider, providerNiceLabel, flagRememberUserInSessionCookie, flagAutoRedirectSuccess, flagAutoRedirectError, flagAddResultMessageToSession) {
 		// "manual" authenticate via passport (as opposed to middleware auto); allows us to get richer info about error, and better decide what to do
 
-		// create jrResult if not passed in; we return it
-		if (!jrResult) {
-			jrResult = JrResult.makeNew();
-		}
+		// ATTN: note that res may be null; if so make sure flagAutoRedirectSuccess and flagAutoRedirectError are false
+		assert(jrContext.res || (!flagAutoRedirectSuccess && !flagAutoRedirectError));
 
 		// but before we authenticate and log in the user lets see if they are already "logged in" using a Login object
-		const previousLoginId = this.getLoggedInLocalLoginIdFromSession(req);
+		const previousLoginId = this.getSessionedBridgedLoginId(jrContext);
 		const thisArserver = this;
 
-		// run and wait for passport.authenticate async
-		const userPassport = await jrhExpress.asyncPasswordAuthenticate({}, provider, providerNiceLabel, req, res, next, jrResult);
-
-		// run and wait for passport.login async
-		if (!jrResult.isError()) {
-			await jrhExpress.asyncPasswordReqLogin(userPassport, "Error while authenticating user " + providerNiceLabel, req, jrResult);
+		// options
+		const authOptions = {};
+		const loginOptions = {};
+		if (!flagRememberUserInSessionCookie) {
+			authOptions.session = false;
+			loginOptions.session = false;
 		}
 
+		// run and wait for passport.authenticate async
+		const userPassport = await jrhExpress.asyncPassportAuthenticate(jrContext, authOptions, provider, providerNiceLabel);
 
-		if (!jrResult.isError()) {
+		// now actually log them in to the req.user etc.
+		if (!jrContext.isError()) {
+			await jrhExpress.asyncPassportReqLogin(jrContext, loginOptions, userPassport, "Error while authenticating user " + providerNiceLabel);
+		}
+
+		if (!jrContext.isError()) {
 			// success
 			try {
 				// userId we JUST signed in as -- NOTE: this could be null if its a local bridged login short of a full user account
-				const newlyLoggedInUserId = thisArserver.getLoggedInLocalUserIdFromSession(req);
-				// announce info
-				if (newlyLoggedInUserId) {
-					jrResult.pushSuccess("You have successfully logged in " + providerNiceLabel + ".");
+				const newlyLoggedInUserId = thisArserver.getUntrustedLoggedInUserIdFromSession(jrContext);
+
+				// announce success
+				if (flagRememberUserInSessionCookie) {
+					if (newlyLoggedInUserId) {
+						jrContext.pushSuccess("You have successfully logged in " + providerNiceLabel + ".");
+					} else {
+						jrContext.pushSuccess("You have successfully connected " + providerNiceLabel + ".");
+					}
 				} else {
-					jrResult.pushSuccess("You have successfully connected " + providerNiceLabel + ".");
+					// some other message if we don't want to remember them but they have logged in for THIS REQUEST ONLY
+					jrContext.pushSuccess("You have successfully authenticated " + providerNiceLabel + ".");
 				}
 
 				// and NOW if they were previously sessioned with a pre-account Login object, we can connect that to this account
 				if (newlyLoggedInUserId && previousLoginId) {
 					// try to connect
-					const jrResult2 = await this.LoginModel.connectUserToLogin(newlyLoggedInUserId, previousLoginId, false);
-					if (jrResult2) {
-						jrResult.mergeIn(jrResult2);
-					}
+					await this.LoginModel.connectUserToLogin(jrContext, newlyLoggedInUserId, previousLoginId, false);
 				}
 
-				// add message to session.
-				jrResult.addToSession(req, true);
+				// add message to session?
+				if (flagAddResultMessageToSession) {
+					jrContext.addToThisSession(true);
+				}
 
 				if (flagAutoRedirectSuccess) {
 					// do some redirections..
 
 					// check if they were waiting to go to another page
-					if (newlyLoggedInUserId && thisArserver.userLogsInCheckDiverted(req, res)) {
-						return jrResult;
+					if (newlyLoggedInUserId && thisArserver.userLogsInCheckDiverted(jrContext)) {
+						return;
 					}
 
 					// new full account connected?
 					if (newlyLoggedInUserId) {
-						res.redirect("/profile");
-						return jrResult;
+						jrContext.res.redirect("/profile");
+						return;
 					}
 					// no user account made yet, default send them to full account fill int
-					res.redirect("/register");
+					jrContext.res.redirect("/register");
 				}
 			} catch (err) {
 				// unexpected error
-				jrResult.pushError(err.message);
+				jrContext.pushError(err.message);
 			}
 		}
 
 		// errors? if so return or redirect
-		if (jrResult.isError()) {
+		if (jrContext.isError()) {
 			if (flagAutoRedirectError) {
 				// if caller wants us to handle error case of redirect we will
 				// save error to session (flash) and redirect to login
-				jrResult.addToSession(req);
-				res.redirect("/login");
+				jrContext.addToThisSession();
+				jrContext.res.redirect("/login");
 			}
 		}
 
-		return jrResult;
 	}
 	//---------------------------------------------------------------------------
 
@@ -1642,45 +2140,52 @@ class AppRoomServer {
 	// generic passport route login helper function, invoked from login routes
 	// this will end up calling a passport STRATEGY
 
-	async asyncRoutePassportAuthenticateNonSessionGetUserTuple(provider, providerNiceLabel, req, res, next, jrResult, flagLookupFullUser) {
+	async asyncPassportManualNonSessionAuthenticateGetMinimalPassportUsrData(jrContext, provider, providerNiceLabel) {
 		// "manual" authenticate via passport (as opposed to middleware auto); allows us to get richer info about error, and better decide what to do
-		// return [userPassport, user] tuple
-
-		// create jrResult if not passed in; we return it
-		if (!jrResult) {
-			jrResult = JrResult.makeNew();
-		}
-
-		jrdebug.cdebug("In asyncRoutePassportAuthenticateNonSessionGetUserTuple 1.");
-
-		const thisArserver = this;
-		let user;
+		// return userPassport
 
 		// run and wait for passport.authenticate async
-		const userPassport = await jrhExpress.asyncPasswordAuthenticate({ session: false }, provider, providerNiceLabel, req, res, next, jrResult);
+		const userPassport = await jrhExpress.asyncPassportAuthenticate(jrContext, { session: false }, provider, providerNiceLabel);
 
 		// error?
-		if (jrResult.isError()) {
-			jrdebug.cdebug("In asyncRoutePassportAuthenticateNonSessionGetUserTuple 2 error from userPassport :" + jrResult.getErrorsAsString());
-			return [null, null];
+		if (jrContext.isError()) {
+			jrdebug.cdebug("In asyncPassportManualNonSessionAuthenticateGetMinimalPassportUsrData 2 error from userPassport :" + jrContext.getErrorsAsString());
+			return null;
 		}
 
-		if (flagLookupFullUser) {
-			try {
-				// now get user
-				user = await thisArserver.loadUserFromMinimalPassportUserData(userPassport, jrResult, false);
-				if (!user) {
-					jrResult.pushError("error authenticating " + providerNiceLabel + ": could not locate user in database.");
-					return [null, null];
-				}
-			} catch (err) {
-				// unexpected error
-				jrResult.pushError(err.message);
-				return [null, null];
+		// return it
+		return userPassport;
+	}
+
+
+
+	async asyncPassportManualNonSessionAuthenticateGetUser(jrContext, provider, providerNiceLabel) {
+		// "manual" authenticate via passport (as opposed to middleware auto); allows us to get richer info about error, and better decide what to do
+		// return user
+
+		// get minimal userPassport data
+		const userPassport = await this.asyncPassportManualNonSessionAuthenticateGetMinimalPassportUsrData(jrContext, provider, providerNiceLabel);
+		if (!userPassport) {
+			// error will have already been set
+			return null;
+		}
+
+		let user;
+		try {
+			// now get user
+			user = await this.loadUserFromMinimalPassportUsrData(jrContext, userPassport, false);
+			if (!user) {
+				jrContext.pushError("error authenticating " + providerNiceLabel + ": could not locate user in database.");
+				return null;
 			}
+		} catch (err) {
+			// unexpected error
+			jrContext.pushError(err.message);
+			return null;
 		}
 
-		return [userPassport, user];
+		// return it
+		return user;
 	}
 	//---------------------------------------------------------------------------
 
@@ -1693,24 +2198,30 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	async asyncLoginUserToSessionThroughPassport(req, user) {
-		const jrResult = JrResult.makeNew();
-		const userPassport = user.getMinimalPassportProfile();
+	async asyncManuallyLoginUserToSessionThroughPassport(jrContext, user, loginMethod) {
+		// ATTN: this may be called via onetime email login, etc
+		const userProfile = user.getMinimalPassportProfile();
+		// set virtual token of profile so observers can see HOW (and when) the user logged in
+		userProfile.token = this.makeVirtualLoginToken(loginMethod);
+
+		// can be used to disable session saving, etc.
+		const loginOptions = {};
 
 		try {
 			// run login using async function wrapper
-			await jrhExpress.asyncPasswordReqLogin(userPassport, "Authentication login error", req, jrResult);
+			await jrhExpress.asyncPassportReqLogin(jrContext, loginOptions, userProfile, "Authentication login error");
 
-			if (!jrResult.isError()) {
+			if (!jrContext.isError()) {
 				// update login date and save it
-				await user.updateloginDateAndSave(jrResult);
+				await user.updateLastLoginDate(jrContext, true);
+				// set cached user so we don't have to reload them
+				this.setCachedLoggedInUserManually(jrContext, user);
 			}
+
 		} catch (err) {
 			// unexpected error
-			jrResult.pushError(err.message);
+			jrContext.pushError(err.message);
 		}
-
-		return jrResult;
 	}
 	//---------------------------------------------------------------------------
 
@@ -1795,9 +2306,9 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	async sendMail(mailobj) {
+	async sendMail(jrContext, mailobj) {
 		// just pass on request to sendAid module
-		return this.sendAid.sendMail(mailobj);
+		this.sendAid.sendMail(jrContext, mailobj);
 	}
 	//---------------------------------------------------------------------------
 
@@ -1834,13 +2345,16 @@ class AppRoomServer {
 			throw error;
 		}
 
+		// dummy jrContext since we don't know any other way to get req/res
+		const jrContext = JrContext.makeNew();
+
 		// ATTN: not clear why this uses different method than OnListeningEs to get port info, etc.
 		const addr = listener.address();
 		let bind;
 		if (addr === null) {
 			msg = "Could not bind server listener, got null return from listener.address paramater.  Is server already running (in debugger) ?";
 			jrdebug.debug(msg);
-			await this.logm(appdef.DefLogTypeErrorServer, msg);
+			await this.logr(jrContext, appdef.DefLogTypeErrorServer, msg);
 			process.exit(1);
 		} else if (typeof addr === "string") {
 			bind = "pipe " + addr;
@@ -1849,18 +2363,18 @@ class AppRoomServer {
 		} else {
 			msg = "Could not bind server listener, the listener.address paramater was not understood: " + addr;
 			jrdebug.debug(msg);
-			await this.logm(appdef.DefLogTypeErrorServer, msg);
+			await this.logr(jrContext, appdef.DefLogTypeErrorServer, msg);
 			process.exit(1);
 		}
 
 		// handle specific listen errors with friendly messages
 		switch (error.code) {
 			case "EACCES":
-				await this.logm(appdef.DefLogTypeErrorServer, bind + " requires elevated privileges");
+				await this.logr(jrContext, appdef.DefLogTypeErrorServer, bind + " requires elevated privileges");
 				process.exit(1);
 				break;
 			case "EADDRINUSE":
-				await this.logm(appdef.DefLogTypeErrorServer, bind + " is already in use");
+				await this.logr(jrContext, appdef.DefLogTypeErrorServer, bind + " is already in use");
 				process.exit(1);
 				break;
 			default:
@@ -1913,6 +2427,10 @@ class AppRoomServer {
 
 		// now create a log entry about the server starting up
 		await this.logStartup();
+
+
+		// check at the end for any failed requires due to circular reference
+		// jrequire.checkCircularRequireFailures();
 
 		// done setup
 		return true;
@@ -2132,15 +2650,18 @@ class AppRoomServer {
 		// log the startup event
 		let msg = "Starting up on " + jrhMisc.getNiceNowString() + ".\n";
 		msg += " " + this.getLoggingAnnouncement() + ".\n";
-		msg += 	" Logging to " + this.getLogFileBaseName() + ".log.\n";
-		msg += 	" Running on server " + this.getServerIp() + ".\n";
+		msg += " Logging to " + this.getLogFileBaseName() + ".log.\n";
+		msg += " Running on server " + this.getServerIp() + ".\n";
 		if (this.isDevelopmentMode()) {
 			msg += " Development mode enabled.\n";
 		}
-		await this.logm(appdef.DefLogTypeInfoServer, msg);
+
+		// dummy jrContext since we don't know any other way to get req/res
+		const jrContext = JrContext.makeNew();
+		await this.logr(jrContext, appdef.DefLogTypeInfoServer, msg);
 
 		if (this.getOptionDebugEnabled()) {
-			await this.logm(appdef.DefLogTypeDebug, "Starting up with debug mode enabled.");
+			await this.logr(jrContext, appdef.DefLogTypeDebug, "Starting up with debug mode enabled.");
 		}
 	}
 
@@ -2148,7 +2669,10 @@ class AppRoomServer {
 	async logShutdown() {
 		// log the shutdown event
 		const msg = util.format("Shutting down server on %s.", jrhMisc.getNiceNowString());
-		await this.logm(appdef.DefLogTypeInfoServer, msg);
+
+		// dummy jrContext since we don't know any other way to get req/res
+		const jrContext = JrContext.makeNew();
+		await this.logr(jrContext, appdef.DefLogTypeInfoServer, msg);
 	}
 	//---------------------------------------------------------------------------
 
@@ -2205,20 +2729,23 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	async logr(req, type, message, user, extraData) {
+	async logr(jrContext, type, message, extraData, user) {
 		// create log obj
 		let userid, ip;
 
-		if (req === null) {
+		const req = jrContext.req;
+		if (!req) {
 			ip = undefined;
 		} else {
-			ip = (req.ip && req.ip.length > 7 && req.ip.substr(0, 7) === "::ffff:") ? req.ip.substr(7) : req.ip;
+			ip = jrhText.cleanIp(req.ip);
 		}
 
 		if (user) {
 			userid = user.id;
+		} else if (req && req.user) {
+			userid = this.getUntrustedLoggedInUserIdFromSession(jrContext);
 		} else {
-			userid = ((req && req.user ? req.user.id : undefined));
+			userid = undefined;
 		}
 
 		// make mergeData -- these are fields that have actual dedicated explicit log database table properies
@@ -2228,14 +2755,14 @@ class AppRoomServer {
 		};
 
 		// hand off to more generic function
-		await this.logm(type, message, extraData, mergeData, req);
+		await this.internalLogm(jrContext, type, message, extraData, mergeData);
 	}
 	//---------------------------------------------------------------------------
 
 
 
 	//---------------------------------------------------------------------------
-	async logm(type, message, extraData, mergeData, req) {
+	async internalLogm(jrContext, type, message, extraData, mergeData) {
 		// we now want to hand off the job of logging this item to any registered file and/or db loggers
 		const flagLogToDb = true;
 		const flagLogToFile = true;
@@ -2264,7 +2791,7 @@ class AppRoomServer {
 		// some errors we should trigger emergency alert
 		if (this.shouldAlertOnLogMessageType(type)) {
 			// trigger emegency alert
-			await this.emergencyAlert(type, "Critical error logged on " + jrhMisc.getNiceNowString(), message, req, extraDataPlus, false);
+			await this.emergencyAlert(jrContext, type, "Critical error logged on " + jrhMisc.getNiceNowString(), message, extraDataPlus, false);
 		}
 	}
 
@@ -2405,66 +2932,29 @@ class AppRoomServer {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	//---------------------------------------------------------------------------
-	async requireLoggedIn(req, res, goalRelUrl) {
-		const user = await this.getLoggedInUser(req);
-		return this.requireUserIsLoggedIn(req, res, user, goalRelUrl);
-	}
-	//---------------------------------------------------------------------------
-
-
-
-
-
-
-
-	//---------------------------------------------------------------------------
-	async aclRequireLoggedInSitePermission(permission, req, res, goalRelUrl) {
-		return await this.aclRequireLoggedInPermission(permission, appdef.DefAclObjectTypeSite, null, req, res, goalRelUrl);
+	async aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, permission, goalRelUrl) {
+		return await this.aclRequireLoggedInPermissionRenderErrorPageOrRedirect(jrContext, permission, appdef.DefAclObjectTypeSite, null, goalRelUrl);
 	}
 
-	async aclRequireLoggedInPermission(permission, permissionObjType, permissionObjId, req, res, goalRelUrl) {
-		const user = await this.getLoggedInUser(req);
+	async aclRequireLoggedInPermissionRenderErrorPageOrRedirect(jrContext, permission, permissionObjType, permissionObjId, goalRelUrl) {
+		const user = await this.lookupLoggedInUser(jrContext);
 		// we just need to check if the user is non-empty
 		if (!user) {
 			// user is not logged in
-			this.handleRequireLoginFailure(req, res, user, goalRelUrl, null, appdef.DefRequiredLoginMessage);
+			this.handleRequireLoginFailure(jrContext, user, goalRelUrl, null, appdef.DefRequiredLoginMessage);
 			return false;
 		}
 
 		// they are logged in, but do they have permission required
-		const hasPermission = await user.aclHasPermission(permission, permissionObjType, permissionObjId);
+		const hasPermission = await user.aclHasPermission(jrContext, permission, permissionObjType, permissionObjId);
 		if (!hasPermission) {
-			this.handleRequireLoginFailure(req, res, user, goalRelUrl, null, "You do not have sufficient permission to accesss that page.");
+			this.handleRequireLoginFailure(jrContext, user, goalRelUrl, null, "You do not have sufficient permission to accesss that page.");
 			return false;
 		}
 
 		// they are good, so forget any previously remembered login diversions
-		this.forgetLoginDiversions(req);
+		this.clearLastSessionedDivertedUrl(jrContext);
 		return true;
 	}
 	//---------------------------------------------------------------------------
@@ -2473,88 +2963,90 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	requireUserIsLoggedIn(req, res, user, goalRelUrl, failureRelUrl) {
+	async requireLoggedIn(jrContext) {
+		const user = await this.lookupLoggedInUser(jrContext);
+		return this.requireUserIsLoggedInRenderErrorPageOrRedirect(jrContext, user, null);
+	}
+
+	requireUserIsLoggedInRenderErrorPageOrRedirect(jrContext, user, goalRelUrl, failureRelUrl) {
 		// if user fails permission, remember the goalRelUrl in session and temporarily redirect to failureRelUrl and return false
 		// otherwise return true
 
 		if (!user) {
-			this.handleRequireLoginFailure(req, res, user, goalRelUrl, failureRelUrl, appdef.DefRequiredLoginMessage);
+			this.handleRequireLoginFailure(jrContext, user, goalRelUrl, failureRelUrl, appdef.DefRequiredLoginMessage);
 			return false;
 		}
 
 		// they are good, so forget any previously remembered login diversions
-		this.forgetLoginDiversions(req);
+		this.clearLastSessionedDivertedUrl(jrContext);
 		return true;
 	}
+	//---------------------------------------------------------------------------
 
 
 
-	handleRequireLoginFailure(req, res, user, goalRelUrl, failureRelUrl, errorMsg) {
+
+	//---------------------------------------------------------------------------
+	handleRequireLoginFailure(jrContext, user, goalRelUrl, failureRelUrl, errorMsg) {
 		// set failureRelUrl default
 		if (!failureRelUrl) {
 			failureRelUrl = "/login";
 		}
 
 		// ok this is failure, save rediret goal url
-		this.rememberDivertedRelUrlAndGo(req, res, goalRelUrl, failureRelUrl, errorMsg);
+		this.rememberDivertedRelUrlAndGo(jrContext, goalRelUrl, failureRelUrl, errorMsg);
 	}
 
 
 
 
-	divertToLoginPageThenBackToCurrentUrl(req, res) {
+	divertToLoginPageThenBackToCurrentUrl(jrContext, emsg) {
 		// redirect them to login page and then back to their currently requested page
 		const failureRelUrl = "/login";
-		this.rememberDivertedRelUrlAndGo(req, res, null, failureRelUrl, appdef.DefRequiredLoginMessage);
+		this.rememberDivertedRelUrlAndGo(jrContext, null, failureRelUrl, emsg);
 	}
 
 
-	rememberDivertedRelUrlAndGo(req, res, goalRelUrl, failureRelUrl, msg) {
-		this.rememberDivertedRelUrl(req, res, goalRelUrl, msg);
+	rememberDivertedRelUrlAndGo(jrContext, goalRelUrl, failureRelUrl, msg) {
+		this.rememberDivertedRelUrl(jrContext, goalRelUrl, msg);
 		// now redirect
 		if (failureRelUrl) {
-			res.redirect(failureRelUrl);
+			jrContext.res.redirect(failureRelUrl);
 		}
 	}
 
 
-	rememberDivertedRelUrl(req, res, goalRelUrl, msg) {
+	rememberDivertedRelUrl(jrContext, goalRelUrl, msg) {
 		// if no goal url passed, then use current request url
 		if (!goalRelUrl) {
-			goalRelUrl = jrhExpress.reqOriginalUrl(req);
+			goalRelUrl = jrhExpress.reqOriginalUrl(jrContext.req);
 		}
 
 		// remember where they were trying to go when we diverted them, so we can go BACK there after they log in
-		req.session.divertedUrl = goalRelUrl;
+		jrContext.req.session.divertedUrl = goalRelUrl;
 		if (msg) {
-			JrResult.makeError(msg).addToSession(req);
+			jrContext.pushError(msg);
 		}
+		jrContext.addToThisSession();
 	}
 
 
-	userLogsInCheckDiverted(req, res) {
+	userLogsInCheckDiverted(jrContext) {
 		// check if user should be diverted to another page, for example after logging in
 		// return true if we divert them, meaning the caller should not do any rendering of the page, etc.
 
-		if (!req.session || !req.session.divertedUrl) {
+		if (!jrContext.req.session || !jrContext.req.session.divertedUrl) {
 			return false;
 		}
 
 		// ok we got one
-		const divertedUrl = req.session.divertedUrl;
+		const divertedUrl = jrContext.req.session.divertedUrl;
 		// forget it
-		this.forgetLoginDiversions(req);
+		this.clearLastSessionedDivertedUrl(jrContext);
 
 		// now send them there!
-		res.redirect(divertedUrl);
+		jrContext.res.redirect(divertedUrl);
 		return true;
-	}
-
-
-	forgetLoginDiversions(req) {
-		// call this to unset any session diversions -- this can be useful if the user tried to access a protected page but then left the login page and did other things
-		// remove it from session
-		jrhExpress.forgetSessionVar(req, "divertedUrl");
 	}
 	//---------------------------------------------------------------------------
 
@@ -2578,7 +3070,7 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	// present user with new account create form they can submit to ACTUALLY create their new account
 	// this would typically be called AFTER the user has verified their email with verification model
-	presentNewAccountRegisterForm(userObj, verification, req, res) {
+	presentNewAccountRegisterForm(jrContext, userObj, verification) {
 		// ATTN: is this ever called
 		throw (new Error("presentNewAccountRegisterForm not implemented yet."));
 	}
@@ -2586,12 +3078,12 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	sendLoggedInUsersElsewhere(req, res) {
+	sendLoggedInUsersElsewhere(jrContext) {
 		// if they are logged in with a real user account already, just redirect them to their profile and return true
 		// otherwise return false;
-		const userId = this.getLoggedInLocalUserIdFromSession(req);
+		const userId = this.getUntrustedLoggedInUserIdFromSession(jrContext);
 		if (userId) {
-			res.redirect("profile");
+			jrContext.res.redirect("profile");
 			return true;
 		}
 		return false;
@@ -2621,16 +3113,16 @@ class AppRoomServer {
 
 	//---------------------------------------------------------------------------
 	// csrf helpers -- so we dont have to install as ever-present middleware
-	makeCsrf(req, res) {
+	makeCsrf(jrContext) {
 		// in this case we pass next() function which just returns value passed to it
-		if (req.csrfToken) {
+		if (jrContext.req.csrfToken) {
 			// already in req, just return it
-			return req.csrfToken();
+			return jrContext.req.csrfToken();
 		}
-		return this.csrfInstance(req, res, (err) => {
+		return this.csrfInstance(jrContext.req, jrContext.res, (err) => {
 			if (err === undefined || err.code === "EBADCSRFTOKEN") {
 				// no error, or csrf bad-token error, which we dont care about since we've just been asked to make one
-				return req.csrfToken();
+				return jrContext.req.csrfToken();
 			}
 			// pass the error back
 			return err;
@@ -2641,25 +3133,8 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	// Throws error which will be shown to the user by the next() chain; so caller just should return and do nothing
-	testCsrfThrowError(req, res, next) {
-		// let csrf throw the error to next, ONLY if there is an error, otherwise just return and dont call next
-		return this.csrfInstance(req, res, (err) => {
-			if (err) {
-				next(err);
-				return err;
-			}
-			// forget it so it can't be used twice?
-			if (true) {
-				this.forgetCsrfToken(req);
-			}
-			return undefined;
-		});
-	}
-
-
 	/**
-	 * Test the csrf; on error return jrResult that is an error
+	 * Test the csrf
 	 * This is more useful for re-presenting a form.
 	 * ATTN: We had some real problems with this new function returning undefined on successful csrf when I tried to simply return jrResult from inside the callback.. I'm still not sure I understand why; it may be that on non-error it was async executed
 	 * ATTN TODO: make sure this always works as expected
@@ -2669,41 +3144,42 @@ class AppRoomServer {
 	 * @returns success jrResult if no error in csrf; otherwise a jrResult that is an error
 	 * @memberof AppRoomServer
 	 */
-	testCsrfReturnJrResult(req, res) {
+	testCsrf(jrContext) {
 		// let csrf throw the error to next, ONLY if there is an error, otherwise just return and dont call next
-		const jrResult = JrResult.makeNew();
 
 		// Useful for testing csrf, make it fail
 		const forceFail = this.getConfigValDefault(appdef.DefConfigKeyTestingForceCsrfFail, false);
 		if (forceFail) {
-			jrResult.pushError("Forcing csrf test to return false for testing purposes; to disable see option '" + appdef.DefConfigKeyTestingForceCsrfFail + "'.");
-			return jrResult;
+			jrContext.pushError("Forcing csrf test to return false for testing purposes; to disable see option '" + appdef.DefConfigKeyTestingForceCsrfFail + "'.");
 		}
 
-		const retv = this.csrfInstance(req, res, (err) => {
+		const retv = this.csrfInstance(jrContext.req, jrContext.res, (err) => {
 			if (err) {
-				jrResult.pushError(err.toString());
+				jrContext.pushError(err.toString());
 			} else {
 				// forget it so it can't be used twice?
 				if (true) {
-					this.forgetCsrfToken(req);
+					this.clearLastSessionedCsrfSecret(jrContext);
 				}
-				// ATTN: we used to return JrResult.makeNew() here but it was being received as an undefined for some reason
 			}
 		});
 
-		return jrResult;
+		// return true on success
+		if (!jrContext.isError()) {
+			return true;
+		}
+		return false;
 	}
 
 
-	testCsrfRedirectToOriginalUrl(req, res) {
-		const jrResult = this.testCsrfReturnJrResult(req, res);
-		if (jrResult.isError()) {
+	testCsrfRedirectToOriginalUrl(jrContext) {
+		this.testCsrf(jrContext);
+		if (jrContext.isError()) {
 			// add error to session
-			jrResult.addToSession(req);
+			jrContext.addToThisSession();
 			// redirect to same url
 			// jrdebug.debug("req.route.path: " + req.route.path + ", req.baseUrl: " + req.baseUrl + ", req.originalUrl: " + req.originalUrl + ", req.url:" + req.url);
-			res.redirect(jrhExpress.reqOriginalUrl(req));
+			jrContext.res.redirect(jrhExpress.reqOriginalUrl(jrContext.req));
 			return false;
 		}
 		// success
@@ -2718,33 +3194,10 @@ class AppRoomServer {
 	getCsrf() {
 		return this.csrfInstance;
 	}
-
-	forgetCsrfToken(req) {
-		jrhExpress.forgetSessionVar(req, "csrfSecret");
-		// force save of session right away, so that if app crashes, it's still consumed
-		req.session.save();
-	}
 	//---------------------------------------------------------------------------
 
 
-	//---------------------------------------------------------------------------
-	logoutForgetSessionData(req, flagClearAll) {
-		// logout the user from passport
-		req.logout();
 
-		if (flagClearAll) {
-			// forcefully forget EVERYTHING?
-			req.session.destroy();
-		} else {
-			// ignore any previous login diversions
-			this.forgetLoginDiversions(req);
-			// forget remembered verification codes, etc.
-			this.forgetLastSessionVerification(req);
-			// csrf?
-			this.forgetCsrfToken(req);
-		}
-	}
-	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
@@ -2801,10 +3254,10 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	async isLoggedInUserSiteAdmin(req) {
-		const loggedInUser = await this.getLoggedInUser(req);
+	async isLoggedInUserSiteAdmin(jrContext) {
+		const loggedInUser = await this.lookupLoggedInUser(jrContext);
 		if (loggedInUser) {
-			const bretv = await loggedInUser.isSiteAdmin();
+			const bretv = await loggedInUser.isSiteAdmin(jrContext);
 			return bretv;
 		}
 		return false;
@@ -2830,17 +3283,17 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	async aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, accessTypeStr, modelId) {
+	async aclRequireModelAccessRenderErrorPageOrRedirect(jrContext, user, modelClass, accessTypeStr, modelId) {
 		// called by generic crud functions
 		// return FALSE if we are denying user access
 		// and in that case WE should redirect them or render the output
 		// return TRUE if we should let them continue
 
 		if (!user) {
-			user = await this.getLoggedInUser(req);
+			user = await this.lookupLoggedInUser(jrContext);
 			if (!user) {
 				// ok if we denied them access and they are not logged in, make them log in -- after that they may have permission
-				this.divertToLoginPageThenBackToCurrentUrl(req, res);
+				this.divertToLoginPageThenBackToCurrentUrl(jrContext, appdef.DefRequiredLoginMessage);
 				return false;
 			}
 		}
@@ -2856,11 +3309,11 @@ class AppRoomServer {
 		}
 
 		// check permission
-		const hasPermission = await user.aclHasPermission(permission, permissionObjType, permissionObjId);
+		const hasPermission = await user.aclHasPermission(jrContext, permission, permissionObjType, permissionObjId);
 
 		if (!hasPermission) {
 			// tell them they don't have access
-			this.renderAclAccessError(req, res, modelClass, "You do not have permission to access this resource/page.");
+			this.renderAclAccessError(jrContext, modelClass, "You do not have permission to access this resource/page.");
 			return false;
 		}
 
@@ -2869,18 +3322,18 @@ class AppRoomServer {
 	}
 
 
-	renderAclAccessError(req, res, modelClass, errorMessage) {
-		const jrError = JrResult.makeError(errorMessage);
+	renderAclAccessError(jrContext, modelClass, errorMessage) {
+		jrContext.pushError(errorMessage);
 		// render
-		res.render("acldeny", {
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrError),
+		jrContext.res.render("acldeny", {
+			jrResult: jrContext.mergeSessionMessages(),
 		});
 	}
 
-	renderAclAccessErrorResult(req, res, modelClass, jrResult) {
+	renderAclAccessErrorResult(jrContext, modelClass) {
 		// render
-		res.render("acldeny", {
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
+		jrContext.res.render("acldeny", {
+			jrResult: jrContext.mergeSessionMessages(),
 		});
 	}
 	//---------------------------------------------------------------------------
@@ -2988,35 +3441,63 @@ class AppRoomServer {
 	}
 
 
-	calcPluginInfo() {
-
+	calcAddonCollectionInfoPlugins() {
 		// get info about LOADED plugins
-		const loadedPluginData = {};
-		let category, pluginmodule;
-		const plugins = jrequire.getAllPlugins();
-		// iterate all categories
-		Object.keys(plugins).forEach((categoryKey) => {
+		return this.calcAddonCollectionInfo(this.getAddonCollectionNamePlugins());
+	}
+
+	calcAddonCollectionInfoAppFrameworks() {
+		// get info about LOADED plugins
+		return this.calcAddonCollectionInfo(this.getAddonCollectionNameAppFrameworks());
+	}
+
+
+	calcAddonCollectionInfo(collectionName) {
+		let category, addonModule;
+		const addons = jrequire.getAllAddonCategoriesForCollectionName(collectionName);
+
+		// iterate all categories and get category data
+		const loadedAddonDataByCategory = {};
+		Object.keys(addons).forEach((categoryKey) => {
 			// iterate all modules in this category
-			category = plugins[categoryKey];
+			category = addons[categoryKey];
 			Object.keys(category).forEach((name) => {
-				pluginmodule = jrequire.plugin(name);
-				if (loadedPluginData[categoryKey] === undefined) {
-					loadedPluginData[categoryKey] = {};
+				// load the module
+				addonModule = jrequire.requireAddonModule(collectionName, name);
+				// add it to the tree under this category
+				if (loadedAddonDataByCategory[categoryKey] === undefined) {
+					loadedAddonDataByCategory[categoryKey] = {};
 				}
-				loadedPluginData[categoryKey][name] = pluginmodule.getDebugInfo(this);
+				loadedAddonDataByCategory[categoryKey][name] = addonModule.getInfo(this);
 			});
 		});
 
-
-
+		const configKey = this.getCollectionConfigKey(collectionName);
 		const rawData = {
-			configPlugins: this.getConfigVal(appdef.DefConfigKeyPlugins),
-			loadedPluginsByCategory: loadedPluginData,
+			foundInConfiguration: this.getConfigVal(configKey),
+			enabledByCategory: loadedAddonDataByCategory,
 		};
 
 		return rawData;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -3057,9 +3538,9 @@ class AppRoomServer {
 	 * @param {String} refreshToken - the refresh token object to use to generate access token
 	 * @returns a token object.
 	 */
-	async makeSecureTokenAccessFromRefreshToken(userPassport, user, refreshToken) {
+	async makeSecureTokenAccessFromRefreshToken(user, refreshToken) {
 		// make an access token with SAME scope as refresh token
-		return await this.makeSecureTokenAccess(userPassport, user, refreshToken.scope);
+		return await this.makeSecureTokenAccess(user, refreshToken.scope);
 	}
 
 
@@ -3070,12 +3551,12 @@ class AppRoomServer {
 	 * @param {UserModel} user - full model object of User class
 	 * @returns a token object
 	 */
-	async makeSecureTokenRefresh(userPassport, user) {
+	async makeSecureTokenRefresh(user) {
 		const payload = {
 			type: "refresh",
 			scope: "api",
 			apiCode: await user.getApiCodeEnsureValid(),
-			user: userPassport,
+			user: user.getMinimalPassportProfile(),
 		};
 		// create secure toke
 		const expirationSeconds = this.getConfigVal(appdef.DefConfigKeyTokenExpirationSecsRefresh);
@@ -3092,12 +3573,12 @@ class AppRoomServer {
 	 * @param {String} scope - the refresh token object to use to generate access token
 	 * @returns a token object
 	 */
-	async makeSecureTokenAccess(userPassport, user, scope) {
+	async makeSecureTokenAccess(user, scope) {
 		const payload = {
 			type: "access",
 			scope,
 			apiCode: await user.getApiCodeEnsureValid(),
-			user: userPassport,
+			user: user.getMinimalPassportProfile(),
 		};
 		// add accessId -- the idea here is for every user object in database to ahve an accessId (either sequential or random); that can be changed to invalidate all previously issues access tokens
 		const expirationSeconds = this.getConfigVal(appdef.DefConfigKeyTokenExpirationSecsAccess);
@@ -3128,41 +3609,6 @@ class AppRoomServer {
 			},
 		};
 		return tokenObj;
-	}
-
-
-	validateSecureTokenGeneric(tokenObj, jrResult) {
-		// check expiration
-		if (this.isSecureTokenExpired(tokenObj.exp)) {
-			if (tokenObj.exp) {
-				const expirationdatestr = new Date(tokenObj.exp * 1000).toLocaleString();
-				jrResult.pushError("Invalid access token; error code 6: token expired on " + expirationdatestr + ".");
-			} else {
-				jrResult.pushError("Invalid access token; error code 7: token missing expiration date.");
-			}
-		}
-
-		// check issuer or other things?
-		if (!tokenObj.type) {
-			// missing token type
-			jrResult.pushError("Invalid access token; error code 8: token missing type tag.");
-		}
-	}
-
-
-	isSecureTokenExpired(exp) {
-		// ATTN:TODO - do we need to worry about local vs gmt/etc time?
-		if (!exp) {
-			// what to do in this case? no expiration date?
-			// ATTN:TODO - for now we treat it as ok
-			return true;
-		}
-		if (exp <= Math.floor(Date.now() / 1000)) {
-			// it's expired
-			return true;
-		}
-		// its not expired
-		return false;
 	}
 	//---------------------------------------------------------------------------
 
@@ -3201,7 +3647,6 @@ class AppRoomServer {
 			// thrown by csrf
 			return false;
 		}
-
 
 		return true;
 	}
@@ -3246,6 +3691,7 @@ class AppRoomServer {
 		// catch 404 and forward to error handler
 		const mythis = this;
 		expressApp.use(async function myCustomErrorHandler404(req, res, next) {
+			const jrContext = JrContext.makeNew(req, res, next);
 			// if we get here, nothing else has caught the request, so WE push on a 404 error for the next handler
 
 			// ATTN: 3/31/20 -- this is newly trapping here other exceptions, such as  on calcExpressMiddlewareGetFileLine in jrh_express with a deliberately thrown exception
@@ -3260,7 +3706,7 @@ class AppRoomServer {
 				// this doesn't display anything, just handled preliminary recording, etc.
 
 				if (req.url !== undefined) {
-					await mythis.handle404Error(req);
+					await mythis.handle404Error(jrContext);
 				} else {
 					// this isn't really a 404 error??! for example can get triggered on a generic exception thrown..
 				}
@@ -3280,6 +3726,7 @@ class AppRoomServer {
 		// this can get called for example on a passport error
 		// error handler
 		expressApp.use(async function myFallbackErrorHandle(err, req, res, next) {
+			const jrContext = JrContext.makeNew(req, res, next);
 			// decide whether to show full error info
 
 			if (mythis.shouldIgnoreError(err)) {
@@ -3306,9 +3753,9 @@ class AppRoomServer {
 			// error details
 			let errorDetails = "";
 			// add url to display
-			if (req !== undefined && req.url !== undefined) {
-				errorDetails += "\nRequested url: " + req.url;
-				const originalUrl = jrhExpress.reqOriginalUrl(req);
+			if (jrContext.req !== undefined && jrContext.req.url !== undefined) {
+				errorDetails += "\nRequested url: " + jrContext.req.url;
+				const originalUrl = jrhExpress.reqOriginalUrl(jrContext.req);
 				if (req.url !== originalUrl) {
 					errorDetails += " (" + originalUrl + ")";
 				}
@@ -3323,7 +3770,7 @@ class AppRoomServer {
 			// extra (session) error info
 			let jrResultError;
 			if (req !== undefined) {
-				jrResultError = JrResult.getMergeSessionResultAndClear(req, res);
+				jrResultError = jrContext.mergeSessionMessages();
 			} else {
 				jrResultError = new JrResult();
 			}
@@ -3341,9 +3788,9 @@ class AppRoomServer {
 
 
 			// render the error page
-			if (res !== undefined) {
-				res.status(err.status || 500);
-				res.render("error", {
+			if (jrContext.res !== undefined) {
+				jrContext.res.status(err.status || 500);
+				jrContext.res.render("error", {
 					errorStatus,
 					errorMessage,
 					errorDetails,
@@ -3465,10 +3912,13 @@ class AppRoomServer {
 
 		const errString = "Uncaught error occurred on " + jrhMisc.getNiceNowString() + ":\n\n" + jrhMisc.objToString(err, false);
 
+		// dummy jrContext since we don't know any other way to get req/res
+		const jrContext = JrContext.makeNew();
+
 		if (true) {
 			// log the critical error to file and database
 			try {
-				await this.logm(appdef.DefLogTypeErrorCriticalException, errString);
+				await this.logr(jrContext, appdef.DefLogTypeErrorCriticalException, errString);
 			} catch (exceptionError) {
 				err.loggingException = exceptionError;
 				jrdebug.debugObj(err, "Exception while trying to log uncaught error");
@@ -3487,7 +3937,9 @@ class AppRoomServer {
 			// log the critical error to file and database
 			try {
 				const errString = "Fatal/critical error occurred on " + jrhMisc.getNiceNowString() + ":\n\n" + jrhMisc.objToString(err, false);
-				await this.logm(appdef.DefLogTypeErrorCriticalException, errString);
+				// dummy jrContext since we don't know any other way to get req/res
+				const jrContext = JrContext.makeNew();
+				await this.logr(jrContext, appdef.DefLogTypeErrorCriticalException, errString);
 			} catch (exceptionError) {
 				err.loggingException = exceptionError;
 				jrdebug.debugObj(err, "Exception while trying to log fatal error");
@@ -3497,13 +3949,13 @@ class AppRoomServer {
 	}
 
 
-	async handle404Error(req) {
+	async handle404Error(jrContext) {
 		// caller will pass this along to show 404 error to user; we can do extra stuff here
 		if (true) {
 			const msg = {
-				url: req.url,
+				url: jrContext.req.url,
 			};
-			await this.logr(req, appdef.DefLogTypeError404, msg);
+			await this.logr(jrContext, appdef.DefLogTypeError404, msg);
 		}
 	}
 	//---------------------------------------------------------------------------
@@ -3550,7 +4002,7 @@ class AppRoomServer {
 	 * @returns number of messages sent
 	 */
 
-	async emergencyAlert(eventType, subject, message, req, extraData, flagAlsoSendToSecondaries, flagOverrideRateLimiter) {
+	async emergencyAlert(jrContext, eventType, subject, message, req, extraData, flagAlsoSendToSecondaries, flagOverrideRateLimiter) {
 		// first we check rate limiting
 		let messageSentCount = 0;
 
@@ -3574,7 +4026,7 @@ class AppRoomServer {
 				// send a message saying we are disabling emergency alerts
 				const esubject = util.format("Emergency alerts temporarily disabled for %d seconds", blockTime);
 				const emessage = util.format("Due to rate limiting, no further alerts will be sent for %d seconds.", blockTime);
-				await this.emergencyAlert("ratelimit.emergency", esubject, emessage, req, {}, false, true);
+				await this.emergencyAlert(jrContext, "ratelimit.emergency", esubject, emessage, req, {}, false, true);
 
 				// now return saying we did not send the alert
 				return 0;
@@ -3596,7 +4048,7 @@ class AppRoomServer {
 			const ip = (req.ip && req.ip.length > 7 && req.ip.substr(0, 7) === "::ffff:") ? req.ip.substr(7) : req.ip;
 			extraDataPlus = {
 				...extraData,
-				req_userid: (req.user ? req.user.id : undefined),
+				req_userid: this.getUntrustedLoggedInUserIdFromSession(jrContext),
 				req_ip: ip,
 			};
 		} else {
@@ -3611,7 +4063,7 @@ class AppRoomServer {
 		// loop and send to all recipients
 		await jrhMisc.asyncAwaitForEachFunctionCall(recipients, async (recipient) => {
 			// do something
-			await this.sendAid.sendMessage(recipient, subject, message, extraDataPlus, true);
+			await this.sendAid.sendMessage(jrContext, recipient, subject, message, extraDataPlus, true);
 			++messageSentCount;
 		});
 
@@ -3654,14 +4106,15 @@ class AppRoomServer {
 	 * @returns false if permission fails and displaying error message (caller needs do nothing); actually it should throw an error and not return on failure to meet permission
 	 * @memberof AppRoomServer
 	 */
-	async confirmUrlPost(req, res, permission, headline, message) {
-		if (!await this.aclRequireLoggedInSitePermission(permission, req, res)) {
+	async confirmUrlPost(jrContext, permission, headline, message) {
+
+		if (!await this.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, permission)) {
 			// all done
 			return false;
 		}
-		res.render("generic/confirmpage", {
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-			csrfToken: this.makeCsrf(req, res),
+		jrContext.res.render("generic/confirmpage", {
+			jrResult: jrContext.mergeSessionMessages(),
+			csrfToken: this.makeCsrf(jrContext),
 			headline,
 			message,
 			formExtraSafeHtml: "",
@@ -3704,6 +4157,218 @@ class AppRoomServer {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	async autoLoginUserViaAuthHeaderToken(jrContext) {
+		// see https://stackoverflow.com/questions/46094417/authenticating-the-request-header-with-express
+		// ATTN: the only problem here is that the caller is responsible for showing any error to user since
+
+		// check cache so we only do this once
+		if (this.getCachedFlagAuthHeaderChecked(jrContext)) {
+			return;
+		}
+		this.setCachedFlagAuthHeaderChecked(jrContext, true);
+
+		// first check if authorization info passed in header, if not just return false
+		if (!jrContext.req.headers || !jrContext.req.headers.authorization) {
+			// no auth headers so no point checking
+			return;
+		}
+
+		// store user in session
+		const flagRememberUserInSessionCookie = false;
+
+		// ok we think there is authorization header (jwt)
+		// note we do not pass a result res reference in, and askk passport authenticate to not add any error info or reroute, etc. this is less than ieal in some cases
+		await this.asyncRoutePassportAuthenticate(jrContext, "jwtHeader", "via jwt authorization header token", flagRememberUserInSessionCookie, false, false, false);
+
+		// ATTN: this has not yet done a full token validation
+		// ATTN:TODO  merge with nonsession version, see asyncPassportManualNonSessionAuthenticateFromTokenGetMinimalPassportUsrData()
+
+		if (jrContext.isError()) {
+			// clear sessioned user
+			this.clearSessionedUser(jrContext.req);
+			// drop down to return it
+		} else {
+			// no point pushing success message on
+			// jrContext.pushSuccess("JWT Authentication token accepted.");
+		}
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+	//---------------------------------------------------------------------------
+	validateSecureToken(jrResult, tokenObj, requiredTokenType) {
+		// check type
+		const tokenType = tokenObj.type;
+		if (requiredTokenType && tokenType !== requiredTokenType) {
+			jrResult.pushErrorOnTop("Invalid jwt auth token; error code B1: received type (" + tokenType + "); expected '" + requiredTokenType + "' token");
+		}
+
+		// check expiration
+		if (this.isSecureTokenExpired(tokenObj.exp)) {
+			if (tokenObj.exp) {
+				const expirationdatestr = new Date(tokenObj.exp * 1000).toLocaleString();
+				jrResult.pushError("Invalid jwt auth token; error code B2: token expired on " + expirationdatestr + ".");
+			} else {
+				jrResult.pushError("Invalid jwt auth token; error code B3: token missing expiration date.");
+			}
+		}
+
+		// check issuer
+		if (tokenObj.iss !== this.getConfigVal(appdef.DefConfigKeyTokenIssuer)) {
+			// wrong issues
+			jrResult.pushError("Invalid jwt auth token; error code B4: incorrect issuer (" + tokenObj.iss + ") expected: " + this.getConfigVal(appdef.DefConfigKeyTokenIssuer));
+		}
+
+		// check other stuff
+		if (!tokenObj.type) {
+			// missing token type
+			jrResult.pushError("Invalid jwt auth token; error code B4: token missing type tag.");
+		}
+	}
+
+
+	isSecureTokenExpired(exp) {
+		// ATTN:TODO - do we need to worry about local vs gmt/etc time?
+		if (!exp) {
+			// what to do in this case? no expiration date?
+			// ATTN:TODO - for now we treat it as ok
+			return true;
+		}
+		if (exp <= Math.floor(Date.now() / 1000)) {
+			// it's expired
+			return true;
+		}
+		// its not expired
+		return false;
+	}
+
+
+	validateSecureTokenAccess(jrResult, tokenObj) {
+		// here we check that the token is an access type and other details of it
+		// see also validateSecureToken()
+		this.validateSecureToken(jrResult, tokenObj, "access");
+		return jrResult;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	renderError(jrContext, errorStatusCode, renderFormat) {
+		if (renderFormat === "json") {
+			if (jrContext.getExtraData("tokenError")) {
+				// specialty token error
+				jrhExpress.sendJsonErrorAuthToken(jrContext);
+			} else {
+				// generic error
+				jrhExpress.sendJsonResult(jrContext, errorStatusCode);
+			}
+		} else if (renderFormat === "html") {
+			// send html result
+			throw new Error("Don't know how to show html renderFormat errors yet in arserver.renderError.");
+		} else {
+			throw new Error("Unknow renderFormat in arserver.renderError: " + renderFormat);
+		}
+	}
+
+	renderErrorJson(jrContext, errorStatusCode) {
+		return this.renderError(jrContext, errorStatusCode, "json");
+	}
+
+	renderErrorHtml(jrContext, errorStatusCode) {
+		return this.renderError(jrContext, errorStatusCode, "html");
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	getUpdateAccessDateFrequencyInMs() {
+		return this.getConfigVal(appdef.DefConfigKeyLastAccessUpdateFrequencyMs);
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	makeVirtualLoginToken(loginMethod) {
+		// create a login token like a jwt auth token to make it easier to check stuff
+		const token = {
+			type: "login",
+			subtype: loginMethod,
+		};
+		this.decorateAuthLoginToken(token);
+		return token;
+	}
+
+	decorateAuthLoginToken(token) {
+		token.proofDate = Date.now();
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+	//---------------------------------------------------------------------------
+	getTimeSinceLoggedInUserLastLoggedInMs(jrContext) {
+		// ATTN: because we are checking loggedin passport data, this will NOT catch an auth token logged in user; to catch them we must call lookupLoggedInUser first
+		const profile = this.getLoggedInPassportUsr(jrContext);
+		if (!profile || !profile.token || !profile.token.proofDate) {
+			// not available, return null
+			return null;
+		}
+		return Date.now() - profile.token.proofDate;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	async requireRecentLoggedIn(jrContext, recencyMs) {
+		// We want to do this first for 2 reasons:
+		//  1. error message saying they need to log in
+		//  2. the request here will log in user via auth header token if provided, wheras the thin call to getTimeSinceLoggedInUserLastLoggedInMs() will not
+		if (!await this.requireLoggedIn(jrContext)) {
+			// all done
+			return false;
+		}
+
+		// see how long it's been since they last logged in / proved their identity
+		const timeSinceLastLogin = this.getTimeSinceLoggedInUserLastLoggedInMs(jrContext);
+
+		if (timeSinceLastLogin === null || timeSinceLastLogin > recencyMs) {
+			jrContext.pushMessage("You need to re-login more recently before you can proceed.");
+			this.divertToLoginPageThenBackToCurrentUrl(jrContext, null);
+			return false;
+		}
+
+		// all good
+		return true;
+	}
+	//---------------------------------------------------------------------------
 
 
 

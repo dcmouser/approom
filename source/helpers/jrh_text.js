@@ -143,6 +143,10 @@ function jrHtmlNiceOptionFromList(choices, id) {
 		return "null";
 	}
 
+	if (id === choices[id]) {
+		return ((id in choices) ? choices[id] : "unknown");
+	}
+
 	return ((id in choices) ? choices[id] : "unknown") + " (" + id.toString() + ")";
 }
 //---------------------------------------------------------------------------
@@ -313,6 +317,16 @@ function formatDateNicely(dateVal, flagCompact) {
 
 
 
+//---------------------------------------------------------------------------
+function cleanIp(ipStr) {
+	if (!ipStr) {
+		return ipStr;
+	}
+	return (ipStr.length > 7 && ipStr.substr(0, 7) === "::ffff:") ? ipStr.substr(7) : ipStr;
+}
+//---------------------------------------------------------------------------
+
+
 
 
 
@@ -333,5 +347,7 @@ module.exports = {
 	sanitizeUnsafeText,
 	coerceToString,
 	formatDateNicely,
+
+	cleanIp,
 };
 

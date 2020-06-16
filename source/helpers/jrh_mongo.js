@@ -22,7 +22,9 @@ const mongoose = require("mongoose");
 function equalIds(id1, id2) {
 	// do a COERCIVE compare of ids (where one may be a string and another a mongo id)
 	// note that this gives a lint warning
-	return (id1 == id2);
+	// const bretv = (id1 == id2);
+	const bretv = (String(id1) === String(id2));
+	return bretv;
 }
 
 

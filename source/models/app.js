@@ -20,6 +20,7 @@ const jrhValidate = require("../helpers/jrh_validate");
 const jrdebug = require("../helpers/jrdebug");
 const jrhMongo = require("../helpers/jrh_mongo");
 const jrhText = require("../helpers/jrh_text");
+const arserver = require("../controllers/arserver");
 
 // models
 const ModelBaseMongoose = jrequire("models/model_base_mongoose");
@@ -103,6 +104,13 @@ class AppModel extends ModelBaseMongoose {
 					type: String,
 				},
 			},
+			framework: {
+				label: "Framework",
+				mongoose: {
+					type: String,
+				},
+				valueFunction: this.valueFunctionAppFramework,
+			},
 			isPublic: {
 				label: "Is public?",
 				format: "checkbox",
@@ -144,42 +152,43 @@ class AppModel extends ModelBaseMongoose {
 		// NOTE: this list can be generated dynamically based on logged in user
 		let reta = [];
 		if (operationType === "crudAdd" || operationType === "crudEdit" || operationType === "add") {
-			reta = ["shortcode", "label", "description", "notes", "isPublic", "supportsFiles", "disabled", "extraData"];
+			reta = ["shortcode", "label", "description", "notes", "isPublic", "supportsFiles", "disabled", "extraData", "framework"];
 		}
 		return reta;
 	}
 
 
 	// crud add/edit
-	static async doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
+	static async doValidateAndSave(jrContext, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 		let objdoc;
 
 		// set fields from form and validate
-		await this.validateMergeAsync(jrResult, "shortcode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await this.validateShortcodeUnique(jrr, keyname, inVal, obj));
-		// await this.validateMergeAsync(jrResult, "name", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
-		await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
-		await this.validateMergeAsync(jrResult, "description", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrContext, "shortcode", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await this.validateShortcodeUnique(jrr, keyname, inVal, obj));
+		// await this.validateMergeAsync(jrContext, "name", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrContext, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrContext, "description", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
 		//
-		await this.validateMergeAsync(jrResult, "isPublic", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateTrueFalse(jrResult, keyname, inVal, flagRequired));
-		await this.validateMergeAsync(jrResult, "supportsFiles", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateTrueFalse(jrResult, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrContext, "framework", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => this.validateAppFrameworkName(jrr, keyname, inVal, flagRequired));
+		//
+		await this.validateMergeAsync(jrContext, "isPublic", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateTrueFalse(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrContext, "supportsFiles", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateTrueFalse(jrr, keyname, inVal, flagRequired));
 
 		// base fields shared between all? (notes, etc.)
-		await this.validateMergeAsyncBaseFields(jrResult, options, flagSave, source, saveFields, preValidatedFields, obj);
+		await this.validateMergeAsyncBaseFields(jrContext, options, flagSave, source, saveFields, preValidatedFields, obj);
 
 		// complain about fields in source that we aren't allowed to save
-		await this.validateComplainExtraFields(jrResult, options, source, saveFields, preValidatedFields, ignoreFields);
+		await this.validateComplainExtraFields(jrContext, options, source, saveFields, preValidatedFields, ignoreFields);
 
 		// any validation errors?
-		if (jrResult.isError()) {
+		if (jrContext.isError()) {
 			return null;
 		}
 
 		if (flagSave) {
-			// validated successfully
-			// save it (success message will be pushed onto jrResult)
-			objdoc = await obj.dbSave(jrResult);
+			// validated successfully; save it
+			objdoc = await obj.dbSave(jrContext);
 		}
 
 		// return the saved object
@@ -222,9 +231,9 @@ class AppModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// delete any ancillary deletions AFTER the normal delete
-	static async auxChangeModeById(id, mode, jrResult) {
+	static async auxChangeModeById(jrContext, id, mode) {
 		// call super callss
-		super.auxChangeModeById(id, mode, jrResult);
+		super.auxChangeModeById(jrContext, id, mode);
 
 		// if we are enabling or disabling, then we don't touch rooms
 		if (mode === appdef.DefMdbEnable || mode === appdef.DefMdbDisable) {
@@ -235,8 +244,8 @@ class AppModel extends ModelBaseMongoose {
 		// this is a virtual delete or real delete
 
 		// for app model, this means deleting associated rooms
-		const roomIdList = await this.getAssociatedRoomsByAppId(id, jrResult);
-		if (jrResult.isError()) {
+		const roomIdList = await this.getAssociatedRoomsByAppId(jrContext, id);
+		if (jrContext.isError()) {
 			return;
 		}
 
@@ -246,17 +255,17 @@ class AppModel extends ModelBaseMongoose {
 
 		// delete them
 		const RoomModel = jrequire("models/room");
-		await RoomModel.doChangeModeByIdList(roomIdList, mode, jrResult, true);
-		if (!jrResult.isError()) {
+		await RoomModel.doChangeModeByIdList(jrContext, roomIdList, mode, true);
+		if (!jrContext.isError()) {
 			const modeLabel = jrhText.capitalizeFirstLetter(appdef.DefStateModeLabels[mode]);
-			jrResult.pushSuccess(modeLabel + " " + RoomModel.getNiceNamePluralized(roomIdList.length) + " attached to " + this.getNiceName() + " #" + id + ".");
+			jrContext.pushSuccess(modeLabel + " " + RoomModel.getNiceNamePluralized(roomIdList.length) + " attached to " + this.getNiceName() + " #" + id + ".");
 		}
 	}
 	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
-	static async getAssociatedRoomsByAppId(appid, jrResult) {
+	static async getAssociatedRoomsByAppId(jrContext, appid) {
 		// get a list (array) of all room ids that are attached to this app
 
 		const RoomModel = jrequire("models/room");
@@ -268,6 +277,65 @@ class AppModel extends ModelBaseMongoose {
 		return roomIds;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	static async valueFunctionAppFramework(jrContext, viewType, fieldName, obj, editData, helperData) {
+		let val, valHtml;
+		// for editing, we want a drop down list of allowed app frameworks
+		// for viewing, just show it
+		if (editData && editData[fieldName]) {
+			val = editData[fieldName];
+		} else if (obj) {
+			val = obj[fieldName];
+		}
+		//
+		if (viewType !== "edit") {
+			// too cpu expensive?
+			if (true) {
+				const choices = arserver.getAppFrameworkChoices();
+				valHtml = jrhText.jrHtmlNiceOptionFromList(choices, val);
+			} else {
+				valHtml = val;
+			}
+		} else {
+			// edit mode gets a drop down
+			const choices = arserver.getAppFrameworkChoices();
+			const flagShowBlank = true;
+			valHtml = jrhText.jrHtmlFormOptionListSelect(fieldName, choices, val, flagShowBlank);
+		}
+		return valHtml;
+	}
+
+
+
+	static validateAppFrameworkName(jrResult, keyname, val, flagRequired) {
+		if (!val && flagRequired) {
+			jrResult.pushFieldError(keyname, keyname + " cannot be left blank");
+			return undefined;
+		}
+		const choices = arserver.getAppFrameworkChoices();
+		if (choices[val]) {
+			// ok
+			return val;
+		}
+		// no good
+		jrResult.pushFieldError(keyname, keyname + " is not a valid App Framework");
+		return undefined;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
 
 
 

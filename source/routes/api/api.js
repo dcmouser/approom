@@ -22,7 +22,7 @@ const jrequire = require("../../helpers/jrequire");
 const arserver = jrequire("arserver");
 
 // helpers
-const JrResult = require("../../helpers/jrresult");
+const JrContext = require("../../helpers/jrcontext");
 const jrhExpress = require("../../helpers/jrh_express");
 const jrdebug = require("../../helpers/jrdebug");
 
@@ -50,10 +50,10 @@ function setupRouter(urlPath) {
 
 	// setup routes
 	router.get("/", routerGetIndex);
-	router.get("/reqrefresh", routerGetReqrefresh);
-	router.post("/reqrefresh", routerPostReqrefresh);
-	router.all("/refreshaccess", routerAllRefreshaccess);
-	router.all("/tokentest", routerAllTokentest);
+	router.get("/reqrefresh", routerGetReqRefresh);
+	router.post("/reqrefresh", routerPostReqRefresh);
+	router.all("/refreshaccess", routerAllRefreshAccess);
+	router.all("/tokentest", routerAllTokenTest);
 	router.get("/dos", routerGetDos);
 
 	// return router
@@ -82,117 +82,13 @@ function setupRouter(urlPath) {
  * @todo Replace the template with some json reply, since api should only be machine callable.
  */
 async function routerGetIndex(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
 	// just show index
 	res.render("api/index", {
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		jrResult: jrContext.mergeSessionMessages(),
 	});
 }
 
-
-/**
- * @description
- * Present user with form for their username and password,
- * so they may request a long-lived Refresh token (JWT).
- * @todo Note that this web page we present is useful for debugging, but should not be necesary in production use, because we expect code to be posting to us programmatically.
- */
-async function routerGetReqrefresh(req, res, next) {
-	// render page
-	res.render("api/tokenuserpassform", {
-	});
-}
-
-
-/**
- * @description
- * Process request for a long-lived Refresh token (JWT), after checking user's username and password in post data.
- * If username and password match, they will be issued a JWT refresh token that they can use to generate short-lived access tokens.
- * ##### Notes
- * * The refresh token is coded with scope "api" and cannot be used to perform arbitrary actions on the site; it can only be used for api-like actions.
- * * The refresh token should only be used to request access tokens, which are short-lived tokens that can be use to perform actual api functions.
- */
-async function routerPostReqrefresh(req, res, next) {
-
-	// jrdebug.cdebug("In routerPostReqrefresh.");
-	// jrdebug.cdebugObj(req.body, "REQ BODY");
-
-	// do a local login with passed username and password; DONT store session info
-	const jrResult = JrResult.makeNew();
-	const [userPassport, user] = await arserver.asyncRoutePassportAuthenticateNonSessionGetUserTuple("local", "with username and password", req, res, next, jrResult, true);
-	if (jrResult.isError()) {
-		jrhExpress.sendResJsonJrResult(res, 401, jrResult);
-		return;
-	}
-
-	// success
-	const secureToken = await arserver.makeSecureTokenRefresh(userPassport, user);
-
-	// log request
-	arserver.logr(req, "api.token", "generated refresh token", user);
-
-	// provide it
-	jrhExpress.sendResJsonData(res, 200, "token generated", secureToken);
-}
-
-
-/**
- * @description
- * Get a short-lived (JWT) Access token, using a Refresh token.  Here the user passes us a Refresh token and we give them (after verifying it's validity) an Access token.
- * @todo It gets token from the query string (token parameter); eventually we want this to be (only) retrieved from headers or post data.  This just makes it easier to test initially.
- * ##### NOTES
- * * see <a href="https://scotch.io/@devGson/api-authentication-with-json-web-tokensjwt-and-passport">using refresh tokens with jwt</a>
- */
-async function routerAllRefreshaccess(req, res, next) {
-
-	jrdebug.cdebug("In routerAllRefreshaccess.");
-	jrdebug.cdebugObj(req.body, "REQ BODY");
-
-	// first the user has to give us a valid REFRESH token
-	const jrResult = JrResult.makeNew();
-	const [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, "refresh");
-	if (jrResult.isError()) {
-		jrhExpress.sendResJsonJrResultTokenError(res, jrResult);
-		return;
-	}
-
-	// while testing this we also want to make sure the refresh token wasn't revoked
-
-	// jrdebug.debugObj(userPassport.token);
-
-	// ok they gave us a valid refresh token, so now we generate an access token for them
-	const secureToken = await arserver.makeSecureTokenAccessFromRefreshToken(userPassport, user, userPassport.token);
-
-	// log request
-	arserver.logr(req, "api.token", "refreshed access token", user);
-
-	// provide it
-	jrhExpress.sendResJsonData(res, 200, "token generated", secureToken);
-}
-
-
-/**
- * @description
- * Evaluate a refresh or access token, and report on its contents and validity; useful for testing.
- * @todo This should probably not be present in production version.
- * @todo It gets token from the query string (token parameter); we probably want it in header or post data eventually.
- */
-async function routerAllTokentest(req, res, next) {
-	// test if user has passed user login info through api token
-
-	const jrResult = JrResult.makeNew();
-	const [userPassport, user] = await arserver.asyncRoutePassportAuthenticateFromTokenNonSessionGetPassportProfileAndUser(req, res, next, jrResult, null);
-	if (jrResult.isError()) {
-		jrhExpress.sendResJsonJrResultTokenError(res, jrResult);
-		return;
-	}
-
-	// it's good
-	// ATTN: not sure what we should return here -- user info, etc.
-	// ideally we would also return the token TYPE
-	const resultObj = {
-		userPassport,
-	};
-	jrhExpress.sendResJsonData(res, 200, "Valid token parsed in API test", resultObj);
-}
 
 
 /**
@@ -203,8 +99,7 @@ async function routerAllTokentest(req, res, next) {
  */
 // test rate limiting of generic 404s at api route
 async function routerGetDos(req, res, next) {
-	let msg;
-
+	const jrContext = JrContext.makeNew(req, res, next);
 	// ATTN: test of rate limiting block
 	const rateLimiter = arserver.getRateLimiterApi();
 	// ATTN: NOTE that this is a PER-IP rate limit since we use rateLimiterKey = req.ip
@@ -215,12 +110,129 @@ async function routerGetDos(req, res, next) {
 		await rateLimiter.consume(rateLimiterKey, 1);
 	} catch (rateLimiterRes) {
 		// rate limiter triggered
-		jrhExpress.sendResJsonError(res, 429, "API rate limiting triggered; your ip has been blocked for " + (rateLimiter.blockDuration).toString() + " seconds.");
+		jrhExpress.sendJsonError(jrContext, 429, "API rate limiting triggered; your ip has been blocked for " + (rateLimiter.blockDuration).toString() + " seconds.", "rateLimit");
 		// exit from function
 		return;
 	}
 
-	jrhExpress.sendResJsonError(res, 404, "API Route " + req.baseUrl + "/" + req.path + " not found.  API not implemented yet.");
+	jrhExpress.sendJsonError(jrContext, 404, "API Route " + req.baseUrl + "/" + req.path + " not found.  API not implemented yet.", "404");
+}
+
+
+
+/**
+ * @description
+ * Present user with form for their username and password,
+ * so they may request a long-lived Refresh token (JWT).
+ * @todo Note that this web page we present is useful for debugging, but should not be necesary in production use, because we expect code to be posting to us programmatically.
+ */
+async function routerGetReqRefresh(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
+	// render page
+	res.render("api/tokenuserpassform", {
+	});
+}
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//---------------------------------------------------------------------------
+/**
+ * @description
+ * Process request for a long-lived Refresh token (JWT), after checking user's username and password in post data.
+ * If username and password match, they will be issued a JWT refresh token that they can use to generate short-lived access tokens.
+ * ##### Notes
+ * * The IDEA is that the refresh token is coded with scope "api" and cannot be used to perform arbitrary actions on the site; it can only be used for api-like actions.
+ * * The refresh token should only be used to request access tokens, which are short-lived tokens that can be use to perform actual api functions.
+ */
+async function routerPostReqRefresh(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
+	// do a local test of passed username and password; DON'T store session info (i.e. don't actually log them in just look up user if they match password)
+	// The reason we do this like this instead of trusting a logged in session user is so that this call can be made by a client that does not ever do session login
+	const user = await arserver.asyncPassportManualNonSessionAuthenticateGetUser(jrContext, "local", "with username and password", next);
+	if (jrContext.isError()) {
+		arserver.renderErrorJson(jrContext, 401);
+		return;
+	}
+
+	// success
+	const secureToken = await arserver.makeSecureTokenRefresh(user);
+
+	// log request
+	arserver.logr(jrContext, "api.token", "generated refresh token", null, user);
+
+	// provide it
+	jrhExpress.sendJsonDataSuccess(jrContext, "token generated", secureToken);
+}
+
+
+
+/**
+ * @description
+ * Make a short-lived (JWT) Access token, using a Refresh token.  Here the user passes us a Refresh token and we give them (after verifying it's validity) an Access token.
+ * @todo It gets token from the query string (token parameter); eventually we want this to be (only) retrieved from headers or post data.  This just makes it easier to test initially.
+ * ##### NOTES
+ * * see <a href="https://scotch.io/@devGson/api-authentication-with-json-web-tokensjwt-and-passport">using refresh tokens with jwt</a>
+ */
+async function routerAllRefreshAccess(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
+
+	// first the user has to give us a valid REFRESH token
+	const [userPassport, user] = await arserver.asyncPassportManualNonSessionAuthenticateFromTokenGetPassportProfileAndUser(jrContext, next, "refresh");
+	if (jrContext.isError()) {
+		arserver.renderErrorJson(jrContext, 403);
+		return;
+	}
+
+	// ok they gave us a valid refresh token, so now we generate an access token for them
+	const secureToken = await arserver.makeSecureTokenAccessFromRefreshToken(user, userPassport.token);
+
+	// log request
+	arserver.logr(jrContext, "api.token", "refreshed access token", null, user);
+
+	// provide it
+	jrhExpress.sendJsonDataSuccess(jrContext, "token generated", secureToken);
+}
+
+
+
+/**
+ * @description
+ * Evaluate a refresh or access token, and report on its contents and validity; useful for testing.
+ * @todo This should probably not be present in production version.
+ * @todo It gets token from the query string (token parameter); we probably want it in header or post data eventually.
+ */
+async function routerAllTokenTest(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
+
+	// retrieve/test the token passed by the user
+	const userPassport = await arserver.asyncPassportManualNonSessionAuthenticateFromTokenGetMinimalPassportUsrData(jrContext, next, null);
+	if (jrContext.isError()) {
+		arserver.renderErrorJson(jrContext, 403);
+		return;
+	}
+
+	// it's good
+	// show them the userPassport data which will include .token
+	const returnData = {
+		token: userPassport.token,
+	};
+	jrhExpress.sendJsonDataSuccess(jrContext, "Valid token parsed in API test", returnData);
 }
 //---------------------------------------------------------------------------
 

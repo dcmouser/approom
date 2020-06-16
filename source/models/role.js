@@ -179,9 +179,14 @@ class RoleModel extends ModelBaseMongooseMinimal {
 
 
 	//---------------------------------------------------------------------------
-	static async deleteRolesByCondition(user, cond) {
+	static async deleteRolesForUserByCondition(jrContext, user, cond) {
 		await this.mFindAndDeleteMany(cond);
-		await this.logChangedAcl(user, "deteleRole", cond);
+		await this.logChangedAcl(jrContext, user, "deteleUserRoles", cond);
+	}
+
+
+	static async deleteRolesByCondition(jrContext, cond) {
+		await this.mFindAndDeleteMany(cond);
 	}
 	//---------------------------------------------------------------------------
 
@@ -195,7 +200,7 @@ class RoleModel extends ModelBaseMongooseMinimal {
 
 	//---------------------------------------------------------------------------
 	// add a role to a user
-	static async addRole(user, role, objectType, objectId) {
+	static async addRole(jrContext, user, role, objectType, objectId) {
 		const roleAs = RoleModel.createModel({
 			userId: user.getIdAsM(),
 			role,
@@ -205,15 +210,19 @@ class RoleModel extends ModelBaseMongooseMinimal {
 		await roleAs.dbSave();
 
 		// log the acl change
-		await this.logChangedAcl(user, "addRole", roleAs);
+		await this.logChangedAcl(jrContext, user, "addRole", roleAs);
 	}
 	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
-	static async logChangedAcl(user, label, roleData) {
+	static async logChangedAcl(jrContext, user, label, roleData) {
 		const roleStr = jrhMisc.objToString(roleData, true);
-		await arserver.logr(null, "acl." + label, user.getLogIdString() + " " + label + ": " + roleStr, user);
+		if (user) {
+			await arserver.logr(jrContext, "acl." + label, user.getLogIdString() + " " + label + ": " + roleStr);
+		} else {
+			await arserver.logr(jrContext, "acl." + label, roleStr);
+		}
 	}
 	//---------------------------------------------------------------------------
 

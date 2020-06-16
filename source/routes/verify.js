@@ -23,6 +23,7 @@ const VerificationModel = jrequire("models/verification");
 const arserver = jrequire("arserver");
 
 // helpers
+const JrContext = require("../helpers/jrcontext");
 const JrResult = require("../helpers/jrresult");
 
 
@@ -61,24 +62,26 @@ function setupRouter(urlPath) {
 
 
 async function routerGetCode(req, res, next) {
-	await handleVerifyCode(req.params.code, null, req, res, next);
+	const jrContext = JrContext.makeNew(req, res, next);
+	await handleVerifyCode(jrContext, req.params.code);
 }
 
 
 async function routerPostCode(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
 	// check required csrf token
-	const jrResult = arserver.testCsrfReturnJrResult(req, res);
+	arserver.testCsrf(jrContext);
 
 	const code = req.body.code;
-	await handleVerifyCode(code, jrResult, req, res, next);
+	await handleVerifyCode(jrContext, code);
 }
 
 
 async function routerGetIndex(req, res, next) {
-
+	const jrContext = JrContext.makeNew(req, res, next);
 	res.render("account/verify", {
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-		csrfToken: arserver.makeCsrf(req, res),
+		jrResult: jrContext.mergeSessionMessages(),
+		csrfToken: arserver.makeCsrf(jrContext),
 	});
 }
 //---------------------------------------------------------------------------
@@ -91,50 +94,50 @@ async function routerGetIndex(req, res, next) {
 
 
 // this is an agnostic function that might handle all kinds of verifications (change of email, new account email, mobile text, onetime login code, multi-factor login, etc.)
-async function handleVerifyCode(code, jrResult, req, res, next) {
+async function handleVerifyCode(jrContext, code) {
 	let successRedirectTo;
 
 	// so we can check if verifying this code logs someone in
-	const previouslyLoggedInUserId = arserver.getLoggedInLocalUserIdFromSession(req);
+	const previouslyLoggedInUserId = arserver.getUntrustedLoggedInUserIdFromSession(jrContext);
 
-	if (jrResult && jrResult.isError()) {
+	if (jrContext.isError()) {
 		// just drop down, it's an error from the start (caller errore
 	} else if (!code) {
-		jrResult = JrResult.makeError("Please specify the code to verify.");
+		jrContext.pushError.makeError("Please specify the code to verify.");
 	} else {
-		({ jrResult, successRedirectTo } = await VerificationModel.verifiyCode(code, {}, req, res));
+		successRedirectTo = await VerificationModel.verifiyCode(jrContext, code, {});
 	}
 
-	if (jrResult.isError()) {
+	if (jrContext.isError()) {
 		// on error, show verify form
-		res.render("account/verify", {
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
-			reqBody: req.body,
-			csrfToken: arserver.makeCsrf(req, res),
+		jrContext.res.render("account/verify", {
+			jrResult: jrContext.mergeSessionMessages(),
+			reqBody: jrContext.req.body,
+			csrfToken: arserver.makeCsrf(jrContext),
 		});
 		return;
 	}
 
 
 	// success -- redirect and show flash message about success
-	jrResult.addToSession(req);
+	jrContext.addToThisSession();
 
 	// if they are NOW logged in (and weren't before the verify code check), then check if they were waiting to go to another page
-	const newlyLoggedInUserId = arserver.getLoggedInLocalUserIdFromSession(req);
+	const newlyLoggedInUserId = arserver.getUntrustedLoggedInUserIdFromSession(jrContext);
 	if (newlyLoggedInUserId && (previouslyLoggedInUserId !== newlyLoggedInUserId)) {
-		if (arserver.userLogsInCheckDiverted(req, res)) {
+		if (arserver.userLogsInCheckDiverted(jrContext)) {
 			return;
 		}
 	}
 
 	// by default if no caller redirected or rendered already (by setting jrResult.setDontRendering), then we redirect to homepage after a successful processing
 	if (successRedirectTo) {
-		res.redirect(successRedirectTo);
+		jrContext.res.redirect(successRedirectTo);
 		return;
 	}
 
 	// otherwise default
-	res.redirect("/");
+	jrContext.res.redirect("/");
 }
 //---------------------------------------------------------------------------
 

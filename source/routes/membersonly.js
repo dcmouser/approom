@@ -15,6 +15,7 @@
 const express = require("express");
 
 // helpers
+const JrContext = require("../helpers/jrcontext");
 const JrResult = require("../helpers/jrresult");
 
 
@@ -57,17 +58,17 @@ function setupRouter(urlPath) {
 // router functions
 
 async function routerGetIndex(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
 
 	// require them to be logged in, or creates a redirect
-	const user = await arserver.getLoggedInUser(req);
-	if (!arserver.requireUserIsLoggedIn(req, res, user, "/membersonly")) {
+	const user = await arserver.lookupLoggedInUser(jrContext);
+	if (!arserver.requireUserIsLoggedInRenderErrorPageOrRedirect(jrContext, user, "/membersonly")) {
 		// all done
 		return;
 	}
 
 	res.render("user/membersonly", {
-		// jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult, true),
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		jrResult: jrContext.mergeSessionMessages(),
 		username: user.getUsername(),
 		id: user.getIdAsString(),
 	});

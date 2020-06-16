@@ -25,7 +25,6 @@ const appdef = jrequire("appdef");
 // our helper modules
 const jrlog = require("../helpers/jrlog");
 const jrhMisc = require("../helpers/jrh_misc");
-const JrResult = require("../helpers/jrresult");
 
 
 
@@ -82,7 +81,7 @@ class ModelBaseMongooseMinimal extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static async validateMergeAsyncBaseFields(jrResult, options, flagSave, source, saveFields, preValidatedFields, obj) {
+	static async validateMergeAsyncBaseFields(jrContext, options, flagSave, source, saveFields, preValidatedFields, obj) {
 		// nothing to do for minimal
 	}
 	//---------------------------------------------------------------------------

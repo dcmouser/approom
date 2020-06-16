@@ -15,6 +15,7 @@ const express = require("express");
 const passport = require("passport");
 
 // helpers
+const JrContext = require("../helpers/jrcontext");
 const JrResult = require("../helpers/jrresult");
 const jrlog = require("../helpers/jrlog");
 
@@ -79,13 +80,14 @@ function setupRouter(urlPath) {
 
 // present local email/password login form
 async function routerGetIndex(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
 	// ATTN: unfinished - if they have just created an account and been redirected here to login (in order to encourage them to remember their password),
 	//  we could try to be a bit nice and pre-fill their username, eg. req.body.usernameEmail
 
 	// render page
 	res.render("account/login", {
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-		csrfToken: arserver.makeCsrf(req, res),
+		jrResult: jrContext.mergeSessionMessages(),
+		csrfToken: arserver.makeCsrf(jrContext),
 	});
 }
 
@@ -95,24 +97,25 @@ async function routerGetIndex(req, res, next) {
 async function routerPostIndex(req, res, next) {
 	// our manual passport authentification helper, sends user to /profile on success or /login on failure
 	// we use a custom errorCallback so that we can re-render the login form on error
+	const jrContext = JrContext.makeNew(req, res, next);
 
 	// check required csrf token
-	const jrResult = arserver.testCsrfReturnJrResult(req, res);
+	arserver.testCsrf(jrContext);
 
-	if (!jrResult.isError()) {
+	if (!jrContext.isError()) {
 		// no error yet
 		// handle local authentication; this is a wrapper around passport.authenticate("local" which handles a bunch of session and redirect stuff
 		// the true,false at end says to auto handle the login success case (redirect generically), but not auto handle the error case (so that we can re-present it)
-		await arserver.asyncRoutePassportAuthenticate("local", "using your password", req, res, next, jrResult, true, false);
+		await arserver.asyncRoutePassportAuthenticate(jrContext, "local", "using your password", true, true, false, true);
 	}
 
 
-	if (jrResult.isError()) {
+	if (jrContext.isError()) {
 		// re-present the login form
 		res.render("account/login", {
-			reqBody: req.body,
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
-			csrfToken: arserver.makeCsrf(req, res),
+			reqBody: jrContext.req.body,
+			jrResult: jrContext.mergeSessionMessages(),
+			csrfToken: arserver.makeCsrf(jrContext),
 		});
 	} else {
 		// this case is redirected/handled automatically by call
@@ -124,28 +127,31 @@ async function routerPostIndex(req, res, next) {
 // facebook auth callback
 async function routerGetFacebookAuth(req, res, next) {
 	// our manual passport authentification helper, sends user to /profile on success or /login on failure
-	await arserver.asyncRoutePassportAuthenticate("facebook", "via facebook", req, res, next, null, true, true);
+	const jrContext = JrContext.makeNew(req, res, next);
+	await arserver.asyncRoutePassportAuthenticate(jrContext, "facebook", "via facebook", true, true, true, true);
 }
 
 
 
 // present one-time login via email form
 async function routerGetEmail(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
 	res.render("account/login_email", {
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-		csrfToken: arserver.makeCsrf(req, res),
+		jrResult: jrContext.mergeSessionMessages(),
+		csrfToken: arserver.makeCsrf(jrContext),
 	});
 }
 
 
 // process one-time login via email form
 async function routerPostEmail(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
 	let message;
 
 	// check required csrf token
-	let jrResult = arserver.testCsrfReturnJrResult(req, res);
+	arserver.testCsrf(jrContext);
 
-	if (!jrResult.isError()) {
+	if (!jrContext.isError()) {
 		// get email address provides
 		const usernameEmail = req.body.usernameEmail;
 
@@ -153,16 +159,16 @@ async function routerPostEmail(req, res, next) {
 		const user = await UserModel.mFindUserByUsernameEmail(usernameEmail);
 		if (!user) {
 			// set error and drop down to re-display email login form with error
-			jrResult = UserModel.makeJrResultErrorNoUserFromField("usernameEmail", usernameEmail);
+			UserModel.addErrorNoUserFromField(jrContext, "usernameEmail", usernameEmail);
 		} else {
 			const userId = user.getIdAsM();
 			const userEmail = user.email;
 			const flagRevealEmail = (userEmail === usernameEmail);
-			jrResult = await VerificationModel.createVerificationOneTimeLoginTokenEmail(userEmail, userId, flagRevealEmail, null);
-			if (!jrResult.isError()) {
+			await VerificationModel.createVerificationOneTimeLoginTokenEmail(jrContext, userEmail, userId, flagRevealEmail, null);
+			if (!jrContext.isError()) {
 				// success; redirect them to homepage and tell them to check their email for a login token (see the verify route for when they click the link to login)
-				jrResult.pushSuccess("Check your mail for your link to login.");
-				jrResult.addToSession(req);
+				jrContext.pushSuccess("Check your mail for your link to login.");
+				jrContext.addToThisSession();
 				res.redirect("/verify");
 				return;
 			}
@@ -172,9 +178,9 @@ async function routerPostEmail(req, res, next) {
 
 	// show the email login form
 	res.render("account/login_email", {
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
+		jrResult: jrContext.mergeSessionMessages(),
 		reqBody: req.body,
-		csrfToken: arserver.makeCsrf(req, res),
+		csrfToken: arserver.makeCsrf(jrContext),
 	});
 }
 //---------------------------------------------------------------------------
@@ -188,7 +194,8 @@ async function routerPostEmail(req, res, next) {
 // see arserver.js setupPassportStrategyTwitter
 async function routerGetTwitterAuth(req, res, next) {
 	// our manual passport authentification helper, sends user to /profile on success or /login on failure
-	await arserver.asyncRoutePassportAuthenticate("twitter", "via twitter", req, res, next, null, true, true);
+	const jrContext = JrContext.makeNew(req, res, next);
+	await arserver.asyncRoutePassportAuthenticate(jrContext, "twitter", "via twitter", true, true, true, true);
 }
 //---------------------------------------------------------------------------
 
@@ -200,7 +207,8 @@ async function routerGetTwitterAuth(req, res, next) {
 // see http://www.passportjs.org/packages/passport-google-oauth20/
 async function routerGetGoogleAuth(req, res, next) {
 	// our manual passport authentification helper, sends user to /profile on success or /login on failure
-	await arserver.asyncRoutePassportAuthenticate("google", "via google", req, res, next, null, true, true);
+	const jrContext = JrContext.makeNew(req, res, next);
+	await arserver.asyncRoutePassportAuthenticate(jrContext, "google", "via google", true, true, true, true);
 }
 //---------------------------------------------------------------------------
 

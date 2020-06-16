@@ -14,6 +14,7 @@ const express = require("express");
 
 
 // helpers
+const JrContext = require("../helpers/jrcontext");
 const JrResult = require("../helpers/jrresult");
 const jrlog = require("../helpers/jrlog");
 const jrhExpress = require("../helpers/jrh_express");
@@ -80,54 +81,58 @@ function setupRouter(urlPath) {
 // ATTN: it's not clear to me why we have this code here, except as a demonstration of how you can use crudAid functions OUTSIDE the normal crud system
 
 async function routerGetEdit(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
+
 	// require them to be logged in, or creates a redirect
-	const user = await arserver.getLoggedInUser(req);
-	if (!arserver.requireUserIsLoggedIn(req, res, user)) {
+	const user = await arserver.lookupLoggedInUser(jrContext);
+	if (!arserver.requireUserIsLoggedInRenderErrorPageOrRedirect(jrContext, user)) {
 		// all done
 		return;
 	}
 	// ignore any previous login diversions
-	arserver.forgetLoginDiversions(req);
+	arserver.clearLastSessionedDivertedUrl(jrContext);
 
 	// extra info
-	const userInfo = (req.session.passport) ? JSON.stringify(req.session.passport.user, null, "  ") : "not logged in";
+	const passportUserInfo = jrhExpress.getReqPassportUsrStringified(jrContext, "not logged in");
 	const extraViewData = {
-		userInfo,
+		passportUserInfo,
 	};
 
-	// force id
-	req.body._id = user.getIdAsString();
-	req.params.id = req.body._id;
+	// force id parameter to users profile (do we really need both?)
+	// req.body._id = user.getIdAsString();
+	req.params.id = user.getIdAsString();
 
 	// hand off work to crudAid
-	const bretv = await crudAid.handleEditGet(req, res, next, UserModel, "", viewFilePathEdit, extraViewData);
+	const bretv = await crudAid.handleEditGet(jrContext, next, UserModel, "", viewFilePathEdit, extraViewData);
 }
 
 
 // edit profile submit
 // ATTN: it's not clear to me why we have this code here, except as a demonstration of how you can use crudAid functions OUTSIDE the normal crud system
 async function routerPostEdit(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
+
 	// require them to be logged in, or creates a redirect
-	const user = await arserver.getLoggedInUser(req);
-	if (!arserver.requireUserIsLoggedIn(req, res, user)) {
+	const user = await arserver.lookupLoggedInUser(jrContext);
+	if (!arserver.requireUserIsLoggedInRenderErrorPageOrRedirect(jrContext, user)) {
 		// all done
 		return;
 	}
 	// ignore any previous login diversions
-	arserver.forgetLoginDiversions(req);
+	arserver.clearLastSessionedDivertedUrl(jrContext);
 
 	// extra info
-	const userInfo = (req.session.passport) ? JSON.stringify(req.session.passport.user, null, "  ") : "not logged in";
+	const passportUserInfo = jrhExpress.getReqPassportUsrStringified(jrContext, "not logged in");
 	const extraViewData = {
-		userInfo,
+		passportUserInfo,
 	};
 
-	// force id
-	req.body._id = user.getIdAsString();
-	req.params.id = req.body._id;
+	// force id?
+	// req.body._id = user.getIdAsString();
+	// req.params.id = req.body._id;
 
 	// hand off work to crudAid
-	const bretv = await crudAid.handleEditPost(req, res, next, UserModel, "", viewFilePathEdit, extraViewData);
+	const bretv = await crudAid.handleEditPost(jrContext, UserModel, "", viewFilePathEdit, extraViewData);
 	if (!bretv) {
 		// just send them back to profile edit
 		res.redirect(jrhExpress.reqOriginalUrl(req));
@@ -137,15 +142,16 @@ async function routerPostEdit(req, res, next) {
 
 
 async function routerGetIndex(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
 
 	// require them to be logged in, or creates a redirect
-	const user = await arserver.getLoggedInUser(req);
-	if (!arserver.requireUserIsLoggedIn(req, res, user)) {
+	const user = await arserver.lookupLoggedInUser(jrContext);
+	if (!arserver.requireUserIsLoggedInRenderErrorPageOrRedirect(jrContext, user)) {
 		// all done
 		return;
 	}
 	// ignore any previous login diversions
-	arserver.forgetLoginDiversions(req);
+	arserver.clearLastSessionedDivertedUrl(jrContext);
 
 	// load user roles
 	// ATTTN: See user model for more, but basically the user roles will be INVISIBLE if we console log or stringify,
@@ -153,28 +159,18 @@ async function routerGetIndex(req, res, next) {
 	await user.loadRolesForUserIfNeeded();
 
 	// extra info
-	const userInfo = (req.session.passport) ? req.session.passport.user : "not logged in";
+	const passportUserInfo = jrhExpress.getReqPassportUsrStringified(jrContext, "not logged in");
 	const extraViewData = {
-		userInfo,
+		passportUserInfo,
 		user,
 		UserExtRoles: user.getExtRoles(),
 	};
 
-	if (false) {
-		// force id
-		req.body._id = user.getIdAsString();
-		req.params.id = req.body._id;
+	res.render("user/profile", {
+		jrResult: jrContext.mergeSessionMessages(),
+		extraViewData,
+	});
 
-		// hand off work to crudAid
-		// ATTN: this will fail if user does not have high level permission to access crud
-		// as such, it is not suitable for this current way of using it
-		const bretv = await crudAid.handleViewGet(req, res, next, UserModel, "", viewFilePathEdit, extraViewData);
-	} else {
-		res.render("user/profile", {
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
-			extraViewData,
-		});
-	}
 }
 //---------------------------------------------------------------------------
 

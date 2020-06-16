@@ -1,0 +1,10 @@
+1. Chage getLoggedInUser to lookupLoggedInUser and let it return a jrResult error saying token error, etc.
+2. The login/acl check error reporting/redirecting should be standardized in name, and take a parameter saying whether their error info should be shown in html or json.
+3. Unify all checkLoggedInUser type functions (require logged in user, acl check, etc).
+4. Change all req and req, res parameter functions to context {req, res)
+5. Rename all "internal" functions to start with i
+
+6. Can we use an .jrResult in context to accumulate errors(!?), or a .jrResult and a .lastJrResult
+
+
+echeck...

@@ -16,6 +16,7 @@ const express = require("express");
 const jrequire = require("../helpers/jrequire");
 
 // helpers
+const JrContext = require("../helpers/jrcontext");
 const JrResult = require("../helpers/jrresult");
 
 
@@ -49,8 +50,9 @@ function setupRouter(urlPath) {
 // router functions
 
 async function routerGetIndex(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
 	res.render("app/index", {
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		jrResult: jrContext.mergeSessionMessages(),
 		title: "App Route",
 	});
 }

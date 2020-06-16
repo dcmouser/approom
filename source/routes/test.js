@@ -18,6 +18,7 @@ const util = require("util");
 const jrequire = require("../helpers/jrequire");
 
 // helpers
+const JrContext = require("../helpers/jrcontext");
 const JrResult = require("../helpers/jrresult");
 const jrdebug = require("../helpers/jrdebug");
 const jrhMisc = require("../helpers/jrh_misc");
@@ -60,6 +61,8 @@ function setupRouter(urlPath) {
 	router.get("/ratelimit", routerGetRateLimit);
 	router.post("/ratelimit", routerPostRateLimit);
 
+	router.get("/recentloginforce", routerGetRecentLoginForce);
+
 	// return router
 	return router;
 }
@@ -73,13 +76,14 @@ function setupRouter(urlPath) {
 
 
 async function routerGetIndex(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
+	const jrContext = JrContext.makeNew(req, res, next);
+	if (!await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		// all done
 		return;
 	}
 
 	res.render("test/index", {
-		jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		jrResult: jrContext.mergeSessionMessages(),
 	});
 }
 //---------------------------------------------------------------------------
@@ -88,32 +92,34 @@ async function routerGetIndex(req, res, next) {
 
 //---------------------------------------------------------------------------
 async function routerGetMakeappsrooms(req, res, next) {
-	await arserver.confirmUrlPost(req, res, appdef.DefAclActionAdminister, "Generate some test Apps and Rooms", "This operation will bulk create a bunch of apps and rooms.  Note it will fail if run twice, due to clashing shortcodes.");
+	const jrContext = JrContext.makeNew(req, res, next);
+	await arserver.confirmUrlPost(jrContext, appdef.DefAclActionAdminister, "Generate some test Apps and Rooms", "This operation will bulk create a bunch of apps and rooms.  Note it will fail if run twice, due to clashing shortcodes.");
 }
 
 
 async function routerPostMakeappsrooms(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
+	const jrContext = JrContext.makeNew(req, res, next);
+
+	if (!await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		// all done
 		return;
 	}
 	// check required csrf token
-	if (!arserver.testCsrfRedirectToOriginalUrl(req, res)) {
+	if (!arserver.testCsrfRedirectToOriginalUrl(jrContext)) {
 		return;
 	}
 
 	// get logged in user (note we've already checked they are logged in with permission)
-	const user = await arserver.getLoggedInUser(req);
+	const user = await arserver.lookupLoggedInUser(jrContext);
 
 	// do it using adminaid
-	let jrResult = JrResult.makeNew();
 	const addCountApps = 5;
 	const addCountRooms = 3;
 	const addCountRoomDatas = 3;
-	jrResult = await adminAid.addTestAppsAndRooms(user, addCountApps, addCountRooms, addCountRoomDatas);
-	jrResult.addToSession(req);
+	await adminAid.addTestAppsAndRooms(jrContext, user, addCountApps, addCountRooms, addCountRoomDatas);
+	jrContext.addToThisSession();
 	//
-	if (!jrResult.isError()) {
+	if (!jrContext.isError()) {
 		// return them to admin testing page
 		res.redirect("/test");
 	} else {
@@ -128,21 +134,21 @@ async function routerPostMakeappsrooms(req, res, next) {
 
 //---------------------------------------------------------------------------
 async function routerGetTestEmergencyAlerts(req, res, next) {
-	await arserver.confirmUrlPost(req, res, appdef.DefAclActionAdminister, "Test emergency alert functionality", "This function will send out some emergency alerts and test that rate limiting works for them.");
+	const jrContext = JrContext.makeNew(req, res, next);
+	await arserver.confirmUrlPost(jrContext, appdef.DefAclActionAdminister, "Test emergency alert functionality", "This function will send out some emergency alerts and test that rate limiting works for them.");
 }
 
 
 async function routerPostTestEmergencyAlerts(req, res, next) {
-	if (!await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
+	const jrContext = JrContext.makeNew(req, res, next);
+	if (!await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		// all done
 		return;
 	}
 	// check required csrf token
-	if (!arserver.testCsrfRedirectToOriginalUrl(req, res)) {
+	if (!arserver.testCsrfRedirectToOriginalUrl(jrContext)) {
 		return;
 	}
-
-	let jrResult = JrResult.makeNew();
 
 	// send emergency alerts
 	const subject = "Test of emergency alert system";
@@ -153,12 +159,12 @@ async function routerPostTestEmergencyAlerts(req, res, next) {
 	let numSent = 0;
 	for (let i = 0; i < numToSend; ++i) {
 		extraData.info = util.format("Message %d of %d", i + 1, numToSend);
-		numSent += await arserver.emergencyAlert("test", subject, message, req, extraData, flagAlsoSendToSecondaries, false);
+		numSent += await arserver.emergencyAlert(jrContext, "test", subject, message, req, extraData, flagAlsoSendToSecondaries, false);
 	}
 
 	// push session
-	jrResult = JrResult.makeSuccess(util.format("Testing sent a total of %d email messages while triggering %d emergency alerts.", numSent, numToSend));
-	jrResult.addToSession(req, false);
+	jrContext.pushSuccess(util.format("Testing sent a total of %d email messages while triggering %d emergency alerts.", numSent, numToSend));
+	jrContext.addToThisSession();
 
 	// return them to page
 	res.redirect("/test/emergencyalert");
@@ -171,17 +177,19 @@ async function routerPostTestEmergencyAlerts(req, res, next) {
 
 //---------------------------------------------------------------------------
 async function routerGetTriggerCrash(req, res, next) {
-	await arserver.confirmUrlPost(req, res, appdef.DefAclActionAdminister, "Test fatal uncaught nodejs crash/exception", "This function will deliberately throw an uncaught nodejs exception to test how the system deals with it; it will likely exit nodejs, but hopefully log+email an error message and trace.");
+	const jrContext = JrContext.makeNew(req, res, next);
+	await arserver.confirmUrlPost(jrContext, appdef.DefAclActionAdminister, "Test fatal uncaught nodejs crash/exception", "This function will deliberately throw an uncaught nodejs exception to test how the system deals with it; it will likely exit nodejs, but hopefully log+email an error message and trace.");
 }
 
 async function routerPostTriggerCrash(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
 	// trigger a crash to check handling
-	if (!await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		// all done
 		return;
 	}
 	// check required csrf token
-	if (!arserver.testCsrfRedirectToOriginalUrl(req, res)) {
+	if (!arserver.testCsrfRedirectToOriginalUrl(jrContext)) {
 		return;
 	}
 
@@ -193,22 +201,24 @@ async function routerPostTriggerCrash(req, res, next) {
 
 //---------------------------------------------------------------------------
 async function routerGetShutdown(req, res, next) {
-	await arserver.confirmUrlPost(req, res, appdef.DefAclActionAdminister, "Shutdown application server", "This will shut down the application server and do a clean exit.");
+	const jrContext = JrContext.makeNew(req, res, next);
+	await arserver.confirmUrlPost(jrContext, appdef.DefAclActionAdminister, "Shutdown application server", "This will shut down the application server and do a clean exit.");
 }
 
 async function routerPostShutdown(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
 	// trigger a crash to check handling
-	if (!await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		// all done
 		return;
 	}
 	// check required csrf token
-	if (!arserver.testCsrfRedirectToOriginalUrl(req, res)) {
+	if (!arserver.testCsrfRedirectToOriginalUrl(jrContext)) {
 		return;
 	}
 
 	// render simple message
-	res.status(200).send("Initiating shutdown.");
+	jrContext.res.status(200).send("Initiating shutdown.");
 
 	// tell server to shut down after some short delay to allow it to send response and flush session data, etc.
 	setTimeout(async () => {
@@ -222,24 +232,26 @@ async function routerPostShutdown(req, res, next) {
 
 //---------------------------------------------------------------------------
 async function routerGetRateLimit(req, res, next) {
-	await arserver.confirmUrlPost(req, res, appdef.DefAclActionAdminister, "Test rate limiter", "This will generate a number of events which should trigger the test rate limiter to kick in.  An operation will loop many times, with some iterations being blocked by the rate limiter.");
+	const jrContext = JrContext.makeNew(req, res, next);
+	await arserver.confirmUrlPost(jrContext, appdef.DefAclActionAdminister, "Test rate limiter", "This will generate a number of events which should trigger the test rate limiter to kick in.  An operation will loop many times, with some iterations being blocked by the rate limiter.");
 }
 
 async function routerPostRateLimit(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
 	// test rate limiter
 
 	// require admin permission, etc.
-	if (!await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
+	if (!await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		// all done
 		return;
 	}
 	// check required csrf token
-	if (!arserver.testCsrfRedirectToOriginalUrl(req, res)) {
+	if (!arserver.testCsrfRedirectToOriginalUrl(jrContext)) {
 		return;
 	}
 
 	const rateLimiter = arserver.getRateLimiterTest();
-	const jrResult = JrResult.makeSuccess("rateLimiterTest info:" + jrhRateLimiter.getRateLimiterInfo(rateLimiter));
+	jrContext.pushSuccess("rateLimiterTest info:" + jrhRateLimiter.getRateLimiterInfo(rateLimiter));
 
 	// ATTN: with rateLimiterKey == "" it means that we share a single rate limter for all emergencyAlerts
 	const rateLimiterKey = "";
@@ -249,29 +261,29 @@ async function routerPostRateLimit(req, res, next) {
 	const sleepPerTest = 100;
 	for (let i = 0; i < numToTest; ++i) {
 		message = "Rate limiter test " + i.toString() + " at " + jrhMisc.getPreciseNowString();
-		jrResult.pushSuccess(message);
+		jrContext.pushSuccess(message);
 		try {
 			// consume a point of action
 			await rateLimiter.consume(rateLimiterKey, 1);
 			// no excpetion
-			jrResult.pushSuccess("Ok, rate limiter did not trigger.");
+			jrContext.pushSuccess("Ok, rate limiter did not trigger.");
 		} catch (rateLimiterRes) {
 			// rate limiter triggered
 			if (rateLimiterRes.isFirstInDuration) {
 				message = "Rate limiter kicks in.\n";
-				jrResult.pushSuccess(message);
+				jrContext.pushSuccess(message);
 			}
 			// add message about rate limiter blocking
 			const blockTime = rateLimiterRes.msBeforeNext / 1000.0;
 			message = "Rate limiter blocking for " + blockTime.toString() + " seconds.";
-			jrResult.pushSuccess(message);
+			jrContext.pushSuccess(message);
 		}
 		// sleep a bit
 		await jrhMisc.usleep(sleepPerTest);
 	}
 
 	// push reslt message to session
-	jrResult.addToSession(req, false);
+	jrContext.addToThisSession();
 
 	// return them to page
 	res.redirect("/test/ratelimit");
@@ -280,6 +292,25 @@ async function routerPostRateLimit(req, res, next) {
 
 
 
+
+
+//---------------------------------------------------------------------------
+async function routerGetRecentLoginForce(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
+
+	if (!await arserver.requireRecentLoggedIn(jrContext, 60000)) {
+		// errror and redirect will have happened
+		return;
+	}
+
+	// ok all good
+	jrContext.res.render("generic/infopage", {
+		jrResult: jrContext.mergeSessionMessages(),
+		headline: "Recent Log In Force Test",
+		message: "All good, you logged in recently.",
+	});
+}
+//---------------------------------------------------------------------------
 
 
 

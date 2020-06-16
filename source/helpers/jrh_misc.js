@@ -675,9 +675,9 @@ function objectHasProperty(obj, prop) {
  * @param {*} hintMessage
  * @returns value of property or null if not found (and pushes JrResult error)
  */
-function getNonNullValueFromObject(obj, key, jrResult, hintMessage) {
+function getNonNullValueFromObject(jrContext, obj, key, hintMessage) {
 	if (!obj || !obj[key]) {
-		jrResult.pushFieldError(key, "Missing value for " + hintMessage + " (" + key + ")");
+		jrContext.pushFieldError(key, "Missing value for " + hintMessage + " (" + key + ")");
 		return null;
 	}
 	return obj[key];
@@ -721,6 +721,19 @@ function usleep(ms) {
 	});
 }
 //---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -776,3 +789,6 @@ module.exports = {
 
 	usleep,
 };
+
+
+

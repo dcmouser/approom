@@ -38,10 +38,12 @@ const LoginModel = jrequire("models/login");
 const arserver = jrequire("arserver");
 
 // our helper modules
+const JrContext = require("../helpers/jrcontext");
+const JrResult = require("../helpers/jrresult");
 const jrhMisc = require("../helpers/jrh_misc");
 const jrdebug = require("../helpers/jrdebug");
 const jrhCrypto = require("../helpers/jrh_crypto");
-const JrResult = require("../helpers/jrresult");
+const jrhText = require("../helpers/jrh_text");
 
 // constants
 const appdef = jrequire("appdef");
@@ -162,6 +164,20 @@ class VerificationModel extends ModelBaseMongoose {
 					type: mongoose.Schema.ObjectId,
 				},
 			},
+			ipCreated: {
+				label: "IP created",
+				readOnly: true,
+				mongoose: {
+					type: String,
+				},
+			},
+			ipUsed: {
+				label: "IP used",
+				readOnly: true,
+				mongoose: {
+					type: String,
+				},
+			},
 			usedDate: {
 				label: "Date used",
 				mongoose: {
@@ -208,13 +224,13 @@ class VerificationModel extends ModelBaseMongoose {
 	}
 
 
-	getVerifiedValue(key) {
+	getValEnsureKey(key) {
+		// return value of .val but ensure key is what we expected
 		if (this.key === key) {
 			return this.val;
 		}
 		return undefined;
 	}
-
 	//---------------------------------------------------------------------------
 
 
@@ -222,7 +238,7 @@ class VerificationModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static async createModel(type, key, val, userId, loginId, extraData, expirationMinutes) {
+	static async createVerificationModel(jrContext, type, key, val, userId, loginId, extraData, expirationMinutes) {
 		// base create
 
 		const verification = super.createModel();
@@ -236,6 +252,7 @@ class VerificationModel extends ModelBaseMongoose {
 		verification.extraData = extraData;
 		verification.expirationDate = jrhMisc.DateNowPlusMinutes(expirationMinutes);
 		verification.usedDate = null;
+		verification.ipCreated = jrContext.getReqIpClean();
 		// NOTE: verification.uniqueCode set below
 
 		// and save it
@@ -258,7 +275,7 @@ class VerificationModel extends ModelBaseMongoose {
 				// collission, generate a new code
 				if (tryCount === DefMaxUniqueCodeCollissions - 1) {
 					// we have failed a lot, maybe we can try a cleanup of our old verifications from database
-					await this.pruneOldVerifications(true);
+					await this.pruneOldVerifications(jrContext, true);
 				} else if (tryCount === DefMaxUniqueCodeCollissions) {
 					// we failed
 					throw (err);
@@ -312,13 +329,13 @@ class VerificationModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// create a new account email verification, and email it
-	static async createVerificationNewAccountEmail(emailAddress, userId, loginId, extraData) {
+	static async createVerificationNewAccountEmail(jrContext, emailAddress, userId, loginId, extraData) {
 		// first let's cancel all other verifications of same type from this user
 		const vtype = "newAccountEmail";
 		await this.cancelVerifications({ type: vtype, email: emailAddress });
 
 		// make the verification item and email the user about it with verification code
-		const verification = await this.createModel(vtype, "email", emailAddress, userId, loginId, extraData, DefExpirationDurationMinutesNormal);
+		const verification = await this.createVerificationModel(jrContext, vtype, "email", emailAddress, userId, loginId, extraData, DefExpirationDurationMinutesNormal);
 		//
 		const mailobj = {
 			revealEmail: true,
@@ -329,19 +346,19 @@ If this request was made by you, please click on the link below to verify that y
 ${verification.createVerificationCodeUrl()}
 `,
 		};
-		return await verification.sendViaEmail(mailobj, emailAddress);
+		await verification.sendViaEmail(jrContext, mailobj, emailAddress);
 	}
 
 
 
 	// create a one-time login token for the user, and email it
-	static async createVerificationOneTimeLoginTokenEmail(emailAddress, userId, flagRevealEmail, extraData) {
+	static async createVerificationOneTimeLoginTokenEmail(jrContext, emailAddress, userId, flagRevealEmail, extraData) {
 		// first let's cancel all other verifications of same type from this user
 		const vtype = "onetimeLogin";
 		await this.cancelVerifications({ type: vtype, userId });
 
 		// make the verification item and email and/or call the user with the one time login/verification code
-		const verification = await this.createModel(vtype, null, null, userId, null, extraData, DefExpirationDurationMinutesShort);
+		const verification = await this.createVerificationModel(jrContext, vtype, null, null, userId, null, extraData, DefExpirationDurationMinutesShort);
 		//
 		const mailobj = {
 			revealEmail: flagRevealEmail,
@@ -354,19 +371,19 @@ ${verification.createVerificationCodeUrl()}
 If this request was not made by you, please ignore this email.
 `,
 		};
-		return await verification.sendViaEmail(mailobj, emailAddress);
+		await verification.sendViaEmail(jrContext, mailobj, emailAddress);
 	}
 
 
 
 	// user wants to change their email address
-	static async createAndSendVerificationEmailChange(emailAddressOld, emailAddressNew, userId) {
+	static async createAndSendVerificationEmailChange(jrContext, emailAddressOld, emailAddressNew, userId) {
 		// first let's cancel all other verifications of same type from this user
 		const vtype = "changeEmail";
 		await this.cancelVerifications({ type: vtype, userId });
 
 		// make the verification item and email and/or call the user with the one time login/verification code
-		const verification = await this.createModel(vtype, "email", emailAddressNew, userId, null, {}, DefExpirationDurationMinutesLong);
+		const verification = await this.createVerificationModel(jrContext, vtype, "email", emailAddressNew, userId, null, {}, DefExpirationDurationMinutesLong);
 		//
 		const mailobj = {
 			revealEmail: true,
@@ -381,7 +398,7 @@ ${verification.createVerificationCodeUrl()}
 If this request was not made by you, please ignore this email.
 `,
 		};
-		return await verification.sendViaEmail(mailobj, emailAddressNew);
+		await verification.sendViaEmail(jrContext, mailobj, emailAddressNew);
 	}
 	//---------------------------------------------------------------------------
 
@@ -479,24 +496,22 @@ If this request was not made by you, please ignore this email.
 
 
 	//---------------------------------------------------------------------------
-	async sendViaEmail(mailobj, emailAddress) {
+	async sendViaEmail(jrContext, mailobj, emailAddress) {
 		// send this verification object to user by email
 		//
 		// add fields
 		mailobj.to = emailAddress;
 		//
 		// require here to avoid circular reference problem
-		const retv = await arserver.sendMail(mailobj);
-		//
-		return retv;
+		await arserver.sendMail(jrContext, mailobj);
 	}
 	//---------------------------------------------------------------------------
 
 
 	//---------------------------------------------------------------------------
-	static async pruneOldVerifications(flagDesperate) {
+	static async pruneOldVerifications(jrContext, flagDesperate) {
 		// ATTN: 5/25/19 - unfinished
-		await arserver.logm("admin.maint", "pruning old verifications");
+		await arserver.logr(jrContext, "admin.maint", "pruning old verifications");
 	}
 	//---------------------------------------------------------------------------
 
@@ -506,42 +521,35 @@ If this request was not made by you, please ignore this email.
 	// verify different kinds of codes
 	// always return a JrResult object which can indicate success or failure
 	// this is called by verify route
-	static async verifiyCode(code, extraValues, req, res) {
+	static async verifiyCode(jrContext, code, extraValues) {
 
 		const verification = await this.mFindVerificationByCode(code);
 		if (!verification) {
 			// not found
-			return {
-				jrResult: JrResult.makeError("Verification code (" + code + ") not found."),
-				successRedirectTo: null,
-			};
+			jrContext.pushError("Verification code (" + code + ") not found.");
+			return null;
 		}
 
 		// make sure it's still valid (not used or expired, etc.)
-		const validityResult = verification.isStillValid(req);
-		if (validityResult.isError()) {
-			return {
-				jrResult: validityResult,
-				successRedirectTo: null,
-			};
+		verification.isStillValid(jrContext);
+		if (jrContext.isError()) {
+			return null;
 		}
 
 		// get the user
 		const userId = verification.getUserIdAsM();
 		let user;
 		if (userId) {
-			user = await UserModel.mFindUserByIdAndUpdateLoginDate(userId);
+			user = await UserModel.mFindUserByIdAndUpdateLastLoginDate(userId);
 			if (!user) {
-				return {
-					jrResult: JrResult.makeError("The user associated with this verification code could not be found."),
-					successRedirectTo: null,
-				};
+				jrContext.pushError("The user associated with this verification code could not be found.");
+				return null;
 			}
 		}
 
 		// ok its not used, and not expired
 		// let's use it up and return success if we can
-		return await verification.useNow(user, extraValues, req, res);
+		return await verification.useNow(jrContext, user, extraValues);
 	}
 	//---------------------------------------------------------------------------
 
@@ -570,37 +578,40 @@ If this request was not made by you, please ignore this email.
 	}
 
 
-	isStillValid(req) {
+	isStillValid(jrContext) {
 		// make sure it's not used
 
 		if (this.isUsed()) {
 			// already used
 			// however, for certain verifications we allow reuse
-			if (!this.canUserReuse(req)) {
-				return JrResult.makeError("Verification code (" + this.getUniqueCode() + ") has already been used, and cannot be used again.");
+			if (!this.canUserReuse(jrContext)) {
+				jrContext.pushError("Verification code (" + this.getUniqueCode() + ") has already been used, and cannot be used again.");
+				return false;
 			}
 		}
 		if (this.isExpired()) {
 			// expired
-			return JrResult.makeError("Verification code (" + this.getUniqueCode() + ") has expired.");
+			jrContext.pushError("Verification code (" + this.getUniqueCode() + ") has expired.");
+			return false;
 		}
 		// all good
-		return JrResult.makeSuccess("Verification code is valid.");
+		// jrContext.pushSuccess("Verification code is valid.");
+		return true;
 	}
 
 
-	saveSessionUseIfReusable(req) {
+	saveSessionUseIfReusable(jrContext) {
 		if (this.allowsUsedReuse) {
-			this.saveSessionUse(req);
+			this.saveSessionUse(jrContext);
 		}
 	}
 
 
-	canUserReuse(req) {
+	canUserReuse(jrContext) {
 		// we could require them to have the verification code in their session
 		const flagRequireSessionOwnership = true;
 		//
-		if (this.allowsUsedReuse() && (!flagRequireSessionOwnership || this.isVerifiedInSession(req))) {
+		if (this.allowsUsedReuse() && (!flagRequireSessionOwnership || this.isVerifiedInSession(jrContext))) {
 			return true;
 		}
 		return false;
@@ -622,18 +633,18 @@ If this request was not made by you, please ignore this email.
 	// session helper stuff
 	// see server.js for where this info is read
 
-	saveSessionUse(req) {
+	saveSessionUse(jrContext) {
 		// add verification info to session so it can be reused
 		const idstr = this.getIdAsString();
-		req.session.lastVerificationId = idstr;
-		req.session.lastVerificationCodePlaintext = this.getUniqueCode();
-		req.session.lastVerificationDate = new Date();
+		jrContext.req.session.arLastVerificationId = idstr;
+		jrContext.req.session.arLastVerificationCodePlaintext = this.getUniqueCode();
+		jrContext.req.session.arLastVerificationDate = new Date();
 	}
 
-	isVerifiedInSession(req) {
+	isVerifiedInSession(jrContext) {
 		// see if this verification is stored in the users session
 		const idstr = this.getIdAsString();
-		if (req.session.lastVerificationId === idstr) {
+		if (jrContext.req.session.arLastVerificationId === idstr) {
 			return true;
 		}
 		return false;
@@ -644,13 +655,13 @@ If this request was not made by you, please ignore this email.
 
 
 	//---------------------------------------------------------------------------
-	isValidNewAccountEmailReady(req) {
+	isValidNewAccountEmailReady(jrContext) {
 		const verificationType = this.getTypestr();
 		if (verificationType !== "newAccountEmail") {
 			return false;
 		}
 		// now we need to check if its valid and expired
-		const verificationResult = this.isStillValid(req);
+		const verificationResult = this.isStillValid(jrContext);
 		if (verificationResult.isError()) {
 			return false;
 		}
@@ -670,7 +681,7 @@ If this request was not made by you, please ignore this email.
 
 
 	//---------------------------------------------------------------------------
-	async useNow(user, extraValues, req, res) {
+	async useNow(jrContext, user, extraValues) {
 		// consume the verification and process it
 		// ATTN: there is a small chance a verification code could be used twice, if called twice in the middle of checking unused and marking it used
 		// if we are worried about this we can use the enabled field and do a findAndUpdate set it to 0 so that it can only succeed once,
@@ -682,34 +693,36 @@ If this request was not made by you, please ignore this email.
 		// switch for the different kinds of verifications
 
 		if (this.type === "newAccountEmail") {
-			return await this.useNowNewAccountEmail(user, extraValues, req, res);
+			return await this.useNowNewAccountEmail(jrContext, user, extraValues);
 		}
 		if (this.type === "onetimeLogin") {
-			return await this.useNowOneTimeLogin(user, req, res);
+			return await this.useNowOneTimeLogin(jrContext, user);
 		}
 		if (this.type === "changeEmail") {
-			return await this.useNowEmailChange(user, req, res);
+			return await this.useNowEmailChange(jrContext, user);
 		}
 
 		// unknown
-		const jrResult = JrResult.makeError("Unknown verification token type (" + this.type + ")");
-		return { jrResult, successRedirectTo };
+		jrContext.pushError("Unknown verification token type (" + this.type + ")");
+		return successRedirectTo;
 	}
 
 
-	async useUpAndSave(req, flagForgetFromSession) {
+	async useUpAndSave(jrContext, flagForgetFromSession) {
 		// mark use as used
 		this.usedDate = new Date();
 		this.disabled = 0;
+		this.ipUsed = jrContext.getReqIpClean();
 		// save it to mark it as used
 		await this.dbSave();
 		if (flagForgetFromSession) {
-			arserver.forgetLastSessionVerification(req);
+			arserver.clearLastSessionVerificationAll(jrContext);
 		} else {
 			// remember it in session; this is useful for multi-step verification, such as creating an account after verifying email addres
-			this.saveSessionUse(req);
+			this.saveSessionUse(jrContext);
 		}
-		return JrResult.makeSuccess("Verification code successfully consumed.");
+		// success -- no need to push any message
+		// jrContext.pushSuccess("Verification code successfully consumed.");
 	}
 	//---------------------------------------------------------------------------
 
@@ -717,22 +730,21 @@ If this request was not made by you, please ignore this email.
 
 
 	//---------------------------------------------------------------------------
-	async useNowOneTimeLogin(user, req, res) {
+	async useNowOneTimeLogin(jrContext, user) {
 		// one-time login the user associated with this email address
 		// this could be used as an alternative to logging in with password
 		let successRedirectTo;
 
 		// do the work of logging them in using this verification (addes to passport session, uses up verification model, etc.)
-		const jrResult = await arserver.asyncLoginUserToSessionThroughPassport(req, user);
-		if (!jrResult.isError()) {
-			const retvResult = await this.useUpAndSave(req, true);
-			jrResult.mergeIn(retvResult);
-			if (!retvResult.isError()) {
-				jrResult.pushSuccess("You have successfully logged in using your one-time login code.");
+		await arserver.asyncManuallyLoginUserToSessionThroughPassport(jrContext, user, "oneTimeEmail");
+		if (!jrContext.isError()) {
+			await this.useUpAndSave(jrContext, true);
+			if (!jrContext.isError()) {
+				jrContext.pushSuccess("You have successfully logged in using your one-time login code.");
 			}
 		}
 
-		return { jrResult, successRedirectTo };
+		return successRedirectTo;
 	}
 	//---------------------------------------------------------------------------
 
@@ -741,7 +753,7 @@ If this request was not made by you, please ignore this email.
 
 
 	//---------------------------------------------------------------------------
-	async useNowNewAccountEmail(user, extraValues, req, res) {
+	async useNowNewAccountEmail(jrContext, user, extraValues) {
 		// create the new user account
 		//
 		// ATTN: at this point we should check if there is already a user with username or if username is blank, and if so present user with form before they process
@@ -755,7 +767,6 @@ If this request was not made by you, please ignore this email.
 		// but also note that in some use cases perhaps we dont need to gather extra info from them, if we don't care about usernames and passwords...
 
 		let successRedirectTo;
-		let jrResult = JrResult.makeNew();
 		let retvResult;
 
 		// controllers
@@ -774,11 +785,11 @@ If this request was not made by you, please ignore this email.
 			// first they signed up when the email wasn't in use, and then later confirmed it through another different verification, and then tried to access via this verification
 			// we could prevent this case by ensuring we cancel all verifications related to an email once a user confirms/claims that email, but better safe than sorry here
 			// or it means they somehow intercepted someone's verification code that they shouldn't have; regardless it's not important, we block it
-			jrResult.pushError("This email already has already been claimed/verified by an existing user account (" + existingUserWithEmail.getUsername() + ").");
+			jrContext.pushError("This email already has already been claimed/verified by an existing user account (" + existingUserWithEmail.getUsername() + ").");
 			// use it up since we are done with it at this point
-			await this.useUpAndSave(req, true);
+			await this.useUpAndSave(jrContext, true);
 			// return error
-			return { jrResult, successRedirectTo };
+			return successRedirectTo;
 		}
 
 		// ok their verified email is unique, now we'd PROBABLY like to present them with a registration form where they can give us a username and password of their choosing
@@ -824,15 +835,13 @@ If this request was not made by you, please ignore this email.
 				realName,
 			};
 			// temporary non-fatal test to determine if we have enough info to create user right now
-			retvResult = JrResult.makeNew();
-			await registrationAid.createFullNewUserAccountForLoggedInUser(retvResult, req, this, userData);
-			if (!retvResult.isError()) {
+			await registrationAid.createFullNewUserAccountForLoggedInUser(jrContext, this, userData);
+			if (!jrContext.isError()) {
 				// success creating user, so let them know, log them in and redirect to profile
 				successRedirectTo = "/profile";
-				jrResult.mergeIn(retvResult);
-				jrResult.pushSuccess("Your email address has been verified.", true);
+				jrContext.pushSuccess("Your email address has been verified.", true);
 				// they may have been auto-logged-in
-				if (arserver.getLoggedInLocalUserIdFromSession(req)) {
+				if (arserver.isSessionLoggedIn(jrContext)) {
 					// they have been logged in after verifying, so send them to their profile.
 					successRedirectTo = "/profile";
 				} else {
@@ -852,17 +861,17 @@ If this request was not made by you, please ignore this email.
 			// with session data available for us to help facilitate a full account creation form filling
 			// in other words, this simply helps us remember that the session user has verified their email address so we can use up the verification token, even though we
 			//  haven't yet created their new account, and are deferring that until we gather more info
-			jrResult = await this.useUpAndSave(req, false);
+			await this.useUpAndSave(jrContext, false);
 			// should we use up the verification?
-			if (!jrResult.isError()) {
+			if (!jrContext.isError()) {
 				successRedirectTo = "/register";
 				// we don't push this success message into session, BECAUSE we are redirecting them to a page that will say it
-				jrResult = jrResult.pushSuccess("Your email address has been verified.");
-				// await this.useUpAndSave(req, false);
+				jrContext.pushSuccess("Your email address has been verified.");
+				// await this.useUpAndSave(jrContext, false);
 			}
 		}
 
-		return { jrResult, successRedirectTo };
+		return successRedirectTo;
 	}
 	//---------------------------------------------------------------------------
 
@@ -870,30 +879,27 @@ If this request was not made by you, please ignore this email.
 
 
 	//---------------------------------------------------------------------------
-	async useNowEmailChange(user, req, res) {
+	async useNowEmailChange(jrContext, user) {
 		// one-time login the user associated with this email address
 		// this could be used as an alternative to logging in with password
-		const jrResult = JrResult.makeNew();
 		const successRedirectTo = null;
 
 		// change the email address
 		let emailAddressNew = this.val;
 		// NOTE: we cannot assume the new email address is still validated so we have to validate it AGAIN
-		emailAddressNew = await UserModel.validateEmail(jrResult, emailAddressNew, true, false, user);
-		if (!jrResult.isError()) {
+		emailAddressNew = await UserModel.validateEmail(jrContext, emailAddressNew, true, false, user);
+		if (!jrContext.isError()) {
 			// save change
 			user.email = emailAddressNew;
-			await user.dbSave(jrResult);
+			await user.dbSave(jrContext);
 			// now use up the verification
-			const retvResult = await this.useUpAndSave(req, true);
-			if (!retvResult.isError()) {
-				jrResult.pushSuccess("Your new E-mail address (" + emailAddressNew + ") has now been confirmed.");
+			await this.useUpAndSave(jrContext, true);
+			if (!jrContext.isError()) {
+				jrContext.pushSuccess("Your new E-mail address (" + emailAddressNew + ") has now been confirmed.");
 			}
-			// merge in result
-			jrResult.mergeIn(retvResult);
 		}
 
-		return { jrResult, successRedirectTo };
+		return successRedirectTo;
 	}
 	//---------------------------------------------------------------------------
 
@@ -908,6 +914,41 @@ If this request was not made by you, please ignore this email.
 		await VerificationModel.mFindAndDeleteMany(findObj);
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+	//---------------------------------------------------------------------------
+	static async findAllVerificationsChangeEmail(jrContext, flagOnlyValidPending, userId) {
+		const cond = {
+			type: "changeEmail",
+			userId,
+		};
+		if (flagOnlyValidPending) {
+			this.addConditionsForVerificationSearchValidPending(cond);
+		}
+		// now do the search
+		const verifications = await this.mFindAll(cond);
+		return verifications;
+	}
+	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	static addConditionsForVerificationSearchValidPending(cond) {
+		// add conditions to only find unused items
+		cond.usedDate = null;
+		cond.expirationDate = {
+			$gte: new Date(),
+		};
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
 
 
 

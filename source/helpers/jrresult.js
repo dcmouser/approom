@@ -525,6 +525,11 @@ class JrResult {
 		}
 		return this;
 	}
+
+
+	isEmpty() {
+		return JrResult.isBlank(this);
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -542,6 +547,12 @@ class JrResult {
 		if (JrResult.isJrResult(info)) {
 			return info.getErrorsAsString();
 		}
+		if (info && JrResult.isJrResult(info.result)) {
+			return info.result.getErrorsAsString();
+		}
+		if (typeof info === "string") {
+			return info;
+		}
 		if (!info || !info.message) {
 			return "unknown authorization error";
 		}
@@ -550,7 +561,24 @@ class JrResult {
 	//---------------------------------------------------------------------------
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	//---------------------------------------------------------------------------
+	// ATTN: its not fun how these functions all hardcode the session variable name .jrResult
+
 	// session helpers for flash message save/load
 	/**
 	 * Add this JrResult to the (request)session, so it can be remembered for flash error messages (when we show an error on their next/redirected page request)
@@ -563,22 +591,15 @@ class JrResult {
 	 */
 	addToSession(req, flagAddToTop) {
 		// addd to session
-		// for consistency we return THIS not the newly merged session info
-		assert(req.session, "No session defined, can't add result to it.");
+		const jrResultSession = JrResult.getSessionedJrResult(req);
 
-		if (!req.session.jrResult) {
+		if (!jrResultSession) {
 			// just assign it since there is nothing in session -- but should we ASSIGN it instead?
-			if (false) {
-				req.session.jrResult = this;
-			} else {
-				req.session.jrResult = JrResult.makeClone(this);
-			}
+			JrResult.setSessionedJrResult(req, this);
 		} else {
 			// merge it -- the problem is that the SESSION version is not a true jrresult object so we have to do it backwards
-			const sjrResult = req.session.jrResult;
-			this.mergeIn(sjrResult, !flagAddToTop);
-			// sjrResult.mergeIn(this, flagAddToTop);
-			req.session.jrResult = this;
+			this.mergeIn(jrResultSession, !flagAddToTop);
+			JrResult.setSessionedJrResult(req, this);
 		}
 		return this;
 	}
@@ -592,21 +613,17 @@ class JrResult {
 	 * @param {*} req - express request
 	 * @returns jrResult from session or undefined if none found
 	 */
-	static makeAndRemoveFromSession(req) {
-		// if not found, just return undefined quickly
-		if (!req.session || !req.session.jrResult) {
+	static retrieveThenRemoveFromSession(req) {
+		const jrResultSession = JrResult.getSessionedJrResult(req);
+		if (!jrResultSession) {
 			return undefined;
 		}
 
-		// create new result
-		const jrResult = JrResult.makeNew();
-
-		// load and ADD from session, then CLEAR session
-		if (req.session.jrResult) {
-			jrResult.copyFrom(req.session.jrResult);
-			// remove it from session
-			delete req.session.jrResult;
-		}
+		// create new result and load and ADD from session, then CLEAR session
+		// NOTE: we need to *COPY* the session result because the session may not actually be a full JrResult object and may be a simple flat json {} object
+		const jrResult = JrResult.makeClone(jrResultSession);
+		// remove it from session
+		JrResult.clearSessionedJrResult(req);
 
 		return jrResult;
 	}
@@ -615,30 +632,56 @@ class JrResult {
 	/**
 	 * Get any existing result from session, merging it with any provided here, and clearing any existing result from session
 	 *
-	 * @static
-	 * @param {*} req - express request
-	 * @param {*} res - express result
-	 * @param {*} jrResult - the result to render in the session
 	 * @param {*} flagSessionAtTop - if true, result errors will be placed at top
 	 * @returns the new combined result in the session
 	 */
-	static getMergeSessionResultAndClear(req, res, jrResult, flagSessionAtTop) {
-		// ok we have a jrResult locally that we are about to pass along to view template
-		// but if we just passed it in as a local template/view variable, it would OVERWRITE any session data, so we would like to
-		// combine them
-		// session result, if any (deleting it from session if found, like a flash message)
-		const jrResultSession = this.makeAndRemoveFromSession(req);
 
-		if (!jrResult) {
-			// empty jrResult, just return session version
-			return jrResultSession;
+	mergeInThenRemoveFromSession(req, flagAddToTop) {
+		const jrResultSession = JrResult.getSessionedJrResult(req);
+		if (jrResultSession) {
+			this.mergeIn(jrResultSession, flagAddToTop);
+			// remove it from session
+			JrResult.clearSessionedJrResult(req);
 		}
-
-		// combine them and return it
-		jrResult.mergeIn(jrResultSession, flagSessionAtTop);
-		return jrResult;
+		return this;
 	}
 	//---------------------------------------------------------------------------
+
+
+	//---------------------------------------------------------------------------
+	// low level static functions that actually work with session values
+	static setSessionedJrResult(req, jrResult) {
+		// we copy it so caller can do what they want with their copy and it wont effect session data
+		if (JrResult.isBlank(jrResult)) {
+			// if there's nothing in it then don't even bother
+			JrResult.clearSessionedJrResult(req);
+			return;
+		}
+		req.session.arJrResult = JrResult.makeClone(jrResult);
+	}
+
+	static getSessionedJrResult(req) {
+		return req.session.arJrResult;
+	}
+
+	static clearSessionedJrResult(req) {
+		delete req.session.arJrResult;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -681,8 +724,8 @@ class JrResult {
 	 * ATTN: 5/27/19 -- although this worked flawlessly, we have decided to force the manaul use of this into all render calls, to have better control over it
 	 * but the proper call now is a bit more involved, it should be like this:
 	 *	res.render("urlpath", {
-	 *      jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
-	 *      // or if we have no result of our own: jrResult: JrResult.getMergeSessionResultAndClear(req, res)
+	 *      jrResult: jrContext.mergeSessionMessages(),
+	 *      // or if we have no result of our own: jrResult: jrContext.mergeSessionMessages()
 	 *      }
 	 * this old code does NOT do a merge combine of session data with manual jrresult, so can no longer be used
 	 *
@@ -699,7 +742,7 @@ class JrResult {
 			// override logic
 			res.render = (view, roptions, fn) => {
 				// transfer any session jrResult into RESPONSE view available variable
-				res.locals.jrResult = JrResult.makeAndRemoveFromSession(req);
+				res.locals.jrResult = JrResult.retrieveThenRemoveFromSession(req);
 				// continue with original render
 				jRrender.call(this, view, roptions, fn);
 			};
@@ -707,7 +750,6 @@ class JrResult {
 		};
 	}
 	//---------------------------------------------------------------------------
-
 
 
 	//---------------------------------------------------------------------------
@@ -738,6 +780,11 @@ class JrResult {
 		return str;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
 
 
 }

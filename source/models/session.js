@@ -126,7 +126,7 @@ class SessionModel extends ModelBaseMongooseMinimal {
 	//---------------------------------------------------------------------------
 	// Session model is not created by us, so we have to replace this functions for our crud to work, since we arent using a normal objectid for the session _id
 
-	static validateModelFieldId(jrResult, val) {
+	static validateModelFieldId(jrContext, val) {
 		/*
 		if (!jrhMongo.isValidMongooseObjectId(val)) {
 			jrResult.pushError("No valid id specified.");

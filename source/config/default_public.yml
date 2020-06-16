@@ -8,6 +8,7 @@ PROFILE: false
 NODE_ENV: "development"
 general:
   EXIT_ON_FATAL_ERROR: true
+  LAST_ACCESS_UPDATE_FREQUENCY_MS: 60000
 database:
   BASE_URL: "mongodb://localhost"
   DB_NAME: "approomdb"
@@ -48,7 +49,6 @@ passport:
   TWITTER_consumerSecret: "TWITTER_CONSUMER_SECRET"
   GOOGLE_clientid: "GOOGLE_clientid"
   GOOGLE_secret: "GOOGLE_clientid"
-plugins: {}
 session:
   SESSIONIDNAME: "coookie_session_id_name"
   SESSIONSECRET: "secret_for_session_cookies"
@@ -62,3 +62,13 @@ logging:
   DIRECTORY: "./local/logs"
   FILENAME_BASE: "approom"
   ANNOUNCEMENT: "Using default configuration"
+plugins: {}
+appFrameworks:
+  test:
+    label: "test"
+    enabled: true
+    path: "../appframeworks/aftest"
+  easySync:
+    label: "easySync"
+    enabled: true
+    path: "../appframeworks/afeasysync"

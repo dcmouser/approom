@@ -20,6 +20,7 @@ const jrequire = require("../helpers/jrequire");
 const arserver = jrequire("arserver");
 
 // helpers
+const JrContext = require("../helpers/jrcontext");
 const JrResult = require("../helpers/jrresult");
 
 // constants
@@ -54,6 +55,7 @@ function setupRouter(urlPath) {
 	router.get("/nodejs", routerGetNodejs);
 	router.get("/dependencies", routerDependencies);
 	router.get("/plugins", routerPlugins);
+	router.get("/appframeworks", routerAppFrameworks);
 
 	// return router
 	return router;
@@ -68,20 +70,22 @@ function setupRouter(urlPath) {
 
 
 async function routerGetIndex(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
+	const jrContext = JrContext.makeNew(req, res, next);
+	if (await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		res.render("internals/index", {
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+			jrResult: jrContext.mergeSessionMessages(),
 		});
 	}
 }
 
 
 async function routerGetAppInfo(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
+	const jrContext = JrContext.makeNew(req, res, next);
+	if (await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		const rawData = arserver.calcAppInfo();
 		res.render("internals/appinfo", {
 			rawData,
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+			jrResult: jrContext.mergeSessionMessages(),
 		});
 	}
 }
@@ -90,34 +94,36 @@ async function routerGetAppInfo(req, res, next) {
 
 //---------------------------------------------------------------------------
 async function routerGetConfigOptions(req, res, next) {
-	// await arserver.adminPermissionRenderRawData(req, res, () => {} );
+	const jrContext = JrContext.makeNew(req, res, next);
 
-	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
+	if (await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		const rawData = arserver.getJrConfig().getDebugOptions();
 		res.render("internals/config", {
+			jrResult: jrContext.mergeSessionMessages(),
 			rawData,
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 		});
 	}
 }
 
 
 async function routerGetConfigFiles(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
+	const jrContext = JrContext.makeNew(req, res, next);
+	if (await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		const rawData = arserver.getJrConfig().getDebugFiles();
 		res.render("internals/config", {
+			jrResult: jrContext.mergeSessionMessages(),
 			rawData,
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 		});
 	}
 }
 
 async function routerGetConfigHierarchy(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
+	const jrContext = JrContext.makeNew(req, res, next);
+	if (await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		const rawData = arserver.getJrConfig().getDebugHierarchy();
 		res.render("internals/config", {
+			jrResult: jrContext.mergeSessionMessages(),
 			rawData,
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 		});
 	}
 }
@@ -125,83 +131,108 @@ async function routerGetConfigHierarchy(req, res, next) {
 
 
 
+
+//---------------------------------------------------------------------------
 async function routerGetRoutes(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
+	const jrContext = JrContext.makeNew(req, res, next);
+	if (await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		const rawData = arserver.calcExpressRoutePathData();
 		res.render("internals/routes", {
+			jrResult: jrContext.mergeSessionMessages(),
 			rawData,
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 		});
 	}
 }
 
 
 async function routerGetDatabaseInfo(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
+	const jrContext = JrContext.makeNew(req, res, next);
+	if (await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		const rawData = await arserver.calcDatabaseInfo();
 		res.render("internals/database", {
+			jrResult: jrContext.mergeSessionMessages(),
 			rawData,
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 		});
 	}
 }
 
 
 async function routerGetServerinfo(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
+	const jrContext = JrContext.makeNew(req, res, next);
+	if (await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		// get database resource use
 		const rawData = await arserver.calcWebServerInformation();
 		res.render("internals/serverinfo", {
+			jrResult: jrContext.mergeSessionMessages(),
 			rawData,
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 		});
 	}
 }
 
 
 async function routerGetAclStructure(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
+	const jrContext = JrContext.makeNew(req, res, next);
+	if (await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		// get database resource use
 		const rawData = arserver.calcAclStructure();
 		res.render("internals/aclstructure", {
+			jrResult: jrContext.mergeSessionMessages(),
 			rawData,
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 		});
 	}
 }
 
 
 async function routerGetNodejs(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
+	const jrContext = JrContext.makeNew(req, res, next);
+	if (await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		// get database resource use
 		const rawData = arserver.calcNodeJsInfo();
 		res.render("internals/nodejs", {
+			jrResult: jrContext.mergeSessionMessages(),
 			rawData,
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 		});
 	}
 }
 
 
 async function routerDependencies(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
+	const jrContext = JrContext.makeNew(req, res, next);
+	if (await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		// get database resource use
 		const rawData = arserver.calcDependencyInfo();
 		res.render("internals/dependencies", {
+			jrResult: jrContext.mergeSessionMessages(),
 			rawData,
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
 		});
 	}
 }
 
 
 async function routerPlugins(req, res, next) {
-	if (await arserver.aclRequireLoggedInSitePermission(appdef.DefAclActionAdminister, req, res)) {
+	const jrContext = JrContext.makeNew(req, res, next);
+	if (await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		// get database resource use
-		const rawData = arserver.calcPluginInfo();
-		res.render("internals/plugins", {
+		const rawData = arserver.calcAddonCollectionInfoPlugins();
+		res.render("internals/addoncollections", {
+			jrResult: jrContext.mergeSessionMessages(),
+			collectionName: "plugins",
 			rawData,
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res),
+		});
+	}
+}
+
+
+
+async function routerAppFrameworks(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
+	if (await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
+		// get database resource use
+		const rawData = arserver.calcAddonCollectionInfoAppFrameworks();
+		res.render("internals/addoncollections", {
+			jrResult: jrContext.mergeSessionMessages(),
+			collectionName: "appFrameworks",
+			rawData,
 		});
 	}
 }

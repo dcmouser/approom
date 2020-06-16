@@ -21,7 +21,7 @@ const hbs = require("hbs");
 const jrequire = require("../helpers/jrequire");
 
 // helpers
-const JrResult = require("../helpers/jrresult");
+const JrContext = require("../helpers/jrcontext");
 const jrhText = require("../helpers/jrh_text");
 const jrhMisc = require("../helpers/jrh_misc");
 const jrhGrid = require("../helpers/jrh_grid");
@@ -30,7 +30,7 @@ const jrhExpress = require("../helpers/jrh_express");
 
 // controllers
 const arserver = jrequire("arserver");
-const aclAid = jrequire("aclaid");
+// const aclAid = jrequire("aclaid");
 
 // constants
 const appdef = jrequire("appdef");
@@ -74,55 +74,55 @@ class CrudAid {
 		//---------------------------------------------------------------------------
 		// list
 		const viewFilePathList = this.calcViewFile("list", modelClass);
-		router.get("/", async (req, res, next) => await this.handleListGet(req, res, next, modelClass, baseCrudUrl, viewFilePathList, extraViewData));
+		router.get("/", async (req, res, next) => await this.handleListGet(JrContext.makeNew(req, res, next), modelClass, baseCrudUrl, viewFilePathList, extraViewData));
 		// post for bulk operations
-		router.post("/", async (req, res, next) => await this.handleListPost(req, res, next, modelClass, baseCrudUrl, viewFilePathList, extraViewData));
+		router.post("/", async (req, res, next) => await this.handleListPost(JrContext.makeNew(req, res, next), modelClass, baseCrudUrl, viewFilePathList, extraViewData));
 		//---------------------------------------------------------------------------
 
 		//---------------------------------------------------------------------------
 		// add (get)
 		const viewFilePathAdd = this.calcViewFile("addedit", modelClass);
-		router.get("/add/:id?", async (req, res, next) => await this.handleAddGet(req, res, next, modelClass, baseCrudUrl, viewFilePathAdd, extraViewData));
+		router.get("/add/:id?", async (req, res, next) => await this.handleAddGet(JrContext.makeNew(req, res, next), modelClass, baseCrudUrl, viewFilePathAdd, extraViewData));
 		// add (post submit)
-		router.post("/add/:ignoredid?", async (req, res, next) => await this.handleAddPost(req, res, next, modelClass, baseCrudUrl, viewFilePathAdd, extraViewData));
+		router.post("/add/:ignoredid?", async (req, res, next) => await this.handleAddPost(JrContext.makeNew(req, res, next), modelClass, baseCrudUrl, viewFilePathAdd, extraViewData));
 		//---------------------------------------------------------------------------
 
 		//---------------------------------------------------------------------------
 		// edit (get)
 		const viewFilePathEdit = this.calcViewFile("addedit", modelClass);
-		router.get("/edit/:id", async (req, res, next) => await this.handleEditGet(req, res, next, modelClass, baseCrudUrl, viewFilePathEdit));
+		router.get("/edit/:id", async (req, res, next) => await this.handleEditGet(JrContext.makeNew(req, res, next), modelClass, baseCrudUrl, viewFilePathEdit));
 		// edit (post submit)
-		router.post("/edit/:ignoredid?", async (req, res, next) => await this.handleEditPost(req, res, next, modelClass, baseCrudUrl, viewFilePathEdit, extraViewData));
+		router.post("/edit/:ignoredid?", async (req, res, next) => await this.handleEditPost(JrContext.makeNew(req, res, next), modelClass, baseCrudUrl, viewFilePathEdit, extraViewData));
 		//---------------------------------------------------------------------------
 
 		//---------------------------------------------------------------------------
 		// view (get)
 		const viewFilePathView = this.calcViewFile("viewdelete", modelClass);
-		router.get("/view/:id", async (req, res, next) => await this.handleViewGet(req, res, next, modelClass, baseCrudUrl, viewFilePathView, extraViewData));
+		router.get("/view/:id", async (req, res, next) => await this.handleViewGet(JrContext.makeNew(req, res, next), modelClass, baseCrudUrl, viewFilePathView, extraViewData));
 		//---------------------------------------------------------------------------
 
 		//---------------------------------------------------------------------------
 		// delete (get)
 		const viewFilePathDelete = this.calcViewFile("viewdelete", modelClass);
-		router.get("/delete/:id", async (req, res, next) => await this.handleChangeModeGet(req, res, next, modelClass, baseCrudUrl, viewFilePathDelete, extraViewData, "delete"));
+		router.get("/delete/:id", async (req, res, next) => await this.handleChangeModeGet(JrContext.makeNew(req, res, next), modelClass, baseCrudUrl, viewFilePathDelete, extraViewData, "delete"));
 		// delete (post submit)
-		router.post("/delete/:ignoredid?", async (req, res, next) => await this.handleChangeModePost(req, res, next, modelClass, baseCrudUrl, viewFilePathDelete, extraViewData, "delete"));
+		router.post("/delete/:ignoredid?", async (req, res, next) => await this.handleChangeModePost(JrContext.makeNew(req, res, next), modelClass, baseCrudUrl, viewFilePathDelete, extraViewData, "delete"));
 		//---------------------------------------------------------------------------
 
 		//---------------------------------------------------------------------------
 		// PermDelete (get)
 		const viewFilePathPermDelete = this.calcViewFile("viewdelete", modelClass);
-		router.get("/permdelete/:id", async (req, res, next) => await this.handleChangeModeGet(req, res, next, modelClass, baseCrudUrl, viewFilePathPermDelete, extraViewData, "permdelete"));
+		router.get("/permdelete/:id", async (req, res, next) => await this.handleChangeModeGet(JrContext.makeNew(req, res, next), modelClass, baseCrudUrl, viewFilePathPermDelete, extraViewData, "permdelete"));
 		// PermDelete (post submit)
-		router.post("/permdelete/:ignoredid?", async (req, res, next) => await this.handleChangeModePost(req, res, next, modelClass, baseCrudUrl, viewFilePathPermDelete, extraViewData, "permdelete"));
+		router.post("/permdelete/:ignoredid?", async (req, res, next) => await this.handleChangeModePost(JrContext.makeNew(req, res, next), modelClass, baseCrudUrl, viewFilePathPermDelete, extraViewData, "permdelete"));
 		//---------------------------------------------------------------------------
 
 		//---------------------------------------------------------------------------
 		// UNdelete (get)
 		const viewFilePathUnDelete = this.calcViewFile("viewdelete", modelClass);
-		router.get("/undelete/:id", async (req, res, next) => await this.handleChangeModeGet(req, res, next, modelClass, baseCrudUrl, viewFilePathUnDelete, extraViewData, "undelete"));
+		router.get("/undelete/:id", async (req, res, next) => await this.handleChangeModeGet(JrContext.makeNew(req, res, next), modelClass, baseCrudUrl, viewFilePathUnDelete, extraViewData, "undelete"));
 		// UNdelete (post submit)
-		router.post("/undelete/:ignoredid?", async (req, res, next) => await this.handleChangeModePost(req, res, next, modelClass, baseCrudUrl, viewFilePathUnDelete, extraViewData, "undelete"));
+		router.post("/undelete/:ignoredid?", async (req, res, next) => await this.handleChangeModePost(JrContext.makeNew(req, res, next), modelClass, baseCrudUrl, viewFilePathUnDelete, extraViewData, "undelete"));
 		//---------------------------------------------------------------------------
 
 
@@ -152,17 +152,17 @@ class CrudAid {
 	 * @returns true on route handled
 	 * @memberof CrudAid
 	 */
-	async handleListGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	async handleListGet(jrContext, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
-		const user = await arserver.getLoggedInUser(req);
+		const user = await arserver.lookupLoggedInUser(jrContext);
 
 		// acl test
-		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appdef.DefAclActionList)) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(jrContext, user, modelClass, appdef.DefAclActionList)) {
 			return true;
 		}
 
 		// present the list
-		return await this.doPresentListForm(req, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
+		return await this.doPresentListForm(jrContext, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
 	}
 
 
@@ -179,33 +179,34 @@ class CrudAid {
 	 * @returns true on route handled
 	 * @memberof CrudAid
 	 */
-	async handleListPost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	async handleListPost(jrContext, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// this is called for bulk action
 
 		// get logged in user
-		const user = await arserver.getLoggedInUser(req);
+		const user = await arserver.lookupLoggedInUser(jrContext);
 
 		// acl test
-		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appdef.DefAclActionList)) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(jrContext, user, modelClass, appdef.DefAclActionList)) {
 			return true;
 		}
 		// check required csrf token
-		let jrResult = arserver.testCsrfReturnJrResult(req, res);
-		if (!jrResult.isError()) {
+		arserver.testCsrf(jrContext);
+		if (!jrContext.isError()) {
 			// get bulk action options
-			const formbody = req.body;
+			const formbody = jrContext.req.body;
 			const bulkAction = formbody.bulkaction;
 			// get all checked checkboxes
 			const checkboxIdList = jrhExpress.reqPrefixedCheckboxItemIds(formbody, "checkboxid_");
 
 			// do the bulk action and add result to session
-			jrResult = await this.doBulkAction(user, modelClass, bulkAction, checkboxIdList);
+			await this.doBulkAction(jrContext, user, modelClass, bulkAction, checkboxIdList);
 		}
-		// add result (error or result of bulk action) to session
-		jrResult.addToSession(req);
+
+		// add result (error or result of bulk action) to session? NO because we include when we present the form, and this addToSession is only for when we redirect, etc.
+		// jrContext.addToThisSession();
 
 		// present the list
-		return await this.doPresentListForm(req, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
+		return await this.doPresentListForm(jrContext, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
 	}
 
 
@@ -224,8 +225,7 @@ class CrudAid {
 	 * @returns true on handled
 	 * @memberof CrudAid
 	 */
-	async doPresentListForm(req, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
-		const jrResult = JrResult.makeNew();
+	async doPresentListForm(jrContext, user, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 
 		// ATTN: We might set these differently based on who is logged in and looking at the list
 		// and it should be a per-modelClass thing..
@@ -237,24 +237,25 @@ class CrudAid {
 		const { viewFile, isGeneric } = viewFileSet;
 
 		// hidden fields for list view
-		const hiddenFiledsSchema = await modelClass.calcHiddenSchemaKeysForView("list", req);
+		const hiddenFiledsSchema = await modelClass.calcHiddenSchemaKeysForView(jrContext, "list");
 		hiddenFields = jrhMisc.mergeArraysDedupe(hiddenFields, hiddenFiledsSchema);
 
 		// make helper data
-		const helperData = await modelClass.calcCrudListHelperData(req, res, user, baseCrudUrl, protectedFields, hiddenFields, jrResult);
+		const helperData = await modelClass.calcCrudListHelperData(jrContext, user, baseCrudUrl, protectedFields, hiddenFields);
 
 		// generic main html for page (add form)
 		let genericMainHtml;
 		if (isGeneric) {
-			genericMainHtml = await this.buildGenericMainHtmlList(modelClass, req, res, helperData, jrResult);
+			genericMainHtml = await this.buildGenericMainHtmlList(jrContext, helperData);
 			genericMainHtml = new hbs.SafeString(genericMainHtml);
 		}
 
 		// render
-		res.render(viewFile, {
+		const jrResult = jrContext.mergeSessionMessages();
+		jrContext.res.render(viewFile, {
 			headline: modelClass.getNiceName() + " List",
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
-			csrfToken: arserver.makeCsrf(req, res),
+			jrResult,
+			csrfToken: arserver.makeCsrf(jrContext),
 			helperData,
 			genericMainHtml,
 			baseCrudUrl,
@@ -301,42 +302,18 @@ class CrudAid {
 	 * @returns true on handled
 	 * @memberof CrudAid
 	 */
-	async handleAddGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	async handleAddGet(jrContext, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
-		const user = await arserver.getLoggedInUser(req);
-
-		const jrResult = JrResult.makeNew();
-		const id = req.params.id;
+		const user = await arserver.lookupLoggedInUser(jrContext);
 		let reqbody;
 
-		// get id from get param; if they specify an id, grab that object from db and let them start a new one with those values (like a clone
-		if (id) {
-			// validate id
-			modelClass.validateId(jrResult, id);
-			if (!jrResult.isError()) {
-				// acl test to VIEW the item we are CLONING
-				if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appdef.DefAclActionView, id)) {
-					return true;
-				}
-				// get object being edited
-				const obj = await modelClass.mFindOneById(id);
-				if (!obj) {
-					jrResult.pushError("Could not find " + modelClass.getNiceName() + " with that Id.");
-				} else {
-					// found one, copy data into reqbody let for view form
-					// ATTN: 5/20/20 testing commenting out
-					// reqbody = obj.modelObjPropertyCopy(false);
-				}
-			}
-		}
-
 		// acl test to add
-		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appdef.DefAclActionAdd)) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(jrContext, user, modelClass, appdef.DefAclActionAdd)) {
 			return true;
 		}
 
 		// present form
-		await this.doPresentAddForm(req, reqbody, jrResult, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
+		await this.doPresentAddForm(jrContext, reqbody, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
 		return true;
 	}
 
@@ -354,36 +331,35 @@ class CrudAid {
 	 * @returns true on handled
 	 * @memberof CrudAid
 	 */
-	async handleAddPost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	async handleAddPost(jrContext, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// user posts form for adding submission
 
 		// get logged in user
-		const user = await arserver.getLoggedInUser(req);
+		const user = await arserver.lookupLoggedInUser(jrContext);
 
 		const formTypeStr = "add";
 		const flagRepresentAfterSuccess = false;
-		let reqbody = req.body;
+		let reqbody = jrContext.req.body;
 
 		// acl test
-		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appdef.DefAclActionAdd)) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(jrContext, user, modelClass, appdef.DefAclActionAdd)) {
 			return true;
 		}
 
 
-		let jrResult = JrResult.makeNew();
 		// load existing object by id if provided, throw errors if id missing (or provided to add formtype)
 		// in the ADD case, this should just return a new blank object or complain if user specified an id
-		let obj = await modelClass.validateAddEditFormIdMakeObj(jrResult, req, res, formTypeStr);
+		const obj = await modelClass.validateAddEditFormIdMakeObj(jrContext, formTypeStr);
 		// add creator
 		obj.creator = user.getIdAsString();
 
 
-		if (!jrResult.isError()) {
+		if (!jrContext.isError()) {
 			// check required csrf token
-			jrResult = arserver.testCsrfReturnJrResult(req, res);
+			arserver.testCsrf(jrContext);
 		}
 
-		if (!jrResult.isError()) {
+		if (!jrContext.isError()) {
 			// now save add changes
 			// form fields that we dont complain about finding even though they arent for the form object
 			const ignoreFields = this.getCrudEditFormIgnoreFields();
@@ -391,37 +367,38 @@ class CrudAid {
 			// process
 
 			const saveFields = modelClass.getSaveFields("crudAdd");
-			let savedobj = await modelClass.validateSave(jrResult, {}, true, user, req.body, saveFields, null, ignoreFields, obj, modelClass.getShouldBeOwned());
-			if (!jrResult.isError()) {
+			let savedobj = await modelClass.validateSave(jrContext, {}, true, user, jrContext.req.body, saveFields, null, ignoreFields, obj, modelClass.getShouldBeOwned());
+			if (!jrContext.isError()) {
 				// success! drop down with new blank form, or alternatively, we could redirect to a VIEW obj._id page
-				jrResult.pushSuccess(modelClass.getNiceName() + " added on " + jrhMisc.getNiceNowString() + ".");
+				jrContext.pushSuccess(modelClass.getNiceName() + " added on " + jrhMisc.getNiceNowString() + ".");
 
 				// log the action
-				arserver.logr(req, "crud.create", "created " + savedobj.getLogIdString());
+				arserver.logr(jrContext, "crud.create", "created " + savedobj.getLogIdString());
 
-				if (jrResult.isError()) {
+				if (jrContext.isError()) {
 					// we had an error saving user; this is serious because it leaves an orphaned object
-					let errmsg = "There was an error saving the new owner role for " + user.getLogIdString() + " after creation of new object " + savedobj.getLogIdString() + ": " + jrResult.getErrorsAsString() + ".";
+					let errmsg = "There was an error saving the new owner role for " + user.getLogIdString() + " after creation of new object " + savedobj.getLogIdString() + ": " + jrContext.getErrorsAsString() + ".";
 					// so first things first lets delete the object
-					const jrResultFollowup = JrResult.makeNew();
 					// we do a REAL delete here (as opposed to a virtual one) since the object was just added in failure
-					await savedobj.doChangeMode(appdef.DefMdbRealDelete, jrResultFollowup);
-					if (jrResultFollowup.isError()) {
+					// NOTE: we create a new context with no errors in it for this, so we can better check if this operations errors
+					const jrContextFollowup = JrContext.makeNew(jrContext.req, jrContext.res, jrContext.next);
+					await savedobj.doChangeMode(jrContextFollowup, appdef.DefMdbRealDelete);
+					if (jrContextFollowup.isError()) {
 						// yikes we couldn't even delete the object
-						errmsg += "  In addition, the newly created object could not be rolled back and deleted.";
+						errmsg += "  In addition, the newly created object could not be rolled back and deleted: " + jrContextFollowup.getErrorsAsString();
 					} else {
 						// at least we rolled back the object
-						errmsg += "  The newly created object was successfully rolled back and deleted: " + jrResultFollowup.getErrorsAsString();
+						errmsg += "  But the newly created object was successfully rolled back and deleted.";
 					}
 					// now log error
-					arserver.logr(req, appdef.DefLogTypeErrorCriticalDb, errmsg);
+					arserver.logr(jrContext, appdef.DefLogTypeErrorCriticalDb, errmsg);
 
 					// clear object
 					savedobj = null;
 				}
 
 
-				if (!jrResult.isError()) {
+				if (!jrContext.isError()) {
 					if (!baseCrudUrl) {
 						// just return to caller saying they should take over
 						return false;
@@ -431,20 +408,20 @@ class CrudAid {
 						// success, so clear reqbody and drop down so they can add another
 						reqbody = {};
 					} else {
-						jrResult.addToSession(req);
-						res.redirect(baseCrudUrl + "/view/" + savedobj.getIdAsString());
+						jrContext.addToThisSession();
+						jrContext.res.redirect(baseCrudUrl + "/view/" + savedobj.getIdAsString());
 						return true;
 					}
 				}
 			}
 		}
 
-		if (jrResult.isError()) {
+		if (jrContext.isError()) {
 			// error, so we need to fetch object for edit refinement..
 		}
 
 		// re-present form
-		await this.doPresentAddForm(req, reqbody, jrResult, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
+		await this.doPresentAddForm(jrContext, reqbody, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
 		return true;
 	}
 
@@ -463,7 +440,7 @@ class CrudAid {
 	 * @param {*} extraViewData
 	 * @memberof CrudAid
 	 */
-	async doPresentAddForm(req, reqbody, jrResult, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	async doPresentAddForm(jrContext, reqbody, user, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// any helper data
 		const helperData = await modelClass.calcCrudEditHelperData(user);
 
@@ -474,7 +451,7 @@ class CrudAid {
 		let genericMainHtml;
 		if (isGeneric) {
 			const obj = null;
-			genericMainHtml = await this.buildGenericMainHtmlAddEditView(null, "add", modelClass, req, res, obj, reqbody, helperData, jrResult);
+			genericMainHtml = await this.buildGenericMainHtmlAddEditView(jrContext, null, "add", modelClass, obj, reqbody, helperData);
 			genericMainHtml = new hbs.SafeString(genericMainHtml);
 		}
 
@@ -482,10 +459,10 @@ class CrudAid {
 		const cancelUrl = baseCrudUrl;
 
 		// re-present form for another add?
-		res.render(viewFile, {
+		jrContext.res.render(viewFile, {
 			headline: "Add " + modelClass.getNiceName(),
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
-			csrfToken: arserver.makeCsrf(req, res),
+			jrResult: jrContext.mergeSessionMessages(),
+			csrfToken: arserver.makeCsrf(jrContext),
 			reqbody,
 			helperData,
 			genericMainHtml,
@@ -516,29 +493,21 @@ class CrudAid {
 	 * @returns true on handled
 	 * @memberof CrudAid
 	 */
-	async handleEditGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	async handleEditGet(jrContext, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
-		const user = await arserver.getLoggedInUser(req);
-
-		const jrResult = JrResult.makeNew();
+		const user = await arserver.lookupLoggedInUser(jrContext);
 
 		// get id from get param
-		const id = req.params.id;
+		const id = jrContext.req.params.id;
 
 		// validate and get id, this will also do an ACL test
-		const obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, appdef.DefAclActionEdit);
-		if (jrResult.isError()) {
+		const obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrContext, user, id, appdef.DefAclActionEdit);
+		if (jrContext.isError()) {
 			return false;
 		}
 
-		// put object fields in body, for view form
-		// ATTN: 5/20/20 testing commenting out
-		// const reqbody = obj.modelObjPropertyCopy(true);
-		const reqbody = null;
-
-
 		// present form
-		return await this.doPresentEditForm(req, reqbody, jrResult, obj, id, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
+		return await this.doPresentEditForm(jrContext, null, obj, id, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
 	}
 
 
@@ -555,92 +524,68 @@ class CrudAid {
 	 * @returns true on handle
 	 * @memberof CrudAid
 	 */
-	async handleEditPost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	async handleEditPost(jrContext, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// user posts form for adding submission
-		let flagFilledObjPropertiesInReqData = false;
 
 		// get logged in user
-		const user = await arserver.getLoggedInUser(req);
+		const user = await arserver.lookupLoggedInUser(jrContext);
 
 		// ATTN: in post of edit, we ignore the id passed in param and get it from post body
 		const formTypeStr = "edit";
 		const flagRepresentAfterSuccess = false;
-		let reqbody = req.body;
-
+		let reqbody = jrContext.req.body;
 
 		// get id from post, ignore url param
-		const id = req.body._editId;
+		const id = jrContext.req.body._editId;
 		const ignoreFields = this.getCrudEditFormIgnoreFields();
 
 		// acl test
-		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, modelClass, appdef.DefAclActionEdit, id)) {
+		if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(jrContext, user, modelClass, appdef.DefAclActionEdit, id)) {
 			return false;
 		}
 		// form fields that we dont complain about finding even though they arent for the form object
 
 		// load existing object by id if provided, throw errors if id missing (or provided to add formtype)
-		let jrResult = JrResult.makeNew();
-		let obj = await modelClass.validateAddEditFormIdMakeObj(jrResult, req, res, formTypeStr);
+		const obj = await modelClass.validateAddEditFormIdMakeObj(jrContext, formTypeStr);
 
-		if (!jrResult.isError()) {
+		if (!jrContext.isError()) {
 			// check required csrf token
-			jrResult = arserver.testCsrfReturnJrResult(req, res);
+			arserver.testCsrf(jrContext);
 		}
 
-		if (!jrResult.isError()) {
+		if (!jrContext.isError()) {
 			// now save edit changes
 			const saveFields = modelClass.getSaveFields("crudEdit");
-			const savedobj = await modelClass.validateSave(jrResult, {}, true, user, req.body, saveFields, null, ignoreFields, obj, modelClass.getShouldBeOwned());
+			const savedobj = await modelClass.validateSave(jrContext, {}, true, user, jrContext.req.body, saveFields, null, ignoreFields, obj, modelClass.getShouldBeOwned());
 
-			if (!jrResult.isError()) {
+			if (!jrContext.isError()) {
 				// success! drop down with new blank form, or alternatively, we could redirect to a VIEW obj._id page
 
 				// log the action
 				const idLabel = savedobj.getLogIdString();
-				arserver.logr(req, "crud.edit", "edited " + idLabel);
+				arserver.logr(jrContext, "crud.edit", "edited " + idLabel);
 
 				// success message
-				jrResult.pushSuccess(modelClass.getNiceName() + " saved on " + jrhMisc.getNiceNowString() + ".");
+				jrContext.pushSuccess(modelClass.getNiceName() + " saved on " + jrhMisc.getNiceNowString() + ".");
 				if (!baseCrudUrl) {
 					// just return to caller saying they should take over
-					jrResult.addToSession(req);
+					jrContext.addToThisSession();
+					// ATTN: todo -- check if this return leads to failure to render/redirect any page?
 					return false;
 				}
 
 				if (flagRepresentAfterSuccess) {
-					// fill form data with object properties and drop down to let user re-edit
-					// ATTN: 5/20/20 testing commenting out
-					// reqbody = savedobj.modelObjPropertyCopy(true);
 					reqbody = null;
-					flagFilledObjPropertiesInReqData = true;
 				} else {
-					jrResult.addToSession(req);
-					res.redirect(baseCrudUrl + "/view/" + savedobj.getIdAsString());
+					jrContext.addToThisSession();
+					jrContext.res.redirect(baseCrudUrl + "/view/" + savedobj.getIdAsString());
 					return true;
 				}
 			}
 		}
 
-		// ATTN: im not sure we need to do this any more -- i think obj = assignment above handles it..
-		if (false && jrResult.isError()) {
-			// error, so we need to re-fetch object for edit refinement
-			var jrResult2 = JrResult.makeNew();
-			obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult2, user, req, res, id, appdef.DefAclActionEdit);
-			if (jrResult2.isError()) {
-				return false;
-			}
-		}
-
-		if (!flagFilledObjPropertiesInReqData) {
-			// ATTN: this was added recently -- to fix a problem -- but 5/12/20 creates a new one where errors on submission are wiping out form values we want to re-present
-			// what we need is for the object data to only be used to replace values that are NOT already present in req.body
-			// fill form data with object properties and drop down to let user re-edit
-			// ATTN: 5/20/20 testing commenting out
-			//jrhMisc.copyMissingValues(reqbody, obj.modelObjPropertyCopy(true));
-		}
-
 		// re-present form
-		return await this.doPresentEditForm(req, reqbody, jrResult, obj, id, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
+		return await this.doPresentEditForm(jrContext, reqbody, obj, id, user, modelClass, baseCrudUrl, viewFileSet, extraViewData);
 	}
 
 
@@ -661,7 +606,7 @@ class CrudAid {
 	 * @returns true on handled
 	 * @memberof CrudAid
 	 */
-	async doPresentEditForm(req, reqbody, jrResult, obj, id, res, user, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	async doPresentEditForm(jrContext, reqbody, obj, id, user, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// any helper data
 		const helperData = await modelClass.calcCrudEditHelperData(user, id);
 
@@ -671,7 +616,7 @@ class CrudAid {
 		// generic main html for page (edit form)
 		let genericMainHtml;
 		if (isGeneric) {
-			genericMainHtml = await this.buildGenericMainHtmlAddEditView(id, "edit", modelClass, req, res, obj, reqbody, helperData, jrResult);
+			genericMainHtml = await this.buildGenericMainHtmlAddEditView(jrContext, id, "edit", modelClass, obj, reqbody, helperData);
 			genericMainHtml = new hbs.SafeString(genericMainHtml);
 		}
 
@@ -685,10 +630,10 @@ class CrudAid {
 
 
 		// render
-		res.render(viewFile, {
+		jrContext.res.render(viewFile, {
 			headline: "Edit " + modelClass.getNiceName() + " #" + id,
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
-			csrfToken: arserver.makeCsrf(req, res),
+			jrResult: jrContext.mergeSessionMessages(),
+			csrfToken: arserver.makeCsrf(jrContext),
 			reqbody,
 			helperData,
 			genericMainHtml,
@@ -727,22 +672,21 @@ class CrudAid {
 	 * @returns true on handled
 	 * @memberof CrudAid
 	 */
-	async handleViewGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
+	async handleViewGet(jrContext, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// get logged in user
-		const user = await arserver.getLoggedInUser(req);
+		const user = await arserver.lookupLoggedInUser(jrContext);
 
 		// get id from get param
-		const jrResult = JrResult.makeNew();
-		const id = req.params.id;
+		const id = jrContext.req.params.id;
 
 		// get obj AND perform acl test
-		const obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, appdef.DefAclActionView);
-		if (jrResult.isError()) {
+		const obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrContext, user, id, appdef.DefAclActionView);
+		if (jrContext.isError()) {
 			return true;
 		}
 
 		// any helper data
-		const helperData = await modelClass.calcCrudViewHelperData(req, res, id, obj);
+		const helperData = await modelClass.calcCrudViewHelperData(jrContext, id, obj);
 
 		// parse view file set
 		const { viewFile, isGeneric } = viewFileSet;
@@ -751,7 +695,7 @@ class CrudAid {
 		let genericMainHtml;
 		if (isGeneric) {
 			const reqbody = null;
-			genericMainHtml = await this.buildGenericMainHtmlAddEditView(id, "view", modelClass, req, res, obj, reqbody, helperData, jrResult);
+			genericMainHtml = await this.buildGenericMainHtmlAddEditView(jrContext, id, "view", modelClass, obj, reqbody, helperData);
 			genericMainHtml = new hbs.SafeString(genericMainHtml);
 		}
 
@@ -760,9 +704,9 @@ class CrudAid {
 		const flagOfferPermDelete = true;
 
 		// render
-		res.render(viewFile, {
+		jrContext.res.render(viewFile, {
 			headline: "View " + modelClass.getNiceName() + " #" + id,
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
+			jrResult: jrContext.mergeSessionMessages(),
 			obj,
 			helperData,
 			genericMainHtml,
@@ -787,12 +731,12 @@ class CrudAid {
 	 * @returns the acl action string or null on error; error pushed to jrResult
 	 * @memberof CrudAid
 	 */
-	getAclActionForChangeReqMode(modelClass, reqmode, jrResult) {
+	getAclActionForChangeReqMode(jrContext, modelClass, reqmode) {
 		if (reqmode === "virtdelete") {
 			if (modelClass.supportsVirtualDelete()) {
 				return appdef.DefAclActionDelete;
 			}
-			jrResult.pushError("Virtual delete not supported for model class " + modelClass.getNiceName());
+			jrContext.pushError("Virtual delete not supported for model class " + modelClass.getNiceName());
 			return null;
 		}
 		if (reqmode === "delete") {
@@ -807,7 +751,7 @@ class CrudAid {
 			return appdef.DefAclActionUnDelete;
 		}
 		// error
-		jrResult.pushError("Unknown reqmode in getAclActionForChangeReqMode: " + reqmode);
+		jrContext.pushError("Unknown reqmode in getAclActionForChangeReqMode: " + reqmode);
 		return null;
 	}
 
@@ -821,7 +765,7 @@ class CrudAid {
 	 * @returns appdef.DefMdbVirtDelete or appdef.DefMdbRealDelete or appdef.DefMdbEnable
 	 * @memberof CrudAid
 	 */
-	convertAclChangeModeActionToDeleteDatabaseStateValue(aclAction, jrResult) {
+	convertAclChangeModeActionToDeleteDatabaseStateValue(jrContext, aclAction) {
 		// what kind of delete do we want, virtual or real?
 		if (aclAction === appdef.DefAclActionDelete) {
 			return appdef.DefMdbVirtDelete;
@@ -832,7 +776,7 @@ class CrudAid {
 		if (aclAction === appdef.DefAclActionUnDelete) {
 			return appdef.DefMdbEnable;
 		}
-		jrResult.pushError("Unknown aclAction in convertAclChangeModeActionToDeleteDatabaseStateValue: " + aclAction);
+		jrContext.pushError("Unknown aclAction in convertAclChangeModeActionToDeleteDatabaseStateValue: " + aclAction);
 		return null;
 	}
 
@@ -853,28 +797,23 @@ class CrudAid {
 	 * @returns true on handled
 	 * @memberof CrudAid
 	 */
-	async handleChangeModeGet(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode) {
-		const jrResult = JrResult.makeNew();
-
+	async handleChangeModeGet(jrContext, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode) {
 		// get logged in user
-		const user = await arserver.getLoggedInUser(req);
+		const user = await arserver.lookupLoggedInUser(jrContext);
 
 		// get id from get param
-		const id = req.params.id;
+		const id = jrContext.req.params.id;
 		let obj;
 
 		// which acl permission to check for
-		const aclAction = this.getAclActionForChangeReqMode(modelClass, reqmode, jrResult);
+		const aclAction = this.getAclActionForChangeReqMode(jrContext, modelClass, reqmode);
 
 		// get object AND perform ACL test
-		if (!jrResult.isError()) {
-			obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, aclAction);
-		}
-		if (jrResult.isError()) {
-			return true;
+		if (!jrContext.isError()) {
+			obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrContext, user, id, aclAction);
 		}
 
-		return await this.doPresentChangeModeForm(id, obj, req, res, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode);
+		return await this.doPresentChangeModeForm(jrContext, id, obj, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode);
 	}
 
 
@@ -893,59 +832,58 @@ class CrudAid {
 	 * @returns true on handled
 	 * @memberof CrudAid
 	 */
-	async handleChangeModePost(req, res, next, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode) {
-		let jrResult = JrResult.makeNew();
+	async handleChangeModePost(jrContext, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode) {
 
 		// get logged in user
-		const user = await arserver.getLoggedInUser(req);
+		const user = await arserver.lookupLoggedInUser(jrContext);
 
 		// get id from post, ignore url param
-		const id = req.body._editId;
-		let obj;
+		const id = jrContext.req.body._editId;
+		let obj, newmode;
 
 		// ATTN: change this to drop down re-present rather than error
 		// check required csrf token
-		jrResult = arserver.testCsrfReturnJrResult(req, res);
-		if (jrResult.isError()) {
-			return true;
+		arserver.testCsrf(jrContext);
+
+		if (!jrContext.isError()) {
+			// which acl permission to check for
+			const aclAction = this.getAclActionForChangeReqMode(jrContext, modelClass, reqmode);
+
+			if (!jrContext.isError()) {
+				// get object AND perform ACL test
+				obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrContext, user, id, aclAction);
+			}
+
+			if (!jrContext.isError()) {
+				// process delete
+				newmode = this.convertAclChangeModeActionToDeleteDatabaseStateValue(jrContext, aclAction);
+			}
+
+			if (!jrContext.isError()) {
+				// do the actual mode change (delete / virtual or real)
+				await obj.doChangeMode(jrContext, newmode);
+			}
 		}
 
-		// which acl permission to check for
-		const aclAction = this.getAclActionForChangeReqMode(modelClass, reqmode, jrResult);
-		if (!jrResult.isError()) {
-			// get object AND perform ACL test
-			obj = await modelClass.validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, id, aclAction);
-		}
-		if (jrResult.isError()) {
-			return true;
-		}
-
-		// process delete
-		const newmode = this.convertAclChangeModeActionToDeleteDatabaseStateValue(aclAction, jrResult);
-
-		if (!jrResult.isError()) {
-			// do the actual mode change (delete / virtual or real)
-			await obj.doChangeMode(newmode, jrResult);
-		}
 
 		// on success redirect to listview
-		if (!jrResult.isError()) {
+		if (!jrContext.isError()) {
 			// success (push message to top since helper deleted may have been pushed on earlier)
 			const objIdString = obj.getIdAsString();
-			jrResult.pushSuccess(modelClass.getNiceName() + " #" + objIdString + " has been " + appdef.DefStateModeLabels[newmode] + ".", true);
+			jrContext.pushSuccess(modelClass.getNiceName() + " #" + objIdString + " has been " + appdef.DefStateModeLabels[newmode] + ".", true);
 
 			// log the action
 			const logIdString = obj.getLogIdString();
-			arserver.logr(req, "crud." + reqmode, appdef.DefStateModeLabels[newmode] + " " + logIdString);
+			arserver.logr(jrContext, "crud." + reqmode, appdef.DefStateModeLabels[newmode] + " " + logIdString);
 
 			// redirect
-			jrResult.addToSession(req);
-			res.redirect(baseCrudUrl);
+			jrContext.addToThisSession();
+			jrContext.res.redirect(baseCrudUrl);
 			return true;
 		}
 
 		// error, re-present form
-		return await this.doPresentChangeModeForm(id, obj, req, res, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode);
+		return await this.doPresentChangeModeForm(jrContext, id, obj, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode);
 	}
 
 
@@ -965,11 +903,10 @@ class CrudAid {
 	 * @returns true on handled
 	 * @memberof CrudAid
 	 */
-	async doPresentChangeModeForm(id, obj, req, res, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode) {
-		const jrResult = JrResult.makeNew();
+	async doPresentChangeModeForm(jrContext, id, obj, modelClass, baseCrudUrl, viewFileSet, extraViewData, reqmode) {
 
 		// any helper data
-		const helperData = await modelClass.calcCrudViewHelperData(req, res, id, obj);
+		const helperData = await modelClass.calcCrudViewHelperData(jrContext, id, obj);
 
 		// parse view file set
 		const { viewFile, isGeneric } = viewFileSet;
@@ -978,7 +915,7 @@ class CrudAid {
 		let genericMainHtml;
 		if (isGeneric) {
 			const reqbody = null;
-			genericMainHtml = await this.buildGenericMainHtmlAddEditView(id, "view", modelClass, req, res, obj, reqbody, helperData, jrResult);
+			genericMainHtml = await this.buildGenericMainHtmlAddEditView(jrContext, id, "view", modelClass, obj, reqbody, helperData);
 			genericMainHtml = new hbs.SafeString(genericMainHtml);
 		}
 
@@ -991,10 +928,10 @@ class CrudAid {
 		const flagConfirmUnDelete = (reqmode === "undelete");
 
 		// render
-		res.render(viewFile, {
+		jrContext.res.render(viewFile, {
 			headline: "Confirmation required.\n" + jrhText.capitalizeFirstLetter(reqmode) + " " + modelClass.getNiceName() + " #" + id + "?",
-			jrResult: JrResult.getMergeSessionResultAndClear(req, res, jrResult),
-			csrfToken: arserver.makeCsrf(req, res),
+			jrResult: jrContext.mergeSessionMessages(),
+			csrfToken: arserver.makeCsrf(jrContext),
 			obj,
 			genericMainHtml,
 			flagConfirmDelete,
@@ -1110,7 +1047,7 @@ class CrudAid {
 	 * @returns html string
 	 * @memberof CrudAid
 	 */
-	async buildGenericMainHtmlAddEditView(id, crudSubType, modelClass, req, res, obj, editData, helperData, jrResult) {
+	async buildGenericMainHtmlAddEditView(jrContext, id, crudSubType, modelClass, obj, editData, helperData) {
 		let rethtml = "";
 
 		// start table
@@ -1129,7 +1066,7 @@ class CrudAid {
 		const schemaKeys = Object.keys(modelSchema);
 		let schemaType;
 		let val, valHtml, label, valueFunction, hideList, readOnlyList, choices;
-		let visfunc, isVisible, isReadOnly;
+		let visibleFunction, isVisible, isReadOnly;
 		let extra;
 		let err;
 
@@ -1144,10 +1081,10 @@ class CrudAid {
 				return;
 			}
 			// dynamic visibility function
-			visfunc = modelClass.getSchemaFieldVal(fieldName, "visibleFunction");
-			if (visfunc) {
+			visibleFunction = modelClass.getSchemaFieldVal(fieldName, "visibleFunction");
+			if (visibleFunction) {
 				// ok we have a custom function to call
-				isVisible = await visfunc(crudSubType, fieldName, req, obj, helperData);
+				isVisible = await visibleFunction(jrContext, crudSubType, fieldName, obj, editData, helperData);
 				if (!isVisible) {
 					return;
 				}
@@ -1157,20 +1094,22 @@ class CrudAid {
 			label = modelClass.getSchemaFieldVal(fieldName, "label", fieldName);
 
 			// html value to display (may be an input element if in edit crudSubType)
-			valHtml = await modelClass.renderFieldValueHtml(req, obj, editData, fieldName, crudSubType, helperData);
+			valHtml = await modelClass.renderFieldValueHtml(jrContext, obj, editData, fieldName, crudSubType, helperData);
 
 			// add any error
-			if (jrResult && jrResult.errorFields && jrResult.errorFields[fieldName]) {
-				err = jrResult.errorFields[fieldName];
-			} else {
-				err = "";
-			}
+			err = jrContext.getFieldError(fieldName, "");
 
 			// render it
 			rethtml += `
 			<tr>
         		<td><strong>${label}</strong></td>
-   	   			<td>${valHtml} <span class="jrErrorInline">${err}</span> </td>
+					  <td>${valHtml}`;
+
+			if (err) {
+				rethtml += ` <span class="jrErrorInline">${err}</span> `;
+			}
+
+			rethtml += ` </td>
 			</tr>
 			`;
 		});
@@ -1202,9 +1141,9 @@ class CrudAid {
 	 * @returns html string
 	 * @memberof CrudAid
 	 */
-	async buildGenericMainHtmlList(modelClass, req, res, helperData, jrResult) {
-		const csrfToken = arserver.makeCsrf(req, res);
-		const rehtml = await jrhGrid.jrGridList(req, helperData, csrfToken);
+	async buildGenericMainHtmlList(jrContext, helperData) {
+		const csrfToken = arserver.makeCsrf(jrContext);
+		const rehtml = await jrhGrid.jrGridList(jrContext, helperData, csrfToken);
 		return rehtml;
 	}
 	//---------------------------------------------------------------------------
@@ -1229,40 +1168,40 @@ class CrudAid {
 	 * @returns jrResult
 	 * @memberof CrudAid
 	 */
-	async doBulkAction(user, modelClass, bulkAction, idList) {
-		const jrResult = JrResult.makeNew();
-
+	async doBulkAction(jrContext, user, modelClass, bulkAction, idList) {
 
 		if (bulkAction === "disable") {
 			// do they have permission to delete all in the list
 			const permission = appdef.DefAclActionDisable;
 			const objectType = modelClass.getAclName();
-			if (!await user.aclHasPermissionOnAll(permission, objectType, idList)) {
-				return JrResult.makeError("Permission denied; you do not have permission to " + bulkAction + " these items.");
+			if (!await user.aclHasPermissionOnAll(jrContext, permission, objectType, idList)) {
+				jrContext.pushError("Permission denied; you do not have permission to " + bulkAction + " these items.");
+				return;
 			}
 
 			// they have permission!
 
 			// what kind of delete should we do? real or virtual?
 			const mode = appdef.DefMdbDisable;
-			await modelClass.doChangeModeByIdList(idList, mode, jrResult, false);
-			return jrResult;
+			await modelClass.doChangeModeByIdList(jrContext, idList, mode, false);
+			return;
 		}
 
 		if (bulkAction === "enable") {
 			// do they have permission to delete all in the list
 			const permission = appdef.DefAclActionEnable;
 			const objectType = modelClass.getAclName();
-			if (!await user.aclHasPermissionOnAll(permission, objectType, idList)) {
-				return JrResult.makeError("Permission denied; you do not have permission to " + bulkAction + " these items.");
+			if (!await user.aclHasPermissionOnAll(jrContext, permission, objectType, idList)) {
+				jrContext.pushError("Permission denied; you do not have permission to " + bulkAction + " these items.");
+				return;
 			}
 
 			// they have permission!
 
 			// what kind of delete should we do? real or virtual?
 			const mode = appdef.DefMdbEnable;
-			await modelClass.doChangeModeByIdList(idList, mode, jrResult, false);
-			return jrResult;
+			await modelClass.doChangeModeByIdList(jrContext, idList, mode, false);
+			return;
 		}
 
 
@@ -1270,8 +1209,9 @@ class CrudAid {
 			// do they have permission to delete all in the list
 			const permission = appdef.DefAclActionDelete;
 			const objectType = modelClass.getAclName();
-			if (!await user.aclHasPermissionOnAll(permission, objectType, idList)) {
-				return JrResult.makeError("Permission denied; you do not have permission to " + bulkAction + " these items.");
+			if (!await user.aclHasPermissionOnAll(jrContext, permission, objectType, idList)) {
+				jrContext.pushError("Permission denied; you do not have permission to " + bulkAction + " these items.");
+				return;
 			}
 
 			// they have permission!
@@ -1279,16 +1219,17 @@ class CrudAid {
 			// what kind of delete should we do? real or virtual?
 			const mode = modelClass.getDefaultDeleteDisableMode();
 
-			await modelClass.doChangeModeByIdList(idList, mode, jrResult, false);
-			return jrResult;
+			await modelClass.doChangeModeByIdList(jrContext, idList, mode, false);
+			return;
 		}
 
 		if (bulkAction === "permdelete") {
 			// do they have permission to delete all in the list
 			const permission = appdef.DefAclActionPermDelete;
 			const objectType = modelClass.getAclName();
-			if (!await user.aclHasPermissionOnAll(permission, objectType, idList)) {
-				return JrResult.makeError("Permission denied; you do not have permission to " + bulkAction + " these items.");
+			if (!await user.aclHasPermissionOnAll(jrContext, permission, objectType, idList)) {
+				jrContext.pushError("Permission denied; you do not have permission to " + bulkAction + " these items.");
+				return;
 			}
 
 			// they have permission!
@@ -1296,16 +1237,17 @@ class CrudAid {
 			// real permanent delete
 			const mode = appdef.DefMdbRealDelete;
 
-			await modelClass.doChangeModeByIdList(idList, mode, jrResult, false);
-			return jrResult;
+			await modelClass.doChangeModeByIdList(jrContext, idList, mode, false);
+			return;
 		}
 
 		if (bulkAction === "undelete") {
 			// do they have permission to undelete all in the list
 			const permission = appdef.DefAclActionUnDelete;
 			const objectType = modelClass.getAclName();
-			if (!await user.aclHasPermissionOnAll(permission, objectType, idList)) {
-				return JrResult.makeError("Permission denied; you do not have permission to " + bulkAction + " these items.");
+			if (!await user.aclHasPermissionOnAll(jrContext, permission, objectType, idList)) {
+				jrContext.pushError("Permission denied; you do not have permission to " + bulkAction + " these items.");
+				return;
 			}
 
 			// they have permission!
@@ -1313,13 +1255,13 @@ class CrudAid {
 			// undelete means make enabled
 			const mode = appdef.DefMdbEnable;
 
-			await modelClass.doChangeModeByIdList(idList, mode, jrResult, false);
-			return jrResult;
+			await modelClass.doChangeModeByIdList(jrContext, idList, mode, false);
+			return;
 		}
 
 
 		// dont know this bulk action
-		return JrResult.makeError("Internal error - unknown bulk operation [" + bulkAction + "]");
+		jrContext.pushError("Internal error - unknown bulk operation [" + bulkAction + "]");
 	}
 	//---------------------------------------------------------------------------
 

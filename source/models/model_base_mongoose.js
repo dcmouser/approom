@@ -28,7 +28,6 @@ const jrhMongo = require("../helpers/jrh_mongo");
 const jrhText = require("../helpers/jrh_text");
 const jrhValidate = require("../helpers/jrh_validate");
 const jrhCrypto = require("../helpers/jrh_crypto");
-const JrResult = require("../helpers/jrresult");
 
 
 
@@ -319,23 +318,23 @@ class ModelBaseMongoose {
 		return defaultVal;
 	}
 
-	static async calcHiddenSchemaKeysForView(viewType, req) {
+	static async calcHiddenSchemaKeysForView(jrContext, viewType) {
 		const retKeys = [];
 		const modelSchemaDefinition = this.getSchemaDefinition();
 		const keys = Object.keys(modelSchemaDefinition);
 		let keyHideArray;
-		let visfunc, isVisible;
+		let visibleFunction, isVisible;
 
-		await jrhMisc.asyncAwaitForEachFunctionCall(keys, async (key) => {
-			keyHideArray = modelSchemaDefinition[key].hide;
+		await jrhMisc.asyncAwaitForEachFunctionCall(keys, async (fieldName) => {
+			keyHideArray = modelSchemaDefinition[fieldName].hide;
 			if ((keyHideArray === true) || (jrhMisc.isInAnyArray(viewType, keyHideArray))) {
-				retKeys.push(key);
+				retKeys.push(fieldName);
 			} else {
-				visfunc = modelSchemaDefinition[key].visibleFunction;
-				if (visfunc) {
-					isVisible = await visfunc(viewType, key, req, null, null);
+				visibleFunction = modelSchemaDefinition[fieldName].visibleFunction;
+				if (visibleFunction) {
+					isVisible = await visibleFunction(jrContext, viewType, fieldName, null, null, null);
 					if (!isVisible) {
-						retKeys.push(key);
+						retKeys.push(fieldName);
 					}
 				}
 			}
@@ -505,9 +504,12 @@ class ModelBaseMongoose {
 	}
 
 
-	async dbSave(jrResult) {
+	async dbSave(jrContext) {
 		// simple wrapper (for now) around mongoose model save
-		// this should always be used instead of superclass save() function
+		// NOTE: this should always be used instead of superclass built-in mongoose save() function
+		// NOTE: if jrContext is specified then exceptions are not thrown and errors are added to it; otherwise exception is thrown
+		// ATTN:TODO it might be better to use an explicit flag regarding whether to throw exceptions and always allow passing in of jrContext
+		// ATTN:TODO log the errors here as db.severe if we have jrContext to do so?
 
 		// update modification date
 		this.updateModificationDate();
@@ -517,36 +519,25 @@ class ModelBaseMongoose {
 		let serr;
 		try {
 			retv = await await this.save();
-			/*
-			retv = await await this.save((err) => {
-				// ATTN: had a hard time catching exceptions on mongoose save, lets see if error callback works better
-				if (err) {
-					serr = err;
-					console.log("ATTN: Unexpected error 1 while trying to mongoose save object:");
-					console.log(err);
-				} else {
-					// success, drop down
-				}
-			});
-			*/
 		} catch (err) {
 			// just set serr and drop down
 			serr = err;
 		}
 
 		if (serr !== undefined) {
-			if (jrResult === undefined) {
+			if (jrContext === undefined) {
 				// just let exceptions percolate up
-				console.log("ATTN: Unexpected error 2 while trying to mongoose save object:");
+				console.log("ATTN: Unexpected error while trying to mongoose save object:");
 				console.log(serr);
 				throw serr;
 			}
-			jrResult.pushError("Failed to save " + this.getModelClass().getNiceName() + ". " + serr.toString());
+			// if jrContext *is* set, we add error to it and do NOT throw exception
+			jrContext.pushError("Failed to save " + this.getModelClass().getNiceName() + ". " + serr.toString());
 			return null;
 		}
 		// success
 		// we don't push a success result here because we would see it in operations we dont want messages on
-		// jrResult.pushSuccess(this.getModelClass().getNiceName() + " saved on " + jrhMisc.getNiceNowString() + ".");
+		// jrContext.pushSuccess(this.getModelClass().getNiceName() + " saved on " + jrhMisc.getNiceNowString() + ".");
 		return retv;
 	}
 	//---------------------------------------------------------------------------
@@ -571,20 +562,20 @@ class ModelBaseMongoose {
 	 * @param {*} flagUpdateUserRolesForNewObject
 	 * @memberof ModelBaseMongoose
 	 */
-	static async validateSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj, flagUpdateUserRolesForNewObject) {
+	static async validateSave(jrContext, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj, flagUpdateUserRolesForNewObject) {
 		// is this a new object?
 		const flagIsNew = obj.isNew;
 		// call validate and save
-		const savedObj = await this.doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj);
+		const savedObj = await this.doValidateAndSave(jrContext, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj);
 		// success?
-		if (flagUpdateUserRolesForNewObject && flagIsNew && !jrResult.isError() && user) {
+		if (flagUpdateUserRolesForNewObject && flagIsNew && !jrContext.isError() && user) {
 			// successful save and it was a new object, and caller wants us to set roles of owner
-			await user.addOwnerCreatorRolesForNewObject(obj, true, jrResult);
-			if (jrResult.isError()) {
+			await user.addOwnerCreatorRolesForNewObject(jrContext, obj, true);
+			if (jrContext.isError()) {
 				// error setting roles, which means we would like to DESTROY the object and reset it..
 				// ATTN: unfinished
 				const emsg = "ATTN: Failed to set ownership roles on " + obj.getLogIdString();
-				arserver.logr(null, "error.imp", emsg);
+				arserver.logr(jrContext, "error.imp", emsg);
 				jrdebug.debug(emsg);
 			}
 		}
@@ -592,9 +583,9 @@ class ModelBaseMongoose {
 	}
 
 
-	static async validateAndSaveNewWrapper(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, flagUpdateUserRolesForNewObject) {
+	static async validateAndSaveNewWrapper(jrContext, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, flagUpdateUserRolesForNewObject) {
 		const newObj = this.createModel({});
-		await this.validateSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, newObj, flagUpdateUserRolesForNewObject);
+		await this.validateSave(jrContext, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, newObj, flagUpdateUserRolesForNewObject);
 		return newObj;
 	}
 	//---------------------------------------------------------------------------
@@ -604,14 +595,14 @@ class ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// subclasses implement this
-	static async doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
-		jrResult.pushError("Internal error: No subclassed proecure to handle doValidateAndSave() for " + this.getCollectionName() + " model");
+	static async doValidateAndSave(jrContext, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
+		jrContext.pushError("Internal error: No subclassed procedure to handle doValidateAndSave() for " + this.getCollectionName() + " model");
 		return null;
 	}
 
-	static async validateAndSaveNew(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields) {
+	static async validateAndSaveNew(jrContext, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields) {
 		const newObj = this.createModel({});
-		await this.doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, newObj);
+		await this.doValidateAndSave(jrContext, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, newObj);
 		return newObj;
 	}
 	//---------------------------------------------------------------------------
@@ -630,7 +621,7 @@ class ModelBaseMongoose {
 
 	// ATTN: this function typically does not have to run async so its cpu inefficient to make it async but rather than have 2 copies of this function to maintain, we use just async one
 	// ATTN: TODO in future make a version of this that is sync; or find some better way to handle it
-	static async validateMergeAsync(jrResult, fieldNameSource, fieldNameTarget, source, saveFields, preValidatedFields, obj, flagRequired, valueFunction) {
+	static async validateMergeAsync(jrContext, fieldNameSource, fieldNameTarget, source, saveFields, preValidatedFields, obj, flagRequired, validateFunction) {
 		//
 		// source and target field names might be different (for example, password is plaintext hashed into a different target fieldname)
 		if (fieldNameTarget === "") {
@@ -668,7 +659,7 @@ class ModelBaseMongoose {
 			if (flagRequired && obj[fieldNameTarget] === undefined) {
 				// it's an error that its not provided and not set in obj already
 				// ATTN: note that this test does *NOT* require that the field be set in source, just that it already be set in obj if not
-				jrResult.pushError("Required value not provided for: " + fieldNameSource);
+				jrContext.pushError("Required value not provided for: " + fieldNameSource);
 			}
 			// ATTN: do not let validator have a chance to run??
 			return undefined;
@@ -676,15 +667,15 @@ class ModelBaseMongoose {
 
 		// ok its set. if we aren't allowed to save this field, its an error
 		if (saveFields !== "*" && !(saveFields.includes(fieldNameUsed))) {
-			jrResult.pushError("Permission denied to save value for: " + fieldNameUsed);
+			jrContext.pushError("Permission denied to save value for: " + fieldNameUsed);
 			return undefined;
 		}
 
 		// now resolve it if its not yet resolved
 		if (validatedVal === undefined) {
-			validatedVal = await valueFunction(jrResult, fieldNameSource, unvalidatedVal, flagRequired);
+			validatedVal = await validateFunction(jrContext.result, fieldNameSource, unvalidatedVal, flagRequired);
 			// if its an error, for example during validation, we are done
-			if (jrResult.isError()) {
+			if (jrContext.isError()) {
 				return undefined;
 			}
 		}
@@ -695,7 +686,7 @@ class ModelBaseMongoose {
 			if (flagRequired && obj[fieldNameTarget] === undefined) {
 				// it's an error that its not provided and not set in obj already
 				// ATTN: note that this test does *NOT* require that the field be set in source, just that it already be set in obj if not
-				jrResult.pushError("Required value not provided for: " + fieldNameUsed);
+				jrContext.pushError("Required value not provided for: " + fieldNameUsed);
 			}
 			// should we return undefined, OR should we return obj[fieldNameTarget] if its already in there
 			return undefined;
@@ -705,7 +696,7 @@ class ModelBaseMongoose {
 		if (flagRequired && validatedVal === null) {
 			// error if they are trying to save a NULL value and we've been told that the field is required
 			// above we check for undefined, which means DONT CHANGE the value; null means CHANGE The value to null
-			jrResult.pushError("Required value not provided for: " + fieldNameUsed);
+			jrContext.pushError("Required value not provided for: " + fieldNameUsed);
 		}
 
 		// success, set it
@@ -744,7 +735,7 @@ class ModelBaseMongoose {
 	 * @param {*} preValidatedFields
 	 * @memberof ModelBaseMongoose
 	 */
-	static async validateComplainExtraFields(jrResult, options, source, saveFields, preValidatedFields, ignoreFields) {
+	static async validateComplainExtraFields(jrContext, options, source, saveFields, preValidatedFields, ignoreFields) {
 		// walk the properties in source, and complain if not found in saveFields, preValidatedFields, and ignoreFields
 		for (const prop in source) {
 			if (Object.prototype.hasOwnProperty.call(source, prop)) {
@@ -761,7 +752,7 @@ class ModelBaseMongoose {
 						}
 					}
 					// error
-					jrResult.pushFieldError(prop, "Not allowed to save this field (" + prop + ").");
+					jrContext.pushFieldError(prop, "Not allowed to save this field (" + prop + ").");
 				}
 			}
 		}
@@ -772,18 +763,18 @@ class ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static async validateAddEditFormId(jrResult, req, res, formTypeStr) {
+	static async validateAddEditFormId(jrContext, formTypeStr) {
 		// push error into jrResult on error
 		// return {id, existingModel}
 
 		// get id from form
-		const id = req.body._editId;
+		const id = jrContext.req.body._editId;
 
 		// add form should not have shortcode specified
 		if (formTypeStr === "add") {
 			// id should be blank in this case
 			if (id) {
-				jrResult.pushError("Unexpected Id specified in " + this.getNiceName() + " ADD submission.");
+				jrContext.pushError("Unexpected Id specified in " + this.getNiceName() + " ADD submission.");
 				return {};
 			}
 			// fine
@@ -795,14 +786,14 @@ class ModelBaseMongoose {
 
 		// non-add form MUST have shortcode specified
 		if (!id) {
-			jrResult.pushError("Id for " + this.getNiceName() + " missing from NON-ADD submission.");
+			jrContext.pushError("Id for " + this.getNiceName() + " missing from NON-ADD submission.");
 			return {};
 		}
 
 		// now try to look it up
 		const existingModel = await this.mFindOneById(id);
 		if (!existingModel) {
-			jrResult.pushError("Lookup of " + this.getNiceName() + " not found for id specified.");
+			jrContext.pushError("Lookup of " + this.getNiceName() + " not found for id specified.");
 			return {};
 		}
 
@@ -814,13 +805,13 @@ class ModelBaseMongoose {
 	}
 
 
-	static async validateAddEditFormIdMakeObj(jrResult, req, res, formTypeStr) {
+	static async validateAddEditFormIdMakeObj(jrContext, formTypeStr) {
 		// return an object with validated properties
 		// OR an instance of jrResult if error
 
 		// get any existing model
-		const { id, existingModel } = await this.validateAddEditFormId(jrResult, req, res, formTypeStr);
-		if (jrResult.isError()) {
+		const { id, existingModel } = await this.validateAddEditFormId(jrContext, formTypeStr);
+		if (jrContext.isError()) {
 			return null;
 		}
 
@@ -838,9 +829,9 @@ class ModelBaseMongoose {
 	//---------------------------------------------------------------------------
 	// validate.  push error to jrResult on error, return good value on success
 
-	static async validateModelFieldUnique(jrResult, key, val, existingModel) {
+	static async validateModelFieldUnique(jrContext, key, val, existingModel) {
 		if (!val) {
-			jrResult.pushFieldError(key, "Value for " + key + " cannot be blank (must be unique).");
+			jrContext.pushFieldError(key, "Value for " + key + " cannot be blank (must be unique).");
 		}
 		// must be unique so we search for collissions
 		let criteria;
@@ -859,7 +850,7 @@ class ModelBaseMongoose {
 		const clashObj = await this.mFindOne(criteria);
 		if (clashObj) {
 			// error
-			jrResult.pushFieldError(key, "Duplicate " + key + " entry found for another " + this.getNiceName());
+			jrContext.pushFieldError(key, "Duplicate " + key + " entry found for another " + this.getNiceName());
 			// doesnt matter what we return?
 			return null;
 		}
@@ -874,11 +865,11 @@ class ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static validateShortcodeSyntax(jrResult, key, val) {
+	static validateShortcodeSyntax(jrContext, key, val) {
 		if (!val) {
-			if (jrResult) {
+			if (jrContext) {
 				const sstr = (key === "shortcode") ? "shortcode" : "shortcode (" + key + ")";
-				jrResult.pushFieldError(key, sstr + " cannot be left blank");
+				jrContext.pushFieldError(key, sstr + " cannot be left blank");
 			}
 			return null;
 		}
@@ -889,9 +880,9 @@ class ModelBaseMongoose {
 		// simple regex test it should only contain letters and numbers and a few basic syboles
 		const regexPat = /^[A-Z0-9_\-.]*$/;
 		if (!regexPat.test(val)) {
-			if (jrResult) {
+			if (jrContext) {
 				const sstr2 = (key === "shortcode") ? "shortcode" : "shortcode (" + key + ")";
-				jrResult.pushFieldError(key, "Syntax error in " + sstr2 + " value; it should be uppercase, and shouold contain only the characters A-Z 0-9 _-. (no spaces).");
+				jrContext.pushFieldError(key, "Syntax error in " + sstr2 + " value; it should be uppercase, and shouold contain only the characters A-Z 0-9 _-. (no spaces).");
 			}
 			return null;
 		}
@@ -900,10 +891,10 @@ class ModelBaseMongoose {
 	}
 
 
-	static async validateShortcodeUnique(jrResult, key, val, existingModel) {
+	static async validateShortcodeUnique(jrContext, key, val, existingModel) {
 
 		// first basic validation (and fixing) of shortcode syntax
-		val = this.validateShortcodeSyntax(jrResult, key, val);
+		val = this.validateShortcodeSyntax(jrContext, key, val);
 		if (!val) {
 			return val;
 		}
@@ -923,7 +914,7 @@ class ModelBaseMongoose {
 		}
 
 		if (await this.isShortcodeInUse(criteria)) {
-			jrResult.pushFieldError(key, "Duplicate " + key + " entry found for another " + this.getNiceName());
+			jrContext.pushFieldError(key, "Duplicate " + key + " entry found for another " + this.getNiceName());
 			// doesnt matter what we return?
 			return null;
 		}
@@ -974,28 +965,28 @@ class ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static validateModelFielDisbled(jrResult, key, val, flagRequired) {
+	static validateModelFielDisbled(jrContext, key, val, flagRequired) {
 		// the disabled field for resource models must be a postitive integer (0 meaning not disabled, higher than 0 various flavors of being a disabled resource)
-		return jrhValidate.validateIntegerRange(jrResult, key, val, 0, 999999, flagRequired);
+		return jrhValidate.validateIntegerRange(jrContext, key, val, 0, 999999, flagRequired);
 	}
 
-	static validateModelFieldId(jrResult, val) {
+	static validateModelFieldId(jrContext, val) {
 		if (!jrhMongo.isValidMongooseObjectId(val)) {
-			jrResult.pushError("No valid id specified.");
+			jrContext.pushError("No valid id specified.");
 			return null;
 		}
 		return val;
 	}
 
-	static async validateModelFieldAppId(jrResult, key, val, user) {
+	static async validateModelFieldAppId(jrContext, key, val, user) {
 		const AppModel = jrequire("models/app");
 		const appIds = await AppModel.buildSimpleAppIdListUserTargetable(user);
 		if (val === "") {
-			jrResult.pushFieldError(key, "app id may not be blank.");
+			jrContext.pushFieldError(key, "app id may not be blank.");
 			return null;
 		}
 		if (!appIds || appIds.indexOf(val) === -1) {
-			jrResult.pushFieldError(key, "specified app id is inaccessible.");
+			jrContext.pushFieldError(key, "specified app id is inaccessible.");
 			console.log("ATTN:DEBUG APPIDS");
 			console.log(appIds);
 			return null;
@@ -1004,15 +995,15 @@ class ModelBaseMongoose {
 		return val;
 	}
 
-	static async validateModelFieldRoomId(jrResult, key, val, user) {
+	static async validateModelFieldRoomId(jrContext, key, val, user) {
 		const RoomModel = jrequire("models/room");
 		const roomIds = await RoomModel.buildSimpleRoomIdListUserTargetable(user);
 		if (val === "") {
-			jrResult.pushFieldError(key, "room id may not be blank.");
+			jrContext.pushFieldError(key, "room id may not be blank.");
 			return null;
 		}
 		if (!roomIds || roomIds.indexOf(val) === -1) {
-			jrResult.pushFieldError(key, "specified room id is inaccessible.");
+			jrContext.pushFieldError(key, "specified room id is inaccessible.");
 			return null;
 		}
 		// valid
@@ -1049,28 +1040,27 @@ class ModelBaseMongoose {
 	getLogIdString() {
 		// human readable id string for use in log messages that we could parse to get a link
 		// ATTN: note we use the "this.constructor.staticfunc" syntax to access static class function from member
-		return this.getModelClass().getLoggingString() + "#" + this.getIdAsString();
+		// return this.getModelClass().getLoggingString() + "#" + this.getIdAsString();
+		return this.getModelClass().getLogStringFromId(this.getIdAsString());
+	}
+
+	static getLogStringFromId(id) {
+		return this.getLoggingString() + "#" + id;
 	}
 
 
-	/*
-	getExtraData(key, defaultVal) {
-		let val = this.extraData.get(key);
-		if (val === undefined) {
-			return defaultVal;
-		}
-		return val;
-	}
 
-	setExtraData(key, val) {
-		this.extraData.set(key, val);
+	isRealObjectInDatabase() {
+		return !this.getIsNew();
 	}
-	*/
-
 
 	getIsNew() {
 		// return TRUE if it is new and not yet saved
 		return this.isNew;
+	}
+
+	getCreationDate() {
+		return this.creationDate;
 	}
 	//---------------------------------------------------------------------------
 
@@ -1219,7 +1209,7 @@ class ModelBaseMongoose {
 	 * @memberof ModelBaseMongoose
 	 */
 
-	static async mFindAllByQuery(query, queryOptions, flagDoLeanRequestNotFullClasses, jrResult) {
+	static async mFindAllByQuery(jrContext, query, queryOptions, flagDoLeanRequestNotFullClasses) {
 		// fetch the array of items to be displayed in grid
 		// see https://thecodebarbarian.com/how-find-works-in-mongoose
 
@@ -1243,7 +1233,7 @@ class ModelBaseMongoose {
 
 			return [items, resultCount];
 		} catch (err) {
-			jrResult.pushError("Error executing find filter: " + JSON.stringify(query, null, " ") + ":" + err.message);
+			jrContext.pushError("Error executing find filter: " + JSON.stringify(query, null, " ") + ":" + err.message);
 			return [[], 0];
 		}
 	}
@@ -1421,19 +1411,19 @@ class ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// subclasses can subclass this for crud add/edit
-	static async calcCrudEditHelperData(req, res, id) {
+	static async calcCrudEditHelperData(jrContext, id) {
 		return undefined;
 	}
 
 
 	// subclasses can subclass this for crud view
-	static async calcCrudViewHelperData(req, res, id, obj) {
+	static async calcCrudViewHelperData(jrContext, id, obj) {
 		return undefined;
 	}
 
 
 	// subclasses can subclass this list grid helper
-	static async calcCrudListHelperData(req, res, user, baseUrl, protectedFields, hiddenFields, jrResult) {
+	static async calcCrudListHelperData(jrContext, user, baseUrl, protectedFields, hiddenFields) {
 		// perform a find filter and create table grid
 
 		// schema for obj
@@ -1465,7 +1455,7 @@ class ModelBaseMongoose {
 
 		// convert filter into query and options
 		const jrhMongoFilter = require("../helpers/jrh_mongo_filter");
-		const { query, queryOptions, queryUrlData } = jrhMongoFilter.buildMongooseQueryFromReq(filterOptions, gridSchema, req, jrResult);
+		const { query, queryOptions, queryUrlData } = jrhMongoFilter.buildMongooseQueryFromReq(jrContext, filterOptions, gridSchema);
 
 
 
@@ -1478,12 +1468,12 @@ class ModelBaseMongoose {
 
 
 		// add filter to not show vdeletes if appropriate
-		await this.addUserDisabledVisibilityToQuery(user, query);
+		await this.addUserDisabledVisibilityToQuery(jrContext, user, query);
 
 
 
 		// get the items using query
-		const [gridItems, resultcount] = await this.mFindAllByQuery(query, queryOptions, flagDoLeanRequestNotFullClasses, jrResult);
+		const [gridItems, resultcount] = await this.mFindAllByQuery(jrContext, query, queryOptions, flagDoLeanRequestNotFullClasses);
 		queryUrlData.resultCount = resultcount;
 
 		// store other stuff in queryUrl data to aid in making urls for pager and grid links, etc.
@@ -1505,7 +1495,7 @@ class ModelBaseMongoose {
 
 
 
-	static async calcCrudStatsHelperData(req, res) {
+	static async calcCrudStatsHelperData(jrContext) {
 		return undefined;
 	}
 	//---------------------------------------------------------------------------
@@ -1525,9 +1515,9 @@ class ModelBaseMongoose {
 	 * @param {object} query
 	 * @memberof ModelBaseMongoose
 	 */
-	static async addUserDisabledVisibilityToQuery(user, query) {
+	static async addUserDisabledVisibilityToQuery(jrContext, user, query) {
 
-		if (await user.aclHasPermissionSeeVDeletes(this)) {
+		if (await user.aclHasPermissionSeeVDeletes(jrContext, this)) {
 			// they are allowed to see the virtually deleted, so just return
 			return;
 		}
@@ -1562,32 +1552,32 @@ class ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static async validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrResult, user, req, res, val, aclTestName) {
+	static async validateGetObjByIdDoAclRenderErrorPageOrRedirect(jrContext, user, val, aclTestName) {
 		// get a model object, performing acl access check first
 		// if not, render an error and return null
 
 		let obj;
-		const id = this.validateModelFieldId(jrResult, val);
+		const id = this.validateModelFieldId(jrContext, val);
 
-		if (!jrResult.isError()) {
+		if (!jrContext.isError()) {
 			// acl test
-			if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(user, req, res, this, aclTestName, id)) {
+			if (!await arserver.aclRequireModelAccessRenderErrorPageOrRedirect(jrContext, user, this, aclTestName, id)) {
 				// ATTN: note that in thie case, callee will have ALREADY rendered an error to the user about permissions, which is why we need to not drop down and re-render acl access error
 				// but we DO need to push an error onto jrresult for our return check; note that text of error message is irrelevant
-				jrResult.pushError("model access denied");
+				jrContext.pushError("model access denied");
 				return null;
 			}
 			// permission was granted
 			// get object being edited
 			obj = await this.mFindOneById(id);
 			if (!obj) {
-				jrResult.pushError("Could not find " + this.getNiceName() + " with that Id.");
+				jrContext.pushError("Could not find " + this.getNiceName() + " with that Id.");
 			}
 		}
 		//
-		if (jrResult.isError()) {
+		if (jrContext.isError()) {
 			// render error
-			arserver.renderAclAccessErrorResult(req, res, this, jrResult);
+			arserver.renderAclAccessErrorResult(jrContext, this);
 			return null;
 		}
 		return obj;
@@ -1597,12 +1587,12 @@ class ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static async validateMergeAsyncBaseFields(jrResult, options, flagSave, source, saveFields, preValidatedFields, obj) {
+	static async validateMergeAsyncBaseFields(jrContext, options, flagSave, source, saveFields, preValidatedFields, obj) {
 		// base fields shared among most models
-		await this.validateMergeAsync(jrResult, "disabled", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => this.validateModelFielDisbled(jrr, keyname, inVal, flagRequired));
-		await this.validateMergeAsync(jrResult, "notes", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrContext, "disabled", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => this.validateModelFielDisbled(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrContext, "notes", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
 		// extraData json
-		await this.validateMergeAsync(jrResult, "extraData", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateJsonObjOrStringToObj(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrContext, "extraData", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateJsonObjOrStringToObj(jrr, keyname, inVal, flagRequired));
 	}
 	//---------------------------------------------------------------------------
 
@@ -1625,7 +1615,7 @@ class ModelBaseMongoose {
 	 */
 	static makeModelValueFunctionPasswordAdminEyesOnly(flagRequired) {
 		// a value function usable by model definitions
-		return async (viewType, fieldName, req, obj, editData, helperData) => {
+		return async (jrContext, viewType, fieldName, obj, editData, helperData) => {
 			let retv;
 			const flagExistingIsNonBlank = (obj && (obj.passwordHashed !== undefined && obj.passwordHashed !== null && obj.password !== ""));
 
@@ -1635,8 +1625,8 @@ class ModelBaseMongoose {
 				return retv;
 			}
 
-			const isLoggedInUserSiteAdmin = await arserver.isLoggedInUserSiteAdmin(req);
-			if (viewType === "view" && obj !== undefined) {
+			const isLoggedInUserSiteAdmin = await arserver.isLoggedInUserSiteAdmin(jrContext);
+			if (viewType === "view" && obj) {
 				if (isLoggedInUserSiteAdmin) {
 					// for debuging
 					retv = obj.passwordHashed;
@@ -1646,7 +1636,7 @@ class ModelBaseMongoose {
 				}
 			} else if (viewType === "add" || viewType === "edit") {
 				retv = jrhText.jrHtmlFormInputPassword("password", obj, flagRequired, flagExistingIsNonBlank);
-			} else if (viewType === "list" && obj !== undefined) {
+			} else if (viewType === "list" && obj) {
 				if (isLoggedInUserSiteAdmin) {
 					retv = obj.passwordHashed;
 				} else if (!obj.passwordHashed) {
@@ -1673,7 +1663,7 @@ class ModelBaseMongoose {
 	 */
 	static makeModelValueFunctionExtraData() {
 		// a value function usable by model definitions
-		return async (viewType, fieldName, req, obj, editData, helperData) => {
+		return async (jrContext, viewType, fieldName, obj, editData, helperData) => {
 			let str;
 
 			if (editData && fieldName in editData) {
@@ -1720,12 +1710,12 @@ class ModelBaseMongoose {
 	 * @memberof ModelBaseMongoose
 	 */
 	static makeModelValueFunctionObjectId(modelClass) {
-		return async (viewType, fieldName, req, obj, editData, helperData) => {
+		return async (jrContext, viewType, fieldName, obj, editData, helperData) => {
 			if (editData && fieldName in editData) {
 				// no way to edit this
 			}
 
-			if (obj !== undefined) {
+			if (obj) {
 				const objid = obj[fieldName];
 				if (objid) {
 					// jrdebug.debugObj(obj, "Obj test");
@@ -1750,7 +1740,7 @@ class ModelBaseMongoose {
 	 * @memberof ModelBaseMongoose
 	 */
 	static makeModelValueFunctionCrudObjectIdFromList(modelClass, fieldId, fieldLabel, fieldList) {
-		return async (viewType, fieldName, req, obj, editData, helperData) => {
+		return async (jrContext, viewType, fieldName, obj, editData, helperData) => {
 			let viewUrl, oLabel, rethtml, oid;
 
 			if (editData && editData[fieldId]) {
@@ -1760,7 +1750,7 @@ class ModelBaseMongoose {
 				return rethtml;
 			}
 
-			if (viewType === "view" && obj !== undefined) {
+			if (viewType === "view" && obj) {
 				viewUrl = modelClass.getCrudUrlBase("view", obj[fieldId]);
 				oLabel = helperData[fieldLabel];
 				rethtml = `${oLabel} (<a href="${viewUrl}">#${obj[fieldId]}</a>)`;
@@ -1771,7 +1761,7 @@ class ModelBaseMongoose {
 				rethtml = jrhText.jrHtmlFormOptionListSelect(fieldId, helperData[fieldList], oid, true);
 				return rethtml;
 			}
-			if (viewType === "list" && obj !== undefined) {
+			if (viewType === "list" && obj) {
 				viewUrl = modelClass.getCrudUrlBase("view", obj[fieldId]);
 				rethtml = `<a href="${viewUrl}">${obj[fieldId]}</a>`;
 				return rethtml;
@@ -1794,7 +1784,7 @@ class ModelBaseMongoose {
 	 */
 	static makeModelValueFunctionRoleOnObjectList(modelClass) {
 		const RoleModel = jrequire("models/role");
-		return async (viewType, fieldName, req, obj, editData, helperData) => {
+		return async (jrContext, viewType, fieldName, obj, editData, helperData) => {
 			if (editData && fieldName in editData) {
 				// no way to edit this
 			}
@@ -1888,9 +1878,9 @@ class ModelBaseMongoose {
 	 * @param {string} mode
 	 * @param {object} jrResult
 	 */
-	async doChangeMode(mode, jrResult) {
+	async doChangeMode(jrContext, mode) {
 		// just hand off to static class version
-		await this.getModelClass().doChangeModeById(this.getIdAsM(), mode, jrResult);
+		await this.getModelClass().doChangeModeById(jrContext, this.getIdAsM(), mode);
 	}
 
 
@@ -1903,18 +1893,18 @@ class ModelBaseMongoose {
 	 * @param {string} mode
 	 * @param {object} jrResult
 	 */
-	static async doChangeModeById(id, mode, jrResult) {
+	static async doChangeModeById(jrContext, id, mode) {
 
 		if (mode === appdef.DefMdbRealDelete) {
 			// direct database delete
 			await this.getMongooseModel().deleteOne({ _id: id }, (err) => {
 				if (err) {
 					const msg = "Error while tryign to delete " + this.getNiceNameWithId(id) + ": " + err.message;
-					jrResult.pushError(msg);
+					jrContext.pushError(msg);
 				} else {
 					// log the action
 					if (this.getShouldLogDbActions()) {
-						arserver.logr(null, "db.delete", "Deleted " + this.getNiceNameWithId(id));
+						arserver.logr(jrContext, "db.delete", "Deleted " + this.getNiceNameWithId(id));
 					}
 				}
 			});
@@ -1926,28 +1916,28 @@ class ModelBaseMongoose {
 			await this.getMongooseModel().updateOne({ _id: id }, { $set: { disabled: mode, modificationDate: nowDate } }, (err) => {
 				if (err) {
 					const msg = "Error while changing to " + appdef.DefStateModeLabels[mode] + "  " + this.getNiceNameWithId(id) + ": " + err.message;
-					jrResult.pushError(msg);
+					jrContext.pushError(msg);
 				} else {
 					if (this.getShouldLogDbActions()) {
 						// log the action
-						arserver.logr(null, "db.modify", "Changing to " + appdef.DefStateModeLabels[mode] + "  " + this.getNiceNameWithId(id));
+						arserver.logr(jrContext, "db.modify", "Changing to " + appdef.DefStateModeLabels[mode] + "  " + this.getNiceNameWithId(id));
 					}
 				}
 			});
 		}
 
-		if (jrResult.isError()) {
+		if (jrContext.isError()) {
 			return;
 		}
 
 		// success, now handle any post change operations (like deleting accessory objects, etc.)
-		await this.auxChangeModeById(id, mode, jrResult);
+		await this.auxChangeModeById(jrContext, id, mode);
 	}
 
 
 
 
-	static async doChangeModeByIdList(idList, mode, jrResult, flagSupressSuccessMessage) {
+	static async doChangeModeByIdList(jrContext, idList, mode, flagSupressSuccessMessage) {
 		// delete/disable a bunch of items
 		let successCount = 0;
 
@@ -1955,21 +1945,21 @@ class ModelBaseMongoose {
 		let id;
 		for (let i = 0; i < idList.length; ++i) {
 			id = idList[i];
-			await this.doChangeModeById(id, mode, jrResult);
-			if (jrResult.isError()) {
+			await this.doChangeModeById(jrContext, id, mode);
+			if (jrContext.isError()) {
 				break;
 			}
 			++successCount;
 		}
 
 		const modeLabel = jrhText.capitalizeFirstLetter(appdef.DefStateModeLabels[mode]);
-		if (!jrResult.isError()) {
+		if (!jrContext.isError()) {
 			if (!flagSupressSuccessMessage) {
-				jrResult.pushSuccess(modeLabel + " " + this.getNiceNamePluralized(successCount) + ".");
+				jrContext.pushSuccess(modeLabel + " " + this.getNiceNamePluralized(successCount) + ".");
 			}
 		} else {
 			if (successCount > 0) {
-				jrResult.pushError(modeLabel + " " + this.getNiceNamePluralized(successCount) + " before error occurred.");
+				jrContext.pushError(modeLabel + " " + this.getNiceNamePluralized(successCount) + " before error occurred.");
 			}
 		}
 	}
@@ -1978,8 +1968,13 @@ class ModelBaseMongoose {
 
 	// delete any ancillary deletions AFTER the normal delete
 	// this would normally be subclassed by specific model
-	static async auxChangeModeById(id, mode, jrResult) {
+	static async auxChangeModeById(jrContext, id, mode) {
 		// by default, nothing to do; subclasses can replace this
+
+		// roles delete IF the object is really deleted (and the object was succesfully deletd)
+		if (mode === appdef.DefMdbRealDelete) {
+			await this.deleteAllRolesRelatedToObject(jrContext, id);
+		}
 	}
 	//---------------------------------------------------------------------------
 
@@ -2002,6 +1997,19 @@ class ModelBaseMongoose {
 		const roles = await RoleModel.mFindRolesByCondition(cond);
 		return roles;
 	}
+
+
+	static async deleteAllRolesRelatedToObject(jrContext, id) {
+		const cond = {
+			objectType: this.getAclName(),
+			objectId: id,
+		};
+		const RoleModel = jrequire("models/role");
+		// await RoleModel.deleteRolesByCondition(jrContext, cond);
+		await RoleModel.mFindAndDeleteMany(cond);
+		// log it
+		await arserver.logr(jrContext, "acl.deleteRoles", "delete roles related to deleted object " + this.getLogStringFromId(id));
+	}
 	//---------------------------------------------------------------------------
 
 
@@ -2011,7 +2019,7 @@ class ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// ATTN: first stab at extracting a function to do what crudaid does
-	static async renderFieldValueHtml(req, obj, editData, fieldName, crudSubType, helperData) {
+	static async renderFieldValueHtml(jrContext, obj, editData, fieldName, crudSubType, helperData) {
 		let isReadOnly = false;
 		let val, valHtml;
 
@@ -2030,7 +2038,7 @@ class ModelBaseMongoose {
 		const valueFunction = this.getSchemaFieldVal(fieldName, "valueFunction");
 		if (valueFunction) {
 			// ok we have a custom function to call to get html to show for value (only pass in potential editData if not readOnly)
-			valHtml = await valueFunction(crudSubType, fieldName, req, obj, isReadOnly ? null : editData, helperData);
+			valHtml = await valueFunction(jrContext, crudSubType, fieldName, obj, isReadOnly ? null : editData, helperData);
 		}
 
 		// if we havent yet set a value using valueFunctions (or if that returns undefined) then use default value

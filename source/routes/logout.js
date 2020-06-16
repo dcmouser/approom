@@ -14,6 +14,7 @@ const express = require("express");
 
 
 // helpers
+const JrContext = require("../helpers/jrcontext");
 const JrResult = require("../helpers/jrresult");
 
 // requirement service locator
@@ -50,12 +51,13 @@ function setupRouter(urlPath) {
 //---------------------------------------------------------------------------
 // router functions
 async function routerGetIndex(req, res, next) {
-
+	const jrContext = JrContext.makeNew(req, res, next);
 	// remove all?most? session data that the user might want forgotten and log them out
-	arserver.logoutForgetSessionData(req);
+	arserver.clearSessionDataForUserOnLogout(jrContext, false);
 
 	// session message
-	JrResult.makeSuccess("You have been logged out.").addToSession(req);
+	jrContext.pushSuccess("You have been logged out.");
+	jrContext.addToThisSession();
 
 	res.redirect("/");
 }

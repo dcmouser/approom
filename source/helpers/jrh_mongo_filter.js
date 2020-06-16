@@ -7,6 +7,9 @@
  * Collection of helper functions for database crud filtering
 */
 
+// ATTN: TODO - I dont really understand the calls to mongoValFunc and our use of jrResulti since we refactored code
+
+
 "use strict";
 
 
@@ -31,7 +34,7 @@ const jrhMongo = require("./jrh_mongo");
  * @param {*} jrResult - a JrResult object that we will push error codes into in the case of error
  * @returns tuple \{ query, queryOptions, queryUrlData \} where queryUrlData is an object with data to include in form data/links to reproduce the request (useful for going to next page, etc)
  */
-function buildMongooseQueryFromReq(filterOptions, schema, req, jrResult) {
+function buildMongooseQueryFromReq(jrContext, filterOptions, schema) {
 	// return the query object for use with mongoose
 	// we parse the req data (form post vars or query params), and create the query used by mongoose
 
@@ -45,12 +48,12 @@ function buildMongooseQueryFromReq(filterOptions, schema, req, jrResult) {
 
 	const fieldKeys = Object.keys(schema);
 	//
-	const pageNum = jrhExpress.reqValAsInt(req, "pageNum", 1, null, 1);
-	const pageSize = jrhExpress.reqValAsInt(req, "pageSize", filterOptions.minPageSize, filterOptions.maxPageSize, filterOptions.defaultPageSize);
-	let sortField = jrhExpress.reqValFromList(req, "sortField", fieldKeys, filterOptions.defaultSortField);
-	const sortDir = jrhExpress.reqValFromList(req, "sortDir", ["asc", "desc"], filterOptions.defaultSortDir);
+	const pageNum = jrhExpress.reqValAsInt(jrContext.req, "pageNum", 1, null, 1);
+	const pageSize = jrhExpress.reqValAsInt(jrContext.req, "pageSize", filterOptions.minPageSize, filterOptions.maxPageSize, filterOptions.defaultPageSize);
+	let sortField = jrhExpress.reqValFromList(jrContext.req, "sortField", fieldKeys, filterOptions.defaultSortField);
+	const sortDir = jrhExpress.reqValFromList(jrContext.req, "sortDir", ["asc", "desc"], filterOptions.defaultSortDir);
 	//
-	const fieldFilters = jrhExpress.reqPrefixedValueArray(req, "filter", fieldKeys);
+	const fieldFilters = jrhExpress.reqPrefixedValueArray(jrContext.req, "filter", fieldKeys);
 	//
 	const protectedFields = filterOptions.protectedFields;
 	const hiddenFields = filterOptions.hiddenFields;
@@ -84,7 +87,7 @@ function buildMongooseQueryFromReq(filterOptions, schema, req, jrResult) {
 		}
 
 		fieldSchema = schema[fieldFilterKey];
-		aFindFilter = convertReqQueryStringToAMongooseFindFilter(fieldFilterKey, fieldSchema, fieldFilters[fieldFilterKey], jrResult);
+		aFindFilter = convertReqQueryStringToAMongooseFindFilter(jrContext, fieldFilterKey, fieldSchema, fieldFilters[fieldFilterKey]);
 		if (aFindFilter !== undefined) {
 			// return value could be just the filter, a full object with fieldFilterKey as key, or an object with an $and or $or key
 			if (aFindFilter && aFindFilter[fieldFilterKey]) {
@@ -169,7 +172,7 @@ function buildMongooseQueryFromReq(filterOptions, schema, req, jrResult) {
  * @param {object} jrResult - errors will be pushed into this object
  * @returns the query object generated
  */
-function convertReqQueryStringToAMongooseFindFilter(fkey, fieldSchema, querystr, jrResult) {
+function convertReqQueryStringToAMongooseFindFilter(jrContext, fkey, fieldSchema, querystr) {
 	// user types a filter for a field (db column) as a string;
 	// here we convert it into something suitable for a mongoose find query obj
 	let schemaType;
@@ -186,42 +189,42 @@ function convertReqQueryStringToAMongooseFindFilter(fkey, fieldSchema, querystr,
 		// it's a numeric column
 		// filter rules:
 		//   user can use operators > < ! =
-		retQuery = convertReqQueryStringToAMongooseFindFilterNumeric(fkey, schemaType, querystr, "integer", jrResult);
+		retQuery = convertReqQueryStringToAMongooseFindFilterNumeric(jrContext, fkey, schemaType, querystr, "integer");
 	} else if (schemaType === String) {
 		// it's a string column
 		// filter rules:
 		//   if enclosed in double quotes, it should be an exact search
 		//   if not, it should be a wildcard LIKE type search (we wil have to use regex)
 		//   if surrounded by / / then it is an explicit regex
-		retQuery = convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, querystr, "string", jrResult);
+		retQuery = convertReqQueryStringToAMongooseFindFilterStringic(jrContext, fkey, schemaType, querystr, "string");
 	} else if (schemaType === Date) {
 		// it's a date column
 		// filter rules:
 		//  similar to numeric column
-		retQuery = convertReqQueryStringToAMongooseFindFilterNumeric(fkey, schemaType, querystr, "date", jrResult);
+		retQuery = convertReqQueryStringToAMongooseFindFilterNumeric(jrContext, fkey, schemaType, querystr, "date");
 	} else if (schemaType === mongoose.Schema.ObjectId) {
 		// exact match
-		retQuery = convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, querystr, "idstring", jrResult);
+		retQuery = convertReqQueryStringToAMongooseFindFilterStringic(jrContext, fkey, schemaType, querystr, "idstring");
 	} else if (schemaType === Map) {
 		// can't filter this
 		if (false) {
-			retQuery = convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, querystr, "string", jrResult);
+			retQuery = convertReqQueryStringToAMongooseFindFilterStringic(jrContext, fkey, schemaType, querystr, "string");
 		} else {
 			retQuery = undefined;
 		}
 	} else if (schemaType === Boolean) {
 		// boolean
-		retQuery = convertReqQueryStringToAMongooseFindFilterBoolean(fkey, schemaType, querystr, jrResult);
+		retQuery = convertReqQueryStringToAMongooseFindFilterBoolean(jrContext, fkey, schemaType, querystr);
 	} else if (schemaType === "__nondb") {
 		// non database field
-		jrResult.pushError("Search filter error: Cannot filter on non-database key: " + fkey);
+		jrContext.pushError("Search filter error: Cannot filter on non-database key: " + fkey);
 	} else {
 		if (!schemaType) {
-			jrResult.pushError("Search filter error: Unknown schemaType field key: " + fkey);
+			jrContext.pushError("Search filter error: Unknown schemaType field key: " + fkey);
 		} else if (schemaType.toString) {
-			jrResult.pushError("Search filter error: Unknown schema field key " + fkey + " of type: " + schemaType.toString());
+			jrContext.pushError("Search filter error: Unknown schema field key " + fkey + " of type: " + schemaType.toString());
 		} else {
-			jrResult.pushError("Search filter error: Unknown schema field key: " + fkey);
+			jrContext.pushError("Search filter error: Unknown schema field key: " + fkey);
 		}
 	}
 
@@ -246,7 +249,7 @@ function convertReqQueryStringToAMongooseFindFilter(fkey, fieldSchema, querystr,
  * @param {*} jrResult
  * @returns query object
  */
-function convertReqQueryStringToAMongooseFindFilterNumeric(fkey, schemaType, querystr, subType, jrResult) {
+function convertReqQueryStringToAMongooseFindFilterNumeric(jrContext, fkey, schemaType, querystr, subType) {
 	let valPat;
 	let mongoValFunc;
 
@@ -271,10 +274,10 @@ function convertReqQueryStringToAMongooseFindFilterNumeric(fkey, schemaType, que
 
 	if (subType === "integer") {
 		valPat = "[+-]{0,1}\\d+";
-		mongoValFunc = (strVal, jrResulti) => {
+		mongoValFunc = (strVal, jrConfigi) => {
 			let num = Number(strVal);
 			if (Number.isNaN(num)) {
-				jrResult.pushError("Search filter error: Not a valid number: " + strVal);
+				jrConfigi.pushError("Search filter error: Not a valid number: " + strVal);
 				num = undefined;
 			}
 			return num;
@@ -282,13 +285,13 @@ function convertReqQueryStringToAMongooseFindFilterNumeric(fkey, schemaType, que
 	} else if (subType === "date") {
 		// eslint-disable-next-line no-useless-escape
 		valPat = "[\\d/\\.\\-]+";
-		mongoValFunc = (strVal, jrResulti) => {
+		mongoValFunc = (strVal, jrConfigi) => {
 			let dateVal;
 			// is it a pure number
 			if (strVal.match(/^[\d]+$/)) {
 				let num = Number(strVal);
 				if (Number.isNaN(num)) {
-					jrResult.pushError("Search filter error: Not a valid number for date (days old) comparison: " + strVal);
+					jrConfigi.pushError("Search filter error: Not a valid number for date (days old) comparison: " + strVal);
 					num = undefined;
 				} else {
 					dateVal = new Date();
@@ -303,18 +306,18 @@ function convertReqQueryStringToAMongooseFindFilterNumeric(fkey, schemaType, que
 				}
 				// check for invalid date
 				if (Number.isNaN(dateVal.getTime())) {
-					jrResult.pushError("Search filter error: Date filters should use numbers to indicate how many days in past, or date format YYYY-MM-DD.  Syntax error at: " + strVal);
+					jrConfigi.pushError("Search filter error: Date filters should use numbers to indicate how many days in past, or date format YYYY-MM-DD.  Syntax error at: " + strVal);
 				}
 			}
 
 			return dateVal;
 		};
 	} else {
-		jrResult.pushError("Search filter error: Unknown numeric subtype in convertReqQueryStringToAMongooseFindFilterNumeric: " + subType);
+		jrContext.pushError("Search filter error: Unknown numeric subtype in convertReqQueryStringToAMongooseFindFilterNumeric: " + subType);
 	}
 
 	const standaloneOpString = "$eq";
-	return convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaType, querystr, operators, opChars, valPat, mongoValFunc, standaloneOpString, jrResult);
+	return convertReqQueryStringToAMongooseFindFilterGenericOperator(jrContext, fkey, schemaType, querystr, operators, opChars, valPat, mongoValFunc, standaloneOpString);
 }
 
 
@@ -330,7 +333,7 @@ function convertReqQueryStringToAMongooseFindFilterNumeric(fkey, schemaType, que
  * @param {*} jrResult
  * @returns query object
  */
-function convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, querystr, subType, jrResult) {
+function convertReqQueryStringToAMongooseFindFilterStringic(jrContext, fkey, schemaType, querystr, subType) {
 	let valPat;
 	let mongoValFunc;
 
@@ -352,24 +355,24 @@ function convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, qu
 	// eslint-disable-next-line no-useless-escape
 	if (subType === "string") {
 		valPat = "[^=!]+";
-		mongoValFunc = (strVal, jrResulti) => {
-			return convertReqQueryStringToAMongooseFindFilterMongoStrCmp(strVal, jrResult);
+		mongoValFunc = (strVal, jrConfigi) => {
+			return convertReqQueryStringToAMongooseFindFilterMongoStrCmp(jrConfigi, strVal);
 		};
 	} else if (subType === "idstring") {
 		valPat = "[^=!]+";
-		mongoValFunc = (strVal, jrResulti) => {
+		mongoValFunc = (strVal, jrConfigi) => {
 			if (jrhMongo.isValidMongooseObjectId(strVal)) {
 				return strVal;
 			}
-			jrResulti.pushError("Search filter error: Id value is improperly formatted");
+			jrConfigi.pushError("Search filter error: Id value is improperly formatted");
 			return undefined;
 		};
 	} else {
-		jrResult.pushError("Search filter error: Unknown subtype in convertReqQueryStringToAMongooseFindFilterStringic: " + subType);
+		jrContext.pushError("Search filter error: Unknown subtype in convertReqQueryStringToAMongooseFindFilterStringic: " + subType);
 	}
 
 	const standaloneOpString = "";
-	return convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaType, querystr, operators, opChars, valPat, mongoValFunc, standaloneOpString, jrResult);
+	return convertReqQueryStringToAMongooseFindFilterGenericOperator(jrContext, fkey, schemaType, querystr, operators, opChars, valPat, mongoValFunc, standaloneOpString);
 }
 
 
@@ -385,7 +388,7 @@ function convertReqQueryStringToAMongooseFindFilterStringic(fkey, schemaType, qu
  * @param {*} jrResult
  * @returns query object
  */
-function convertReqQueryStringToAMongooseFindFilterBoolean(fkey, schemaType, querystr, jrResult) {
+function convertReqQueryStringToAMongooseFindFilterBoolean(jrContext, fkey, schemaType, querystr) {
 	let retv;
 
 	if (querystr === "true" || querystr === "1") {
@@ -397,7 +400,7 @@ function convertReqQueryStringToAMongooseFindFilterBoolean(fkey, schemaType, que
 			$ne: "true",
 		};
 	} else {
-		jrResult.pushError("Search filter error: Expected filter to be 'true' or 'false'.");
+		jrContext.pushError("Search filter error: Expected filter to be 'true' or 'false'.");
 		return undefined;
 	}
 
@@ -417,7 +420,7 @@ function convertReqQueryStringToAMongooseFindFilterBoolean(fkey, schemaType, que
  * @param {object} jrResult
  * @returns query object
  */
-function convertReqQueryStringToAMongooseFindFilterMongoStrCmp(strVal, jrResult) {
+function convertReqQueryStringToAMongooseFindFilterMongoStrCmp(jrConfig, strVal) {
 	// help for string compare
 	// first let's see if its an explicit regex
 	let regex, regexMatch;
@@ -431,7 +434,7 @@ function convertReqQueryStringToAMongooseFindFilterMongoStrCmp(strVal, jrResult)
 			retv = new RegExp(regexMain, regexOptions);
 		} catch (error) {
 			// illegal regex error
-			jrResult.pushError("Search filter error: Illegal regular expression syntax: " + strVal);
+			jrConfig.pushError("Search filter error: Illegal regular expression syntax: " + strVal);
 			return undefined;
 		}
 		return {
@@ -455,7 +458,7 @@ function convertReqQueryStringToAMongooseFindFilterMongoStrCmp(strVal, jrResult)
 		retv = new RegExp(queryStrEscaped, "im");
 	} catch (err) {
 		// illegal regex error
-		jrResult.pushError("Search filter error: Illegal filter string syntax, incompatible with regex escape: " + strVal);
+		jrConfig.pushError("Search filter error: Illegal filter string syntax, incompatible with regex escape: " + strVal);
 		return undefined;
 	}
 	return {
@@ -480,7 +483,7 @@ function convertReqQueryStringToAMongooseFindFilterMongoStrCmp(strVal, jrResult)
  * @param {*} jrResult
  * @returns an array of disjunctive queries (ors)
  */
-function convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaType, querystr, operators, opChars, valPat, mongoValFunc, standaloneOpString, jrResult) {
+function convertReqQueryStringToAMongooseFindFilterGenericOperator(jrContext, fkey, schemaType, querystr, operators, opChars, valPat, mongoValFunc, standaloneOpString) {
 	const opRegex = new RegExp("\\s*([" + opChars + "]+)\\s*(" + valPat + ")\\s*");
 	const valRegex = new RegExp("\\s*(" + valPat + ")\\s*");
 	// let nullRegex = /([!=]*)\s*\bnull\b/;
@@ -510,7 +513,7 @@ function convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaT
 				str = str.replace(opRegex, (foundstr, g1, g2) => {
 					mongoOp = operators[g1];
 					if (mongoOp !== undefined) {
-						const obj = convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(fkey, g2, mongoOp, mongoValFunc, jrResult);
+						const obj = convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(jrContext, fkey, g2, mongoOp, mongoValFunc);
 						andSet.push(obj);
 					} else {
 						// operator not found, leave it alone
@@ -539,7 +542,7 @@ function convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaT
 			// standalone values
 			str = str.replace(valRegex, (foundstr, g2) => {
 				mongoOp = standaloneOpString;
-				const obj = convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(fkey, g2, mongoOp, mongoValFunc, jrResult);
+				const obj = convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(jrContext, fkey, g2, mongoOp, mongoValFunc);
 				andSet.push(obj);
 				// return "" to replace it with empty
 				return "";
@@ -549,7 +552,7 @@ function convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaT
 			str = str.trim();
 			if (str !== "") {
 				// error?
-				jrResult.pushError("Search filter error: Invalid syntax, unparsed: " + str);
+				jrContext.pushError("Search filter error: Invalid syntax, unparsed: " + str);
 			}
 
 		});	// end of AND foreach
@@ -591,7 +594,7 @@ function convertReqQueryStringToAMongooseFindFilterGenericOperator(fkey, schemaT
  * @param {*} jrResult
  * @returns an object, either simple value or operator and value for handling null/undefined cases
  */
-function convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(fkey, opVal, mongoOp, mongoValFunc, jrResult) {
+function convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(jrContext, fkey, opVal, mongoOp, mongoValFunc) {
 	let opValm;
 
 	// this is a bit messy, but we need to handle null carefully and weirdly
@@ -602,7 +605,7 @@ function convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(fke
 		} else if (mongoOp === "$not") {
 			mongoOp = "$ne";
 		} else if (mongoOp !== "$eq") {
-			jrResult.pushError("Search filter syntax error: Bad operator for use with null");
+			jrContext.pushError("Search filter syntax error: Bad operator for use with null");
 		}
 	} else if (opVal === "!null" || opVal === "!undefined") {
 		opValm = null;
@@ -615,10 +618,10 @@ function convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(fke
 		} else if (mongoOp === "$not") {
 			mongoOp = "$eq";
 		} else {
-			jrResult.pushError("Search filter syntax error: Bad operator for use with null");
+			jrContext.pushError("Search filter syntax error: Bad operator for use with null");
 		}
 	} else {
-		opValm = mongoValFunc(opVal, jrResult);
+		opValm = mongoValFunc(opVal, jrContext);
 	}
 	// if its UNDEFINED then an error happened, just return it
 	if (opValm === undefined) {

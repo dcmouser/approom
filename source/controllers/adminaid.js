@@ -55,7 +55,7 @@ class AdminAid {
 	 * @returns jrResult
 	 * @memberof AdminAid
 	 */
-	async addTestAppsAndRooms(user, addCountApps, addCountRooms, addCountRoomDatas) {
+	async addTestAppsAndRooms(jrContext, user, addCountApps, addCountRooms, addCountRoomDatas) {
 		// add some test apps and rooms
 		let successMessage;
 		let app, room, roomdata;
@@ -164,10 +164,7 @@ class AdminAid {
 		successMessage += "\nCreated " + roomDatasAdded.toString() + " RoomDatas.";
 
 		// success
-		// push message on session
-		const jrResult = JrResult.makeSuccess(successMessage);
-		// return success
-		return jrResult;
+		jrContext.pushSuccess(successMessage);
 	}
 	//---------------------------------------------------------------------------
 

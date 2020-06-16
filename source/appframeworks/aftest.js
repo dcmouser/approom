@@ -21,7 +21,7 @@ const addonInfo = {
 
 //---------------------------------------------------------------------------
 function initialize(arserver) {
-	console.log("Hello world from testplugin initialize()");
+	// console.log("Hello world from aftest initialize()");
 }
 //---------------------------------------------------------------------------
 

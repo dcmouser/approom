@@ -116,8 +116,8 @@ class FileModel extends RoomdataModel {
 	}
 
 	// crud helper for view
-	static async calcCrudViewHelperData(req, res, id, obj) {
-		const reta = super.calcCrudViewHelperData(req, res, id, obj);
+	static async calcCrudViewHelperData(jrContext, id, obj) {
+		const reta = super.calcCrudViewHelperData(jrContext, id, obj);
 		return reta;
 	}
 	//---------------------------------------------------------------------------
@@ -149,7 +149,7 @@ class FileModel extends RoomdataModel {
 
 
 	// crud add/edit
-	static async doValidateAndSave(jrResult, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
+	static async doValidateAndSave(jrContext, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 
@@ -157,28 +157,28 @@ class FileModel extends RoomdataModel {
 		let objdoc;
 
 		// ATTN: why do our other model classes not do this...
-		// await super.doValidateAndSave(jrResult, options, false, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, obj);
+		// await super.doValidateAndSave(jrContext, options, false, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, obj);
 
 		// now our specific derived class fields
-		if (!jrResult.isError()) {
-			await this.validateMergeAsync(jrResult, "path", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
-			await this.validateMergeAsync(jrResult, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
-			await this.validateMergeAsync(jrResult, "sizeInBytes", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateInteger(jrr, keyname, inVal, flagRequired));
+		if (!jrContext.isError()) {
+			await this.validateMergeAsync(jrContext, "path", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+			await this.validateMergeAsync(jrContext, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+			await this.validateMergeAsync(jrContext, "sizeInBytes", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateInteger(jrr, keyname, inVal, flagRequired));
 		}
 
 		// complain about fields in source that we aren't allowed to save
-		await this.validateComplainExtraFields(jrResult, options, source, saveFields, preValidatedFields, ignoreFields);
+		await this.validateComplainExtraFields(jrContext, options, source, saveFields, preValidatedFields, ignoreFields);
 
 		// any validation errors?
-		if (jrResult.isError()) {
+		if (jrContext.isError()) {
 			return null;
 		}
 
 		// validated successfully
 
 		if (flagSave) {
-			// save it (success message will be pushed onto jrResult)
-			objdoc = await obj.dbSave(jrResult);
+			// save it
+			objdoc = await obj.dbSave(jrContext);
 		}
 
 		// return the saved object

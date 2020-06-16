@@ -76,24 +76,26 @@ class SendAid {
 	}
 
 
-	makeJrResultFromSendmailRetv(retv, mailobj) {
+	addSendmailRetvToContext(jrContext, sendMailResult, mailobj) {
 		let msg;
-		if (retv.rejected.length === 0) {
+		if (sendMailResult.rejected.length === 0) {
 			// success!
 			if (mailobj.revealEmail) {
-				msg = "Mail sent to " + jrhMisc.stringArrayToNiceString(retv.accepted) + ".";
+				msg = "Mail sent to " + jrhMisc.stringArrayToNiceString(sendMailResult.accepted) + ".";
 			} else {
 				msg = "Mail sent.";
 			}
-			return JrResult.makeSuccess(msg);
+			jrContext.pushSuccess(msg);
+			return;
 		}
+
 		// error
 		if (mailobj.revealEmail) {
-			msg = "Failed to send email to " + jrhMisc.stringArrayToNiceString(retv.rejected) + ".";
+			msg = "Failed to send email to " + jrhMisc.stringArrayToNiceString(sendMailResult.rejected) + ".";
 		} else {
 			msg = "Failed to send email.";
 		}
-		return JrResult.makeError(msg);
+		jrContext.pushError(msg);
 	}
 	//---------------------------------------------------------------------------
 
@@ -112,8 +114,8 @@ class SendAid {
 	 * @param {string} message
 	 * @param {boolean} flagBypassRateLimitChecks
 	 */
-	async sendMessage(recipient, subject, message, extraData, flagBypassRateLimitChecks) {
-		if (flagBypassRateLimitChecks) {
+	async sendMessage(jrContext, recipient, subject, message, extraData, flagBypassRateLimitChecks) {
+		if (!flagBypassRateLimitChecks) {
 			// ATTN: TODO rate limiting checks here
 		}
 
@@ -131,7 +133,7 @@ class SendAid {
 				text: message,
 				to: recipient.email,
 			};
-			await this.sendMail(mailobj);
+			await this.sendMail(jrContext, mailobj);
 		}
 
 		// other things we might check for would be sms
@@ -149,7 +151,7 @@ class SendAid {
 	 * @param {object} mailobj - suitable for sending to mailTransport.sendMail
 	 * @returns jrResult holding success or error
 	 */
-	async sendMail(mailobj) {
+	async sendMail(jrContext, mailobj) {
 		// add from field
 		if (!mailobj.from) {
 			mailobj.from = this.defaultFrom;
@@ -158,15 +160,16 @@ class SendAid {
 		if (this.flagDebugMode) {
 			// don't actually mail, instead just log it to console and file
 			jrdebug.debug("Config flag mailer:DEBUG set, so mail with subject \"" + mailobj.subject + "\" to \"" + mailobj.to + "\" not actually sent (sending mail to debug log instead).");
-			await arserver.logm(appdef.DefLogTypeDebug + ".mailer", "mailer:DEBUG option preventing mail from being sent", mailobj);
-			return JrResult.makeSuccess("Mail sent (but only to log because of mail debug flag).");
+			await arserver.logr(jrContext, appdef.DefLogTypeDebug + ".mailer", "mailer:DEBUG option preventing mail from being sent", mailobj);
+			jrContext.pushSuccess("Mail sent (but only to log because of mail debug flag).");
+			return;
 		}
 
-		const result = await this.mailTransport.sendMail(mailobj);
-		jrdebug.cdebugObj(result, "Result from sendMail.");
+		const sendMailResult = await this.mailTransport.sendMail(mailobj);
+		jrdebug.cdebugObj(sendMailResult, "Result from sendMail.");
 
-		const jrResult = this.makeJrResultFromSendmailRetv(result, mailobj);
-		return jrResult;
+		// convert sendmail response to our internal result format of success or error
+		this.addSendmailRetvToContext(jrContext, sendMailResult, mailobj);
 	}
 	//---------------------------------------------------------------------------
 
