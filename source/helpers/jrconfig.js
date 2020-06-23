@@ -480,7 +480,6 @@ function doNconfFile(rootTag, filepath) {
 /**
  * Fixup config file name by adding base directory, doing any %SPECIAL% substrings and adding .json after it if its not explicitly provided
  * @private
- * @todo support jsoc files?
  *
  * @param {string} filepath
  * @returns filepath with base directory and extension (yml) added
@@ -534,7 +533,7 @@ function getVal(...args) {
 	if (val === undefined) {
 		throw new Error("Request for config getVal of a non-existent variable (" + args[0] + ")");
 	}
-	return configAutoConverTypeVal(val);
+	return configAutoConvertTypeVal(val);
 }
 
 
@@ -551,7 +550,7 @@ function getValDefault(arg, defaultVal) {
 	if (val === undefined) {
 		return defaultVal;
 	}
-	return configAutoConverTypeVal(val);
+	return configAutoConvertTypeVal(val);
 }
 
 /**
@@ -560,9 +559,8 @@ function getValDefault(arg, defaultVal) {
  * @param {*} val
  * @returns val converted to bool if its "true" or "false"
  */
-function configAutoConverTypeVal(val) {
-	// ATTN: TODO auto convert numbers?
-	// ATTN: this is not needed; its auto performed by the yml reader
+function configAutoConvertTypeVal(val) {
+	// This is not needed; its auto performed by the yml reader
 	/*
 	if (typeof val === "string") {
 		if (val === "true") {

@@ -48,7 +48,7 @@ class SetupAid {
 
 	//---------------------------------------------------------------------------
 	async createDefaultUsers() {
-		jrdebug.cdebug("Inside setup aid createDefaultUsers()");
+		jrdebug.cdebug("misc", "Inside setup aid createDefaultUsers()");
 
 		// dummy jrContext since we don't know any other way to get req/res
 		const jrContext = JrContext.makeNew();

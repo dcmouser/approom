@@ -152,7 +152,7 @@ describe("fetch", function test() {
 
 		// test http server by getting about page
 		const url = arserver.getBaseServerIpHttp() + "/help/about";
-		jrdebug.cdebug("Fetching from url: " + url);
+		jrdebug.cdebug("misc", "Fetching from url: " + url);
 		const responseData = await jrhAxios.getCatchError(url);
 		const data = responseData.data;
 		assert((data && data.success === "about"), "Failed to fetch About info from http server.");
@@ -164,7 +164,7 @@ describe("fetch", function test() {
 
 		// test https server by getting about page
 		const url = arserver.getBaseServerIpHttps() + "/help/about";
-		jrdebug.cdebug("Fetching from url: " + url);
+		jrdebug.cdebug("misc", "Fetching from url: " + url);
 		const responseData = await jrhAxios.getCatchError(url);
 		const data = responseData.data;
 		assert((data && data.success === "about"), "Failed to fetch About info from https server.");

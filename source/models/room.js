@@ -186,7 +186,7 @@ class RoomModel extends ModelBaseMongoose {
 
 		if (flagSave) {
 			// save it
-			objdoc = await obj.dbSave(jrContext);
+			objdoc = await obj.dbSaveAddError(jrContext);
 		}
 
 		// return the saved object
@@ -202,7 +202,6 @@ class RoomModel extends ModelBaseMongoose {
 		// build app list, pairs of id -> nicename
 		const AppModel = jrequire("models/app");
 		const applist = await AppModel.buildSimpleAppListUserTargetable(user);
-
 		// return it
 		return {
 			applist,

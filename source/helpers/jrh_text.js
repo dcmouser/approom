@@ -278,7 +278,7 @@ function sanitizeUnsafeText(str, flagShowNullUndefined, flagAddConvertNewlinesTo
 
 
 function coerceToString(val, flagKeepNullUndefined) {
-	// ATTN:TODO catch toString conversion error
+	// ATTN: TODO: Catch toString conversion error?
 	// conver val to str (but leave as undefined or null if flag set)
 	if (val === undefined || val === null) {
 		if (flagKeepNullUndefined) {

@@ -34,7 +34,7 @@ const jrhMisc = require("./jrh_misc");
 // module variables
 let debugfunc;
 let serviceName;
-let debugEnabled = false;
+const debugTagsEnabled = [];
 //---------------------------------------------------------------------------
 
 
@@ -46,9 +46,8 @@ let debugEnabled = false;
  * Initialize values for the debugging system to use
  *
  * @param {string} iserviceName - name of the application or process, for use in filename and console messages
- * @param {boolean} flagDebugEnabled - initial state whether enabled or disabled; when disabled all conditional debug statements (cdebug..) will have no effect
  */
-function setup(iserviceName, flagDebugEnabled) {
+function setup(iserviceName) {
 	// save values
 	serviceName = iserviceName;
 	if (!serviceName) {
@@ -56,8 +55,6 @@ function setup(iserviceName, flagDebugEnabled) {
 	}
 	// create debug func that is on only in debug mode
 	debugfunc = setupDebugmod();
-	// set initial debug enabled state
-	setDebugEnabled(flagDebugEnabled);
 }
 //---------------------------------------------------------------------------
 
@@ -105,23 +102,96 @@ function setupDebugmod() {
 
 //---------------------------------------------------------------------------
 /**
- * Setter for debug mode on or off.
- * This controls whether certain debug functions (those ending in 'c' for conditional) actually generate output
+ * Getter for the debug mode
  *
- * @param {boolean} val
+ * @returns true if debugging is enabled for a tag
  */
-function setDebugEnabled(val) {
-	debugEnabled = val;
+function getDebugTagEnabled(debugTag) {
+	if (typeof debugTag === "object") {
+		// iterate over the list and return true if any match
+		let bretv;
+		for (var tag of debugTag) {
+			bretv = getDebugTagEnabled(tag);
+			if (bretv === false) {
+				// explicit false on any tag is false
+				return false;
+			}
+			if (bretv === true) {
+				// explicit true is true
+				return true;
+			}
+		}
+		// not found is undefined (false)
+		return undefined;
+	}
+
+	// explicitly set?
+	if (debugTagsEnabled.includes(debugTag)) {
+		return true;
+	}
+
+	// explicit block?
+	if (debugTagsEnabled.includes("-" + debugTag)) {
+		return false;
+	}
+
+	// if debugTag is "*" then always true, if "-" then always false
+	// these just make it easier to quick code for debugging
+	if (debugTag === "*") {
+		return true;
+	}
+	if (debugTag === "-") {
+		return false;
+	}
+
+	// if "*" is in debugtags, then ALL are enabled
+	if (debugTagsEnabled.includes("*")) {
+		return true;
+	}
+
+	// nope
+	return undefined;
 }
 
 
 /**
- * Getter for the debug mode
- *
- * @returns true if debugging is enabled
+ * Setter for debug mode on or off.
+ * This controls whether certain debug functions (those ending in 'c' for conditional) actually generate output
+ * @param {string} debugTag
+ * @param {boolean} val
  */
-function getDebugEnabled() {
-	return debugEnabled;
+function setDebugTagEnabled(debugTag, val) {
+	if (val) {
+		if (!(debugTagsEnabled.includes(debugTag))) {
+			debugTagsEnabled.push(debugTag);
+		}
+	} else {
+		const index = debugTagsEnabled.indexOf(debugTag);
+		if (index > -1) {
+			debugTagsEnabled.splice(index, 1);
+		}
+	}
+}
+
+
+function getDebugTagEnabledList() {
+	const enabledTags = debugTagsEnabled;
+	return enabledTags;
+}
+
+function getDebugTagEnabledListAsNiceString() {
+	const enabledTags = debugTagsEnabled;
+	if (!enabledTags) {
+		return "";
+	}
+	return enabledTags.join();
+}
+
+
+function setDebugTagEnabledList(tagList) {
+	tagList.forEach((tag) => {
+		setDebugTagEnabled(tag, true);
+	});
 }
 //---------------------------------------------------------------------------
 
@@ -200,8 +270,8 @@ function debugObj2(obj, msg) {
  * @param {*} args
  * @returns result of debug module function
  */
-function cdebug(...args) {
-	if (getDebugEnabled()) {
+function cdebug(debugTag, ...args) {
+	if (getDebugTagEnabled(debugTag)) {
 		return debug(...args);
 	}
 	return null;
@@ -211,14 +281,14 @@ function cdebug(...args) {
 /**
  * Conditional call to debug module function after formatting string using util.format
  * Does nothing if debug mode is off.
- * @example cdebugf("%s:%d", str, val);
+ * @example cdebugf("misc", "%s:%d", str, val);
  *
  * @param {string} string - string to pass to util.format
  * @param {*} args - arguments for util.format
  * @returns result of debug module function
  */
-function cdebugf(str, ...args) {
-	if (getDebugEnabled()) {
+function cdebugf(debugTag, str, ...args) {
+	if (getDebugTagEnabled(debugTag)) {
 		return debugf(str, ...args);
 	}
 	return null;
@@ -232,8 +302,8 @@ function cdebugf(str, ...args) {
  * @param {object} obj - object to dump
  * @param {string} msg - message to show before dumping object (ignored if null/undefined)
  */
-function cdebugObj(obj, msg) {
-	if (getDebugEnabled()) {
+function cdebugObj(debugTag, obj, msg) {
+	if (getDebugTagEnabled(debugTag)) {
 		return debugObj(obj, msg);
 	}
 	return null;
@@ -269,7 +339,8 @@ function cdebugObj(obj, msg) {
 module.exports = {
 	setup,
 
-	setDebugEnabled, getDebugEnabled,
+	getDebugTagEnabled, setDebugTagEnabled,
+	getDebugTagEnabledList, getDebugTagEnabledListAsNiceString, setDebugTagEnabledList,
 
 	debug, debugf, debugObj, debugObj2,
 	cdebug, cdebugf, cdebugObj,

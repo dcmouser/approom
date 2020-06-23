@@ -134,7 +134,7 @@ async function routerPostEdit(req, res, next) {
 	// hand off work to crudAid
 	const bretv = await crudAid.handleEditPost(jrContext, UserModel, "", viewFilePathEdit, extraViewData);
 	if (!bretv) {
-		// just send them back to profile edit
+		// error; just send them back to profile edit
 		res.redirect(jrhExpress.reqOriginalUrl(req));
 	}
 }
@@ -163,7 +163,7 @@ async function routerGetIndex(req, res, next) {
 	const extraViewData = {
 		passportUserInfo,
 		user,
-		UserExtRoles: user.getExtRoles(),
+		UserExtRoles: user.getLoadedRoles(),
 	};
 
 	res.render("user/profile", {

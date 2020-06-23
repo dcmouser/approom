@@ -5,7 +5,7 @@
  * @description
  * ##### Overview
  * This file handles all requests related to the programmatic API interface for accessing the system.
- * @todo These routes are all intended to be called programmatically by other code, and so should all return json replies, but currently some return standard web pages for testing.
+ * These routes are all intended to be called programmatically by other code, and so should all return json replies.
 */
 
 "use strict";
@@ -23,7 +23,6 @@ const arserver = jrequire("arserver");
 
 // helpers
 const JrContext = require("../../helpers/jrcontext");
-const JrResult = require("../../helpers/jrresult");
 const jrhExpress = require("../../helpers/jrh_express");
 const jrhMisc = require("../../helpers/jrh_misc");
 const jrdebug = require("../../helpers/jrdebug");

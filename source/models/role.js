@@ -207,7 +207,9 @@ class RoleModel extends ModelBaseMongooseMinimal {
 			objectType,
 			objectId,
 		});
-		await roleAs.dbSave();
+
+		// ATTN: Note that it will not return on error to save since an exception will be thrown, since no jrContext is passed to store error
+		await roleAs.dbSaveThrowException(jrContext);
 
 		// log the acl change
 		await this.logChangedAcl(jrContext, user, "addRole", roleAs);

@@ -4,8 +4,7 @@
  * @copyright 5/1/19
  * @description
  * members only test route
- * @todo
- * remove this route eventually
+ * @todo Remove this route eventually, it's only used for testing
  */
 
 "use strict";
@@ -16,7 +15,6 @@ const express = require("express");
 
 // helpers
 const JrContext = require("../helpers/jrcontext");
-const JrResult = require("../helpers/jrresult");
 
 
 // requirement service locator

@@ -309,7 +309,6 @@ class ModelBaseMongoose {
 	}
 
 
-	// ATTN: TODO -- cache the schema definition and extras
 	static getSchemaFieldVal(fieldName, key, defaultVal) {
 		const modelSchemaDefinition = this.getSchemaDefinition();
 		if (modelSchemaDefinition[fieldName] && modelSchemaDefinition[fieldName][key] !== undefined) {
@@ -429,17 +428,6 @@ class ModelBaseMongoose {
 		const model = this.newMongooseModel(obj);
 		return model;
 	}
-
-	// cacheable list of schema keys
-	// ATTN: TODO - this is messy and confusing, fix it
-	getModelObjPropertyList() {
-		// cached value
-		if (this.getModelClass().modelObjPropertyList) {
-			return this.getModelClass().modelObjPropertyList;
-		}
-		const propkeys = Object.keys(this.getModelClass().getSchemaDefinition());
-		return propkeys;
-	}
 	//---------------------------------------------------------------------------
 
 
@@ -450,7 +438,7 @@ class ModelBaseMongoose {
 
 		// we only do this IF it"s not yet been done
 		if (this.modelSchema) {
-			jrdebug.cdebug("Skipping model rebuild for " + this.getCollectionName());
+			jrdebug.cdebug("misc", "Skipping model rebuild for " + this.getCollectionName());
 			return;
 		}
 
@@ -504,13 +492,18 @@ class ModelBaseMongoose {
 	}
 
 
-	async dbSave(jrContext) {
-		// simple wrapper (for now) around mongoose model save
-		// NOTE: this should always be used instead of superclass built-in mongoose save() function
-		// NOTE: if jrContext is specified then exceptions are not thrown and errors are added to it; otherwise exception is thrown
-		// ATTN:TODO it might be better to use an explicit flag regarding whether to throw exceptions and always allow passing in of jrContext
-		// ATTN:TODO log the errors here as db.severe if we have jrContext to do so?
-
+	/**
+	 * Save the database object
+	 * This is mostly a wrapper around mongoose model save, which should not be used directly
+	 * If jrContext is passed in, then exceptions are not thrown and errors are added to it; otherwise exception is thrown
+	 *
+	 * @param {*} jrContext
+	 * @returns the saved document on success, null on failure
+	 * @memberof ModelBaseMongoose
+	 * @todo it might be better to use an explicit flag regarding whether to throw exceptions and always allow passing in of jrContext
+	 * @todo log the errors here as db.severe if we have jrContext to do so?
+	 */
+	async dbSave(jrContext, flagAddError, flagThrowException) {
 		// update modification date
 		this.updateModificationDate();
 
@@ -518,27 +511,61 @@ class ModelBaseMongoose {
 		let retv;
 		let serr;
 		try {
+			if (false) {
+				// let's test what would happen if we force all database saved to fail
+				throw new Error("TEST FORCED ERROR");
+			}
 			retv = await await this.save();
 		} catch (err) {
 			// just set serr and drop down
 			serr = err;
 		}
 
-		if (serr !== undefined) {
-			if (jrContext === undefined) {
-				// just let exceptions percolate up
-				console.log("ATTN: Unexpected error while trying to mongoose save object:");
-				console.log(serr);
-				throw serr;
-			}
-			// if jrContext *is* set, we add error to it and do NOT throw exception
-			jrContext.pushError("Failed to save " + this.getModelClass().getNiceName() + ". " + serr.toString());
+		if (serr === undefined) {
+			// success
+			// we don't push a success result here because we would see it in operations we dont want messages on
+			// jrContext.pushSuccess(this.getModelClass().getNiceName() + " saved on " + jrhMisc.getNiceNowString() + ".");
+			return retv;
+		}
+
+		// error/exception
+
+		if (!flagAddError && !flagThrowException) {
+			// ignore error, don't push error or throw exception, just return null
 			return null;
 		}
-		// success
-		// we don't push a success result here because we would see it in operations we dont want messages on
-		// jrContext.pushSuccess(this.getModelClass().getNiceName() + " saved on " + jrhMisc.getNiceNowString() + ".");
-		return retv;
+
+		// full error message
+		const errorMessageFull = "Failed to save " + this.getModelClass().getNiceName() + ". " + serr.toString();
+
+		// log the error? the only danger here is that there is a database problem and we will have a recursive fail, but so be it.
+		await arserver.logr(jrContext, appdef.DefLogTypeErrorCriticalDb, errorMessageFull);
+
+		if (flagAddError && jrContext) {
+			// if jrContext *is* set, we add error to it and do NOT throw exception
+			jrContext.pushError(errorMessageFull);
+			return null;
+		}
+
+		// throw exception
+		// we were asked to throw exception on error (or asked to add error to an absent jrContext)
+		jrdebug.debug(errorMessageFull);
+		// throw serr;
+		throw new Error(errorMessageFull);
+	}
+
+
+	// simple wrapper that makes more explicit that an exception will be thrown on save error
+	async dbSaveThrowException(jrContext) {
+		return await this.dbSave(jrContext, false, true);
+	}
+
+	async dbSaveAddError(jrContext) {
+		return await this.dbSave(jrContext, true, false);
+	}
+
+	async dbSaveIgnoreError(jrContext) {
+		return await this.dbSave(jrContext, false, false);
 	}
 	//---------------------------------------------------------------------------
 
@@ -570,10 +597,10 @@ class ModelBaseMongoose {
 		// success?
 		if (flagUpdateUserRolesForNewObject && flagIsNew && !jrContext.isError() && user) {
 			// successful save and it was a new object, and caller wants us to set roles of owner
-			await user.addOwnerCreatorRolesForNewObject(jrContext, obj, true);
+			await user.addOwnerCreatorRolesForNewObject(jrContext, obj);
 			if (jrContext.isError()) {
-				// error setting roles, which means we would like to DESTROY the object and reset it..
-				// ATTN: unfinished
+				// ATTN: TODO: Error setting roles, which means we would like to DESTROY the object and reset it..
+				// ATTN: Unfinished
 				const emsg = "ATTN: Failed to set ownership roles on " + obj.getLogIdString();
 				arserver.logr(jrContext, "error.imp", emsg);
 				jrdebug.debug(emsg);
@@ -619,8 +646,8 @@ class ModelBaseMongoose {
 	}
 
 
-	// ATTN: this function typically does not have to run async so its cpu inefficient to make it async but rather than have 2 copies of this function to maintain, we use just async one
-	// ATTN: TODO in future make a version of this that is sync; or find some better way to handle it
+	// ATTN: This function typically does not have to run async so its cpu inefficient to make it async but rather than have 2 copies of this function to maintain, we use just async one
+	// ATTN: TODO: In future make a version of this that is sync; or find some better way to handle it
 	static async validateMergeAsync(jrContext, fieldNameSource, fieldNameTarget, source, saveFields, preValidatedFields, obj, flagRequired, validateFunction) {
 		//
 		// source and target field names might be different (for example, password is plaintext hashed into a different target fieldname)
@@ -1126,8 +1153,6 @@ class ModelBaseMongoose {
 	}
 
 	static newMongooseModel(obj) {
-		// const mmodel = this.mongooseModel;
-		// jrdebug.debugObj(mmodel, "MongooseModelm");
 		const retv = new this.mongooseModel(obj);
 		return retv;
 	}
@@ -1325,29 +1350,6 @@ class ModelBaseMongoose {
 
 
 
-
-
-
-
-	//---------------------------------------------------------------------------
-	modelObjPropertyCopy(flagIncludeId) {
-		// copy the properties in schema
-		const obj = {};
-		const keylist = this.getModelObjPropertyList();
-
-		keylist.forEach((key) => {
-			if (key in this) {
-				obj[key] = this[key];
-			}
-		});
-
-		if (flagIncludeId) {
-			obj._id = this._id;
-		}
-
-		return obj;
-	}
-	//---------------------------------------------------------------------------
 
 
 

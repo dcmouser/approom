@@ -685,28 +685,6 @@ class JrResult {
 
 
 
-	//---------------------------------------------------------------------------
-	/**
-	 * Helper function for common issue where we want to store in result whether we have already started rendering result
-	 * @todo - remove use of this function and simply store flag in express result
-	 *
-	 * @param {boolean} val - true or false
-	 */
-	setDoneRendering(val) {
-		this.doneRendering = val;
-	}
-
-
-	/**
-	 * Helper function for common issue where we want to store in result whether we have already started rendering result
-	 * @todo - remove use of this function and simply store flag in express result
-	 * @returns true if this flag has been set
-	 */
-	getDoneRendering() {
-		return this.doneRendering;
-	}
-	//---------------------------------------------------------------------------
-
 
 
 	//---------------------------------------------------------------------------
@@ -762,7 +740,7 @@ class JrResult {
 		if (!this.items || !this.items.error || this.items.error.length <= 0) {
 			return "";
 		}
-		const str = this.items.error.join(";");
+		const str = this.items.error.join(". ");
 		return str;
 	}
 
@@ -776,7 +754,7 @@ class JrResult {
 		if (!this.items || !this.items.success || this.items.success.length <= 0) {
 			return "";
 		}
-		const str = this.items.success.join(";");
+		const str = this.items.success.join(". ");
 		return str;
 	}
 	//---------------------------------------------------------------------------

@@ -55,14 +55,29 @@ function calcAxiosOptions(options) {
  * @param {object} postData - data to post
  * @returns the response object
  */
-async function postAxiosCatchError(url, postData, options) {
+async function postAxiosGetResponseDataCatchError(url, postData, options) {
 	let response;
 	try {
 		response = await axios.post(url, postData, calcAxiosOptions(options));
 	} catch (e) {
 		response = e.response;
+		// we expect the response to be a json object; if its not, we force response.data to be an object and inject an error into it
+		// force a data.error in response
+		if (!response) {
+			// empty response failure to connect?
+			response = {
+				data: {},
+			};
+		} else if (!response.data || typeof response.data !== "object") {
+			// add data field if not found
+			response.data = {};
+		}
 		if (!response.data.error) {
-			response.data.error = "Error exception in request; status " + e.response.status;
+			// store error type exception
+			const status = e.response ? e.response.status : "unknown";
+			response.data.error = "Error (status " + status + ") exception in request: " + e.toString();
+			response.data.errorType = "exception";
+			// console.log("ERROR in postAxiosGetResponseDataCatchError exception: " + response.data.error);
 		}
 	}
 	return response;
@@ -101,6 +116,6 @@ async function getCatchError(url, options) {
 // export the class as the sole export
 module.exports = {
 	calcAxiosOptions,
-	postAxiosCatchError,
+	postAxiosGetResponseDataCatchError,
 	getCatchError,
 };

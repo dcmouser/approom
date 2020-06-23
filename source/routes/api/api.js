@@ -5,7 +5,7 @@
  * @description
  * ##### Overview
  * This file handles all requests related to the programmatic API interface for accessing the system.
- * @todo These routes are all intended to be called programmatically by other code, and so should all return json replies, but currently some return standard web pages for testing.
+ * These routes are all intended to be called programmatically by other code, and so should all return json replies.
 */
 
 "use strict";
@@ -26,8 +26,6 @@ const JrContext = require("../../helpers/jrcontext");
 const jrhExpress = require("../../helpers/jrh_express");
 const jrdebug = require("../../helpers/jrdebug");
 
-// constants
-const appdef = jrequire("appdef");
 
 
 
@@ -50,11 +48,13 @@ function setupRouter(urlPath) {
 
 	// setup routes
 	router.get("/", routerGetIndex);
-	router.get("/reqrefresh", routerGetReqRefresh);
-	router.post("/reqrefresh", routerPostReqRefresh);
+	router.all("/reqrefreshsession", routerAllReqRefreshSession);
+	router.get("/reqrefreshcredentials", routerGetReqRefreshCredentials);
+	router.post("/reqrefreshcredentials", routerPostReqRefreshCredentials);
 	router.all("/refreshaccess", routerAllRefreshAccess);
 	router.all("/tokentest", routerAllTokenTest);
-	router.get("/dos", routerGetDos);
+	router.all("/dos", routerAllDos);
+	router.all("/hello", routerAllHello);
 
 	// return router
 	return router;
@@ -98,7 +98,7 @@ async function routerGetIndex(req, res, next) {
  * * Currently this function is just used to test rate limiting for DOS type attacks.
  */
 // test rate limiting of generic 404s at api route
-async function routerGetDos(req, res, next) {
+async function routerAllDos(req, res, next) {
 	const jrContext = JrContext.makeNew(req, res, next);
 	// ATTN: test of rate limiting block
 	const rateLimiter = arserver.getRateLimiterApi();
@@ -115,7 +115,7 @@ async function routerGetDos(req, res, next) {
 		return;
 	}
 
-	jrhExpress.sendJsonError(jrContext, 404, "API Route " + req.baseUrl + "/" + req.path + " not found.  API not implemented yet.", "404");
+	jrhExpress.sendJsonDataSuccess(jrContext, "API Route " + req.baseUrl + req.path + " processes successfully; no DOS protection activated.  Try reloading this url frequently to trigger it.", {});
 }
 
 
@@ -124,9 +124,10 @@ async function routerGetDos(req, res, next) {
  * @description
  * Present user with form for their username and password,
  * so they may request a long-lived Refresh token (JWT).
- * @todo Note that this web page we present is useful for debugging, but should not be necesary in production use, because we expect code to be posting to us programmatically.
+ * ##### NOTES
+ * This route returns an html page (not json) and is used for user to fill in their credentials interactively; it may be unneeded since we expected api to be submitted programatically
  */
-async function routerGetReqRefresh(req, res, next) {
+async function routerGetReqRefreshCredentials(req, res, next) {
 	const jrContext = JrContext.makeNew(req, res, next);
 	// render page
 	res.render("api/tokenuserpassform", {
@@ -137,7 +138,29 @@ async function routerGetReqRefresh(req, res, next) {
 
 
 
+//---------------------------------------------------------------------------
+/**
+ * @description
+ * This uses the user's current logged in session to generate a refresh token.
+ * It might be preferable to having user manually authenticate their credentials to get one because it would allow them to log in via facebook, twitter, etc.
+ *
+ * @param {*} req
+ * @param {*} res
+ * @param {*} next
+ */
+async function routerAllReqRefreshSession(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
 
+	if (!await arserver.requireRecentLoggedIn(jrContext, 60000)) {
+		// errror and redirect will have happened
+		return;
+	}
+	const user = await arserver.lookupLoggedInUser(jrContext);
+
+	// success
+	await renderRefreshTokenForUser(jrContext, user);
+}
+//---------------------------------------------------------------------------
 
 
 
@@ -160,7 +183,7 @@ async function routerGetReqRefresh(req, res, next) {
  * * The IDEA is that the refresh token is coded with scope "api" and cannot be used to perform arbitrary actions on the site; it can only be used for api-like actions.
  * * The refresh token should only be used to request access tokens, which are short-lived tokens that can be use to perform actual api functions.
  */
-async function routerPostReqRefresh(req, res, next) {
+async function routerPostReqRefreshCredentials(req, res, next) {
 	const jrContext = JrContext.makeNew(req, res, next);
 	// do a local test of passed username and password; DON'T store session info (i.e. don't actually log them in just look up user if they match password)
 	// The reason we do this like this instead of trusting a logged in session user is so that this call can be made by a client that does not ever do session login
@@ -171,7 +194,12 @@ async function routerPostReqRefresh(req, res, next) {
 	}
 
 	// success
-	const secureToken = await arserver.makeSecureTokenRefresh(user);
+	await renderRefreshTokenForUser(jrContext, user);
+}
+
+
+async function renderRefreshTokenForUser(jrContext, user) {
+	const secureToken = await arserver.makeSecureTokenRefresh(jrContext, user);
 
 	// log request
 	arserver.logr(jrContext, "api.token", "generated refresh token", null, user);
@@ -185,7 +213,6 @@ async function routerPostReqRefresh(req, res, next) {
 /**
  * @description
  * Make a short-lived (JWT) Access token, using a Refresh token.  Here the user passes us a Refresh token and we give them (after verifying it's validity) an Access token.
- * @todo It gets token from the query string (token parameter); eventually we want this to be (only) retrieved from headers or post data.  This just makes it easier to test initially.
  * ##### NOTES
  * * see <a href="https://scotch.io/@devGson/api-authentication-with-json-web-tokensjwt-and-passport">using refresh tokens with jwt</a>
  */
@@ -193,14 +220,14 @@ async function routerAllRefreshAccess(req, res, next) {
 	const jrContext = JrContext.makeNew(req, res, next);
 
 	// first the user has to give us a valid REFRESH token
-	const [userPassport, user] = await arserver.asyncPassportManualNonSessionAuthenticateFromTokenGetPassportProfileAndUser(jrContext, next, "refresh");
+	const [userPassport, user] = await arserver.asyncPassportManualNonSessionAuthenticateFromTokenInRequestGetPassportProfileAndUser(jrContext, next, "refresh");
 	if (jrContext.isError()) {
 		arserver.renderErrorJson(jrContext, 403);
 		return;
 	}
 
 	// ok they gave us a valid refresh token, so now we generate an access token for them
-	const secureToken = await arserver.makeSecureTokenAccessFromRefreshToken(user, userPassport.token);
+	const secureToken = await arserver.makeSecureTokenAccessFromRefreshToken(jrContext, user, userPassport.token);
 
 	// log request
 	arserver.logr(jrContext, "api.token", "refreshed access token", null, user);
@@ -215,13 +242,12 @@ async function routerAllRefreshAccess(req, res, next) {
  * @description
  * Evaluate a refresh or access token, and report on its contents and validity; useful for testing.
  * @todo This should probably not be present in production version.
- * @todo It gets token from the query string (token parameter); we probably want it in header or post data eventually.
  */
 async function routerAllTokenTest(req, res, next) {
 	const jrContext = JrContext.makeNew(req, res, next);
 
 	// retrieve/test the token passed by the user
-	const userPassport = await arserver.asyncPassportManualNonSessionAuthenticateFromTokenGetMinimalPassportUsrData(jrContext, next, null);
+	const userPassport = await arserver.asyncPassportManualNonSessionAuthenticateFromTokenInRequestGetMinimalPassportUsrData(jrContext, next, null);
 	if (jrContext.isError()) {
 		arserver.renderErrorJson(jrContext, 403);
 		return;
@@ -238,11 +264,21 @@ async function routerAllTokenTest(req, res, next) {
 
 
 
-
-
-
-
-
+//---------------------------------------------------------------------------
+/**
+ * @description
+ * Just reply with a simple success message that a client could test for
+ */
+async function routerAllHello(req, res, next) {
+	const jrContext = JrContext.makeNew(req, res, next);
+	const returnData = {
+		message: "hello world.",
+		libVersion: arserver.getVersionLib(),
+		apiVersion: arserver.getVersionApi(),
+	};
+	jrhExpress.sendJsonDataSuccess(jrContext, "Ok", returnData);
+}
+//---------------------------------------------------------------------------
 
 
 

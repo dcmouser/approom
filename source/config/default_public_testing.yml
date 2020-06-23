@@ -4,7 +4,7 @@
 # INSTEAD, YOUR CUSTOM CONFIG FILES SHOULD BE IN THE directory ../../local/config/
 # WHERE THEY WILL OVERRIDE THESE VALUES
 
-DEBUG: false
+DEBUGTAGS: []
 database:
   DB_NAME: "approomdb_test"
 testing:

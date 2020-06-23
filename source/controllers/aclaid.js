@@ -199,18 +199,18 @@ class AclAid {
 	 */
 	async anyRolesImplyPermission(jrContext, roles, action, target) {
 		// return true if any of the specified roles (array) have permission
-		// jrdebug.cdebug("In anyRolesImplyPermission with action = " + action + ", target = " + target);
-		// jrdebug.cdebugObj(roles, "roles");
+		// jrdebug.cdebug("misc", "In anyRolesImplyPermission with action = " + action + ", target = " + target);
+		// jrdebug.cdebugObj("misc", roles, "roles");
 		for (let i = 0; i < roles.length; i++) {
 			if (await this.roleImpliesPermission(jrContext, roles[i], action, target) === true) {
 				// yes!
-				// jrdebug.cdebug("anyRolesImplyPermission, role check returning: YES, has permission [due to role " + roles[key] + "].");
+				// jrdebug.cdebug("misc", "anyRolesImplyPermission, role check returning: YES, has permission [due to role " + roles[key] + "].");
 				return true;
 			}
 		}
 
 		// nope, none do
-		jrdebug.cdebug("anyRolesImplyPermission, role check returning: NO, does not have permission.");
+		jrdebug.cdebug("misc", "anyRolesImplyPermission, role check returning: NO, does not have permission.");
 		return false;
 	}
 
@@ -227,19 +227,19 @@ class AclAid {
 	 */
 	async roleImpliesPermission(jrContext, role, action, target) {
 		// return true if the role implies the action
-		jrdebug.cdebug("In roleImpliesPermission with action = " + action + ", target = " + target + ", role = " + role);
+		jrdebug.cdebug("misc", "In roleImpliesPermission with action = " + action + ", target = " + target + ", role = " + role);
 
 		try {
 			const permission = await this.roleAcl.can(role).execute(action).on(target);
 			const granted = (permission.granted === true);
-			jrdebug.cdebug("RoleImpliesPermission, role check returning: " + granted);
+			jrdebug.cdebug("misc", "RoleImpliesPermission, role check returning: " + granted);
 			return granted;
 		} catch (err) {
 			// this error can be thrown if a role is not registered any longer
 			// log it (critical error should trigger emergency alert email to admin)
 			const arserver = jrequire("arserver");
 			const errmsg = "Acl permission check threw error while asking about roleAcl.can(" + role + ").execute(" + action + ").on(" + target + "): " + err.message;
-			jrdebug.cdebug("RoleImpliesPermission, role check threw exception: " + errmsg);
+			jrdebug.cdebug("misc", "RoleImpliesPermission, role check threw exception: " + errmsg);
 			await arserver.logr(jrContext, appdef.DefLogTypeErrorCriticalAcl, errmsg, err);
 			// return permission denied
 			return false;
@@ -390,17 +390,6 @@ class AclAid {
 		// next step is to perform the role change (add or delete)
 		if (!jrContext.isError()) {
 			await recipient.makeRoleAclChange(jrContext, rcobj.operation, rcobj.role, rcobj.object);
-		}
-
-		// save any changes
-		if (!jrContext.isError()) {
-			await recipient.dbSave(jrContext);
-			// log what we just did?
-			// ATTN: TODO log change
-			// ATTN: TODO improve this message with details
-			if (!jrContext.isError()) {
-				jrContext.pushSuccess("Role change successful.");
-			}
 		}
 	}
 	//---------------------------------------------------------------------------

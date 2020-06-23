@@ -36,12 +36,16 @@ const arclient = jrequire("arclient");
 const appdef = jrequire("appdef");
 
 // helper modules
-const JrResult = require("../helpers/jrresult");
 const jrdebug = require("../helpers/jrdebug");
 //---------------------------------------------------------------------------
 
 
 
+
+//---------------------------------------------------------------------------
+// we use a module-wide flag to help testing when we want to fake bad credentials to test error
+let flagUseBadCredentialsForTesting = false;
+//---------------------------------------------------------------------------
 
 
 
@@ -80,8 +84,9 @@ describe("client", function test() {
 
 	// connect to db at start, and tear down at end
 	before(async () => {
+		client = undefined;
 		// connect server and db and run it to listen for connections
-		await arserver.startUp(true);
+		assert(await arserver.startUp(true), "Could not connect to and start the arserver!");
 		// create client
 		client = createTestClient();
 	});
@@ -90,11 +95,14 @@ describe("client", function test() {
 		// disconnect server
 		await arserver.shutDown();
 		// debug
-		if (jrdebug.getDebugEnabled()) {
-			client.debugToConsole();
+		if (client) {
+			if (jrdebug.getDebugTagEnabled("client")) {
+				client.debugToConsole();
+			}
+			// close client
+			await client.shutDown();
+			client = undefined;
 		}
-		// close client
-		await client.shutDown();
 	});
 
 
@@ -115,8 +123,8 @@ describe("client", function test() {
 		const reply = await client.invoke("/api/app/lookup", query);
 		assertNoErrorInReply(reply, "Invoking app lookup");
 		app = reply.app;
-		jrdebug.cdebug("Reply from app lookup:");
-		jrdebug.cdebugObj(reply);
+		jrdebug.cdebug("test", "Reply from app lookup:");
+		jrdebug.cdebugObj("test", reply);
 	});
 
 	// create a new room
@@ -129,8 +137,8 @@ describe("client", function test() {
 		};
 		const reply = await client.invoke("/api/room/add", query);
 		assertNoErrorInReply(reply, "Invoking room add");
-		jrdebug.cdebug("Reply from room add:");
-		jrdebug.cdebugObj(reply);
+		jrdebug.cdebug("test", "Reply from room add:");
+		jrdebug.cdebugObj("test", reply);
 	});
 
 
@@ -144,8 +152,8 @@ describe("client", function test() {
 		const reply = await client.invoke("/api/room/lookup", query);
 		assertNoErrorInReply(reply, "Invoking room lookup");
 		room = reply.room;
-		jrdebug.cdebug("Reply from room lookup:");
-		jrdebug.cdebugObj(reply);
+		jrdebug.cdebug("test", "Reply from room lookup:");
+		jrdebug.cdebugObj("test", reply);
 	});
 
 	// get roomdata in the room
@@ -157,8 +165,8 @@ describe("client", function test() {
 		const reply = await client.invoke("/api/roomdata/list", query);
 		assertNoErrorInReply(reply, "Invoking room lookup");
 		jrdebug.debug("Finished roomdata lookup, got " + reply.roomData.length + " items.");
-		jrdebug.cdebug("Reply from roomdata lookup:");
-		jrdebug.cdebugObj(reply);
+		jrdebug.cdebug("test", "Reply from roomdata lookup:");
+		jrdebug.cdebugObj("test", reply);
 	});
 
 	// get roomdata in the room via shortcode
@@ -185,8 +193,48 @@ describe("client", function test() {
 		};
 		const reply = await client.invoke("/api/roomdata/add", query);
 		assertNoErrorInReply(reply, "Invoking roomdata add");
-		jrdebug.cdebug("Reply from roomdata add:");
-		jrdebug.cdebugObj(reply);
+		jrdebug.cdebug("test", "Reply from roomdata add:");
+		jrdebug.cdebugObj("test", reply);
+	});
+
+
+	// lets try some call that we know should fail to connect
+	it("Test what should be a failure to get a good reply", async () => {
+		const reply = await client.invoke("/api/BADURL");
+		assertErrorInReply(reply, "Testing invocation that should return an error.");
+	});
+
+
+
+	// lets try a call that should be ok but we're going to false a bad auth token reply
+	it("Test what should be a failure to get a valid auth token", async () => {
+		flagUseBadCredentialsForTesting = true;
+		client.disconnectAndClearCache();
+		await client.connect(true);
+		flagUseBadCredentialsForTesting = false;
+		assert(!client.getValidApiAccess(), "Connected successfully but we should not have been able to.");
+	});
+
+
+	// lets try a call to a bad port that should timeout
+	it("Test what should be a failure timeout or bad connection to bad ip", async () => {
+		// force bad client options
+		client.disconnectAndClearCache();
+		client.setOption("serverUrlBase", "http://127.0.0.1:1234");
+		// try to connect to bad client
+		await client.connect(true);
+		// restore client options
+		setClientOptions(client);
+		// make sure it failed
+		assert(!client.getValidApiAccess(), "Connected successfully but we should not have been able to.");
+	});
+
+
+
+	// get roomdata in the room via shortcode
+	it("Test hello reply", async () => {
+		const reply = await client.invoke("/api/hello");
+		assertNoErrorInReply(reply, "Invoking simple api hello");
 	});
 
 
@@ -210,7 +258,13 @@ describe("client", function test() {
 function createTestClient() {
 	// create new client
 	const client = arclient.makeNewAppRoomClient();
+	setClientOptions(client);
+	return client;
+}
 
+
+
+function setClientOptions(client) {
 	// client options
 	const clientOptions = {
 		serverUrlBase: arserver.getBaseServerIpHttp(),
@@ -220,26 +274,25 @@ function createTestClient() {
 		checkTokenExpiration: true,
 	};
 	client.setOptions(clientOptions);
-	return client;
 }
 
 
 
 async function handleGetCredentialsCallbackFunction(clientp, hintMessage) {
-	jrdebug.cdebug("DEBUG - in client callback - handleGetCredentialsFunction: " + hintMessage);
+	jrdebug.cdebug("client", "DEBUG - in client callback - handleGetCredentialsFunction: " + hintMessage);
 	const credentials = {
 		usernameEmail: arserver.getConfigVal(appdef.DefConfigKeyTestingClientUsernameEmail),
-		password: arserver.getConfigVal(appdef.DefConfigKeyTestingClientPassword),
+		password: (flagUseBadCredentialsForTesting ? "__BADPASSWORD__" : arserver.getConfigVal(appdef.DefConfigKeyTestingClientPassword)),
 	};
 	return credentials;
 }
 
 async function handleErrorCallbackFunction(clientp, errorMessage) {
-	jrdebug.cdebug("DEBUG - in client callback - handleErrorFunction: " + errorMessage);
+	jrdebug.cdebug("client", "DEBUG - in client callback - handleErrorFunction: " + errorMessage);
 }
 
 async function handleDebugCallbackFunction(clientp, debugMessage) {
-	jrdebug.cdebug("DEBUG - in client callback  DBG: " + debugMessage);
+	jrdebug.cdebug("client", "DEBUG - in client callback  DBG: " + debugMessage);
 }
 //---------------------------------------------------------------------------
 
@@ -255,10 +308,26 @@ async function assertClientConnect(client, flagReconnect) {
 }
 
 function assertNoErrorInReply(reply, hintMessage) {
-	// if (reply.error) {
-	// 	console.log("Error details: " + reply.error);
-	// }
-	assert(!reply.error, "Error returned in " + hintMessage + ": " + reply.error);
+	assert(!isErrorInDataReply(reply), "Error returned in " + hintMessage + ": " + reply.error);
+}
+
+
+function assertErrorInReply(reply, hintMessage) {
+	assert(isErrorInDataReply(reply), "Ee expected but received no error returned in " + hintMessage + ": " + reply.error);
+}
+
+
+function isErrorInDataReply(reply) {
+	if (typeof reply !== "object") {
+		return true;
+	}
+	if (reply.error) {
+		return true;
+	}
+	if (!reply.success) {
+		return true;
+	}
+	return false;
 }
 //---------------------------------------------------------------------------
 

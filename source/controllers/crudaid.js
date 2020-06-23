@@ -570,7 +570,6 @@ class CrudAid {
 				if (!baseCrudUrl) {
 					// just return to caller saying they should take over
 					jrContext.addToThisSession();
-					// ATTN: todo -- check if this return leads to failure to render/redirect any page?
 					return false;
 				}
 

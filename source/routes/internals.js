@@ -21,7 +21,6 @@ const arserver = jrequire("arserver");
 
 // helpers
 const JrContext = require("../helpers/jrcontext");
-const JrResult = require("../helpers/jrresult");
 
 // constants
 const appdef = jrequire("appdef");

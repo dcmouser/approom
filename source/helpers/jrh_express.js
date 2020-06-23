@@ -21,8 +21,10 @@ const JrResult = require("./jrresult");
 
 
 
-
-
+//---------------------------------------------------------------------------
+// constants
+const defReplyErrorTypeAuthToken = "authToken";
+//---------------------------------------------------------------------------
 
 
 
@@ -61,7 +63,7 @@ async function asyncPassportAuthenticate(jrContext, authOptions, provider, provi
 			if (err || !inuserPassport) {
 				// add error
 				const msg = err || info;
-				jrContext.pushError("error authenticating " + providerNiceLabel + ": " + JrResult.passportOrJrResultErrorAsString(msg) + ".");
+				jrContext.pushError("Error authenticating " + providerNiceLabel + ": " + JrResult.passportOrJrResultErrorAsString(msg) + ".");
 				resolve();
 			}
 			// success
@@ -664,7 +666,7 @@ function sendJsonErrorAuthToken(jrContext) {
 	// error message as described in jrContext, or just "true" if for some reason there is no error in context
 	const emsg = jrContext.getErrorsAsString() || true;
 	//
-	sendJsonError(jrContext, status, emsg, "authToken");
+	sendJsonError(jrContext, status, emsg, defReplyErrorTypeAuthToken);
 }
 
 
@@ -713,6 +715,8 @@ function sendJsonErorrAcl(jrContext, permission, permissionObjType, permissionOb
 
 // export the class as the sole export
 module.exports = {
+	defReplyErrorTypeAuthToken,
+
 	asyncPassportAuthenticate,
 	asyncPassportReqLogin,
 

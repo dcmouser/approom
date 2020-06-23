@@ -81,7 +81,7 @@ async function routerGetInvite(req, res, next) {
 	}
 
 	// present form
-	presentFormInvite(req, res, null);
+	presentFormInvite(jrContext);
 }
 
 

@@ -12,9 +12,6 @@
  * This is meant to be used as a singleton -- a global central requirement loader for our classes.
  * It is only meant to be used for modules that one might want to swap out with replacements when using a given framework.
  *
- * @todo
- * Force use of a namespace along with names, to avoid collissions.
- *
  * @see <a href="https://www.amazon.com/Node-js-Design-Patterns-server-side-applications/dp/1785885588">NodeJs Patterns book</a>
  */
 

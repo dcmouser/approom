@@ -101,7 +101,7 @@ class AdminAid {
 			});
 
 			// save app
-			await app.dbSave();
+			await app.dbSaveThrowException(jrContext);
 			appsAdded += 1;
 			appid = app.getIdAsM();
 
@@ -134,7 +134,7 @@ class AdminAid {
 				});
 
 				// save room
-				await room.dbSave();
+				await room.dbSaveThrowException(jrContext);
 				roomsAdded += 1;
 				roomid = room.getIdAsM();
 
@@ -151,7 +151,7 @@ class AdminAid {
 					});
 
 					// save it
-					await roomdata.dbSave();
+					await roomdata.dbSaveThrowException(jrContext);
 					roomDatasAdded += 1;
 				}
 

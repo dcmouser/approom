@@ -17,6 +17,7 @@ const mongoose = require("mongoose");
 const jrequire = require("../helpers/jrequire");
 
 // models
+const ModelBaseMongoose = jrequire("models/model_base_mongoose");
 const RoomdataModel = jrequire("models/roomdata");
 
 // our helper modules
@@ -31,7 +32,7 @@ const jrhValidate = require("../helpers/jrh_validate");
  * @class FileModel
  * @extends {RoomdataModel}
  */
-class FileModel extends RoomdataModel {
+class FileModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	getModelClass() {
@@ -66,11 +67,16 @@ class FileModel extends RoomdataModel {
 
 
 	//---------------------------------------------------------------------------
+	// ATTN: If we wanted to dervice from another model we would want to return ...super.calcSchemaDefinition(), our custom fields
+
 	static calcSchemaDefinition() {
+		const RoomModel = jrequire("models/room");
 		return {
 			...(this.getBaseSchemaDefinition()),
 			//
 			roomid: {
+				label: "Room Id",
+				valueFunction: this.makeModelValueFunctionCrudObjectIdFromList(RoomModel, "roomid", "roomLabel", "roomlist"),
 				mongoose: {
 					type: mongoose.Schema.ObjectId,
 					required: true,
@@ -105,22 +111,6 @@ class FileModel extends RoomdataModel {
 
 
 
-	//---------------------------------------------------------------------------
-	// ATTN: TODO - duplicate code in file model, consolidate!
-
-	// crud add/edit form helper data
-	// in case of rooms, this should be the list of APPS that the USER has access to
-	static async calcCrudEditHelperData(user, id) {
-		const reta = super.calcCrudEditHelperData(user, id);
-		return reta;
-	}
-
-	// crud helper for view
-	static async calcCrudViewHelperData(jrContext, id, obj) {
-		const reta = super.calcCrudViewHelperData(jrContext, id, obj);
-		return reta;
-	}
-	//---------------------------------------------------------------------------
 
 
 
@@ -136,11 +126,13 @@ class FileModel extends RoomdataModel {
 		// this is a safety check to allow us to handle form data submitted flexibly and still keep tight control over what data submitted is used
 		// subclasses implement; by default we return empty array
 		// NOTE: this list can be generated dynamically based on logged in user
-		let reta = super.getSaveFields(operationType);
 
+		let reta = [];
 		if (operationType === "crudAdd" || operationType === "crudEdit" || operationType === "add") {
-			reta = jrhMisc.mergeArraysKeepDupes(reta, ["path", "label", "sizeInBytes"]);
+			reta = ["roomid", "path", "label", "sizeInBytes", "description", "disabled", "notes", "extraData"];
 		}
+
+		// ATTN: If we wanted to dervice from another model we would want to return jrhMisc.mergeArraysDedupe(super.getSaveFields(operationType), reta);
 
 		return reta;
 	}
@@ -152,19 +144,21 @@ class FileModel extends RoomdataModel {
 	static async doValidateAndSave(jrContext, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
-
-		// first base class work (but make sure to tell it NOT to save)
 		let objdoc;
 
-		// ATTN: why do our other model classes not do this...
-		// await super.doValidateAndSave(jrContext, options, false, loggedInUser, source, saveFields, preValidatedFields, ignoreFields, obj);
+		// ATTN: If we wanted to dervice from another model we would do super.doValidateAndSave(jrContext, options, FALSE,...) so it would validate and not save
+		// and then NOT call validateMergeAsyncBaseFields() here since it would already be called by super, or validateComplain() for same reason
 
-		// now our specific derived class fields
-		if (!jrContext.isError()) {
-			await this.validateMergeAsync(jrContext, "path", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
-			await this.validateMergeAsync(jrContext, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
-			await this.validateMergeAsync(jrContext, "sizeInBytes", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateInteger(jrr, keyname, inVal, flagRequired));
-		}
+		// set fields from form and validate
+		await this.validateMergeAsync(jrContext, "roomid", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => this.validateModelFieldRoomId(jrr, keyname, inVal, user));
+		await this.validateMergeAsync(jrContext, "label", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrContext, "description", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+		//
+		await this.validateMergeAsync(jrContext, "path", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrContext, "sizeInBytes", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateInteger(jrr, keyname, inVal, flagRequired));
+
+		// base fields shared between all? (notes, etc.)
+		await this.validateMergeAsyncBaseFields(jrContext, options, flagSave, source, saveFields, preValidatedFields, obj);
 
 		// complain about fields in source that we aren't allowed to save
 		await this.validateComplainExtraFields(jrContext, options, source, saveFields, preValidatedFields, ignoreFields);
@@ -178,7 +172,7 @@ class FileModel extends RoomdataModel {
 
 		if (flagSave) {
 			// save it
-			objdoc = await obj.dbSave(jrContext);
+			objdoc = await obj.dbSaveAddError(jrContext);
 		}
 
 		// return the saved object

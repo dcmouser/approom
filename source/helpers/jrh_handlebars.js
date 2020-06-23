@@ -121,7 +121,7 @@ function loadPartialFiles(partialsDir, prefix) {
 				const partialName = matches[1];
 				const prefixedPartialName = prefix ? (prefix + "/") + partialName : partialName;
 				const template = fs.readFileSync(fullPath, "utf8");
-				jrdebug.cdebugf("Adding handlebar view partial: %s.", prefixedPartialName);
+				jrdebug.cdebugf("misc", "Adding handlebar view partial: %s.", prefixedPartialName);
 				hbs.registerPartial(prefixedPartialName, template);
 			}
 		}

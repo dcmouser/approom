@@ -116,6 +116,13 @@ class LogModel extends ModelBaseMongooseMinimal {
 					type: String,
 				},
 			},
+			url: {
+				label: "URL",
+				readOnly: true,
+				mongoose: {
+					type: String,
+				},
+			},
 			extraData: {
 				label: "Extra data",
 				valueFunction: this.makeModelValueFunctionExtraData(),
@@ -183,7 +190,7 @@ class LogModel extends ModelBaseMongooseMinimal {
 	//---------------------------------------------------------------------------
 	// create a new log model object (suitable for saving) from standard log data
 	// this could throw exception on failure to save to database, etc.
-	static async createLogDbModelInstanceFromLogDataAndSave(type, message, extraData, mergeData) {
+	static async createLogDbModelInstanceFromLogDataAndSave(jrContext, type, message, extraData, mergeData) {
 		let logObj;
 
 		if (message && !(typeof message === "string")) {
@@ -218,9 +225,8 @@ class LogModel extends ModelBaseMongooseMinimal {
 		// create the model
 		const logModel = LogModel.createModel(logObj);
 
-		// save it to db
-		// ATTN: 5/12/20 - we are having a hard time catching exception on fatal error shutdown here
-		const retv = await logModel.dbSave();
+		// ATTN: Note that it will not return on error to save since an exception will be thrown, since no jrContext is passed to store error
+		const retv = await logModel.dbSaveThrowException(jrContext);
 		return retv;
 	}
 	//---------------------------------------------------------------------------

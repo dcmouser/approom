@@ -11,10 +11,17 @@
 
 // modules
 const assert = require("assert");
+const { appendFile } = require("fs");
+
 
 // helper modules
 const jrhAxios = require("../helpers/jrh_axios");
 const jrhMisc = require("../helpers/jrh_misc");
+const jrhExpress = require("../helpers/jrh_express");
+
+
+
+
 
 
 
@@ -48,15 +55,23 @@ class AppRoomClient {
 		};
 
 		// initial cache
+		this.resetCache();
+
+		// uri paths for basic api functions
+		this.pathRefreshTokenRequestFromCredentials = "/api/reqrefreshcredentials";
+		this.pathAccessTokenRequest = "/api/refreshaccess";
+		this.pathTokenValidate = "/api/tokentest";
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	resetCache() {
 		this.cache = {
 			refreshToken: null,
 			accessToken: null,
 		};
-
-		// uri paths for basic api functions
-		this.pathRefreshTokenRequest = "/api/reqrefresh";
-		this.pathAccessTokenRequest = "/api/refreshaccess";
-		this.pathTokenValidate = "/api/tokentest";
 	}
 	//---------------------------------------------------------------------------
 
@@ -115,6 +130,15 @@ class AppRoomClient {
 	setValidApiAccess(val) {
 		this.validApiAccess = val;
 	}
+
+
+	disconnectAndClearCache() {
+		// set flag saying we are not connected
+		this.setValidApiAccess(false);
+		// let go of refresh and access tokens
+		this.resetCache();
+	}
+
 
 	/**
 	 * Accessor
@@ -356,6 +380,9 @@ class AppRoomClient {
 		// get data from response
 		const data = response.data;
 
+		// put status code in data
+		data.statusCode = response.status;
+
 		// clear any existing error
 		this.clearErrors();
 
@@ -370,11 +397,13 @@ class AppRoomClient {
 			// check if there is already an error in the reply; if not, we add one, so that caller can always look at data.error
 			// note that the data.success might still be true, as this could be an error based on missing expectedKey
 			if (!data.error) {
+				// no error value but it was an error
 				if (expectedKey && data[expectedKey] === undefined) {
 					data.error = "unexpected reply; missing key value in reply [" + expectedKey + "]";
 				} else {
 					data.error = "unexpected reply";
 				}
+				data.errorType = "unknown";
 			}
 			this.setLastError("Error reply during " + hintActionString + " at " + url + ": " + data.error, true);
 		}
@@ -414,7 +443,7 @@ class AppRoomClient {
 		const postData = {
 			token: this.getAccessTokenVal(),
 		};
-		const response = await this.postCatchError(url, postData, false);
+		const response = await this.postRequestGetResponseDataCatchError(url, postData, false);
 
 		// extract data, check for error, set succsss status, last error, etc.
 		const data = await this.extractDataTriggerError(response, url, "validateAccessToken", null);
@@ -473,7 +502,7 @@ class AppRoomClient {
 		const postData = {
 			token: this.getRefreshTokenVal(),
 		};
-		const responseData = await this.postCatchError(url, postData, false);
+		const responseData = await this.postRequestGetResponseDataCatchError(url, postData, false);
 
 		// extract data, check for error, set last error on error, etc.
 		const data = await this.extractDataTriggerError(responseData, url, "retrieveAccessTokenFromRefreshToken", "token");
@@ -507,12 +536,12 @@ class AppRoomClient {
 		}
 
 		// post data
-		const url = this.getOptionServerUrlBase() + this.pathRefreshTokenRequest;
+		const url = this.getOptionServerUrlBase() + this.pathRefreshTokenRequestFromCredentials;
 		const postData = {
 			usernameEmail: credentials.usernameEmail,
 			password: credentials.password,
 		};
-		const responseData = await this.postCatchError(url, postData, false);
+		const responseData = await this.postRequestGetResponseDataCatchError(url, postData, false);
 
 		// extract data, check for error, set succsss status, last error, etc.
 		const data = await this.extractDataTriggerError(responseData, url, "retrieveRefreshTokenUsingCredentials", "token");
@@ -697,20 +726,22 @@ class AppRoomClient {
 					// failed to connect; make our OWN error object and return it
 					data = {
 						error: this.getLastError(),
-						errorType: "authToken",
+						errorType: jrhExpress.defReplyErrorTypeAuthToken,
 					};
 					return data;
 				}
 			}
 
+			// ok we are connected
+
 			// post and get response
-			responseData = await this.postCatchError(url, postData, true);
+			responseData = await this.postRequestGetResponseDataCatchError(url, postData, true);
 			// extract data, check for error, set succsss status, last error, etc.
 			data = await this.extractDataTriggerError(responseData, url, "invoking " + urlEndpoint, null);
 
-			// IFF we dont get a tokenError then we can break and return the error
-			// ATTN: TODO - check for an access denied error which may also be an error related to our token even if it doesnt generate valid json reply?
-			if (data.errorType !== "authToken") {
+			// The server sets errrType to "authToken" if it was unhappy with our authorization token.
+			// ATTN: Should we also- check for an access denied error which may also be an error related to our token even if it doesnt generate valid json reply?
+			if (data.errorType !== jrhExpress.defReplyErrorTypeAuthToken) {
 				break;
 			}
 
@@ -728,7 +759,7 @@ class AppRoomClient {
 
 
 	//---------------------------------------------------------------------------
-	async postCatchError(url, postData, flagWithAccessToken) {
+	async postRequestGetResponseDataCatchError(url, postData, flagWithAccessToken) {
 
 		const accessToken = this.getAccessTokenVal();
 
@@ -744,7 +775,7 @@ class AppRoomClient {
 			};
 		}
 
-		const responseData = await jrhAxios.postAxiosCatchError(url, postData, overideOptions);
+		const responseData = await jrhAxios.postAxiosGetResponseDataCatchError(url, postData, overideOptions);
 		return responseData;
 	}
 	//---------------------------------------------------------------------------

@@ -14,9 +14,9 @@
  *  1. the uniquecodes are SHORT (by default like 5 characters long), so they could be easily bruteforce reverses
  *  2. we are using sha512 but not deliberately slowing it down
  *  3. we are not using a unique salt, but rather a fixed site secret salt.  This is unfortunate but is needed so we can quickly search for a verification code by its code as input by the user
- * ATTN:TODO 11/6/19 - One way we could fix these weaknesses would be if the plaintext code we gave people were actually in two parts like (AAAAA-BBBBB) where the AAAAA part was stored in plaintext in the db and the BBBBB part was hashed in the database
+ * ATTN: TODO: 11/6/19 - One way we could fix these weaknesses would be if the plaintext code we gave people were actually in two parts like (AAAAA-BBBBB) where the AAAAA part was stored in plaintext in the db and the BBBBB part was hashed in the database
  *   with proper bsrypt/random salt.  Then we would LOOK UP the verification using AAAAA but verify the hashed part of BBBBB.  It would double the length of the code we need to give to user, but it would make rainbow table brute force much harder..
- * ATTN: TODO 11/10/19 - Do we want to do more loops of hashing to make brute force more time consuming?
+ * ATTN: TODO: 11/10/19 - Do we want to do more loops of hashing to make brute force more time consuming?
  */
 
 "use strict";
@@ -267,7 +267,8 @@ class VerificationModel extends ModelBaseMongoose {
 				// hash it
 				verification.uniqueCodeHashed = await this.calcHashOfVerificationCode(verification.uniqueCode);
 				// try to save it
-				verificationdoc = await verification.dbSave();
+				// Exception will be thrown on save attempt error
+				verificationdoc = await verification.dbSaveThrowException(jrContext);
 				// success
 				break;
 			} catch (err) {
@@ -277,12 +278,11 @@ class VerificationModel extends ModelBaseMongoose {
 					// we have failed a lot, maybe we can try a cleanup of our old verifications from database
 					await this.pruneOldVerifications(jrContext, true);
 				} else if (tryCount === DefMaxUniqueCodeCollissions) {
-					// we failed
+					// we failed, rethrow
 					throw (err);
 				}
 			}
 		}
-
 		// return saved verification doc (or null if error)
 		return verificationdoc;
 	}
@@ -334,17 +334,17 @@ class VerificationModel extends ModelBaseMongoose {
 		const vtype = "newAccountEmail";
 		await this.cancelVerifications({ type: vtype, email: emailAddress });
 
-		// make the verification item and email the user about it with verification code
+		// make the verification item and email the user about it with verification code; exception will be thrown on error to save verification
 		const verification = await this.createVerificationModel(jrContext, vtype, "email", emailAddress, userId, loginId, extraData, DefExpirationDurationMinutesNormal);
-		//
+
 		const mailobj = {
 			revealEmail: true,
 			subject: "E-mail verification for new website account",
 			text: `
-We have received a request to create a new account on our website.
-If this request was made by you, please click on the link below to verify that you are the owner of this email address (${emailAddress}):
-${verification.createVerificationCodeUrl()}
-`,
+	We have received a request to create a new account on our website.
+	If this request was made by you, please click on the link below to verify that you are the owner of this email address (${emailAddress}):
+	${verification.createVerificationCodeUrl()}
+	`,
 		};
 		await verification.sendViaEmail(jrContext, mailobj, emailAddress);
 	}
@@ -357,19 +357,19 @@ ${verification.createVerificationCodeUrl()}
 		const vtype = "onetimeLogin";
 		await this.cancelVerifications({ type: vtype, userId });
 
-		// make the verification item and email and/or call the user with the one time login/verification code
+		// make the verification item and email and/or call the user with the one time login/verification code; exception will be thrown on error to save verification
 		const verification = await this.createVerificationModel(jrContext, vtype, null, null, userId, null, extraData, DefExpirationDurationMinutesShort);
 		//
 		const mailobj = {
 			revealEmail: flagRevealEmail,
 			subject: "Link for one-time login via E-Mail",
 			text: `
-We have received a request for a one-time login via E-mail code.
-If this request was made by you, please click on the link below to log into the website:
-${verification.createVerificationCodeUrl()}
+	We have received a request for a one-time login via E-mail code.
+	If this request was made by you, please click on the link below to log into the website:
+	${verification.createVerificationCodeUrl()}
 
-If this request was not made by you, please ignore this email.
-`,
+	If this request was not made by you, please ignore this email.
+	`,
 		};
 		await verification.sendViaEmail(jrContext, mailobj, emailAddress);
 	}
@@ -382,21 +382,21 @@ If this request was not made by you, please ignore this email.
 		const vtype = "changeEmail";
 		await this.cancelVerifications({ type: vtype, userId });
 
-		// make the verification item and email and/or call the user with the one time login/verification code
+		// make the verification item and email and/or call the user with the one time login/verification code; exception will be thrown on error to save verification
 		const verification = await this.createVerificationModel(jrContext, vtype, "email", emailAddressNew, userId, null, {}, DefExpirationDurationMinutesLong);
 		//
 		const mailobj = {
 			revealEmail: true,
 			subject: "Request for change of account E-mail address, confirmation needed",
 			text: `
-We have received a request to change the E-mail address associated with your account.
-From ${emailAddressOld} to ${emailAddressNew}.
+	We have received a request to change the E-mail address associated with your account.
+	From ${emailAddressOld} to ${emailAddressNew}.
 
-If this request was made by you, please click on the link below to confirm the E-mail address chage.
-${verification.createVerificationCodeUrl()}
+	If this request was made by you, please click on the link below to confirm the E-mail address chage.
+	${verification.createVerificationCodeUrl()}
 
-If this request was not made by you, please ignore this email.
-`,
+	If this request was not made by you, please ignore this email.
+	`,
 		};
 		await verification.sendViaEmail(jrContext, mailobj, emailAddressNew);
 	}
@@ -714,15 +714,16 @@ If this request was not made by you, please ignore this email.
 		this.disabled = 0;
 		this.ipUsed = jrContext.getReqIpClean();
 		// save it to mark it as used
-		await this.dbSave();
-		if (flagForgetFromSession) {
-			arserver.clearLastSessionVerificationAll(jrContext);
-		} else {
-			// remember it in session; this is useful for multi-step verification, such as creating an account after verifying email addres
-			this.saveSessionUse(jrContext);
+		await this.dbSaveAddError(jrContext);
+		// ATTN: TODO: Check result from jrContext and not clear session if error?
+		if (!jrContext.isError()) {
+			if (flagForgetFromSession) {
+				arserver.clearLastSessionVerificationAll(jrContext);
+			} else {
+				// remember it in session; this is useful for multi-step verification, such as creating an account after verifying email addres
+				this.saveSessionUse(jrContext);
+			}
 		}
-		// success -- no need to push any message
-		// jrContext.pushSuccess("Verification code successfully consumed.");
 	}
 	//---------------------------------------------------------------------------
 
@@ -867,7 +868,6 @@ If this request was not made by you, please ignore this email.
 				successRedirectTo = "/register";
 				// we don't push this success message into session, BECAUSE we are redirecting them to a page that will say it
 				jrContext.pushSuccess("Your email address has been verified.");
-				// await this.useUpAndSave(jrContext, false);
 			}
 		}
 
@@ -891,11 +891,13 @@ If this request was not made by you, please ignore this email.
 		if (!jrContext.isError()) {
 			// save change
 			user.email = emailAddressNew;
-			await user.dbSave(jrContext);
-			// now use up the verification
-			await this.useUpAndSave(jrContext, true);
+			await user.dbSaveAddError(jrContext);
 			if (!jrContext.isError()) {
-				jrContext.pushSuccess("Your new E-mail address (" + emailAddressNew + ") has now been confirmed.");
+				// now use up the verification
+				await this.useUpAndSave(jrContext, true);
+				if (!jrContext.isError()) {
+					jrContext.pushSuccess("Your new E-mail address (" + emailAddressNew + ") has now been confirmed.");
+				}
 			}
 		}
 

@@ -274,7 +274,7 @@ class UserModel extends ModelBaseMongoose {
 		return this.username;
 	}
 
-	getExtRoles() {
+	getLoadedRoles() {
 		return this.extRoles;
 	}
 	//---------------------------------------------------------------------------
@@ -377,7 +377,7 @@ class UserModel extends ModelBaseMongoose {
 			return null;
 		}
 		const user = await this.mFindOne({ username });
-		jrdebug.cdebugObj(user, "in findUserByUsername");
+		jrdebug.cdebugObj("misc", user, "in findUserByUsername");
 		return user;
 	}
 
@@ -582,7 +582,7 @@ class UserModel extends ModelBaseMongoose {
 
 
 	// create a unique user based on bridged login info
-	static async createUniqueUserFromBridgedLogin(bridgedLoginObj, flagUpdateLastLoginDate) {
+	static async createUniqueUserFromBridgedLogin(jrContext, bridgedLoginObj, flagUpdateLastLoginDate) {
 		// this could be tricky because we may have collisions in our desired username, email, etc.
 		const userObj = {
 			username: jrhMisc.getNonFalseValueOrDefault(bridgedLoginObj.getExtraDataField("username"), undefined),
@@ -599,7 +599,8 @@ class UserModel extends ModelBaseMongoose {
 			user.lastLoginDate = new Date();
 		}
 		// and save it
-		await user.dbSave();
+		// ATTN: Note that it will not return on error to save since an exception will be thrown, since no jrContext is passed to store error
+		await user.dbSaveThrowException(jrContext);
 		//
 		return user;
 	}
@@ -803,7 +804,7 @@ class UserModel extends ModelBaseMongoose {
 	static async doValidateAndSave(jrContext, options, flagSave, user, source, saveFields, preValidatedFields, ignoreFields, obj) {
 		// parse form and extrace validated object properies; return if error
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
-		// ATTN: TODO there is duplication with code in registrationaid.js currently, because we are trying to decide where best to do these things - ELIMINATE
+		// ATTN: TODO: There is duplication with code in registrationaid.js currently, because we are trying to decide where best to do these things - ELIMINATE
 		let objdoc;
 		//
 		let flagCheckDisallowedUsername = true;
@@ -876,8 +877,8 @@ class UserModel extends ModelBaseMongoose {
 		}
 
 		// ATTN: unfinished - need to verify email changes
-		// ATTN: unfinished - complains about reserved usernames for admin-only-usernames
-		// ATTN: duslicateive code found in registrationaid and related files
+		// ATTN: unfinished - complain about reserved usernames for admin-only-usernames
+		// ATTN: unfinished - duplicative code found in registrationaid and related files
 
 		// any errors saving?
 		if (jrContext.isError()) {
@@ -888,7 +889,7 @@ class UserModel extends ModelBaseMongoose {
 
 		if (flagSave) {
 			// save it
-			objdoc = await obj.dbSave(jrContext);
+			objdoc = await obj.dbSaveAddError(jrContext);
 		}
 
 		// return the saved object
@@ -914,27 +915,26 @@ class UserModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	async getApiCodeEnsureValid() {
+	async getApiCodeEnsureValid(jrContext) {
 		// if user has a valid apiCode, just return it
 		// if not, create and save one then return it
 		// this will not CHANGE a valid one
 		if (!this.apiCode) {
-			await this.resetUpdateApiCode();
+			await this.resetUpdateApiCode(jrContext);
 		}
 		return this.apiCode;
 	}
 
-	async resetUpdateApiCode() {
+	async resetUpdateApiCode(jrContext) {
 		// update the apicode which will invalidate any previously issues api access tokens for user
 		this.apiCode = jrhMisc.getPreciseNowString();
+
 		// save it to database
-		const userdoc = await this.dbSave();
-		if (userdoc) {
-			// return it
-			return this.apiCode;
-		}
-		// error
-		return null;
+		// ATTN: Note that it will not return on error to save since an exception will be thrown, since no jrContext is passed to store error
+		await this.dbSaveThrowException(jrContext);
+
+		// return it
+		return this.apiCodell;
 	}
 
 	verifyApiCode(tokenApiCode) {
@@ -992,18 +992,18 @@ class UserModel extends ModelBaseMongoose {
 	 * @returns true if they have permission
 	 */
 	async aclHasPermission(jrContext, permission, objectType = null, objectId = null) {
-		// ATTN: TODO -- 11/20/19 - CACHE this answers to this function (with short duration), to save computation time (though it currently does not require db access)
 		// return true if user has permission on (optional) objectId
 		// permissions are derived from roles
 		// by checking nonObjectSpecificRoles it means if the user is a GlobalModerator with no specific object, we will check permissions for that role too
 
-		// ATTN:TODO we might also check if the arserver.getLoggedInPassportUsrToken(req) restricts access to this user..
+		// ATTN: TODO: 11/20/19 - CACHE the answers to this function
+		// ATTN: TODO: We might also check if the arserver.getLoggedInPassportUsrToken(req) restricts access to this user??
 
 		// get roles held on the object in question (optional)
 		const flagAddNoneRole = true;
 		const objectRoles = await this.getThisUsersRolesOnObject(objectType, objectId, flagAddNoneRole);
 
-		jrdebug.cdebugObj(objectRoles, "ObjectRoles for user on object type " + objectType);
+		jrdebug.cdebugObj("misc", objectRoles, "ObjectRoles for user on object type " + objectType);
 
 		// now ask if any of these rules imply the permission
 		return await aclAid.anyRolesImplyPermission(jrContext, objectRoles, permission, objectType);
@@ -1090,18 +1090,6 @@ class UserModel extends ModelBaseMongoose {
 
 
 
-	//---------------------------------------------------------------------------
-	async addOwnerCreatorRolesForNewObject(jrContext, obj, flagSaveUser) {
-		// add owner role
-		await this.addRole(jrContext, appdef.DefAclRoleOwner, obj.getModelClass().getAclName(), obj.getIdAsString());
-		await this.addRole(jrContext, appdef.DefAclRoleCreator, obj.getModelClass().getAclName(), obj.getIdAsString());
-		// save user
-		if (flagSaveUser) {
-			await this.dbSave(jrContext);
-		}
-	}
-	//---------------------------------------------------------------------------
-
 
 	//---------------------------------------------------------------------------
 	static async setupCreateUser(jrContext, userObj) {
@@ -1111,16 +1099,16 @@ class UserModel extends ModelBaseMongoose {
 		}
 		if (doc) {
 			// user already exists
-			jrdebug.cdebug(" SetupAid user already exists: " + userObj.username + ".");
+			jrdebug.cdebug("misc", " SetupAid user already exists: " + userObj.username + ".");
 			return true;
 		}
 
 		// announce
 		jrdebug.debugObj(userObj, "Setup creating user");
 
+		// ATTN: TODO: Validate the usrObject even in the setupCreateUser function?
+
 		// does not exist, create it
-		// ATTN: note that we do not validate it
-		// ATTN: TODO - validate the user object?
 		if (userObj.passwordPlaintext) {
 			// convert plaintext password to hashed
 			const passwordObj = await this.hashPlaintextPasswordToObj(userObj.passwordPlaintext);
@@ -1138,40 +1126,13 @@ class UserModel extends ModelBaseMongoose {
 		}
 
 		// save it
-		const userdoc = await user.dbSave();
+		// ATTN: Note that it will not return on error to save since an exception will be thrown, since no jrContext is passed to store error
+		const userdoc = await user.dbSaveThrowException(jrContext);
 
 		// success
 		return true;
 	}
 	//---------------------------------------------------------------------------
-
-
-
-
-
-
-
-	//---------------------------------------------------------------------------
-	async makeRoleAclChange(jrContext, operation, role, object) {
-		// make a role change; the permissions have already been checked to make sure this is legal
-		if (operation === "add") {
-			if (!object) {
-				await this.addRole(jrContext, role);
-			} else {
-				await this.addRole(jrContext, role, object.getModelClass().getAclName(), object.getIdAsString());
-			}
-		} else if (operation === "remove") {
-			if (!object) {
-				await this.deleteRole(jrContext, role);
-			} else {
-				await this.deleteRole(jrContext, role, object.getModelClass().getAclName(), object.getIdAsString());
-			}
-		} else {
-			jrContext.pushFieldError("operation", "makeRoleAclChange operation must be from 'add' or 'remove'");
-		}
-	}
-	//---------------------------------------------------------------------------
-
 
 
 
@@ -1210,12 +1171,80 @@ class UserModel extends ModelBaseMongoose {
 	// new role (extRole) helpers
 
 
+
 	//---------------------------------------------------------------------------
-	static async roleDisplayValueFunction(jrContext, viewType, fieldName, obj, editData, helperData) {
-		if (editData && fieldName in editData) {
-			// no way to edit this
+	async makeRoleAclChange(jrContext, operation, role, object) {
+		// make a role change; the permissions have already been checked to make sure this is legal
+		if (operation === "add") {
+			if (!object) {
+				await this.addRole(jrContext, role);
+				jrContext.pushSuccess("Added role [" + role + "] to user [" + this.getUsername() + "].");
+			} else {
+				await this.addRole(jrContext, role, object.getModelClass().getAclName(), object.getIdAsString());
+				jrContext.pushSuccess("Added role [" + role + "] on object [" + object.getLogIdString() + "] to user [" + this.getUsername() + "].");
+			}
+		} else if (operation === "remove") {
+			if (!object) {
+				await this.deleteRole(jrContext, role);
+				jrContext.pushSuccess("Removed role [" + role + "] from user [" + this.getUsername() + "].");
+			} else {
+				await this.deleteRole(jrContext, role, object.getModelClass().getAclName(), object.getIdAsString());
+				jrContext.pushSuccess("Removed role [" + role + "] on object [" + object.getLogIdString() + "] from user [" + this.getUsername() + "].");
+			}
+		} else {
+			jrContext.pushFieldError("operation", "makeRoleAclChange operation must be from 'add' or 'remove'");
+		}
+	}
+
+
+
+	async addOwnerCreatorRolesForNewObject(jrContext, obj) {
+		// add owner role
+		await this.addRole(jrContext, appdef.DefAclRoleOwner, obj.getModelClass().getAclName(), obj.getIdAsString());
+		await this.addRole(jrContext, appdef.DefAclRoleCreator, obj.getModelClass().getAclName(), obj.getIdAsString());
+	}
+
+
+
+
+	async addRole(jrContext, role, objectType = null, objectId = null) {
+		// add that the user has role on objectId
+
+		// first check if it already exists
+		if (await this.hasExplicitRole(role, objectType, objectId)) {
+			// already set
+			return;
 		}
 
+		// add it
+		const RoleModel = jrequire("models/role");
+		await RoleModel.addRole(jrContext, this, role, objectType, objectId);
+	}
+
+
+	async deleteRole(jrContext, role, objectType = null, objectId = null) {
+		// remove any record that user has role on objectId
+
+		const cond = {
+			userId: this.getIdAsM(),
+			role,
+			objectType,
+			objectId,
+		};
+
+		const RoleModel = jrequire("models/role");
+		await RoleModel.deleteRolesForUserByCondition(jrContext, this, cond);
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	static async roleDisplayValueFunction(jrContext, viewType, fieldName, obj, editData, helperData) {
 		// can't get roles?
 		if (!obj || (!obj.getAllRolesOnThisObject && !obj._id)) {
 			return "n/a";
@@ -1310,7 +1339,7 @@ class UserModel extends ModelBaseMongoose {
 
 		const rolesFound = [];
 
-		jrdebug.cdebug("Asking for roles on objectType = " + objectType + " and objectid = " + objectId);
+		jrdebug.cdebug("misc", "Asking for roles on objectType = " + objectType + " and objectid = " + objectId);
 
 		// simple walk of roles array
 		let matchesRole;
@@ -1320,26 +1349,26 @@ class UserModel extends ModelBaseMongoose {
 			// check if this role is relevant
 			robjectType = roles[i].objectType;
 			robjectId = roles[i].objectId;
-			// jrdebug.cdebugObj(this.roles[key], "Examining roles " + key);
+			// jrdebug.cdebugObj("misc", this.roles[key], "Examining roles " + key);
 			if (robjectType === objectType && (robjectId === appdef.DefAclObjectIdAll || jrhMongo.equalIds(robjectId, objectId))) {
 				// user has this permission on this object, or has this permission on ALL objects of this type (indicated by this.roles[key].i === appdef.DefAclObjectIdAll)
 				matchesRole = true;
-				// jrdebug.cdebug("Matches 1.");
+				// jrdebug.cdebug("misc", "Matches 1.");
 			} else {
 				// do we want roles not specifically related to this object type (for example if they are site admin)
 				if ((robjectType === appdef.DefAclObjectTypeSite || robjectType === null) && (robjectId === appdef.DefAclObjectIdAll || robjectId === null)) {
 					// here we have matched a global site role, or a role without a type, and there is no object id associated with it
 					matchesRole = true;
-					// jrdebug.cdebug("Matches 2.");
+					// jrdebug.cdebug("misc", "Matches 2.");
 				}
 			}
 
 			if (matchesRole) {
 				// found a role on this object, OR found a role that doesnt refer to an object but with flagCheckNonObjectSpecificRoles set
-				// jrdebug.cdebug("We got a match for role " + key);
+				// jrdebug.cdebug("misc", "We got a match for role " + key);
 				rolesFound.push(roles[i].role);
 			} else {
-				// jrdebug.cdebug("We did NOT get a match for role " + key);
+				// jrdebug.cdebug("misc", "We did NOT get a match for role " + key);
 			}
 		}
 
@@ -1369,36 +1398,6 @@ class UserModel extends ModelBaseMongoose {
 		// not found
 		return false;
 	}
-
-
-	async addRole(jrContext, role, objectType = null, objectId = null) {
-		// add that the user has role on objectId
-
-		// first check if it already exists
-		if (await this.hasExplicitRole(role, objectType, objectId)) {
-			// already set
-			return;
-		}
-
-		// add it
-		const RoleModel = jrequire("models/role");
-		await RoleModel.addRole(jrContext, this, role, objectType, objectId);
-	}
-
-
-	async deleteRole(jrContext, role, objectType = null, objectId = null) {
-		// remove any record that user has role on objectId
-
-		const cond = {
-			userId: this.getIdAsM(),
-			role,
-			objectType,
-			objectId,
-		};
-
-		const RoleModel = jrequire("models/role");
-		await RoleModel.deleteRolesForUserByCondition(jrContext, this, cond);
-	}
 	//---------------------------------------------------------------------------
 
 
@@ -1413,7 +1412,7 @@ class UserModel extends ModelBaseMongoose {
 		await this.updateLastAccessDate(jrContext, false);
 		// Save changes (we might be passed 'false' if we plan to save later in request)
 		if (flagDoSave) {
-			await this.dbSave(jrContext);
+			await this.dbSaveAddError(jrContext);
 		}
 	}
 
@@ -1431,7 +1430,7 @@ class UserModel extends ModelBaseMongoose {
 		this.lastAccessDate = new Date();
 		this.lastAccessIp = jrContext.getReqIpClean();
 		if (flagDoSave) {
-			await this.dbSave(jrContext);
+			await this.dbSaveAddError(jrContext);
 		}
 	}
 	//---------------------------------------------------------------------------

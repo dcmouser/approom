@@ -58,10 +58,10 @@ class SendAid {
 
 		assert(defaultFrom);
 
-		jrdebug.cdebugf("Setting up mail transport through %s.", mailTransportConfigObj.host);
+		jrdebug.cdebugf("misc", "Setting up mail transport through %s.", mailTransportConfigObj.host);
 
 		// verify it?
-		if (arserver.getOptionDebugEnabled()) {
+		if (jrdebug.getDebugTagEnabled("mail")) {
 			await this.getMailTransport().verify();
 		}
 	}
@@ -107,16 +107,17 @@ class SendAid {
 	/**
 	 * Send a message to a recipient
 	 * The mechanism is usually email, but could be sms, etc. based on recipient object
-	 * @todo Unfinished rate limiting
 	 *
+	 * @param {JrContext} jrContext
 	 * @param {object} recipient
 	 * @param {string} subject
 	 * @param {string} message
+	 * @param {object} extraData
 	 * @param {boolean} flagBypassRateLimitChecks
 	 */
 	async sendMessage(jrContext, recipient, subject, message, extraData, flagBypassRateLimitChecks) {
 		if (!flagBypassRateLimitChecks) {
-			// ATTN: TODO rate limiting checks here
+			// ATTN: TODO: Add rate limiting checks here? Or should we do this separately in sendmail, etc.
 		}
 
 		// add extra data
@@ -166,7 +167,7 @@ class SendAid {
 		}
 
 		const sendMailResult = await this.mailTransport.sendMail(mailobj);
-		jrdebug.cdebugObj(sendMailResult, "Result from sendMail.");
+		jrdebug.cdebugObj("misc", sendMailResult, "Result from sendMail.");
 
 		// convert sendmail response to our internal result format of success or error
 		this.addSendmailRetvToContext(jrContext, sendMailResult, mailobj);

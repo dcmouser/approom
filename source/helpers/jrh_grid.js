@@ -23,10 +23,9 @@ const jrequire = require("./jrequire");
 
 /**
  * Builds a grid table/list and form inputs for working with it
- * @todo Add info about where listHelperData comes from
  *
  * @param {object} req - express request object
- * @param {obj} listHelperData - data to put in the grid
+ * @param {obj} listHelperData - data to put in the grid; from model_base_mongoose?
  * @returns raw html string
  */
 async function jrGridList(jrContext, listHelperData, csrfToken) {
@@ -188,7 +187,6 @@ async function jrGridListTableData(jrContext, listHelperData, queryUrlData) {
 
 	//
 	const filterOptions = listHelperData.filterOptions;
-	const protectedFields = filterOptions.protectedFields;
 	const hiddenFields = filterOptions.hiddenFields;
 
 	// cache extra info for each header column
@@ -202,7 +200,7 @@ async function jrGridListTableData(jrContext, listHelperData, queryUrlData) {
 		};
 	});
 
-	let val, valtype, valueFunction, valformat, valDisplay, valchoices, refModelClass;
+	let val, valueFunction, valformat, valDisplay, valchoices, refModelClass;
 	let extraInfoKey;
 	let item;
 	let url;
@@ -249,7 +247,7 @@ async function jrGridListTableData(jrContext, listHelperData, queryUrlData) {
 			}
 
 
-			// ATTN:TODO -- split this off into a standalone function we can reuse elsewhere
+			// ATTN: TODO: Split this off into a standalone function we can reuse elsewhere
 			// and perhaps reuse it for crudaid
 			// let valHtml = modelClass.renderFieldValueHtml(req, obj, reqbody, fieldName, crudSubType, helperData);
 

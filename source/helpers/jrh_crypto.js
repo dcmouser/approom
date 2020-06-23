@@ -226,7 +226,7 @@ function genRandomStringHex(length) {
  * @see <a href="https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript">stackoverflow</a>
  * ##### Notes
  *  * This is not cryptographically secure random numbers, as it uses Math.random
- * @todo Replace with crypto secure prng
+ * @todo Security: Replace with crypto secure prng?
  *
  * @param {int} length
  * @returns random string of specified characters consisting of only characters and digits found in DefHumanEasyCharacters
@@ -252,7 +252,7 @@ function genRandomStringHumanEasy(length) {
  * @see <a href="https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript">stackoverflow</a>
  * ##### Notes
  *  * This is not cryptographically secure random numbers, as it uses Math.random
- * @todo Replace with crypto secure prng
+ * @todo Security: Replace with crypto secure prng?
  *
  * @param {int} length
  * @returns random string consisting of only characters and digits found in DefHumanEasyCharacters
@@ -300,12 +300,11 @@ function genRandomStringFromCharSet(charset, length) {
 /**
  * Hash a string, but this time using a specific salt, returning a simple hashed string as result.
  * ##### Notes
- *  * This function needs to retun the SAME HASH no matter when we call it, so that we can search for result this means we dont use a random salt
+ *  * This function needs to retun the SAME HASH no matter when we call it, so that we can search for result.  This means we dont use a random salt
  *  * And we always use sha51 algorithm.
  *  * This helper function is used to hash verification codes in database so that if db is compromised it will be harder to retrieve plaintext verificaiton code
  *  * We can't use random salt because we need to be able to look up matching items by the hashed version.
- * @todo In future we might use a two-part verification code, where first part is unique plaintext id, and second part is hashed string
- * @todo In that way we could look up items by their plaintext part, and use any crypto for the hashed part.
+ * @todo In future we might use a two-part verification code, where first part is unique plaintext id, and second part is hashed string; in that way we could look up items by their plaintext part, and use any crypto for the hashed part.
  *
  * @param {string} plaintextString
  * @param {string} salt

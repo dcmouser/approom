@@ -188,7 +188,7 @@ class AppModel extends ModelBaseMongoose {
 
 		if (flagSave) {
 			// validated successfully; save it
-			objdoc = await obj.dbSave(jrContext);
+			objdoc = await obj.dbSaveAddError(jrContext);
 		}
 
 		// return the saved object

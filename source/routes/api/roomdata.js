@@ -5,7 +5,7 @@
  * @description
  * ##### Overview
  * This file handles all requests related to the programmatic API interface for accessing the system.
- * @todo These routes are all intended to be called programmatically by other code, and so should all return json replies, but currently some return standard web pages for testing.
+ * These routes are all intended to be called programmatically by other code, and so should all return json replies
 */
 
 "use strict";
@@ -132,8 +132,6 @@ async function routerList(req, res, next) {
 		roomid: roomId,
 	};
 	const roomData = await RoomDataModel.mFindAll(findArgs);
-
-
 
 	// success
 	const returnData = {

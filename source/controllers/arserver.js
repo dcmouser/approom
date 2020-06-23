@@ -202,7 +202,7 @@ class AppRoomServer {
 
 	getOptionSiteDomain() { return this.getConfigVal(appdef.DefConfigKeyServerSiteDomain); }
 
-	getOptionDebugEnabled() { return this.getConfigVal(appdef.DefConfigKeyDebug); }
+	getOptionDebugTagEnabledList() { return this.getConfigVal(appdef.DefConfigKeyDebugTags); }
 
 	getOptionProfileEnabled() { return this.getConfigVal(appdef.DefConfigKeyProfile); }
 
@@ -293,7 +293,7 @@ class AppRoomServer {
 			appAuthor: appInfo.programAuthor,
 			appDescription: appInfo.programDescription,
 			libName: appdef.DefLibName,
-			libVersion: appdef.DefLibVersion,
+			libVersion: this.getVersionLib(),
 			libVersionDate: appdef.DefLibVersionDate,
 			libAuthor: appdef.DefLibAuthor,
 			libDescription: appdef.DefLibDescription,
@@ -389,13 +389,12 @@ class AppRoomServer {
 		this.setupLateRequires();
 
 		// setup debugger
-		jrdebug.setup(this.getDebugKeyName(), true);
-		// jrdebug.setup(appdef.DefLibName, true);
+		jrdebug.setup(this.getDebugKeyName());
 
 		// show some info about app
 		const appInfo = this.getAppinfo();
 		jrdebug.debugf("%s v%s (%s) by %s", appInfo.programName, appInfo.programVersion, appInfo.programVersionDate, appInfo.programAuthor);
-		jrdebug.debugf("%s v%s (%s) by %s", appdef.DefLibName, appdef.DefLibVersion, appdef.DefLibVersionDate, appdef.DefLibAuthor);
+		jrdebug.debugf("%s v%s (%s) by %s", appdef.DefLibName, this.getVersionLib(), appdef.DefLibVersionDate, appdef.DefLibAuthor);
 
 		// try to get server ip
 		const serverIp = this.getServerIp();
@@ -412,8 +411,8 @@ class AppRoomServer {
 
 		// set any values based on config
 
-		// enable debugging based on DEBUG field
-		jrdebug.setDebugEnabled(this.getOptionDebugEnabled());
+		// enable debugging based on DEBUG tags field
+		jrdebug.setDebugTagEnabledList(this.getOptionDebugTagEnabledList());
 
 		// discover addon plugins, must be done after processing config file
 		this.discoverAndInitializeAddonPlugins();
@@ -451,6 +450,10 @@ class AppRoomServer {
 		if (this.isDevelopmentMode()) {
 			jrdebug.debug("Running in development mode (verbose errors shown).");
 		}
+		const debugTagString = jrdebug.getDebugTagEnabledListAsNiceString();
+		if (debugTagString) {
+			jrdebug.debug("Debug log tags: " + debugTagString);
+		}
 	}
 	//---------------------------------------------------------------------------
 
@@ -475,93 +478,6 @@ class AppRoomServer {
 
 
 
-
-
-
-
-
-
-
-
-	//---------------------------------------------------------------------------
-	discoverAddonCollection(collectionName) {
-		// get the plugin config object
-		const configKey = this.getCollectionConfigKey(collectionName);
-		const allObjs = this.getConfigVal(configKey);
-		// now iterate over it and register the plugins
-		let obj;
-		Object.keys(allObjs).forEach((name) => {
-			obj = allObjs[name];
-			if (obj.enabled !== false) {
-				jrequire.registerAddonModule(collectionName, name, obj);
-			}
-		});
-	}
-
-
-	initializeAddonCollection(collectionName) {
-		// initialize a configuration collection
-		let addonModule;
-		const AllAddons = jrequire.getAllAddonModulesForCollectionName(collectionName);
-		if (AllAddons) {
-			Object.keys(AllAddons).forEach((name) => {
-				addonModule = jrequire.requireAddonModule(collectionName, name);
-				if (addonModule && addonModule.initialize) {
-					addonModule.initialize(this);
-				}
-			});
-		}
-	}
-	//---------------------------------------------------------------------------
-
-
-	//---------------------------------------------------------------------------
-	discoverAndInitializeAddonPlugins() {
-		const collectionName = this.getAddonCollectionNamePlugins();
-		this.discoverAddonCollection(collectionName);
-		this.initializeAddonCollection(collectionName);
-	}
-
-	discoverAndInitializeAddonAppFrameworks() {
-		const collectionName = this.getAddonCollectionNameAppFrameworks();
-		this.discoverAddonCollection(collectionName);
-		this.initializeAddonCollection(collectionName);
-	}
-
-	getAddonCollectionNamePlugins() {
-		return "plugins";
-	}
-
-	getAddonCollectionNameAppFrameworks() {
-		return "appFrameworks";
-	}
-
-	getCollectionConfigKey(collectionName) {
-		return appdef.DefConfigKeyCollections[collectionName];
-	}
-	//---------------------------------------------------------------------------
-
-
-
-
-
-	//---------------------------------------------------------------------------
-	getAppFrameworkChoices() {
-		if (this.cachedAppFrameworkChoices === undefined) {
-			// calc and cache them
-			let label;
-			this.cachedAppFrameworkChoices = {};
-			const allObjs = jrequire.getAllAddonModulesForCollectionName(this.getAddonCollectionNameAppFrameworks());
-			Object.keys(allObjs).forEach((name) => {
-				label = allObjs[name].label ? allObjs[name].label : name;
-				this.cachedAppFrameworkChoices[name] = label;
-			});
-		}
-
-		// return it
-		return this.cachedAppFrameworkChoices;
-	}
-	//---------------------------------------------------------------------------
 
 
 
@@ -782,7 +698,7 @@ class AppRoomServer {
 		const staticAbsoluteDir = this.getSourceSubDir("static");
 		const staticUrl = "/static";
 		expressApp.use(staticUrl, express.static(staticAbsoluteDir));
-		jrdebug.cdebugf("Serving static files from '%s' at '%s", staticAbsoluteDir, staticUrl);
+		jrdebug.cdebugf("misc", "Serving static files from '%s' at '%s", staticAbsoluteDir, staticUrl);
 
 		// setup bootstrap, jquery, etc.
 		const jsurl = staticUrl + "/js";
@@ -968,7 +884,7 @@ class AppRoomServer {
 			// so we want this to be just enough to uniquely identify the user.
 			// profile is the user profile object returned by the passport strategy callback below, so we can decide what to return from that
 			// so in this case, we just return the profile object
-			jrdebug.cdebugObj(profile, "serializeUser profile");
+			jrdebug.cdebugObj("misc", profile, "serializeUser profile");
 			const userProfileObj = profile;
 			// call passport callback
 			done(null, userProfileObj);
@@ -983,7 +899,7 @@ class AppRoomServer {
 			// but we may not want to actually use this function to help passport load up a full user object from the db, because of the overhead and cost of doing
 			// that when it's not needed.  So we are converting from the SESSION userdata to possibly FULLER userdata
 			// however, remember that we might want to check that the user is STILL allowed into our site, etc.
-			jrdebug.cdebugObj(profile, "deserializeUser user");
+			jrdebug.cdebugObj("misc", profile, "deserializeUser user");
 			const userProfileObj = profile;
 			// call passport callback
 			done(null, userProfileObj);
@@ -1028,7 +944,7 @@ class AppRoomServer {
 
 				// make jrContext with only req since we don't have access to the others
 				const jrContext = JrContext.makeNew(req, null, null);
-				jrdebug.cdebugf("In passport local strategy test with username=%s and password=%s", usernameEmail, password);
+				jrdebug.cdebugf("misc", "In passport local strategy test with username=%s and password=%s", usernameEmail, password);
 
 				const user = await this.UserModel.mFindUserByUsernameEmail(usernameEmail);
 				if (!user) {
@@ -1066,10 +982,16 @@ class AppRoomServer {
 	setupPassportJwt() {
 		// here we actually register 2 nearly identical jwt token passport strategies
 		// the first ("jwtHeader") is the real one used to access resources, by passing an access token in the auth header of a request
-		// the second ("jwtManualBody") is used when we want to parse a token passed as a field in a form, for processing (for example when user wants to ask us to create a new access token from a refresh token)
+		// the second ("jwtManualQueryOrPostBody") is used when we want to parse a token passed as a field in a form, for processing (for example when user wants to ask us to create a new access token from a refresh token)
+		//
+		// ExtractJwt lets us set priority for multiple ways to get the jwt from URL or from post body or from ath header; earlier takes higher priority
+		// see http://www.passportjs.org/packages/passport-jwt/#extracting-the-jwt-from-the-request
+		//
 		const ExtractJwt = passportJwt.ExtractJwt;
+		// the auth header one is the one we check on almost all requests, so we want it to validate the token and throw a complaint at autho time if something it wrong with it (expired, etc.)
 		this.setupPassportJwtNamedWithExtractors("jwtHeader", [ExtractJwt.fromAuthHeaderAsBearerToken()], (jrResult, tokenObj) => { return this.validateSecureTokenAccess(jrResult, tokenObj); });
-		this.setupPassportJwtNamedWithExtractors("jwtManualBody", [ExtractJwt.fromUrlQueryParameter("token"), ExtractJwt.fromBodyField("token")], null);
+		// the manual body one is what we use when we want to let the user give us a token that we ourselves will validate and process
+		this.setupPassportJwtNamedWithExtractors("jwtManualQueryOrPostBody", [ExtractJwt.fromUrlQueryParameter("token"), ExtractJwt.fromBodyField("token")], null);
 	}
 
 
@@ -1083,32 +1005,27 @@ class AppRoomServer {
 
 		const strategyOptions = {
 			secretOrKey: this.getConfigVal(appdef.DefConfigKeyTokenCryptoKey),
-			// get jwt from URL or from post body if not in url, and fallback lastly on getting it from ath header
-			// see http://www.passportjs.org/packages/passport-jwt/#extracting-the-jwt-from-the-request
 			jwtFromRequest: ExtractJwt.fromExtractors(extractorList),
 			// we ignore expiration auto handling; we will check it ourselves
 			ignoreExpiration: true,
 		};
 
 		// debug info
-		jrdebug.cdebugObj(strategyOptions, "setupPassportJwt strategyOptions");
+		jrdebug.cdebugObj("misc", strategyOptions, "setupPassportJwt strategyOptions");
 
 		passport.use(jwtStrategyName, new Strategy(
 			strategyOptions,
 			async (payload, done) => {
-				// ATTN: TODO - verify the payload token more details (type, expiration, etc.)
-				// get the user payload from the token
-				// jrlog.debugObj(payload, "API TOKEN PAYLOAD DEBUG");
-				// we make a shallow copy for the userProfile we are going to return so that we don't get circular reference when we add token data
 				if (tokenValidationFunction) {
 					// validate the token
 					const jrResult = JrResult.makeNew();
 					tokenValidationFunction(jrResult, payload);
 					if (jrResult.isError()) {
-						const errorstr = "Error with authorization token: " + jrResult.getErrorsAsString();
+						const errorstr = "Error with authorization token. " + jrResult.getErrorsAsString();
 						return done(errorstr);
 					}
 				}
+				// get the user payload from the token; we make a shallow copy for the userProfile we are going to return so that we don't get circular reference when we add token data
 				const userProfile = jrhMisc.shallowCopy(payload.user);
 				if (!userProfile) {
 					const errorstr = "Error decoding user data from access token";
@@ -1140,14 +1057,14 @@ class AppRoomServer {
 		};
 
 		// debug info
-		jrdebug.cdebugObj(strategyOptions, "setupPassportStrategyFacebook options");
+		jrdebug.cdebugObj("misc", strategyOptions, "setupPassportStrategyFacebook options");
 
 		passport.use(new Strategy(
 			strategyOptions,
 			async (req, token, tokenSecret, profile, done) => {
-				jrdebug.cdebugObj(token, "facebook token");
-				jrdebug.cdebugObj(tokenSecret, "facebook tokenSecret");
-				jrdebug.cdebugObj(profile, "facebook profile");
+				jrdebug.cdebugObj("misc", token, "facebook token");
+				jrdebug.cdebugObj("misc", tokenSecret, "facebook tokenSecret");
+				jrdebug.cdebugObj("misc", profile, "facebook profile");
 				// get user associated with this facebook profile, OR create one, etc.
 				const bridgedLoginObj = {
 					provider: profile.provider,
@@ -1177,14 +1094,14 @@ class AppRoomServer {
 		};
 
 		// debug info
-		jrdebug.cdebugObj(strategyOptions, "setupPassportStrategyTwitter options");
+		jrdebug.cdebugObj("misc", strategyOptions, "setupPassportStrategyTwitter options");
 
 		passport.use(new Strategy(
 			strategyOptions,
 			async (req, token, tokenSecret, profile, done) => {
-				jrdebug.cdebugObj(token, "twitter token");
-				jrdebug.cdebugObj(tokenSecret, "twitter tokenSecret");
-				jrdebug.cdebugObj(profile, "twitter profile");
+				jrdebug.cdebugObj("misc", token, "twitter token");
+				jrdebug.cdebugObj("misc", tokenSecret, "twitter tokenSecret");
+				jrdebug.cdebugObj("misc", profile, "twitter profile");
 				// get user associated with this twitter profile, OR create one, etc.
 				const bridgedLoginObj = {
 					provider: profile.provider,
@@ -1215,14 +1132,14 @@ class AppRoomServer {
 		};
 
 		// debug info
-		jrdebug.cdebugObj(strategyOptions, "setupPassportStrategyTwitter options");
+		jrdebug.cdebugObj("misc", strategyOptions, "setupPassportStrategyTwitter options");
 
 		passport.use(new Strategy(
 			strategyOptions,
 			async (req, token, tokenSecret, profile, done) => {
-				jrdebug.cdebugObj(token, "google token");
-				jrdebug.cdebugObj(tokenSecret, "google tokenSecret");
-				jrdebug.cdebugObj(profile, "google profile");
+				jrdebug.cdebugObj("misc", token, "google token");
+				jrdebug.cdebugObj("misc", tokenSecret, "google tokenSecret");
+				jrdebug.cdebugObj("misc", profile, "google profile");
 				// get user associated with this profile, OR create one, etc.
 				const bridgedLoginObj = {
 					provider: profile.provider,
@@ -1438,7 +1355,7 @@ class AppRoomServer {
 	async lookupLoggedInUser(jrContext) {
 		// get the userid in the session cookie, OR referenced by valid auth header JWT token
 		// and use it to look up the logged in user -- and LOAD the user data AND cache it
-		// ATTN: TODO return errors on token error or user lookup error
+		// ATTN: TODO: return errors on token error or user lookup error
 
 		// first check if we've CACHED this info in the req
 		let user = this.getCachedLoggedInUser(jrContext);
@@ -1558,7 +1475,7 @@ class AppRoomServer {
 			if (verification) {
 				// add back the plaintext unique code that we saved in session into the object
 				// in this way, we make it possible to re-process this verification code, and find it in the database, as if user was providing it
-				// ATTN:TODO - this seems wasteful; obviously if we have it in session we shouldnt need to "find" it again.
+				// ATTN: TODO: this seems wasteful; obviously if we have it in session we shouldnt need to "find" it again; if we trust it can we just save the id#
 				verification.setUniqueCode(this.getLastSessionedVerificationCodePlaintext(jrContext));
 			}
 		}
@@ -1624,7 +1541,10 @@ class AppRoomServer {
 		if (user && user.isRealObjectInDatabase()) {
 			this.setCachedLoggedInUser(jrContext, user);
 		} else {
-			// ATTN:TODO clear it?
+			if (true) {
+			// ATTN: TODO: should we clear any saved logged in user?
+				this.clearCachedLoggedInUser();
+			}
 		}
 	}
 
@@ -1835,16 +1755,16 @@ class AppRoomServer {
 	// see also setupPassportJwt() where the jwt stuff is set up
 	// NOTE that these nonSession functions do NOT log in the user or set req.user -- they are ways to test the authentication WITHOUT doing so
 
-	async asyncPassportManualNonSessionAuthenticateFromTokenGetMinimalPassportUsrData(jrContext, next, requiredTokenType) {
+	async asyncPassportManualNonSessionAuthenticateFromTokenInRequestGetMinimalPassportUsrData(jrContext, next, requiredTokenType) {
 		// force passport authentication from request, looking for jwt token
 
 		// generic call to passport, with jwt type
 		// note we ask the function to not lookup full user since we dont need it (last false parameter)
-		const passportUsrData = await this.asyncPassportManualNonSessionAuthenticateGetMinimalPassportUsrData(jrContext, "jwtManualBody", "using jwt", next);
+		const passportUsrData = await this.asyncPassportManualNonSessionAuthenticateGetMinimalPassportUsrData(jrContext, "jwtManualQueryOrPostBody", "using jwt", next);
 		if (!jrContext.isError()) {
 			// let's check token validity (expiration, etc.); this may push an error into jrResult
-			// ATTN: TODO - This does NOT check user.apiCode, which can be used to revoke api keys
-			// BUT this should be done after we load the users full profile, which the CALLER of our function does (see asyncPassportManualNonSessionAuthenticateFromTokenGetPassportProfileAndUser);
+			// ATTN: TODO: SECURITY - This does NOT check user.apiCode, which can be used to revoke api keys
+			// BUT this should be done after we load the users full profile, which the CALLER of our function does
 			// I believe this function is never called EXCEPT inside that one, so it will always be performed
 			// jrlog.debugObj(passportUsrData.token, "access token pre validate.");
 			this.validateSecureToken(jrContext.result, passportUsrData.token, requiredTokenType);
@@ -1859,15 +1779,10 @@ class AppRoomServer {
 	}
 
 
-	async asyncPassportManualNonSessionAuthenticateFromTokenGetFullUserObject(jrContext, next, requiredTokenType) {
-		const [userMinimalProfile, user] = await this.asyncPassportManualNonSessionAuthenticateFromTokenGetPassportProfileAndUser(jrContext, next, requiredTokenType);
-		return user;
-	}
 
-
-	async asyncPassportManualNonSessionAuthenticateFromTokenGetPassportProfileAndUser(jrContext, next, requiredTokenType) {
+	async asyncPassportManualNonSessionAuthenticateFromTokenInRequestGetPassportProfileAndUser(jrContext, next, requiredTokenType) {
 		// force passport authentication from request, looking for jwt token
-		const userMinimalProfile = await this.asyncPassportManualNonSessionAuthenticateFromTokenGetMinimalPassportUsrData(jrContext, next, requiredTokenType);
+		const userMinimalProfile = await this.asyncPassportManualNonSessionAuthenticateFromTokenInRequestGetMinimalPassportUsrData(jrContext, next, requiredTokenType);
 
 		if (jrContext.isError()) {
 			return [userMinimalProfile, null];
@@ -1923,6 +1838,7 @@ class AppRoomServer {
 			}
 			if (!user.verifyApiCode(userMinimalPassportProfile.token.apiCode)) {
 				jrContext.pushError("Invalid login; error code 5 (found user and access token is valid but apiCode revision has been revoked).");
+				// ATTN: TODO - SECURITY - should we clear user variable so it's not used by mistake by some caller function that doesnt check for error? or leave it so caller can refer to user
 			}
 		}
 
@@ -2092,21 +2008,23 @@ class AppRoomServer {
 					jrContext.addToThisSession(true);
 				}
 
-				if (flagAutoRedirectSuccess) {
-					// do some redirections..
+				if (!jrContext.isError()) {
+					if (flagAutoRedirectSuccess) {
+						// do some redirections..
 
-					// check if they were waiting to go to another page
-					if (newlyLoggedInUserId && thisArserver.userLogsInCheckDiverted(jrContext)) {
-						return;
-					}
+						// check if they were waiting to go to another page
+						if (newlyLoggedInUserId && thisArserver.userLogsInCheckDiverted(jrContext)) {
+							return;
+						}
 
-					// new full account connected?
-					if (newlyLoggedInUserId) {
-						jrContext.res.redirect("/profile");
-						return;
+						// new full account connected?
+						if (newlyLoggedInUserId) {
+							jrContext.res.redirect("/profile");
+							return;
+						}
+						// no user account made yet, default send them to full account fill int
+						jrContext.res.redirect("/register");
 					}
-					// no user account made yet, default send them to full account fill int
-					jrContext.res.redirect("/register");
 				}
 			} catch (err) {
 				// unexpected error
@@ -2149,7 +2067,7 @@ class AppRoomServer {
 
 		// error?
 		if (jrContext.isError()) {
-			jrdebug.cdebug("In asyncPassportManualNonSessionAuthenticateGetMinimalPassportUsrData 2 error from userPassport :" + jrContext.getErrorsAsString());
+			jrdebug.cdebug("misc", "In asyncPassportManualNonSessionAuthenticateGetMinimalPassportUsrData 2 error from userPassport :" + jrContext.getErrorsAsString());
 			return null;
 		}
 
@@ -2175,7 +2093,7 @@ class AppRoomServer {
 			// now get user
 			user = await this.loadUserFromMinimalPassportUsrData(jrContext, userPassport, false);
 			if (!user) {
-				jrContext.pushError("error authenticating " + providerNiceLabel + ": could not locate user in database.");
+				jrContext.pushError("Error authenticating " + providerNiceLabel + ": could not locate user in database.");
 				return null;
 			}
 		} catch (err) {
@@ -2480,10 +2398,18 @@ class AppRoomServer {
 			bretv = await this.setupAid.createDefaultUsers();
 		}
 
-		if (flagRunServer) {
+		if (bretv && flagRunServer) {
 			// actually run the server and start listening
 			bretv = await this.runServer();
 		}
+
+
+		/*
+		if (!bretv) {
+			throw new Error("Failure to startup.");
+		}
+		*/
+
 
 		return bretv;
 	}
@@ -2493,6 +2419,9 @@ class AppRoomServer {
 		// setup database stuff (create and connect to models -- callable whether db is already created or not)
 		let bretv = false;
 
+		// set mongo timeout.. should be less than mocha test limit
+		const DefConnectTimeoutMs = 5000;
+
 		// we need to shutdown
 		this.setNeedsShutdown(true);
 
@@ -2501,6 +2430,9 @@ class AppRoomServer {
 			// see https://github.com/Automattic/mongoose/issues/8156
 			useUnifiedTopology: true,
 			useCreateIndex: true,
+			// timeouts to throw error during tests
+			connectTimeoutMS: DefConnectTimeoutMs,
+			serverSelectionTimeoutMS: DefConnectTimeoutMs,
 		};
 
 		// ATTN: 5/12/20 trying this to figure out why we can't catch mongoose exceptions on save
@@ -2510,8 +2442,30 @@ class AppRoomServer {
 		try {
 			// connect to db
 			const mongoUrl = this.calcFullDbUrl();
-			jrdebug.cdebug("Connecting to mongoose-mongodb: " + mongoUrl);
-			await mongoose.connect(mongoUrl, mongooseOptions);
+			jrdebug.cdebug("misc", "Connecting to mongoose-mongodb: " + mongoUrl);
+
+
+			// try to connect
+			// await mongoose.connect(mongoUrl, mongooseOptions);
+
+			await mongoose.connect(mongoUrl, mongooseOptions, (error) => {
+				// console.log("IN mongoose connect error.");
+			});
+
+			// alternate connect with setTimeout?
+			/*
+			setTimeout(async () => {
+				await mongoose.connect(mongoUrl, mongooseOptions);
+			}, DefConnectTimeoutMs);
+			*/
+
+
+			// check if connected
+			if (!this.isConnectedToDatabase()) {
+				jrdebug.debug("Failure while trying to connect to mongoose database at " + mongoUrl + " (connection timed out?).");
+				return false;
+			}
+
 
 			// set up schemas for all models
 			await jrhMisc.asyncAwaitForEachObjectKeyFunctionCall(this.models, async (key, val) => {
@@ -2538,6 +2492,11 @@ class AppRoomServer {
 	}
 
 
+	isConnectedToDatabase() {
+		// see https://mongoosejs.com/docs/api/connection.html#connection_Connection-readyState
+		const readyState = mongoose.connection.readyState;
+		return (readyState === 1);
+	}
 
 
 	async setupModelSchema(mongooser, modelClass) {
@@ -2587,10 +2546,13 @@ class AppRoomServer {
 
 	async dbDisconnect() {
 		// disconnect from mongoose/mongodb
-		jrdebug.debug("Closing mongoose-mongodb connection.");
+		if (this.isConnectedToDatabase()) {
+			// connected so shutdown
+			jrdebug.debug("Closing mongoose-mongodb connection.");
+			await mongoose.disconnect();
+			await mongoose.connection.close();
+		}
 
-		await mongoose.disconnect();
-		await mongoose.connection.close();
 
 		// ATTN: took several hours to track this down why mocha tests could not shut down server
 		// session store needs explicit close to exit gracefully
@@ -2660,9 +2622,12 @@ class AppRoomServer {
 		const jrContext = JrContext.makeNew();
 		await this.logr(jrContext, appdef.DefLogTypeInfoServer, msg);
 
-		if (this.getOptionDebugEnabled()) {
-			await this.logr(jrContext, appdef.DefLogTypeDebug, "Starting up with debug mode enabled.");
+		/*
+		const debugTagString = jrdebug.getDebugTagEnabledListAsNiceString();
+		if (debugTagString) {
+			await this.logr(jrContext, appdef.DefLogTypeDebug, "Debug log tags: " + debugTagString);
 		}
+		*/
 	}
 
 
@@ -2731,13 +2696,15 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	async logr(jrContext, type, message, extraData, user) {
 		// create log obj
-		let userid, ip;
+		let userid, ip, requrl;
 
 		const req = jrContext.req;
 		if (!req) {
-			ip = undefined;
+			// ip = undefined;
+			// requrl = undefined;
 		} else {
 			ip = jrhText.cleanIp(req.ip);
+			requrl = jrhExpress.reqOriginalUrl(jrContext.req);
 		}
 
 		if (user) {
@@ -2752,6 +2719,7 @@ class AppRoomServer {
 		const mergeData = {
 			userid,
 			ip,
+			url: requrl,
 		};
 
 		// hand off to more generic function
@@ -2764,7 +2732,7 @@ class AppRoomServer {
 	//---------------------------------------------------------------------------
 	async internalLogm(jrContext, type, message, extraData, mergeData) {
 		// we now want to hand off the job of logging this item to any registered file and/or db loggers
-		const flagLogToDb = true;
+		let flagLogToDb = true;
 		const flagLogToFile = true;
 
 		// extra data fixups
@@ -2776,10 +2744,20 @@ class AppRoomServer {
 			extraDataPlus = extraData;
 		}
 
+		if (!this.isConnectedToDatabase()) {
+			// disable this since we are not connected to database
+			flagLogToDb = false;
+		}
+
+		// don't log critical db errors to database?
+		if (type === appdef.DefLogTypeErrorCriticalDb) {
+			flagLogToDb = false;
+		}
+
 		// save to db
 		if (flagLogToDb) {
 			const logModelClass = this.calcLoggingCategoryModelFromLogMessageType(type);
-			await this.logmToDbModelClass(logModelClass, type, message, extraDataPlus, mergeData);
+			await this.logmToDbModelClass(jrContext, logModelClass, type, message, extraDataPlus, mergeData);
 		}
 
 		// save to file
@@ -2796,9 +2774,9 @@ class AppRoomServer {
 	}
 
 
-	async logmToDbModelClass(logModelClass, type, message, extraData, mergeData) {
+	async logmToDbModelClass(jrContext, logModelClass, type, message, extraData, mergeData) {
 		try {
-			await logModelClass.createLogDbModelInstanceFromLogDataAndSave(type, message, extraData, mergeData);
+			await logModelClass.createLogDbModelInstanceFromLogDataAndSave(jrContext, type, message, extraData, mergeData);
 			// uncomment to test fallback error logging
 			// throw Error("logmToDbModelClass exception test.");
 		} catch (err) {
@@ -3137,7 +3115,7 @@ class AppRoomServer {
 	 * Test the csrf
 	 * This is more useful for re-presenting a form.
 	 * ATTN: We had some real problems with this new function returning undefined on successful csrf when I tried to simply return jrResult from inside the callback.. I'm still not sure I understand why; it may be that on non-error it was async executed
-	 * ATTN TODO: make sure this always works as expected
+	 * ATTN Security: make sure this always works as expected
 	 *
 	 * @param {*} req
 	 * @param {*} res
@@ -3442,12 +3420,10 @@ class AppRoomServer {
 
 
 	calcAddonCollectionInfoPlugins() {
-		// get info about LOADED plugins
 		return this.calcAddonCollectionInfo(this.getAddonCollectionNamePlugins());
 	}
 
 	calcAddonCollectionInfoAppFrameworks() {
-		// get info about LOADED plugins
 		return this.calcAddonCollectionInfo(this.getAddonCollectionNameAppFrameworks());
 	}
 
@@ -3472,7 +3448,7 @@ class AppRoomServer {
 			});
 		});
 
-		const configKey = this.getCollectionConfigKey(collectionName);
+		const configKey = this.calcCollectionConfigKey(collectionName);
 		const rawData = {
 			foundInConfiguration: this.getConfigVal(configKey),
 			enabledByCategory: loadedAddonDataByCategory,
@@ -3538,9 +3514,9 @@ class AppRoomServer {
 	 * @param {String} refreshToken - the refresh token object to use to generate access token
 	 * @returns a token object.
 	 */
-	async makeSecureTokenAccessFromRefreshToken(user, refreshToken) {
+	async makeSecureTokenAccessFromRefreshToken(jrContext, user, refreshToken) {
 		// make an access token with SAME scope as refresh token
-		return await this.makeSecureTokenAccess(user, refreshToken.scope);
+		return await this.makeSecureTokenAccess(jrContext, user, refreshToken.scope);
 	}
 
 
@@ -3551,11 +3527,11 @@ class AppRoomServer {
 	 * @param {UserModel} user - full model object of User class
 	 * @returns a token object
 	 */
-	async makeSecureTokenRefresh(user) {
+	async makeSecureTokenRefresh(jrContext, user) {
 		const payload = {
 			type: "refresh",
 			scope: "api",
-			apiCode: await user.getApiCodeEnsureValid(),
+			apiCode: await user.getApiCodeEnsureValid(jrContext),
 			user: user.getMinimalPassportProfile(),
 		};
 		// create secure toke
@@ -3573,11 +3549,11 @@ class AppRoomServer {
 	 * @param {String} scope - the refresh token object to use to generate access token
 	 * @returns a token object
 	 */
-	async makeSecureTokenAccess(user, scope) {
+	async makeSecureTokenAccess(jrContext, user, scope) {
 		const payload = {
 			type: "access",
 			scope,
-			apiCode: await user.getApiCodeEnsureValid(),
+			apiCode: await user.getApiCodeEnsureValid(jrContext),
 			user: user.getMinimalPassportProfile(),
 		};
 		// add accessId -- the idea here is for every user object in database to ahve an accessId (either sequential or random); that can be changed to invalidate all previously issues access tokens
@@ -4038,7 +4014,7 @@ class AppRoomServer {
 		// who gets it?
 		let recipients = this.getEmergencyAlertContactsPrimary();
 		if (flagAlsoSendToSecondaries) {
-			recipients = jrhMisc.mergeArraysKeepDupes(recipients, this.getEmergencyAlertContactsSecondary());
+			recipients = jrhMisc.mergeArraysDedupe(recipients, this.getEmergencyAlertContactsSecondary());
 		}
 
 		// add req info to extra data of message
@@ -4185,15 +4161,13 @@ class AppRoomServer {
 			return;
 		}
 
-		// store user in session
+		// QUESTION: Should we store user in session when they use autho token?
+		// Answer: NO. In general if user is using auth bearer token in header, we want them to do so on EVERY request (presumably using a tool); rather than doing so once and remembering them in session.
 		const flagRememberUserInSessionCookie = false;
 
 		// ok we think there is authorization header (jwt)
 		// note we do not pass a result res reference in, and askk passport authenticate to not add any error info or reroute, etc. this is less than ieal in some cases
 		await this.asyncRoutePassportAuthenticate(jrContext, "jwtHeader", "via jwt authorization header token", flagRememberUserInSessionCookie, false, false, false);
-
-		// ATTN: this has not yet done a full token validation
-		// ATTN:TODO  merge with nonsession version, see asyncPassportManualNonSessionAuthenticateFromTokenGetMinimalPassportUsrData()
 
 		if (jrContext.isError()) {
 			// clear sessioned user
@@ -4214,38 +4188,39 @@ class AppRoomServer {
 		// check type
 		const tokenType = tokenObj.type;
 		if (requiredTokenType && tokenType !== requiredTokenType) {
-			jrResult.pushErrorOnTop("Invalid jwt auth token; error code B1: received type (" + tokenType + "); expected '" + requiredTokenType + "' token");
+			jrResult.pushErrorOnTop("Error code B1: expected token type [" + requiredTokenType + "] but received type [" + tokenType + "]");
 		}
 
 		// check expiration
 		if (this.isSecureTokenExpired(tokenObj.exp)) {
 			if (tokenObj.exp) {
 				const expirationdatestr = new Date(tokenObj.exp * 1000).toLocaleString();
-				jrResult.pushError("Invalid jwt auth token; error code B2: token expired on " + expirationdatestr + ".");
+				jrResult.pushError("Error code B2: token expired on " + expirationdatestr + ".");
 			} else {
-				jrResult.pushError("Invalid jwt auth token; error code B3: token missing expiration date.");
+				jrResult.pushError("Error code B3: token missing expiration date.");
 			}
 		}
 
 		// check issuer
-		if (tokenObj.iss !== this.getConfigVal(appdef.DefConfigKeyTokenIssuer)) {
+		const expectedIssuer = this.getConfigVal(appdef.DefConfigKeyTokenIssuer);
+		if (tokenObj.iss !== expectedIssuer) {
 			// wrong issues
-			jrResult.pushError("Invalid jwt auth token; error code B4: incorrect issuer (" + tokenObj.iss + ") expected: " + this.getConfigVal(appdef.DefConfigKeyTokenIssuer));
+			jrResult.pushError("Error code B4: expected issuer [" + expectedIssuer + "] but received [" + tokenObj.iss + "]");
 		}
 
 		// check other stuff
 		if (!tokenObj.type) {
 			// missing token type
-			jrResult.pushError("Invalid jwt auth token; error code B4: token missing type tag.");
+			jrResult.pushError("Error code B5: token missing type tag.");
 		}
 	}
 
 
 	isSecureTokenExpired(exp) {
-		// ATTN:TODO - do we need to worry about local vs gmt/etc time?
+		// ATTN: TODO: Do we need to worry about local vs gmt/etc time?
 		if (!exp) {
 			// what to do in this case? no expiration date?
-			// ATTN:TODO - for now we treat it as ok
+			// ATTN:TODO: SECURITY - for now we treat it as ok
 			return true;
 		}
 		if (exp <= Math.floor(Date.now() / 1000)) {
@@ -4369,6 +4344,126 @@ class AppRoomServer {
 		return true;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	discoverAddonCollection(collectionName) {
+		// get the plugin config object
+		const configKey = this.calcCollectionConfigKey(collectionName);
+		const allObjs = this.getConfigVal(configKey);
+		// now iterate over it and register the plugins
+		let obj;
+		Object.keys(allObjs).forEach((name) => {
+			obj = allObjs[name];
+			if (obj.enabled !== false) {
+				jrequire.registerAddonModule(collectionName, name, obj);
+			}
+		});
+	}
+
+
+	initializeAddonCollection(collectionName) {
+		// initialize a configuration collection
+		let addonModule;
+		const AllAddons = jrequire.getAllAddonModulesForCollectionName(collectionName);
+		if (AllAddons) {
+			Object.keys(AllAddons).forEach((name) => {
+				addonModule = jrequire.requireAddonModule(collectionName, name);
+				if (addonModule && addonModule.initialize) {
+					addonModule.initialize(this);
+				}
+			});
+		}
+	}
+
+
+	discoverAndInitializeAddonPlugins() {
+		const collectionName = this.getAddonCollectionNamePlugins();
+		this.discoverAddonCollection(collectionName);
+		this.initializeAddonCollection(collectionName);
+	}
+
+	discoverAndInitializeAddonAppFrameworks() {
+		const collectionName = this.getAddonCollectionNameAppFrameworks();
+		this.discoverAddonCollection(collectionName);
+		this.initializeAddonCollection(collectionName);
+	}
+
+	getAddonCollectionNamePlugins() {
+		return "plugins";
+	}
+
+	getAddonCollectionNameAppFrameworks() {
+		return "appFrameworks";
+	}
+
+	calcCollectionConfigKey(collectionName) {
+		return appdef.DefConfigKeyCollections[collectionName];
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	getAppFrameworkChoices() {
+		if (this.cachedAppFrameworkChoices === undefined) {
+			// calc and cache them
+			let label;
+			this.cachedAppFrameworkChoices = {};
+			const allObjs = jrequire.getAllAddonModulesForCollectionName(this.getAddonCollectionNameAppFrameworks());
+			Object.keys(allObjs).forEach((name) => {
+				label = allObjs[name].label ? allObjs[name].label : name;
+				this.cachedAppFrameworkChoices[name] = label;
+			});
+		}
+
+		// return it
+		return this.cachedAppFrameworkChoices;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	getVersionLib() {
+		return appdef.DefLibVersion;
+	}
+
+	getVersionApi() {
+		return appdef.DefApiVersion;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
 
 
 

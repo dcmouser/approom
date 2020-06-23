@@ -18,6 +18,7 @@ exports.DefLibVersion = "1.0.10";
 exports.DefLibVersionDate = "5/1/19-5/12/20";
 exports.DefLibAuthor = "mouser@donationcoder.com";
 exports.DefLibDescription = "multi-user room-based coordination framework (mewlo2)";
+exports.DefApiVersion = "1.0";
 //---------------------------------------------------------------------------
 
 
@@ -147,7 +148,7 @@ exports.DefStateModeLabelsEdit = {
 
 //---------------------------------------------------------------------------
 // showing disabled, etc
-// ATTN: TODO: document this better -- what is it used for and where?
+// this is used in jrh_grid to build a drop down gui for bulk operations on crud amin grid
 exports.DefShowStateModeLabels = {
 	onlyEnabled: "Only enabled",
 	enabledDisabled: "Enabled/Disabled",
@@ -168,6 +169,8 @@ exports.DefRateLimiterTest = "test";
 //---------------------------------------------------------------------------
 
 
+
+
 //---------------------------------------------------------------------------
 // config option strings
 
@@ -186,7 +189,7 @@ exports.DefConfigKeyServerHttpsCert = "server:HTTPS_CERT";
 exports.DefConfigKeyServerHttpsPort = "server:HTTPS_PORT";
 exports.DefConfigKeyServerSiteDomain = "server:SITE_DOMAIN";
 //
-exports.DefConfigKeyDebug = "DEBUG";
+exports.DefConfigKeyDebugTags = "DEBUGTAGS";
 exports.DefConfigKeyProfile = "PROFILE";
 //
 exports.DefConfigKeyAccountSignupFullRegForm = "account:SIGNUP_FULLREGISTRATIONFORM";

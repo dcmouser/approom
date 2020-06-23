@@ -7,9 +7,6 @@
  * Collection of helper functions for database crud filtering
 */
 
-// ATTN: TODO - I dont really understand the calls to mongoValFunc and our use of jrResulti since we refactored code
-
-
 "use strict";
 
 
@@ -470,7 +467,6 @@ function convertReqQueryStringToAMongooseFindFilterMongoStrCmp(jrConfig, strVal)
 
 /**
  * Parse a query string using and and or separators and create a query object with and and or arrays
- * @todo improve documentation for other parameters
  *
  * @param {string} fkey
  * @param {*} schemaType
@@ -585,13 +581,12 @@ function convertReqQueryStringToAMongooseFindFilterGenericOperator(jrContext, fk
 
 /**
  * Examine a string value (opVal) and operator, and handle null|undefined case specially
- * @todo improve documentation for other parameters
  *
+ * @param {JrResult} jrResult
  * @param {*} fkey
  * @param {*} opVal
  * @param {*} mongoOp
  * @param {*} mongoValFunc
- * @param {*} jrResult
  * @returns an object, either simple value or operator and value for handling null/undefined cases
  */
 function convertReqQueryStringToAMongooseFindFilterGenericOperatorResolveVal(jrContext, fkey, opVal, mongoOp, mongoValFunc) {

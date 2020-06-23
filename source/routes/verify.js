@@ -130,7 +130,7 @@ async function handleVerifyCode(jrContext, code) {
 		}
 	}
 
-	// by default if no caller redirected or rendered already (by setting jrResult.setDontRendering), then we redirect to homepage after a successful processing
+	// redirect someplace specific on success?
 	if (successRedirectTo) {
 		jrContext.res.redirect(successRedirectTo);
 		return;

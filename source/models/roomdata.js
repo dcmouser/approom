@@ -79,8 +79,6 @@ class RoomdataModel extends ModelBaseMongoose {
 			roomid: {
 				label: "Room Id",
 				valueFunction: this.makeModelValueFunctionCrudObjectIdFromList(RoomModel, "roomid", "roomLabel", "roomlist"),
-				// alternative generic way to have crud pages link to this val
-				// refModelClass: AppModel,
 				mongoose: {
 					type: mongoose.Schema.ObjectId,
 					required: true,
@@ -107,7 +105,7 @@ class RoomdataModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	// ATTN: TODO - duplicate code in file model, consolidate!
+	// ATTN: TODO: Duplicate code in file model, consolidate!
 
 	// crud add/edit form helper data
 	// in case of rooms, this should be the list of APPS that the USER has access to
@@ -166,8 +164,6 @@ class RoomdataModel extends ModelBaseMongoose {
 		// obj will either be a loaded object if we are editing, or a new as-yet-unsaved model object if adding
 		let objdoc;
 
-		// ATTN: not all of these file fields are currently validated correctly, because they should not be user-editable
-
 		// set fields from form and validate
 		await this.validateMergeAsync(jrContext, "roomid", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => this.validateModelFieldRoomId(jrr, keyname, inVal, user));
 		//
@@ -189,7 +185,7 @@ class RoomdataModel extends ModelBaseMongoose {
 
 		if (flagSave) {
 			// save it
-			objdoc = await obj.dbSave(jrContext);
+			objdoc = await obj.dbSaveAddError(jrContext);
 		}
 
 		// return the saved object

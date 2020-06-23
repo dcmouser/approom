@@ -347,7 +347,7 @@ function jrZeroPadInt(intval, padding) {
  * Replace special characters in string so it can be used in regex.
  * This is useful when we want to use a user-provided string in a regular expression and so we need to validate/escape it first.
  * It is used in our admin crud area filters to convert a simple user substring into a wildcard search string
- * @todo Check this for any security vulnerabilities
+ * @todo Security: check this for any security vulnerabilities
  *
  * @param {string} str
  * @returns escaped version of string suitable for use inside a regular expression (i.e. no unescaped regex characters)

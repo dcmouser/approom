@@ -188,19 +188,19 @@ class LoginModel extends ModelBaseMongoose {
 		const existingUserId = arserver.getUntrustedLoggedInUserIdFromSession(jrContext);
 
 		// ok first let's see if we can find an existing bridged login
-		jrdebug.cdebugObj(bridgedLoginObj, "Looking for existing bridged login.");
+		jrdebug.cdebugObj("misc", bridgedLoginObj, "Looking for existing bridged login.");
 		// find it and ALSO atomically at same time update date of login
 		let login = await this.mFindLoginByProviderInfo(jrContext, bridgedLoginObj.provider, bridgedLoginObj.providerUserId, true);
 		if (login !== null) {
 			// we found the bridged login, so just grab the associated user and return them
-			jrdebug.cdebugObj(login, "Found a matching login.");
+			jrdebug.cdebugObj("misc", login, "Found a matching login.");
 			//
 			if (login.userId) {
 				user = await UserModel.mFindUserByIdAndUpdateLastLoginDate(login.userId);
 				if (user) {
-					jrdebug.cdebugObj(user, "Found a matching user.");
+					jrdebug.cdebugObj("misc", user, "Found a matching user.");
 				} else {
-					jrdebug.cdebugObj(user, "Failed to find a matching user login even though login had a user id.");
+					jrdebug.cdebugObj("misc", user, "Failed to find a matching user login even though login had a user id.");
 				}
 			}
 		}
@@ -218,7 +218,7 @@ class LoginModel extends ModelBaseMongoose {
 				// IMPORTANT: DO WE want to create a new user associated with this bridged login?
 				if (flagMakeNewUser) {
 					// make a new user object, this WILL find and assign a UNIQUE username (based on their real name), and leave the account without a password
-					user = await UserModel.createUniqueUserFromBridgedLogin(bridgedLoginObj, true);
+					user = await UserModel.createUniqueUserFromBridgedLogin(jrContext, bridgedLoginObj, true);
 					if (user) {
 						eventAddedNewUser = true;
 						jrContext.pushSuccess("A new user account has been created and assoicated with this " + bridgedLoginObj.provider + " login.");
@@ -246,7 +246,7 @@ class LoginModel extends ModelBaseMongoose {
 			};
 			// create model (this will also add default properties to it)
 			login = this.createModel(loginObj);
-			await login.dbSave();
+			await login.dbSaveAddError(jrContext);
 			eventNewlyLinked = true;
 		} else {
 			// login already existed -- but did it have the right userId already?
@@ -256,21 +256,24 @@ class LoginModel extends ModelBaseMongoose {
 				// but is it possible for us to get here with login.userId with a real user?
 				//  i think the only way would be if the user was not actually found; that would be the only way to make a new user with a different id and get to here.
 				login.userId = userId;
-				await login.dbSave();
+				await login.dbSaveAddError(jrContext);
 				eventNewlyLinked = true;
 			}
 		}
 
-		if (eventNewlyLinked && !eventAddedNewUser && userId) {
-			// an existing user was either NEWLY linked to this existing login object, or with a newly created login object
-			jrContext.pushSuccess("The " + bridgedLoginObj.provider + " login has been linked with your existing user account.");
+		if (!jrContext.isError()) {
+			// success
+
+			if (eventNewlyLinked && !eventAddedNewUser && userId) {
+				// an existing user was either NEWLY linked to this existing login object, or with a newly created login object
+				jrContext.pushSuccess("The " + bridgedLoginObj.provider + " login has been linked with your existing user account.");
+			}
+
+			// NEW - ADD login id to user id -- this (may not) be saved to database,
+			//  since that's not important, but WILL be carried around with session data after a user does a bridged login
+			// this is most important if in this function we decide we do want to actually create a full user object here
+			user.loginId = login.getIdAsM();
 		}
-
-
-		// NEW - ADD login id to user id -- this (may not) be saved to database,
-		//  since that's not important, but WILL be carried around with session data after a user does a bridged login
-		// this is most important if in this function we decide we do want to actually create a full user object here
-		user.loginId = login.getIdAsM();
 
 		// now return the associated user we found (or created above)
 		return user;
@@ -311,8 +314,13 @@ class LoginModel extends ModelBaseMongoose {
 
 		// connect them!
 		login.userId = user.getIdAsM();
-		await login.dbSave();
-		jrContext.pushSuccess("Connected your " + login.provider + " login with this user account.");
+		await login.dbSaveAddError(jrContext);
+		if (!jrContext.isError()) {
+			jrContext.pushSuccess("Connected your " + login.provider + " login with this user account.");
+		} else {
+			// failed to save login
+			return null;
+		}
 
 		// return the login
 		return login;
