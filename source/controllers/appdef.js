@@ -54,6 +54,22 @@ exports.DefLogTypeInfoServer = "info.server";
 //
 exports.DefLogTypeAdmin = "admin";
 exports.DefLogTypeDebug = "debug";
+//
+exports.DefLogTypeAclPrefix = "acl.";
+exports.DefLogTypeAclDeleteRoles = exports.DefLogTypeAclPrefix + "deleteRoles";
+//
+exports.DefLogTypeCrudPefix = "crud.";
+exports.DefLogTypeCrudCreate = exports.DefLogTypeCrudPefix + "create";
+exports.DefLogTypeCrudEdit = exports.DefLogTypeCrudPefix + "edit";
+//
+exports.DefLogTypeDbDelete = "db.delete";
+exports.DefLogTypeDbModify = "db.modify";
+//
+exports.DefLogTypeApiToken = "api.token";
+//
+exports.DefLogTypeAdminMaintenance = "admin.maintenance";
+//
+exports.DefLogTypeUserCreate = "user.create";
 //---------------------------------------------------------------------------
 
 

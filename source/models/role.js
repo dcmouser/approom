@@ -221,9 +221,9 @@ class RoleModel extends ModelBaseMongooseMinimal {
 	static async logChangedAcl(jrContext, user, label, roleData) {
 		const roleStr = jrhMisc.objToString(roleData, true);
 		if (user) {
-			await arserver.logr(jrContext, "acl." + label, user.getLogIdString() + " " + label + ": " + roleStr);
+			await arserver.logr(jrContext, appdef.DefLogTypeAclPrefix + label, user.getLogIdString() + " " + label + ": " + roleStr);
 		} else {
-			await arserver.logr(jrContext, "acl." + label, roleStr);
+			await arserver.logr(jrContext, appdef.DefLogTypeAclPrefix + label, roleStr);
 		}
 	}
 	//---------------------------------------------------------------------------

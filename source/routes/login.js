@@ -81,8 +81,7 @@ function setupRouter(urlPath) {
 // present local email/password login form
 async function routerGetIndex(req, res, next) {
 	const jrContext = JrContext.makeNew(req, res, next);
-	// ATTN: unfinished - if they have just created an account and been redirected here to login (in order to encourage them to remember their password),
-	//  we could try to be a bit nice and pre-fill their username, eg. req.body.usernameEmail
+	// ATTN: TODO: We could try to be a bit nice and pre-fill their username, eg. req.body.usernameEmail
 
 	// render page
 	res.render("account/login", {

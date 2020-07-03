@@ -446,7 +446,6 @@ class UserModel extends ModelBaseMongoose {
 	// validate username
 	static async validateUsername(jrResult, username, flagMustBeUnique, flagRequired, flagCheckDisallowed, existingUser) {
 		// return JrResult with error set if error, or blank one on success
-		// ATTN: unfinished
 
 		if (!username) {
 			if (!flagRequired) {
@@ -517,7 +516,6 @@ class UserModel extends ModelBaseMongoose {
 	// validate password
 	static async validatePlaintextPasswordConvertToHash(jrResult, passwordPlaintext, flagRequired, flagAllowClearDash) {
 		// return JrResult with error set if error, or blank one on success
-		// ATTN: unfinished
 
 		if (!passwordPlaintext) {
 			if (flagRequired) {
@@ -821,6 +819,10 @@ class UserModel extends ModelBaseMongoose {
 		// REMEMBER old email addresss
 		const emailAddressOld = obj.email;
 
+
+		// ATTN: there is some duplicated overlapping code here from registrationaid.js processAccountAllInOneForm() that we would ideally like to merge
+
+
 		// set fields from form and validate
 		await this.validateMergeAsync(jrContext, "username", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => await UserModel.validateUsername(jrr, inVal, true, flagRequired, flagCheckDisallowedUsername, obj));
 
@@ -875,10 +877,6 @@ class UserModel extends ModelBaseMongoose {
 				}
 			}
 		}
-
-		// ATTN: unfinished - need to verify email changes
-		// ATTN: unfinished - complain about reserved usernames for admin-only-usernames
-		// ATTN: unfinished - duplicative code found in registrationaid and related files
 
 		// any errors saving?
 		if (jrContext.isError()) {

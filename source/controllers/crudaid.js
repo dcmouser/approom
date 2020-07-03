@@ -373,7 +373,7 @@ class CrudAid {
 				jrContext.pushSuccess(modelClass.getNiceName() + " added on " + jrhMisc.getNiceNowString() + ".");
 
 				// log the action
-				arserver.logr(jrContext, "crud.create", "created " + savedobj.getLogIdString());
+				arserver.logr(jrContext, appdef.DefLogTypeCrudCreate, "created " + savedobj.getLogIdString());
 
 				if (jrContext.isError()) {
 					// we had an error saving user; this is serious because it leaves an orphaned object
@@ -563,7 +563,7 @@ class CrudAid {
 
 				// log the action
 				const idLabel = savedobj.getLogIdString();
-				arserver.logr(jrContext, "crud.edit", "edited " + idLabel);
+				arserver.logr(jrContext, appdef.DefLogTypeCrudEdit, "edited " + idLabel);
 
 				// success message
 				jrContext.pushSuccess(modelClass.getNiceName() + " saved on " + jrhMisc.getNiceNowString() + ".");
@@ -873,7 +873,7 @@ class CrudAid {
 
 			// log the action
 			const logIdString = obj.getLogIdString();
-			arserver.logr(jrContext, "crud." + reqmode, appdef.DefStateModeLabels[newmode] + " " + logIdString);
+			arserver.logr(jrContext, appdef.DefLogTypeCrudPefix + reqmode, appdef.DefStateModeLabels[newmode] + " " + logIdString);
 
 			// redirect
 			jrContext.addToThisSession();

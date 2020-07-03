@@ -105,11 +105,9 @@ class RoomdataModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	// ATTN: TODO: Duplicate code in file model, consolidate!
-
 	// crud add/edit form helper data
 	// in case of rooms, this should be the list of APPS that the USER has access to
-	static async calcCrudEditHelperData(user, id) {
+	static async calcCrudEditHelperData(jrContext, user, id) {
 		// build app list, pairs of id -> nicename
 		const RoomModel = jrequire("models/room");
 		const roomlist = await RoomModel.buildSimpleRoomListUserTargetable(user);

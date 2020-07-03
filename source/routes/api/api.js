@@ -26,7 +26,8 @@ const JrContext = require("../../helpers/jrcontext");
 const jrhExpress = require("../../helpers/jrh_express");
 const jrdebug = require("../../helpers/jrdebug");
 
-
+// constants
+const appdef = jrequire("appdef");
 
 
 
@@ -202,7 +203,7 @@ async function renderRefreshTokenForUser(jrContext, user) {
 	const secureToken = await arserver.makeSecureTokenRefresh(jrContext, user);
 
 	// log request
-	arserver.logr(jrContext, "api.token", "generated refresh token", null, user);
+	arserver.logr(jrContext, appdef.DefLogTypeApiToken, "generated refresh token", null, user);
 
 	// provide it
 	jrhExpress.sendJsonDataSuccess(jrContext, "token generated", secureToken);
@@ -230,7 +231,7 @@ async function routerAllRefreshAccess(req, res, next) {
 	const secureToken = await arserver.makeSecureTokenAccessFromRefreshToken(jrContext, user, userPassport.token);
 
 	// log request
-	arserver.logr(jrContext, "api.token", "refreshed access token", null, user);
+	arserver.logr(jrContext, appdef.DefLogTypeApiToken, "refreshed access token", null, user);
 
 	// provide it
 	jrhExpress.sendJsonDataSuccess(jrContext, "token generated", secureToken);

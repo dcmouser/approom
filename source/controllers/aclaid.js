@@ -506,7 +506,6 @@ class AclAid {
 		if (doc) {
 			return doc;
 		}
-		// ATTN: unfinished
 		jrContext.pushFieldError(fieldLabel, "Not a valid object (" + fieldLabel + ")");
 		return null;
 	}
@@ -542,7 +541,6 @@ class AclAid {
 			}
 		}
 
-		// ATTN: unfinished
 		jrContext.pushFieldError(fieldLabel, "Not a valid " + fieldLabel + " user");
 		return null;
 	}

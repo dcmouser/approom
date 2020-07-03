@@ -24,7 +24,8 @@ const VerificationModel = jrequire("models/verification");
 const UserModel = jrequire("models/user");
 const LoginModel = jrequire("models/login");
 
-
+// constants
+const appdef = jrequire("appdef");
 
 
 
@@ -345,7 +346,7 @@ class RegistrationAid {
 				await verification.useUpAndSave(jrContext, true);
 			}
 			// log it
-			arserver.logr(jrContext, "user.create", "created new account for " + user.getLogIdString());
+			arserver.logr(jrContext, appdef.DefLogTypeUserCreate, "created new account for " + user.getLogIdString());
 			// now, if they were sessioned-in with a Login, we want to connect that to the new user
 			//
 			const loginId = arserver.getSessionedBridgedLoginId(jrContext);

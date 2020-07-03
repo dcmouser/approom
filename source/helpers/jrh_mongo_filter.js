@@ -89,7 +89,6 @@ function buildMongooseQueryFromReq(jrContext, filterOptions, schema) {
 			// return value could be just the filter, a full object with fieldFilterKey as key, or an object with an $and or $or key
 			if (aFindFilter && aFindFilter[fieldFilterKey]) {
 				// if its an undefined value stored in object, its because we returned an error
-				// ATTN: unfinished
 				query[fieldFilterKey] = aFindFilter[fieldFilterKey];
 			} else if (aFindFilter && aFindFilter.$and) {
 				if (query.$and) {

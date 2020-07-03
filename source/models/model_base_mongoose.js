@@ -600,9 +600,8 @@ class ModelBaseMongoose {
 			await user.addOwnerCreatorRolesForNewObject(jrContext, obj);
 			if (jrContext.isError()) {
 				// ATTN: TODO: Error setting roles, which means we would like to DESTROY the object and reset it..
-				// ATTN: Unfinished
 				const emsg = "ATTN: Failed to set ownership roles on " + obj.getLogIdString();
-				arserver.logr(jrContext, "error.imp", emsg);
+				arserver.logr(jrContext, appdef.DefLogTypeErrorCriticalAcl, emsg);
 				jrdebug.debug(emsg);
 			}
 		}
@@ -1906,7 +1905,7 @@ class ModelBaseMongoose {
 				} else {
 					// log the action
 					if (this.getShouldLogDbActions()) {
-						arserver.logr(jrContext, "db.delete", "Deleted " + this.getNiceNameWithId(id));
+						arserver.logr(jrContext, appdef.DefLogTypeDbDelete, "Deleted " + this.getNiceNameWithId(id));
 					}
 				}
 			});
@@ -1922,7 +1921,7 @@ class ModelBaseMongoose {
 				} else {
 					if (this.getShouldLogDbActions()) {
 						// log the action
-						arserver.logr(jrContext, "db.modify", "Changing to " + appdef.DefStateModeLabels[mode] + "  " + this.getNiceNameWithId(id));
+						arserver.logr(jrContext, appdef.DefLogTypeDbModify, "Changing to " + appdef.DefStateModeLabels[mode] + "  " + this.getNiceNameWithId(id));
 					}
 				}
 			});
@@ -2010,7 +2009,7 @@ class ModelBaseMongoose {
 		// await RoleModel.deleteRolesByCondition(jrContext, cond);
 		await RoleModel.mFindAndDeleteMany(cond);
 		// log it
-		await arserver.logr(jrContext, "acl.deleteRoles", "delete roles related to deleted object " + this.getLogStringFromId(id));
+		await arserver.logr(jrContext, appdef.DefLogTypeAclDeleteRoles, "delete roles related to deleted object " + this.getLogStringFromId(id));
 	}
 	//---------------------------------------------------------------------------
 

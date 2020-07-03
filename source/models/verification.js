@@ -510,8 +510,8 @@ class VerificationModel extends ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	static async pruneOldVerifications(jrContext, flagDesperate) {
-		// ATTN: 5/25/19 - unfinished
-		await arserver.logr(jrContext, "admin.maint", "pruning old verifications");
+		// ATTN: UNFINISHED: -5/25/19 this is not implemented yet
+		await arserver.logr(jrContext, appdef.DefLogTypeAdminMaintenance, "pruning old verifications");
 	}
 	//---------------------------------------------------------------------------
 
@@ -686,7 +686,6 @@ class VerificationModel extends ModelBaseMongoose {
 		// ATTN: there is a small chance a verification code could be used twice, if called twice in the middle of checking unused and marking it used
 		// if we are worried about this we can use the enabled field and do a findAndUpdate set it to 0 so that it can only succeed once,
 		// ATTN: there is also the dilemma, do we use up token and then try to perform action, or vice versa; in case of error it matters
-		// ATTN: unfinished
 		// @return JrResult
 		let successRedirectTo;
 
