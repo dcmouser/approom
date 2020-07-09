@@ -176,7 +176,7 @@ class UserModel extends ModelBaseMongoose {
 					type: String,
 				},
 			},
-			apiCode: {
+			apiRevoke: {
 				label: "Api Code",
 				mongoose: {
 					type: String,
@@ -791,7 +791,7 @@ class UserModel extends ModelBaseMongoose {
 		// NOTE: this list can be generated dynamically based on logged in user
 		let reta = [];
 		if (operationType === "crudAdd" || operationType === "crudEdit" || operationType === "add") {
-			reta = ["username", "realName", "email", "password", "passwordHashed", "apiCode", "disabled", "notes", "extraData"];
+			reta = ["username", "realName", "email", "password", "passwordHashed", "apiRevoke", "disabled", "notes", "extraData"];
 		}
 		return reta;
 	}
@@ -831,7 +831,7 @@ class UserModel extends ModelBaseMongoose {
 
 		await this.validateMergeAsync(jrContext, "realName", "", source, saveFields, preValidatedFields, obj, false, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateRealName(jrr, keyname, inVal, flagRequired));
 		await this.validateMergeAsync(jrContext, "email", "", source, saveFields, preValidatedFields, obj, true, async (jrr, keyname, inVal, flagRequired) => this.validateEmail(jrr, inVal, true, flagRrequiredEmail, obj));
-		await this.validateMergeAsync(jrContext, "apiCode", "", source, saveFields, preValidatedFields, obj, false, async (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrContext, "apiRevoke", "", source, saveFields, preValidatedFields, obj, false, async (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
 
 		// base fields shared between all? (notes, etc.)
 		await this.validateMergeAsyncBaseFields(jrContext, options, flagSave, source, saveFields, preValidatedFields, obj);
@@ -913,31 +913,31 @@ class UserModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	async getApiCodeEnsureValid(jrContext) {
-		// if user has a valid apiCode, just return it
+	async getApiRevokeEnsureValid(jrContext) {
+		// if user has a valid apiRevoke, just return it
 		// if not, create and save one then return it
 		// this will not CHANGE a valid one
-		if (!this.apiCode) {
-			await this.resetUpdateApiCode(jrContext);
+		if (!this.apiRevoke) {
+			await this.resetUpdateApiRevoke(jrContext);
 		}
-		return this.apiCode;
+		return this.apiRevoke;
 	}
 
-	async resetUpdateApiCode(jrContext) {
-		// update the apicode which will invalidate any previously issues api access tokens for user
-		this.apiCode = jrhMisc.getPreciseNowString();
+	async resetUpdateApiRevoke(jrContext) {
+		// update the apiRevoke which will invalidate any previously issues api access tokens for user
+		this.apiRevoke = jrhMisc.getPreciseNowString();
 
 		// save it to database
 		// ATTN: Note that it will not return on error to save since an exception will be thrown, since no jrContext is passed to store error
 		await this.dbSaveThrowException(jrContext);
 
 		// return it
-		return this.apiCodell;
+		return this.apiRevokell;
 	}
 
-	verifyApiCode(tokenApiCode) {
-		// check if token api code matches user's latest apicode
-		if (this.apiCode === tokenApiCode) {
+	verifyApiRevoke(tokenApiRevoke) {
+		// check if token api code matches user's latest apiRevoke
+		if (this.apiRevoke === tokenApiRevoke) {
 			return true;
 		}
 		return false;
@@ -947,7 +947,11 @@ class UserModel extends ModelBaseMongoose {
 
 
 
-
+	//---------------------------------------------------------------------------
+	getIsEnabled() {
+		return super.getIsEnabled();
+	}
+	//---------------------------------------------------------------------------
 
 
 

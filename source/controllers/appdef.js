@@ -255,8 +255,17 @@ exports.DefConfigKeyLastAccessUpdateFrequencyMs = "general:LAST_ACCESS_UPDATE_FR
 //
 exports.DefConfigKeyCollections = {
 	plugins: "plugins",
-	appFrameworks: "appFrameworks",
+	appEngines: "appEngines",
 };
 //---------------------------------------------------------------------------
 
 
+
+//---------------------------------------------------------------------------
+// hooks
+
+exports.DefHookSetupExpressRoutes = "SetupExpressRoutes";
+exports.DefHookInitialize = "Initialize";
+//
+exports.DefHookReturnCodeStop = "stop";
+//---------------------------------------------------------------------------

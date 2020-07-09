@@ -203,6 +203,7 @@ class RegistrationAid {
 		// ok now we want to validate fields
 		// ATTN: there is some duplicated overlapping code here from user.js validateAndSaveNew() that we would ideally like to merge
 
+
 		// valid email?
 		email = await UserModel.validateEmail(jrContext.result, email, true, flagEmailRequired, null);
 

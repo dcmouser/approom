@@ -1,12 +1,14 @@
 /**
- * @module plugins/testplugin
+ * @module appengine/testplugin
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 11/20/19
  * @description
- * A test plugin
+ * A test appEngine
  */
 
 "use strict";
+
+
 
 
 //---------------------------------------------------------------------------
@@ -20,8 +22,21 @@ const addonInfo = {
 
 
 //---------------------------------------------------------------------------
-function initialize(arserver) {
-	// console.log("Hello world from afeasysync initialize()");
+async function hookInitialize(arserver) {
+	// console.log("In aftest hookInitialize.");
+}
+//---------------------------------------------------------------------------
+
+
+
+//---------------------------------------------------------------------------
+async function hookSetupExpressRoutes(arserver, expressApp) {
+	// console.log("In aftest hookSetupExpress.");
+
+	// this appengine addon registers a new route with the server
+	const urlPath = "/appengine/aftest";
+	const routeModulePath = "./route";
+	arserver.setupRouteModule(expressApp, urlPath, require(routeModulePath), require.resolve(routeModulePath));
 }
 //---------------------------------------------------------------------------
 
@@ -39,6 +54,7 @@ function getInfo(arserver) {
 
 
 module.exports = {
-	initialize,
+	hookInitialize,
+	hookSetupExpressRoutes,
 	getInfo,
 };

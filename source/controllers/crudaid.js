@@ -442,7 +442,7 @@ class CrudAid {
 	 */
 	async doPresentAddForm(jrContext, reqbody, user, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// any helper data
-		const helperData = await modelClass.calcCrudEditHelperData(user);
+		const helperData = await modelClass.calcCrudEditHelperData(jrContext, user);
 
 		// parse view file set
 		const { viewFile, isGeneric } = viewFileSet;
@@ -607,7 +607,7 @@ class CrudAid {
 	 */
 	async doPresentEditForm(jrContext, reqbody, obj, id, user, modelClass, baseCrudUrl, viewFileSet, extraViewData) {
 		// any helper data
-		const helperData = await modelClass.calcCrudEditHelperData(user, id);
+		const helperData = await modelClass.calcCrudEditHelperData(jrContext, user, id);
 
 		// parse view file set
 		const { viewFile, isGeneric } = viewFileSet;

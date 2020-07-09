@@ -1,9 +1,9 @@
 /**
- * @module plugins/testplugin
+ * @module appengine/testplugin
  * @author jesse reichler <mouser@donationcoder.com>
  * @copyright 11/20/19
  * @description
- * A test plugin
+ * A test appEngine
  */
 
 "use strict";
@@ -20,8 +20,8 @@ const addonInfo = {
 
 
 //---------------------------------------------------------------------------
-function initialize(arserver) {
-	// console.log("Hello world from aftest initialize()");
+async function hookInitialize(arserver) {
+	// console.log("Hello world from afeasysync initialize()");
 }
 //---------------------------------------------------------------------------
 
@@ -39,6 +39,6 @@ function getInfo(arserver) {
 
 
 module.exports = {
-	initialize,
+	hookInitialize,
 	getInfo,
 };

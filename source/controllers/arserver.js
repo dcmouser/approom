@@ -165,6 +165,16 @@ class AppRoomServer {
 		// default is in the parent folder of source dir in /config subdir
 		return this.getSourceSubDir("config");
 	}
+
+
+	getVersionLib() {
+		return appdef.DefLibVersion;
+	}
+
+	getVersionApi() {
+		return appdef.DefApiVersion;
+	}
+
 	//---------------------------------------------------------------------------
 
 
@@ -417,8 +427,8 @@ class AppRoomServer {
 		// discover addon plugins, must be done after processing config file
 		this.discoverAndInitializeAddonPlugins();
 
-		// discover addon appFrameworks
-		this.discoverAndInitializeAddonAppFrameworks();
+		// discover addon appEngines
+		this.discoverAndInitializeAddonAppEngines();
 	}
 
 
@@ -437,7 +447,7 @@ class AppRoomServer {
 		this.cacheMiscOptions();
 
 		// misc global hooks
-		this.setupGlobalHooks();
+		this.setupGlobalNodeHooks();
 	}
 
 
@@ -583,6 +593,9 @@ class AppRoomServer {
 
 		// passport login system
 		this.setupExpressPassport(expressApp);
+
+		// now any plugins and addons get a chance to register with expressApp
+		this.hookAddons(appdef.DefHookSetupExpressRoutes, expressApp);
 
 		// routes
 		this.setupExpressRoutesCore(expressApp);
@@ -747,32 +760,32 @@ class AppRoomServer {
 		// add routes to express app
 
 		// home page
-		this.setupRoute(expressApp, "/", "index");
+		this.setupRouteRelative(expressApp, "/", "index");
 
 		// register/signup
-		this.setupRoute(expressApp, "/register", "register");
+		this.setupRouteRelative(expressApp, "/register", "register");
 
 		// login
-		this.setupRoute(expressApp, "/login", "login");
+		this.setupRouteRelative(expressApp, "/login", "login");
 		// logout
-		this.setupRoute(expressApp, "/logout", "logout");
+		this.setupRouteRelative(expressApp, "/logout", "logout");
 
 		// verifications
-		this.setupRoute(expressApp, "/verify", "verify");
+		this.setupRouteRelative(expressApp, "/verify", "verify");
 
 		// profile
-		this.setupRoute(expressApp, "/profile", "profile");
+		this.setupRouteRelative(expressApp, "/profile", "profile");
 
 		// admin
-		this.setupRoute(expressApp, "/admin", "admin");
+		this.setupRouteRelative(expressApp, "/admin", "admin");
 		// internals
-		this.setupRoute(expressApp, "/internals", "internals");
+		this.setupRouteRelative(expressApp, "/internals", "internals");
 		// analytics
-		this.setupRoute(expressApp, "/analytics", "analytics");
+		this.setupRouteRelative(expressApp, "/analytics", "analytics");
 		// testing
-		this.setupRoute(expressApp, "/test", "test");
+		this.setupRouteRelative(expressApp, "/test", "test");
 		// help/about
-		this.setupRoute(expressApp, "/help", "help");
+		this.setupRouteRelative(expressApp, "/help", "help");
 
 		// crud routes
 		const crudUrlBase = "/crud";
@@ -794,18 +807,18 @@ class AppRoomServer {
 		// add routes to express app
 
 		// app routes
-		this.setupRoute(expressApp, "/app", "app");
+		this.setupRouteRelative(expressApp, "/app", "app");
 		// room routes
-		this.setupRoute(expressApp, "/room", "room");
+		this.setupRouteRelative(expressApp, "/room", "room");
 
 		// api routes
-		this.setupRoute(expressApp, "/api", "api/api");
-		this.setupRoute(expressApp, "/api/app", "api/app");
-		this.setupRoute(expressApp, "/api/room", "api/room");
-		this.setupRoute(expressApp, "/api/roomdata", "api/roomdata");
+		this.setupRouteRelative(expressApp, "/api", "api/api");
+		this.setupRouteRelative(expressApp, "/api/app", "api/app");
+		this.setupRouteRelative(expressApp, "/api/room", "api/room");
+		this.setupRouteRelative(expressApp, "/api/roomdata", "api/roomdata");
 
 		// test stuff
-		this.setupRoute(expressApp, "/membersonly", "membersonly");
+		this.setupRouteRelative(expressApp, "/membersonly", "membersonly");
 
 		// crud routes
 		const crudUrlBase = "/crud";
@@ -820,11 +833,15 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	setupRoute(expressApp, urlPath, routeFilename) {
+	setupRouteRelative(expressApp, urlPath, routeFilename) {
 		// require in the file in the routes directory so we can discover its functions
 		const requireRouteFileName = "../routes/" + routeFilename;
 		const route = require(requireRouteFileName);
+		return this.setupRouteModule(expressApp, urlPath, route, requireRouteFileName);
+	}
 
+
+	setupRouteModule(expressApp, urlPath, route, routePath) {
 		// ok there are two ways that our route files can be written
 		// the first is by exporting a setupRouter function, in which case we call it with urlPath and it returns the router
 		// the older method just exports default router
@@ -832,9 +849,9 @@ class AppRoomServer {
 		if (route.setupRouter) {
 			const expressRouter = route.setupRouter(urlPath);
 			assert(expressRouter);
-			this.useExpressRoute(expressApp, urlPath, expressRouter, requireRouteFileName);
+			this.useExpressRoute(expressApp, urlPath, expressRouter, routePath);
 		} else {
-			this.useExpressRoute(expressApp, urlPath, route, requireRouteFileName);
+			this.useExpressRoute(expressApp, urlPath, route, routePath);
 		}
 	}
 
@@ -1379,7 +1396,22 @@ class AppRoomServer {
 			} else {
 				// now we get the real user
 				user = await this.UserModel.mFindOneById(userId);
-				// ATTN: TODO: this is where we could check if they were banned, deleted, etc.
+
+				if (!user) {
+					// error looking up user
+					jrContext.pushError("Failed to retrieve data for authenticated/logged-in user.");
+				} else {
+					// ATTN: TODO: this is where we could check if they were banned, deleted, etc.
+					const passportUsr = this.getLoggedInPassportUsr(jrContext);
+					if (!this.deepCheckUserValidity(jrContext, user, passportUsr)) {
+						// failed deep checking validity, we need to clear user so they are not considered logged in
+						user = null;
+						// should we now explicitly log them OUT of the session?
+						if (true) {
+							jrContext.req.logout();
+						}
+					}
+				}
 			}
 		}
 
@@ -1399,6 +1431,32 @@ class AppRoomServer {
 
 
 
+	//---------------------------------------------------------------------------
+	deepCheckUserValidity(jrContext, user, passportUsr) {
+		// here we want to do some checks like whether the user is BANNED
+		// return TRUE if they are ok to proceeed, or push error into jrContext and return false if not
+		// NOTE: passportUsr may be blank, but if it is provided, we check if the passportUsr has anything in it that would contradict it authenticating the user, like the apiRevoke code
+		// ATTN: TODO UNFINISED
+		let retv = true;
+
+		// check revoke code
+		if (passportUsr && passportUsr.token && "apiRevoke" in passportUsr.token) {
+			const tokenApiRevoke = passportUsr.token.apiRevoke;
+			if (!user.verifyApiRevoke(tokenApiRevoke)) {
+				jrContext.pushError("The authentication token has been revoked; a new one is needed.");
+				retv = false;
+			}
+		}
+
+		// let's check if they are disabled or banned?
+		if (!user.getIsEnabled()) {
+			jrContext.pushError("The user account has been " + user.getEnabledStateAsString() + ".");
+			retv = false;
+		}
+
+		return retv;
+	}
+	//---------------------------------------------------------------------------
 
 
 
@@ -1749,51 +1807,7 @@ class AppRoomServer {
 
 
 
-	//---------------------------------------------------------------------------
-	// jwt token access for api access; credential passed in via access token
-	// 3 ways to call depending on which data you want
-	// see also setupPassportJwt() where the jwt stuff is set up
-	// NOTE that these nonSession functions do NOT log in the user or set req.user -- they are ways to test the authentication WITHOUT doing so
 
-	async asyncPassportManualNonSessionAuthenticateFromTokenInRequestGetMinimalPassportUsrData(jrContext, next, requiredTokenType) {
-		// force passport authentication from request, looking for jwt token
-
-		// generic call to passport, with jwt type
-		// note we ask the function to not lookup full user since we dont need it (last false parameter)
-		const passportUsrData = await this.asyncPassportManualNonSessionAuthenticateGetMinimalPassportUsrData(jrContext, "jwtManualQueryOrPostBody", "using jwt", next);
-		if (!jrContext.isError()) {
-			// let's check token validity (expiration, etc.); this may push an error into jrResult
-			// ATTN: TODO: SECURITY - This does NOT check user.apiCode, which can be used to revoke api keys
-			// BUT this should be done after we load the users full profile, which the CALLER of our function does
-			// I believe this function is never called EXCEPT inside that one, so it will always be performed
-			// jrlog.debugObj(passportUsrData.token, "access token pre validate.");
-			this.validateSecureToken(jrContext.result, passportUsrData.token, requiredTokenType);
-		} else {
-			// change error code from generic to token specific or add?
-			jrContext.pushErrorOnTop("Invalid access token");
-			jrContext.setExtraData("tokenError", true);
-		}
-
-		// return fale or null
-		return passportUsrData;
-	}
-
-
-
-	async asyncPassportManualNonSessionAuthenticateFromTokenInRequestGetPassportProfileAndUser(jrContext, next, requiredTokenType) {
-		// force passport authentication from request, looking for jwt token
-		const userMinimalProfile = await this.asyncPassportManualNonSessionAuthenticateFromTokenInRequestGetMinimalPassportUsrData(jrContext, next, requiredTokenType);
-
-		if (jrContext.isError()) {
-			return [userMinimalProfile, null];
-		}
-
-		// load full profile from minimal -- this should check apicode because of the final true parameter for flagCheckAccessCode
-		// in this way we will record an error if the token has been revoked (apicode does not match)
-		const user = await this.loadUserFromMinimalPassportUsrData(jrContext, userMinimalProfile, true);
-		return [userMinimalProfile, user];
-	}
-	//---------------------------------------------------------------------------
 
 
 
@@ -1836,8 +1850,8 @@ class AppRoomServer {
 			if (!userMinimalPassportProfile.token) {
 				jrContext.pushError("Invalid login; error code 5b (missing accesstoken data).");
 			}
-			if (!user.verifyApiCode(userMinimalPassportProfile.token.apiCode)) {
-				jrContext.pushError("Invalid login; error code 5 (found user and access token is valid but apiCode revision has been revoked).");
+			if (!user.verifyApiRevoke(userMinimalPassportProfile.token.apiRevoke)) {
+				jrContext.pushError("Invalid login; error code 5 (found user and access token is valid but token has been revoked).");
 				// ATTN: TODO - SECURITY - should we clear user variable so it's not used by mistake by some caller function that doesnt check for error? or leave it so caller can refer to user
 			}
 		}
@@ -1971,6 +1985,9 @@ class AppRoomServer {
 			loginOptions.session = false;
 		}
 
+		//
+		let successMessage;
+
 		// run and wait for passport.authenticate async
 		const userPassport = await jrhExpress.asyncPassportAuthenticate(jrContext, authOptions, provider, providerNiceLabel);
 
@@ -1988,19 +2005,24 @@ class AppRoomServer {
 				// announce success
 				if (flagRememberUserInSessionCookie) {
 					if (newlyLoggedInUserId) {
-						jrContext.pushSuccess("You have successfully logged in " + providerNiceLabel + ".");
+						successMessage = "You have successfully logged in " + providerNiceLabel + ".";
 					} else {
-						jrContext.pushSuccess("You have successfully connected " + providerNiceLabel + ".");
+						successMessage = "You have successfully connected " + providerNiceLabel + ".";
 					}
 				} else {
 					// some other message if we don't want to remember them but they have logged in for THIS REQUEST ONLY
-					jrContext.pushSuccess("You have successfully authenticated " + providerNiceLabel + ".");
+					successMessage = "You have successfully authenticated " + providerNiceLabel + ".";
 				}
 
 				// and NOW if they were previously sessioned with a pre-account Login object, we can connect that to this account
 				if (newlyLoggedInUserId && previousLoginId) {
 					// try to connect
 					await this.LoginModel.connectUserToLogin(jrContext, newlyLoggedInUserId, previousLoginId, false);
+				}
+
+				// success
+				if (successMessage) {
+					jrContext.pushSuccess(successMessage);
 				}
 
 				// add message to session?
@@ -2050,6 +2072,74 @@ class AppRoomServer {
 
 
 
+
+
+
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------------
+	// jwt token access for api access; credential passed in via access token
+	// 3 ways to call depending on which data you want
+	// see also setupPassportJwt() where the jwt stuff is set up
+	// NOTE that these nonSession functions do NOT log in the user or set req.user -- they are ways to test the authentication WITHOUT doing so
+
+	async asyncInternalUntrustedPassportManualNonSessionAuthenticateFromTokenInRequestGetMinimalPassportUsrData(jrContext, next, requiredTokenType) {
+		// force passport authentication from request, looking for jwt token
+
+		// generic call to passport, with jwt type
+		// note we ask the function to not lookup full user since we dont need it (last false parameter)
+		const passportUsrData = await this.asyncInternalUntrustedPassportManualNonSessionAuthenticateGetMinimalPassportUsrData(jrContext, "jwtManualQueryOrPostBody", "using jwt", next);
+		if (!jrContext.isError()) {
+			// let's check token validity (expiration, etc.); this may push an error into jrResult
+			// ATTN: TODO: SECURITY - This does NOT check user.apiRevoke, which can be used to revoke api keys
+			// BUT this should be done after we load the users full profile, which the CALLER of our function does
+			// I believe this function is never called EXCEPT inside that one, so it will always be performed
+			// jrlog.debugObj(passportUsrData.token, "access token pre validate.");
+			this.validateSecureToken(jrContext.result, passportUsrData.token, requiredTokenType);
+		} else {
+			// change error code from generic to token specific or add?
+			jrContext.pushErrorOnTop("Invalid access token");
+			jrContext.setExtraData("tokenError", true);
+		}
+
+		// return fale or null
+		return passportUsrData;
+	}
+
+
+
+	async asyncPassportManualNonSessionAuthenticateFromTokenInRequestGetPassportProfileAndUser(jrContext, next, requiredTokenType) {
+		// force passport authentication from request, looking for jwt token
+		const passportUsr = await this.asyncInternalUntrustedPassportManualNonSessionAuthenticateFromTokenInRequestGetMinimalPassportUsrData(jrContext, next, requiredTokenType);
+
+		if (jrContext.isError()) {
+			return [passportUsr, null];
+		}
+
+		// load full profile from minimal -- this should check apiRevoke because of the final true parameter for flagCheckAccessCode
+		// in this way we will record an error if the token has been revoked (apiRevoke does not match)
+		let user = await this.loadUserFromMinimalPassportUsrData(jrContext, passportUsr, true);
+
+		// deep check user validity (ban, disabled, etc.)
+		const bretv = this.deepCheckUserValidity(jrContext, user, passportUsr);
+		if (!bretv) {
+			user = null;
+		}
+
+		// return it
+		return [passportUsr, user];
+	}
+	//---------------------------------------------------------------------------
+
+
+
+
+
 	//---------------------------------------------------------------------------
 	// wrappers around passport.authenticate,
 	//  which convert(wrap) the non-promise non-async function passport.authenticate into an sync function that uses a promise
@@ -2058,21 +2148,21 @@ class AppRoomServer {
 	// generic passport route login helper function, invoked from login routes
 	// this will end up calling a passport STRATEGY
 
-	async asyncPassportManualNonSessionAuthenticateGetMinimalPassportUsrData(jrContext, provider, providerNiceLabel) {
+	async asyncInternalUntrustedPassportManualNonSessionAuthenticateGetMinimalPassportUsrData(jrContext, provider, providerNiceLabel) {
 		// "manual" authenticate via passport (as opposed to middleware auto); allows us to get richer info about error, and better decide what to do
-		// return userPassport
+		// return passportUsr
 
 		// run and wait for passport.authenticate async
-		const userPassport = await jrhExpress.asyncPassportAuthenticate(jrContext, { session: false }, provider, providerNiceLabel);
+		const passportUsr = await jrhExpress.asyncPassportAuthenticate(jrContext, { session: false }, provider, providerNiceLabel);
 
 		// error?
 		if (jrContext.isError()) {
-			jrdebug.cdebug("misc", "In asyncPassportManualNonSessionAuthenticateGetMinimalPassportUsrData 2 error from userPassport :" + jrContext.getErrorsAsString());
+			jrdebug.cdebug("misc", "In asyncInternalUntrustedPassportManualNonSessionAuthenticateGetMinimalPassportUsrData 2 error from passportUsr :" + jrContext.getErrorsAsString());
 			return null;
 		}
 
 		// return it
-		return userPassport;
+		return passportUsr;
 	}
 
 
@@ -2082,8 +2172,8 @@ class AppRoomServer {
 		// return user
 
 		// get minimal userPassport data
-		const userPassport = await this.asyncPassportManualNonSessionAuthenticateGetMinimalPassportUsrData(jrContext, provider, providerNiceLabel);
-		if (!userPassport) {
+		const passportUsr = await this.asyncInternalUntrustedPassportManualNonSessionAuthenticateGetMinimalPassportUsrData(jrContext, provider, providerNiceLabel);
+		if (!passportUsr) {
 			// error will have already been set
 			return null;
 		}
@@ -2091,9 +2181,14 @@ class AppRoomServer {
 		let user;
 		try {
 			// now get user
-			user = await this.loadUserFromMinimalPassportUsrData(jrContext, userPassport, false);
+			user = await this.loadUserFromMinimalPassportUsrData(jrContext, passportUsr, false);
 			if (!user) {
 				jrContext.pushError("Error authenticating " + providerNiceLabel + ": could not locate user in database.");
+				return null;
+			}
+			// deep check user validity (ban, disabled, etc.)
+			const bretv = this.deepCheckUserValidity(jrContext, user, passportUsr);
+			if (!bretv) {
 				return null;
 			}
 		} catch (err) {
@@ -2106,6 +2201,22 @@ class AppRoomServer {
 		return user;
 	}
 	//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2345,7 +2456,6 @@ class AppRoomServer {
 
 		// now create a log entry about the server starting up
 		await this.logStartup();
-
 
 		// check at the end for any failed requires due to circular reference
 		// jrequire.checkCircularRequireFailures();
@@ -3423,8 +3533,8 @@ class AppRoomServer {
 		return this.calcAddonCollectionInfo(this.getAddonCollectionNamePlugins());
 	}
 
-	calcAddonCollectionInfoAppFrameworks() {
-		return this.calcAddonCollectionInfo(this.getAddonCollectionNameAppFrameworks());
+	calcAddonCollectionInfoAppEngines() {
+		return this.calcAddonCollectionInfo(this.getAddonCollectionNameAppEngines());
 	}
 
 
@@ -3531,7 +3641,7 @@ class AppRoomServer {
 		const payload = {
 			type: "refresh",
 			scope: "api",
-			apiCode: await user.getApiCodeEnsureValid(jrContext),
+			apiRevoke: await user.getApiRevokeEnsureValid(jrContext),
 			user: user.getMinimalPassportProfile(),
 		};
 		// create secure toke
@@ -3553,7 +3663,7 @@ class AppRoomServer {
 		const payload = {
 			type: "access",
 			scope,
-			apiCode: await user.getApiCodeEnsureValid(jrContext),
+			apiRevoke: await user.getApiRevokeEnsureValid(jrContext),
 			user: user.getMinimalPassportProfile(),
 		};
 		// add accessId -- the idea here is for every user object in database to ahve an accessId (either sequential or random); that can be changed to invalidate all previously issues access tokens
@@ -4058,7 +4168,7 @@ class AppRoomServer {
 	 *
 	 * @memberof AppRoomServer
 	 */
-	setupGlobalHooks() {
+	setupGlobalNodeHooks() {
 		process.on("exit", async () => {
 			// try to shutdown, if not already done, on exit
 			// console.log("Exiting application.");
@@ -4220,7 +4330,7 @@ class AppRoomServer {
 		// ATTN: TODO: Do we need to worry about local vs gmt/etc time?
 		if (!exp) {
 			// what to do in this case? no expiration date?
-			// ATTN:TODO: SECURITY - for now we treat it as ok
+			// ATTN:TODO: SECURITY - for now we treat it as expired if it has no date
 			return true;
 		}
 		if (exp <= Math.floor(Date.now() / 1000)) {
@@ -4366,7 +4476,7 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	discoverAddonCollection(collectionName) {
+	discoverAddonsByCollectionName(collectionName) {
 		// get the plugin config object
 		const configKey = this.calcCollectionConfigKey(collectionName);
 		const allObjs = this.getConfigVal(configKey);
@@ -4380,40 +4490,27 @@ class AppRoomServer {
 		});
 	}
 
-
-	initializeAddonCollection(collectionName) {
-		// initialize a configuration collection
-		let addonModule;
-		const AllAddons = jrequire.getAllAddonModulesForCollectionName(collectionName);
-		if (AllAddons) {
-			Object.keys(AllAddons).forEach((name) => {
-				addonModule = jrequire.requireAddonModule(collectionName, name);
-				if (addonModule && addonModule.initialize) {
-					addonModule.initialize(this);
-				}
-			});
-		}
+	async discoverAndInitializeAddonPlugins() {
+		await this.discoverAndInitializeAddonsByCollectionName(this.getAddonCollectionNamePlugins());
 	}
 
-
-	discoverAndInitializeAddonPlugins() {
-		const collectionName = this.getAddonCollectionNamePlugins();
-		this.discoverAddonCollection(collectionName);
-		this.initializeAddonCollection(collectionName);
+	async discoverAndInitializeAddonAppEngines() {
+		await this.discoverAndInitializeAddonsByCollectionName(this.getAddonCollectionNameAppEngines());
 	}
 
-	discoverAndInitializeAddonAppFrameworks() {
-		const collectionName = this.getAddonCollectionNameAppFrameworks();
-		this.discoverAddonCollection(collectionName);
-		this.initializeAddonCollection(collectionName);
+	async discoverAndInitializeAddonsByCollectionName(collectionName) {
+		// discover the addons
+		this.discoverAddonsByCollectionName(collectionName);
+		// now call the hookInitialize(arserver) funciton for them
+		await this.hookAddonsByCollectionName(appdef.DefHookInitialize, collectionName);
 	}
 
 	getAddonCollectionNamePlugins() {
 		return "plugins";
 	}
 
-	getAddonCollectionNameAppFrameworks() {
-		return "appFrameworks";
+	getAddonCollectionNameAppEngines() {
+		return "appEngines";
 	}
 
 	calcCollectionConfigKey(collectionName) {
@@ -4424,37 +4521,76 @@ class AppRoomServer {
 
 
 	//---------------------------------------------------------------------------
-	getAppFrameworkChoices() {
-		if (this.cachedAppFrameworkChoices === undefined) {
+	async hookPlugins(functionName, ...functionArgs) {
+		const retv = await this.hookAddonsByCollectionName(functionName, this.getAddonCollectionNamePlugins(), ...functionArgs);
+		return retv;
+	}
+
+	async hookAppEngines(functionName, ...functionArgs) {
+		const retv = await this.hookAddonsByCollectionName(functionName, this.getAddonCollectionNameAppEngines(), ...functionArgs);
+		return retv;
+	}
+
+	async hookAddons(functionName, ...functionArgs) {
+		let retv;
+		retv = await this.hookPlugins(functionName, ...functionArgs);
+		if (!retv) {
+			retv = await this.hookAppEngines(functionName, ...functionArgs);
+		}
+		return retv;
+	}
+
+
+	async hookAddonsByCollectionName(functionName, collectionName, ...functionArgs) {
+		// if a hook call returns anything that evaluates to true (ie anything other than false, null, "", or undefined, then we stop and return that
+		let retv;
+		// add "hook" prefix for function names, all hook callbacks must begin with "hook" + the appdef.DefHook constant
+		const functionNameFull = "hook" + functionName;
+		// walk addon modules
+		let addonModule;
+		const allAddons = jrequire.getAllAddonModulesForCollectionName(collectionName);
+		if (allAddons) {
+			const keys = Object.keys(allAddons);
+			// console.log(keys);
+			for (const key of keys) {
+				// console.log(key);
+				addonModule = jrequire.requireAddonModule(collectionName, key);
+				// if the module has the function, invoke it
+				if (addonModule && addonModule[functionNameFull]) {
+					retv = await addonModule[functionNameFull](this, ...functionArgs);
+					if (retv) {
+						return retv;
+					}
+				}
+			}
+		}
+
+		// return false by default; if any hooked function returned non-false then we stop and return that instead
+		return false;
+	}
+	//---------------------------------------------------------------------------
+
+
+
+	//---------------------------------------------------------------------------
+	getAppEngineChoices() {
+		if (this.cachedAppEngineChoices === undefined) {
 			// calc and cache them
 			let label;
-			this.cachedAppFrameworkChoices = {};
-			const allObjs = jrequire.getAllAddonModulesForCollectionName(this.getAddonCollectionNameAppFrameworks());
+			this.cachedAppEngineChoices = {};
+			const allObjs = jrequire.getAllAddonModulesForCollectionName(this.getAddonCollectionNameAppEngines());
 			Object.keys(allObjs).forEach((name) => {
 				label = allObjs[name].label ? allObjs[name].label : name;
-				this.cachedAppFrameworkChoices[name] = label;
+				this.cachedAppEngineChoices[name] = label;
 			});
 		}
 
 		// return it
-		return this.cachedAppFrameworkChoices;
+		return this.cachedAppEngineChoices;
 	}
 	//---------------------------------------------------------------------------
 
 
-
-
-
-
-	//---------------------------------------------------------------------------
-	getVersionLib() {
-		return appdef.DefLibVersion;
-	}
-
-	getVersionApi() {
-		return appdef.DefApiVersion;
-	}
-	//---------------------------------------------------------------------------
 
 
 

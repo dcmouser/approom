@@ -20,7 +20,7 @@ const addonInfo = {
 
 
 //---------------------------------------------------------------------------
-function initialize(arserver) {
+async function hookInitialize(arserver) {
 	console.log("Hello world from testplugin initialize()");
 }
 //---------------------------------------------------------------------------
@@ -39,6 +39,6 @@ function getInfo(arserver) {
 
 
 module.exports = {
-	initialize,
+	hookInitialize,
 	getInfo,
 };

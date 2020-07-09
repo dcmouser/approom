@@ -24,7 +24,6 @@ const arserver = jrequire("arserver");
 // helpers
 const JrContext = require("../../helpers/jrcontext");
 const jrhExpress = require("../../helpers/jrh_express");
-const jrdebug = require("../../helpers/jrdebug");
 
 // constants
 const appdef = jrequire("appdef");
@@ -221,14 +220,14 @@ async function routerAllRefreshAccess(req, res, next) {
 	const jrContext = JrContext.makeNew(req, res, next);
 
 	// first the user has to give us a valid REFRESH token
-	const [userPassport, user] = await arserver.asyncPassportManualNonSessionAuthenticateFromTokenInRequestGetPassportProfileAndUser(jrContext, next, "refresh");
+	const [passportUsr, user] = await arserver.asyncPassportManualNonSessionAuthenticateFromTokenInRequestGetPassportProfileAndUser(jrContext, next, "refresh");
 	if (jrContext.isError()) {
 		arserver.renderErrorJson(jrContext, 403);
 		return;
 	}
 
 	// ok they gave us a valid refresh token, so now we generate an access token for them
-	const secureToken = await arserver.makeSecureTokenAccessFromRefreshToken(jrContext, user, userPassport.token);
+	const secureToken = await arserver.makeSecureTokenAccessFromRefreshToken(jrContext, user, passportUsr.token);
 
 	// log request
 	arserver.logr(jrContext, appdef.DefLogTypeApiToken, "refreshed access token", null, user);
@@ -248,7 +247,8 @@ async function routerAllTokenTest(req, res, next) {
 	const jrContext = JrContext.makeNew(req, res, next);
 
 	// retrieve/test the token passed by the user
-	const userPassport = await arserver.asyncPassportManualNonSessionAuthenticateFromTokenInRequestGetMinimalPassportUsrData(jrContext, next, null);
+	// const userPassport = await arserver.asyncPassportManualNonSessionAuthenticateFromTokenInRequestGetMinimalPassportUsrData(jrContext, next, null);
+	const [passportUsr, user] = await arserver.asyncPassportManualNonSessionAuthenticateFromTokenInRequestGetPassportProfileAndUser(jrContext, next, null);
 	if (jrContext.isError()) {
 		arserver.renderErrorJson(jrContext, 403);
 		return;
@@ -257,7 +257,7 @@ async function routerAllTokenTest(req, res, next) {
 	// it's good
 	// show them the userPassport data which will include .token
 	const returnData = {
-		token: userPassport.token,
+		token: passportUsr.token,
 	};
 	jrhExpress.sendJsonDataSuccess(jrContext, "Valid token parsed in API test", returnData);
 }

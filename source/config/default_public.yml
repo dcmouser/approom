@@ -63,12 +63,12 @@ logging:
   FILENAME_BASE: "approom"
   ANNOUNCEMENT: "Using default configuration"
 plugins: {}
-appFrameworks:
+appEngines:
   test:
     label: "test"
     enabled: true
-    path: "../appframeworks/aftest"
+    path: "../appengines/aftest/aftest"
   easySync:
     label: "easySync"
     enabled: true
-    path: "../appframeworks/afeasysync"
+    path: "../appengines/afeasysync"

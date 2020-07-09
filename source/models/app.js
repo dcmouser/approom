@@ -109,7 +109,7 @@ class AppModel extends ModelBaseMongoose {
 				mongoose: {
 					type: String,
 				},
-				valueFunction: this.valueFunctionAppFramework,
+				valueFunction: this.valueFunctionAppEngine,
 			},
 			isPublic: {
 				label: "Is public?",
@@ -170,7 +170,7 @@ class AppModel extends ModelBaseMongoose {
 		await this.validateMergeAsync(jrContext, "label", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
 		await this.validateMergeAsync(jrContext, "description", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateString(jrr, keyname, inVal, flagRequired));
 		//
-		await this.validateMergeAsync(jrContext, "framework", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => this.validateAppFrameworkName(jrr, keyname, inVal, flagRequired));
+		await this.validateMergeAsync(jrContext, "framework", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => this.validateAppEngineName(jrr, keyname, inVal, flagRequired));
 		//
 		await this.validateMergeAsync(jrContext, "isPublic", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateTrueFalse(jrr, keyname, inVal, flagRequired));
 		await this.validateMergeAsync(jrContext, "supportsFiles", "", source, saveFields, preValidatedFields, obj, true, (jrr, keyname, inVal, flagRequired) => jrhValidate.validateTrueFalse(jrr, keyname, inVal, flagRequired));
@@ -281,7 +281,7 @@ class AppModel extends ModelBaseMongoose {
 
 
 	//---------------------------------------------------------------------------
-	static async valueFunctionAppFramework(jrContext, viewType, fieldName, obj, editData, helperData) {
+	static async valueFunctionAppEngine(jrContext, viewType, fieldName, obj, editData, helperData) {
 		let val, valHtml;
 		// for editing, we want a drop down list of allowed app frameworks
 		// for viewing, just show it
@@ -294,14 +294,14 @@ class AppModel extends ModelBaseMongoose {
 		if (viewType !== "edit") {
 			// too cpu expensive?
 			if (true) {
-				const choices = arserver.getAppFrameworkChoices();
+				const choices = arserver.getAppEngineChoices();
 				valHtml = jrhText.jrHtmlNiceOptionFromList(choices, val);
 			} else {
 				valHtml = val;
 			}
 		} else {
 			// edit mode gets a drop down
-			const choices = arserver.getAppFrameworkChoices();
+			const choices = arserver.getAppEngineChoices();
 			const flagShowBlank = true;
 			valHtml = jrhText.jrHtmlFormOptionListSelect(fieldName, choices, val, flagShowBlank);
 		}
@@ -310,12 +310,12 @@ class AppModel extends ModelBaseMongoose {
 
 
 
-	static validateAppFrameworkName(jrResult, keyname, val, flagRequired) {
+	static validateAppEngineName(jrResult, keyname, val, flagRequired) {
 		if (!val && flagRequired) {
 			jrResult.pushFieldError(keyname, keyname + " cannot be left blank");
 			return undefined;
 		}
-		const choices = arserver.getAppFrameworkChoices();
+		const choices = arserver.getAppEngineChoices();
 		if (choices[val]) {
 			// ok
 			return val;

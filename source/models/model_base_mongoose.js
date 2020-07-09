@@ -242,7 +242,15 @@ class ModelBaseMongoose {
 
 
 
+	//---------------------------------------------------------------------------
+	getIsEnabled() {
+		return (this.disabled === appdef.DefMdbEnable);
+	}
 
+	getEnabledStateAsString() {
+		return appdef.DefStateModeLabels[this.disabled];
+	}
+	//---------------------------------------------------------------------------
 
 
 
@@ -421,7 +429,7 @@ class ModelBaseMongoose {
 			creator: null,
 			creationDate: new Date(),
 			modificationDate: null,
-			disabled: 0,
+			disabled: appdef.DefMdbEnable,
 			notes: "",
 			...inobj,
 		};
@@ -1412,7 +1420,7 @@ class ModelBaseMongoose {
 
 	//---------------------------------------------------------------------------
 	// subclasses can subclass this for crud add/edit
-	static async calcCrudEditHelperData(jrContext, id) {
+	static async calcCrudEditHelperData(jrContext, user, id) {
 		return undefined;
 	}
 

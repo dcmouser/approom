@@ -536,7 +536,7 @@ function reqOriginalUrl(req) {
  */
 function parseReqGetJsonField(jrContext, keyName) {
 	if (!jrContext.req.body[keyName]) {
-		jrContext.pushError("Missing json data, expected in post variable " + keyName + ".");
+		jrContext.pushError("Missing json data, expected to find post data with variable name: " + keyName + ".");
 		return null;
 	}
 

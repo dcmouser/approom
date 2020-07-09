@@ -54,7 +54,7 @@ function setupRouter(urlPath) {
 	router.get("/nodejs", routerGetNodejs);
 	router.get("/dependencies", routerDependencies);
 	router.get("/plugins", routerPlugins);
-	router.get("/appframeworks", routerAppFrameworks);
+	router.get("/appengines", routerAppEngines);
 
 	// return router
 	return router;
@@ -223,14 +223,14 @@ async function routerPlugins(req, res, next) {
 
 
 
-async function routerAppFrameworks(req, res, next) {
+async function routerAppEngines(req, res, next) {
 	const jrContext = JrContext.makeNew(req, res, next);
 	if (await arserver.aclRequireLoggedInSitePermissionRenderErrorPageOrRedirect(jrContext, appdef.DefAclActionAdminister)) {
 		// get database resource use
-		const rawData = arserver.calcAddonCollectionInfoAppFrameworks();
+		const rawData = arserver.calcAddonCollectionInfoAppEngines();
 		res.render("internals/addoncollections", {
 			jrResult: jrContext.mergeSessionMessages(),
-			collectionName: "appFrameworks",
+			collectionName: "appEngines",
 			rawData,
 		});
 	}

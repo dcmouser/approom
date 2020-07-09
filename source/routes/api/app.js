@@ -23,10 +23,8 @@ const arserver = jrequire("arserver");
 
 // helpers
 const JrContext = require("../../helpers/jrcontext");
-const JrResult = require("../../helpers/jrresult");
 const jrhExpress = require("../../helpers/jrh_express");
 const jrhMisc = require("../../helpers/jrh_misc");
-const jrdebug = require("../../helpers/jrdebug");
 
 // models
 const RoomModel = jrequire("models/room");
@@ -78,7 +76,7 @@ function setupRouter(urlPath) {
 async function routerLookup(req, res, next) {
 	const jrContext = JrContext.makeNew(req, res, next);
 
-	// new
+	// find user making the request (note this can be proved with an access token not just a session login)
 	const user = await arserver.lookupLoggedInUser(jrContext);
 	if (!user) {
 		jrContext.pushError("Failed to authenticate user for request; missing access token?");
